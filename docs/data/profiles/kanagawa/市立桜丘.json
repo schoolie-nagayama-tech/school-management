@@ -1,0 +1,547 @@
+{
+  "prefecture": "神奈川県",
+  "school_name": "市立桜丘",
+  "official_url": "https://www.edu.city.yokohama.lg.jp/sch/hs/sakura/",
+  "researched_at": "2026-09-24",
+  "stats": [
+    {
+      "metric": "university_count",
+      "item": "国公立",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 46,
+      "source_url": "https://www.edu.city.yokohama.lg.jp/sch/hs/sakura/guidance/image/R8_78.png",
+      "source_label": "横浜市立桜丘高等学校 令和8年度入試 大学合格者数（進路指導と実績ページ）",
+      "as_of": "2026-05-05",
+      "note": "国立（合計26）＋公立（合計20）。画像内の区分小計をそのまま合算。"
+    },
+    {
+      "metric": "university_count",
+      "item": "早慶上理",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 10,
+      "source_url": "https://www.edu.city.yokohama.lg.jp/sch/hs/sakura/guidance/image/R8_78.png",
+      "source_label": "横浜市立桜丘高等学校 令和8年度入試 大学合格者数（進路指導と実績ページ）",
+      "as_of": "2026-05-05",
+      "note": "大学別の表から合算（早稲田5+慶應3+上智1+東京理科1）。国際基督教大学（1名）は早慶上理に含めていない。"
+    },
+    {
+      "metric": "university_count",
+      "item": "GMARCH",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 133,
+      "source_url": "https://www.edu.city.yokohama.lg.jp/sch/hs/sakura/guidance/image/R8_78.png",
+      "source_label": "横浜市立桜丘高等学校 令和8年度入試 大学合格者数（進路指導と実績ページ）",
+      "as_of": "2026-05-05",
+      "note": "大学別の表から合算（学習院10+明治31+青山学院26+立教8+中央19+法政39）。私立大①の区分小計144（早慶上理10+国際基督教1+GMARCH133）と一致。"
+    },
+    {
+      "metric": "university_count",
+      "item": "成成明武",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 47,
+      "source_url": "https://www.edu.city.yokohama.lg.jp/sch/hs/sakura/guidance/image/R8_78.png",
+      "source_label": "横浜市立桜丘高等学校 令和8年度入試 大学合格者数（進路指導と実績ページ）",
+      "as_of": "2026-05-05",
+      "note": "大学別の表から合算（成蹊8+成城9+明治学院30）。武蔵大学は表に掲載なし（0名）。"
+    },
+    {
+      "metric": "university_count",
+      "item": "日東駒専",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 113,
+      "source_url": "https://www.edu.city.yokohama.lg.jp/sch/hs/sakura/guidance/image/R8_78.png",
+      "source_label": "横浜市立桜丘高等学校 令和8年度入試 大学合格者数（進路指導と実績ページ）",
+      "as_of": "2026-05-05",
+      "note": "大学別の表から合算（日本47+東洋31+駒澤16+専修19）。この4校は私立大②の区分にまとまって掲載されている。"
+    },
+    {
+      "metric": "university_count",
+      "item": "合計",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 743,
+      "source_url": "https://www.edu.city.yokohama.lg.jp/sch/hs/sakura/guidance/image/R8_78.png",
+      "source_label": "横浜市立桜丘高等学校 令和8年度入試 大学合格者数（進路指導と実績ページ）",
+      "as_of": "2026-05-05",
+      "note": "資料に全体の合計行が無いため、区分小計（国立26+公立20+私立大①144+私立大②190）に、小計の印字がない私立大③(325)・女子大(38)の合算を加えた（4年制大学のみ、短期大学の日本工学院1名は含まない）。私立大③には「駒澤」16名が私立大②と重複して掲載されており、重複分は除いて合算した（conflictsを参照）。"
+    },
+    {
+      "metric": "university_count",
+      "item": "神奈川大学",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 69,
+      "source_url": "https://www.edu.city.yokohama.lg.jp/sch/hs/sakura/guidance/image/R8_78.png",
+      "source_label": "横浜市立桜丘高等学校 令和8年度入試 大学合格者数（進路指導と実績ページ）",
+      "as_of": "2026-05-05",
+      "note": "大学別の表から。合格が多い大学の1位。"
+    },
+    {
+      "metric": "university_count",
+      "item": "日本大学",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 47,
+      "source_url": "https://www.edu.city.yokohama.lg.jp/sch/hs/sakura/guidance/image/R8_78.png",
+      "source_label": "横浜市立桜丘高等学校 令和8年度入試 大学合格者数（進路指導と実績ページ）",
+      "as_of": "2026-05-05",
+      "note": "大学別の表から。合格が多い大学の2位（日東駒専の内数）。"
+    },
+    {
+      "metric": "university_count",
+      "item": "法政大学",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 39,
+      "source_url": "https://www.edu.city.yokohama.lg.jp/sch/hs/sakura/guidance/image/R8_78.png",
+      "source_label": "横浜市立桜丘高等学校 令和8年度入試 大学合格者数（進路指導と実績ページ）",
+      "as_of": "2026-05-05",
+      "note": "大学別の表から。合格が多い大学の3位（GMARCHの内数）。"
+    },
+    {
+      "metric": "university_count",
+      "item": "明治大学",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 31,
+      "source_url": "https://www.edu.city.yokohama.lg.jp/sch/hs/sakura/guidance/image/R8_78.png",
+      "source_label": "横浜市立桜丘高等学校 令和8年度入試 大学合格者数（進路指導と実績ページ）",
+      "as_of": "2026-05-05",
+      "note": "大学別の表から。合格が多い大学の4位タイ（GMARCHの内数）。"
+    },
+    {
+      "metric": "university_count",
+      "item": "東洋大学",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 31,
+      "source_url": "https://www.edu.city.yokohama.lg.jp/sch/hs/sakura/guidance/image/R8_78.png",
+      "source_label": "横浜市立桜丘高等学校 令和8年度入試 大学合格者数（進路指導と実績ページ）",
+      "as_of": "2026-05-05",
+      "note": "大学別の表から。合格が多い大学の4位タイ（日東駒専の内数）。"
+    },
+    {
+      "metric": "club_join_rate",
+      "item": "",
+      "basis": "",
+      "fiscal_year": 2026,
+      "value_num": 85,
+      "source_url": "https://www.edu.city.yokohama.lg.jp/sch/hs/sakura/Right_side/club.html",
+      "source_label": "横浜市立桜丘高等学校 部活動紹介ページ",
+      "as_of": "2026-09",
+      "note": "「全校生徒の約85％が参加しています」との記述。調査年度・調査方法の明記なし。"
+    },
+    {
+      "metric": "designation",
+      "item": "進学指導重点校",
+      "basis": "",
+      "fiscal_year": 2012,
+      "value_text": "横浜市教育委員会指定。平成24年度（2012年度）から「進学指導重点校」としてスタート。すべての生徒が5教科（国語・地歴・公民・数学・理科・英語）を3年間バランスよく学べる科目構成、基礎学力重視、進路実現支援が特徴。神奈川県の「学力向上進学重点校（エントリー校）」とは別の、横浜市立高校を対象とした市独自の指定。",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/sch/hs/sakura/top_PDF/2025annai.pdf",
+      "source_label": "横浜市立桜丘高等学校 学校案内（桜高2025）／進路指導と実績ページの見出し",
+      "as_of": "2026-09"
+    },
+    {
+      "metric": "uniform",
+      "item": "",
+      "basis": "",
+      "fiscal_year": 2026,
+      "value_text": "ブレザー（男女）。ネクタイ（男子）／リボン（女子）。スラックス（男女とも選択可）またはプリーツスカート（女子）。Ｙシャツ・ブラウスは白（夏は半袖・ポロシャツ可）、夏は左袖に袖章を着用。無地のセーター・ベスト・カーディガンは冬服以外の期間はブレザー代わりに着用可。衣替えは6月1日・10月1日（前後1か月調整期間）。休日・休暇中の登下校時も制服着用。",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/sch/hs/sakura/school_info_PDF/seito1.pdf",
+      "source_label": "横浜市立桜丘高等学校 生徒心得・生徒心得細則",
+      "as_of": "2026-09"
+    },
+    {
+      "metric": "rules_summary",
+      "item": "",
+      "basis": "",
+      "fiscal_year": 2026,
+      "value_text": "頭髪はパーマ等を禁止、指輪・ネックレス・ピアス・マニキュア等の装身具も禁止。スマホに関する校内規定の記載はなし。アルバイトは学校として好ましくないとしつつ、保護者の承諾があれば学業に支障のない範囲で許可。",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/sch/hs/sakura/school_info_PDF/seito1.pdf",
+      "source_label": "横浜市立桜丘高等学校 生徒心得・生徒心得細則",
+      "as_of": "2026-09"
+    }
+  ],
+  "clubs": [
+    {
+      "name": "陸上競技部",
+      "kind": "運動",
+      "tier": 2,
+      "tier_basis": "2026年度 女子走り幅跳び・女子三段跳びで神奈川県大会3位を経て関東大会に出場（学校サイト新着情報2026年5月22日更新「部活動の活躍」）",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/sch/hs/sakura/Right_side/club.html",
+      "as_of": "2026-09",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "関東大会（女子走り幅跳び・女子三段跳び）",
+          "level": "関東",
+          "result": "神奈川県大会3位（女子走り幅跳び・女子三段跳び）を経て関東大会に出場",
+          "source_url": "https://www.edu.city.yokohama.lg.jp/sch/hs/sakura/Right_side/club.html"
+        }
+      ]
+    },
+    {
+      "name": "水泳部",
+      "kind": "運動",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/sch/hs/sakura/Right_side/R6_bukatuitiran.JPG",
+      "as_of": "2026-09"
+    },
+    {
+      "name": "男子バレーボール部",
+      "kind": "運動",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/sch/hs/sakura/Right_side/R6_bukatuitiran.JPG",
+      "as_of": "2026-09"
+    },
+    {
+      "name": "女子バレーボール部",
+      "kind": "運動",
+      "tier": 3,
+      "tier_basis": "2024年度新人大会で県大会に出場（2次予選2-0光陵で通過）。県大会での勝敗の詳細は資料になし。",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/sch/hs/sakura/Right_side/club.html",
+      "as_of": "2026-09",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "神奈川県高等学校バレーボール新人大会",
+          "level": "都県",
+          "result": "県大会出場（2次予選2-0光陵で通過。県大会での結果は資料になし）",
+          "source_url": "https://www.edu.city.yokohama.lg.jp/sch/hs/sakura/Right_side/club.html"
+        }
+      ]
+    },
+    {
+      "name": "男子バスケットボール部",
+      "kind": "運動",
+      "tier": 3,
+      "tier_basis": "2024年度は南支部予選を勝ち上がり県大会2回戦で敗退、2025年度も県大会1回戦で敗退。いずれもベスト8に届かず。",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/sch/hs/sakura/Right_side/club.html",
+      "as_of": "2026-09",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "関東高校バスケットボール選手権大会 神奈川県予選会",
+          "level": "都県",
+          "result": "県大会2回戦敗退（65-134 東海大相模）",
+          "source_url": "https://www.edu.city.yokohama.lg.jp/sch/hs/sakura/Right_side/club.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "全国高校総体（インターハイ）南支部予選・神奈川県予選",
+          "level": "都県",
+          "result": "県大会1回戦敗退（64-67 松陽）",
+          "source_url": "https://www.edu.city.yokohama.lg.jp/sch/hs/sakura/Right_side/club.html"
+        }
+      ]
+    },
+    {
+      "name": "女子バスケットボール部",
+      "kind": "運動",
+      "tier": 3,
+      "tier_basis": "2025年度インターハイ予選で南支部を勝ち上がり県大会に出場したが1回戦で敗退。",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/sch/hs/sakura/Right_side/club.html",
+      "as_of": "2026-09",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "全国高校総体（インターハイ）南支部予選・神奈川県予選",
+          "level": "都県",
+          "result": "県大会1回戦敗退（69-84 アレセイア）",
+          "source_url": "https://www.edu.city.yokohama.lg.jp/sch/hs/sakura/Right_side/club.html"
+        }
+      ]
+    },
+    {
+      "name": "ソフトテニス部",
+      "kind": "運動",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/sch/hs/sakura/Right_side/R6_bukatuitiran.JPG",
+      "as_of": "2026-09"
+    },
+    {
+      "name": "男子バドミントン部",
+      "kind": "運動",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/sch/hs/sakura/Right_side/club.html",
+      "as_of": "2026-09"
+    },
+    {
+      "name": "女子バドミントン部",
+      "kind": "運動",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/sch/hs/sakura/Right_side/club.html",
+      "as_of": "2026-09"
+    },
+    {
+      "name": "サッカー部",
+      "kind": "運動",
+      "tier": 2,
+      "tier_basis": "2026年度 高円宮杯JFA U-18サッカーリーグ神奈川 K4 Bグループ所属（桜丘高校Aとして登録、9チーム中5位）。ルールにより神奈川K3・K4は段階2。",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/sch/hs/sakura/Right_side/club.html",
+      "as_of": "2026-09",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "高円宮杯JFA U-18サッカーリーグ神奈川 K4 Bグループ",
+          "level": "都県",
+          "result": "9チーム中5位（4勝0分4敗）",
+          "source_url": "https://www.kanagawa-fa.gr.jp/cms/u18-league/2026/div4/"
+        }
+      ]
+    },
+    {
+      "name": "卓球部",
+      "kind": "運動",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/sch/hs/sakura/Right_side/R6_bukatuitiran.JPG",
+      "as_of": "2026-09"
+    },
+    {
+      "name": "柔道部",
+      "kind": "運動",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/sch/hs/sakura/Right_side/R6_bukatuitiran.JPG",
+      "as_of": "2026-09"
+    },
+    {
+      "name": "弓道部",
+      "kind": "運動",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/sch/hs/sakura/Right_side/R6_bukatuitiran.JPG",
+      "as_of": "2026-09"
+    },
+    {
+      "name": "男子硬式テニス部",
+      "kind": "運動",
+      "tier": 3,
+      "tier_basis": "2025年度インターハイ県予選（団体）でベスト16（4回戦で慶應義塾に0-2で敗退）。単発の実績のため段階2の基準（複数回）に届かない。",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/sch/hs/sakura/Right_side/club.html",
+      "as_of": "2026-09",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "全国高校総体（インターハイ）神奈川県予選（団体）",
+          "level": "都県",
+          "result": "ベスト16（1〜3回戦を勝ち上がり、4回戦で慶應義塾に0-2で敗退）",
+          "source_url": "https://www.edu.city.yokohama.lg.jp/sch/hs/sakura/Right_side/club.html"
+        }
+      ]
+    },
+    {
+      "name": "女子硬式テニス部",
+      "kind": "運動",
+      "tier": 3,
+      "tier_basis": "2025年度インターハイ県予選（個人）で県大会に出場。順位等の詳細は資料になし。",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/sch/hs/sakura/Right_side/club.html",
+      "as_of": "2026-09",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "全国高校総体（インターハイ）神奈川県予選（個人）",
+          "level": "都県",
+          "result": "県大会出場（順位等の詳細は資料になし）",
+          "source_url": "https://www.edu.city.yokohama.lg.jp/sch/hs/sakura/Right_side/club.html"
+        }
+      ]
+    },
+    {
+      "name": "ダンス部",
+      "kind": "運動",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/sch/hs/sakura/Right_side/R6_bukatuitiran.JPG",
+      "as_of": "2026-09"
+    },
+    {
+      "name": "硬式野球部",
+      "kind": "運動",
+      "tier": 3,
+      "tier_basis": "2023〜2026年の夏の選手権神奈川大会は初戦〜2回戦で敗退（2023年1回戦、2024年2回戦、2025年2回戦、2026年2回戦）。秋季・春季県大会もベスト8に届かない（一球速報）。",
+      "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=12173",
+      "as_of": "2026-09",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "第105回全国高等学校野球選手権記念神奈川大会",
+          "level": "都県",
+          "result": "1回戦敗退（6-11 横須賀）",
+          "happened_on": "2023-07-08",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=12173&year=2023"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "第106回全国高等学校野球選手権神奈川大会",
+          "level": "都県",
+          "result": "2回戦敗退（2-3 津久井浜）",
+          "happened_on": "2024-07-11",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=12173&year=2024"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "神奈川県高等学校野球秋季県大会",
+          "level": "都県",
+          "result": "3回戦敗退（2-6 武相）",
+          "happened_on": "2024-09-14",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=12173&year=2024"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "神奈川県高等学校野球春季県大会",
+          "level": "都県",
+          "result": "2回戦敗退（1-8 湘南工科大学附属）",
+          "happened_on": "2025-04-12",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=12173&year=2025"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第107回全国高等学校野球選手権神奈川大会",
+          "level": "都県",
+          "result": "2回戦敗退（1回戦は9-1で舞岡に勝利、2回戦は0-7で藤沢翔陵に敗退）",
+          "happened_on": "2025-07-11",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=12173&year=2025"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "第108回全国高等学校野球選手権神奈川大会",
+          "level": "都県",
+          "result": "2回戦敗退（1回戦は11-0で二宮に勝利、2回戦は0-10で日大藤沢に敗退）",
+          "happened_on": "2026-07-11",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=12173"
+        }
+      ]
+    },
+    {
+      "name": "男子ハンドボール部",
+      "kind": "運動",
+      "tier": 2,
+      "tier_basis": "2024年度 横浜市立高等学校総合体育大会（市立校限定大会）で男子優勝。都道府県立を含む大会ではないため1段低く判定し、優勝＝段階2相当として扱った。",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/sch/hs/sakura/Right_side/club.html",
+      "as_of": "2026-09",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "横浜市立高等学校総合体育大会",
+          "level": "地区",
+          "result": "優勝（横浜市立南・東・戸塚に勝利）",
+          "source_url": "https://www.edu.city.yokohama.lg.jp/sch/hs/sakura/Right_side/club.html"
+        }
+      ]
+    },
+    {
+      "name": "女子ハンドボール部",
+      "kind": "運動",
+      "tier": 2,
+      "tier_basis": "2024年度 横浜市立高等学校総合体育大会（市立校限定大会）で女子優勝（1段低く判定し段階2相当）。2025年度はインターハイ県予選でベスト16。",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/sch/hs/sakura/Right_side/club.html",
+      "as_of": "2026-09",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "横浜市立高等学校総合体育大会",
+          "level": "地区",
+          "result": "優勝",
+          "source_url": "https://www.edu.city.yokohama.lg.jp/sch/hs/sakura/Right_side/club.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "全国高校総体（インターハイ）神奈川県予選",
+          "level": "都県",
+          "result": "ベスト16（ブロック決勝で上溝南に16-22で敗退）",
+          "source_url": "https://www.edu.city.yokohama.lg.jp/sch/hs/sakura/Right_side/club.html"
+        }
+      ]
+    },
+    {
+      "name": "吹奏楽部",
+      "kind": "文化",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/sch/hs/sakura/Right_side/club.html",
+      "as_of": "2026-09"
+    },
+    {
+      "name": "弦楽部",
+      "kind": "文化",
+      "tier": 3,
+      "tier_basis": "2025年度 第49回全国高等学校総合文化祭（香川大会）器楽・管弦楽部門に、神奈川県合同ストリングオーケストラの一員（合同編成）として出場。（2026-09-24 Opus見直し: 県の合同オーケストラの一員としての出場は部の成績ではないので段階3）",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/sch/hs/sakura/Right_side/club.html",
+      "as_of": "2026-09",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "第49回全国高等学校総合文化祭（香川大会）器楽・管弦楽部門",
+          "level": "全国",
+          "result": "神奈川県合同ストリングオーケストラの一員（合同編成）として出場",
+          "source_url": "https://www.edu.city.yokohama.lg.jp/sch/hs/sakura/Right_side/club.html"
+        }
+      ]
+    },
+    {
+      "name": "SBC（軽音楽）",
+      "kind": "文化",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/sch/hs/sakura/Right_side/R6_bukatuitiran.JPG",
+      "as_of": "2026-09"
+    },
+    {
+      "name": "美術部",
+      "kind": "文化",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/sch/hs/sakura/Right_side/R6_bukatuitiran.JPG",
+      "as_of": "2026-09"
+    },
+    {
+      "name": "天文部",
+      "kind": "文化",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/sch/hs/sakura/Right_side/R6_bukatuitiran.JPG",
+      "as_of": "2026-09"
+    },
+    {
+      "name": "英会話部",
+      "kind": "文化",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/sch/hs/sakura/Right_side/R6_bukatuitiran.JPG",
+      "as_of": "2026-09"
+    },
+    {
+      "name": "料理部",
+      "kind": "文化",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/sch/hs/sakura/Right_side/R6_bukatuitiran.JPG",
+      "as_of": "2026-09"
+    },
+    {
+      "name": "書道部",
+      "kind": "文化",
+      "tier": 2,
+      "tier_basis": "2026年度 第50回全国高等学校総合文化祭（あきた総文2026）に神奈川県代表として書道部門で出場（魏千絢さんの作品）。",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/sch/hs/sakura/Right_side/club.html",
+      "as_of": "2026-09",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "第50回全国高等学校総合文化祭（あきた総文2026）書道部門",
+          "level": "全国",
+          "result": "神奈川県代表として出品・出場",
+          "source_url": "https://www.edu.city.yokohama.lg.jp/sch/hs/sakura/Right_side/club.html"
+        }
+      ]
+    },
+    {
+      "name": "茶道部",
+      "kind": "文化",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/sch/hs/sakura/Right_side/R6_bukatuitiran.JPG",
+      "as_of": "2026-09"
+    },
+    {
+      "name": "文芸部",
+      "kind": "文化",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/sch/hs/sakura/Right_side/R6_bukatuitiran.JPG",
+      "as_of": "2026-09"
+    }
+  ],
+  "designated_universities": [],
+  "events": [],
+  "unresolved": [
+    "推薦入試の応募・受検倍率（exam_ratio/推薦）：神奈川県（横浜市立を含む）公立高校入試は共通選抜のみで、東京都のような別立ての推薦選抜がないため対象データなし。",
+    "男女別生徒数（students）：学校案内・学校サイトとも男女別の実数の公表を確認できなかった。",
+    "満足度（satisfaction）：横浜市立高校の学校評価報告書（学校関係者評価書）には施策ごとの肯定率（いじめ対応92.9%等）の記載はあるが、「学校生活」「授業」といった総合的な満足度の記載は確認できなかった。",
+    "卒業後の進路決定率（career_decided_rate）：資料に%での記載を確認できなかった。",
+    "指定校推薦の大学一覧（designated_universities）：学校案内・進路指導と実績ページとも公開なし。",
+    "男子バドミントン部・女子バドミントン部の大会結果（横浜市夏季大会・新人大会・関東大会予選など）：部活動紹介ページに年度の記載が無く、直近3年の根拠として使用できなかった。",
+    "学級数・学級増減：横浜市教育委員会の募集人員発表や学校サイトに、直近の学級数変化に関する記載を見つけられなかった。"
+  ],
+  "conflicts": [
+    "大学合格者数（令和8年度入試）の資料で、「駒澤」16名が私立大②（日東駒専の区分）と私立大③の両方に掲載されている。同一資料内での重複掲載とみられるため、日東駒専・合計の集計では私立大②の1件のみを採用した。"
+  ]
+}

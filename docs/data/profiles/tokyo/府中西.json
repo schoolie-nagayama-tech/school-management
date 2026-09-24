@@ -1,0 +1,1050 @@
+{
+  "prefecture": "東京都",
+  "school_name": "府中西",
+  "official_url": "https://www.metro.ed.jp/fuchunishi-h/",
+  "researched_at": "2026-09-24",
+  "stats": [
+    {
+      "metric": "university_count",
+      "item": "国公立",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 1,
+      "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/filelink/filelink-pdffile-36914.pdf",
+      "source_label": "府中西高校 49期生進路状況「大学上位校の合格者（延べ人数）」",
+      "as_of": "2026-04",
+      "note": "49期生(2026年3月卒業)。内訳は東京藝術大学1名（学校経営報告類ではなく進路状況資料の集計）。"
+    },
+    {
+      "metric": "university_count",
+      "item": "早慶上理",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 0,
+      "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/filelink/filelink-pdffile-36914.pdf",
+      "source_label": "府中西高校 49期生進路状況「大学上位校の合格者（延べ人数）」（慶応・早稲田・上智）＋過去5年間の受験・合格実績（東京理科大学）",
+      "as_of": "2026-04",
+      "note": "進路状況資料の「慶応・早稲田・上智」は0名。東京理科大学も過去5年間の受験・合格実績表で2025年度合格者0名のため、早慶上理の合計は0。"
+    },
+    {
+      "metric": "university_count",
+      "item": "GMARCH",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 6,
+      "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/filelink/filelink-pdffile-36914.pdf",
+      "source_label": "府中西高校 49期生進路状況「大学上位校の合格者（延べ人数）」",
+      "as_of": "2026-04",
+      "note": "学校が自分で数えた塊の数（進路状況資料の表）をそのまま使用。"
+    },
+    {
+      "metric": "university_count",
+      "item": "成城・成蹊・武蔵・明学・獨協・國學院",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 5,
+      "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/filelink/filelink-pdffile-36914.pdf",
+      "source_label": "府中西高校 49期生進路状況「大学上位校の合格者（延べ人数）」",
+      "as_of": "2026-04",
+      "note": "学校独自の大学群（手引きの「成成明武」＝成蹊・成城・明治学院・武蔵とは構成が異なり、獨協・國學院も含む）。手引き§6-2に従い学校の呼び名のまま採用。"
+    },
+    {
+      "metric": "university_count",
+      "item": "日東駒専",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 13,
+      "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/filelink/filelink-pdffile-36914.pdf",
+      "source_label": "府中西高校 49期生進路状況「大学上位校の合格者（延べ人数）」",
+      "as_of": "2026-04",
+      "note": ""
+    },
+    {
+      "metric": "university_count",
+      "item": "大東亜帝国",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 44,
+      "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/filelink/filelink-pdffile-36914.pdf",
+      "source_label": "府中西高校 49期生進路状況「大学上位校の合格者（延べ人数）」",
+      "as_of": "2026-04",
+      "note": "学校独自の大学群（大東文化・東海・亜細亜・帝京・国士舘の類）。手引き§6-2に従い学校の呼び名のまま採用。"
+    },
+    {
+      "metric": "university_count",
+      "item": "合計",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 272,
+      "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/filelink/filelink-pdffile-36914.pdf",
+      "source_label": "府中西高校 49期生進路状況「（３）年度別合格者数比較」大学合格者総計",
+      "as_of": "2026-04",
+      "note": "49期生（2026年3月卒業）の大学合格者延べ総計。学校案内パンフレット「主な大学」表を自分で合算すると282になり食い違う（conflicts参照）。学校の集計（進路状況資料）を優先。"
+    },
+    {
+      "metric": "university_count",
+      "item": "明星大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 35,
+      "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/pamphlet/pamphlet-pdffile-4263.pdf",
+      "source_label": "学校案内パンフレット「2027学校案内」p.6「主な大学」表（2025年度列）",
+      "as_of": "2026-09",
+      "note": "四年制大学合格者数の中で最多。過去5年間の受験・合格実績表とも一致。"
+    },
+    {
+      "metric": "university_count",
+      "item": "帝京大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 22,
+      "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/pamphlet/pamphlet-pdffile-4263.pdf",
+      "source_label": "学校案内パンフレット「2027学校案内」p.6「主な大学」表（2025年度列）",
+      "as_of": "2026-09",
+      "note": ""
+    },
+    {
+      "metric": "university_count",
+      "item": "杏林大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 16,
+      "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/pamphlet/pamphlet-pdffile-4263.pdf",
+      "source_label": "学校案内パンフレット「2027学校案内」p.6「主な大学」表（2025年度列）",
+      "as_of": "2026-09",
+      "note": ""
+    },
+    {
+      "metric": "university_count",
+      "item": "東京経済大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 14,
+      "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/pamphlet/pamphlet-pdffile-4263.pdf",
+      "source_label": "学校案内パンフレット「2027学校案内」p.6「主な大学」表（2025年度列）",
+      "as_of": "2026-09",
+      "note": ""
+    },
+    {
+      "metric": "university_count",
+      "item": "桜美林大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 13,
+      "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/pamphlet/pamphlet-pdffile-4263.pdf",
+      "source_label": "学校案内パンフレット「2027学校案内」p.6「主な大学」表（2025年度列）",
+      "as_of": "2026-09",
+      "note": ""
+    },
+    {
+      "metric": "career_decided_rate",
+      "fiscal_year": 2024,
+      "value_num": 88.4,
+      "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/filelink/filelink-pdffile-18765.pdf",
+      "source_label": "令和6年度学校経営報告「重点目標と本年度の数値」",
+      "as_of": "2025-03",
+      "note": "48期生（2025年3月卒業）の卒業時進路決定率。"
+    },
+    {
+      "metric": "club_join_rate",
+      "fiscal_year": 2024,
+      "value_num": 90.2,
+      "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/filelink/filelink-pdffile-18765.pdf",
+      "source_label": "令和6年度学校経営報告「重点目標と本年度の数値」",
+      "as_of": "2025-03",
+      "note": "本文中には「全学年を通した部活動加入率は90％」ともあり、正式な数値は90.2%。"
+    },
+    {
+      "metric": "satisfaction",
+      "item": "生徒:授業",
+      "fiscal_year": 2024,
+      "value_num": 83,
+      "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/filelink/filelink-pdffile-18765.pdf",
+      "source_label": "令和6年度学校経営報告「第1 今年度の取組と自己評価 1 伸びる学習指導」",
+      "as_of": "2025-03",
+      "note": "前年度は85%。"
+    },
+    {
+      "metric": "satisfaction",
+      "item": "保護者:授業",
+      "fiscal_year": 2024,
+      "value_num": 84,
+      "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/filelink/filelink-pdffile-18765.pdf",
+      "source_label": "令和6年度学校経営報告「第1 今年度の取組と自己評価 1 伸びる学習指導」",
+      "as_of": "2025-03",
+      "note": "前年度は79%。"
+    },
+    {
+      "metric": "satisfaction",
+      "item": "生徒:進路指導",
+      "fiscal_year": 2024,
+      "value_num": 85,
+      "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/filelink/filelink-pdffile-18765.pdf",
+      "source_label": "令和6年度学校経営報告「第1 今年度の取組と自己評価 2 かなう進路指導」",
+      "as_of": "2025-03",
+      "note": "「学校は生徒の適性や進路希望に応じた指導を積極的に行っている」への肯定的回答。"
+    },
+    {
+      "metric": "satisfaction",
+      "item": "生徒:生活指導",
+      "fiscal_year": 2024,
+      "value_num": 80,
+      "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/filelink/filelink-pdffile-18765.pdf",
+      "source_label": "令和6年度学校経営報告「第1 今年度の取組と自己評価 3 安心の生活指導」",
+      "as_of": "2025-03",
+      "note": "前年度は74%。"
+    },
+    {
+      "metric": "satisfaction",
+      "item": "生徒:部活動",
+      "fiscal_year": 2024,
+      "value_num": 78,
+      "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/filelink/filelink-pdffile-18765.pdf",
+      "source_label": "令和6年度学校経営報告「第1 今年度の取組と自己評価 5 輝く部活動」",
+      "as_of": "2025-03",
+      "note": "前年度は74%。"
+    },
+    {
+      "metric": "satisfaction",
+      "item": "生徒:学校行事",
+      "fiscal_year": 2024,
+      "value_num": 95,
+      "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/filelink/filelink-pdffile-18765.pdf",
+      "source_label": "令和6年度学校経営報告「第1 今年度の取組と自己評価 4 燃える学校行事」",
+      "as_of": "2025-03",
+      "note": "前年度は82%。"
+    },
+    {
+      "metric": "exam_ratio",
+      "item": "一般",
+      "fiscal_year": 2025,
+      "value_num": 1.07,
+      "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/filelink/filelink-pdffile-18765.pdf",
+      "source_label": "令和6年度学校経営報告「重点目標と本年度の数値」",
+      "as_of": "2025-03",
+      "note": "応募倍率。「学力による選抜の入学者選抜応募倍率」。文化・スポーツ推薦を含む推薦選抜の倍率は資料未確認（unresolved参照）。"
+    },
+    {
+      "metric": "designation",
+      "item": "Premiere Club（Tier1）",
+      "fiscal_year": 2026,
+      "value_text": "都立学校における部活動特別強化プロジェクト。ラグビー部が指定（東京都教育委員会指定）",
+      "source_url": "https://www.metro.ed.jp/fuchunishi-h/news/2026/08/premier_club.html",
+      "source_label": "府中西高校ニュース「都立高校ＥＸＰＯでPremier Club ラグビー部・合唱部・ハンドボール部のＰＲを行いました！」",
+      "as_of": "2026-08",
+      "note": ""
+    },
+    {
+      "metric": "designation",
+      "item": "Premiere Club（Tier3）",
+      "fiscal_year": 2026,
+      "value_text": "都立学校における部活動特別強化プロジェクト。男子ハンドボール部・女子ハンドボール部・合唱部が指定（東京都教育委員会指定）",
+      "source_url": "https://www.metro.ed.jp/fuchunishi-h/news/2026/08/premier_club.html",
+      "source_label": "府中西高校ニュース「都立高校ＥＸＰＯでPremier Club ラグビー部・合唱部・ハンドボール部のＰＲを行いました！」",
+      "as_of": "2026-08",
+      "note": ""
+    },
+    {
+      "metric": "designation",
+      "item": "日本語指導推進校",
+      "fiscal_year": 2026,
+      "value_text": "在京外国人生徒対象の学校設定科目「日本語」「多言語プロジェクト」を設置（東京都教育委員会指定）",
+      "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/filelink/filelink-pdffile-34684.pdf",
+      "source_label": "令和8年度学校経営計画",
+      "as_of": "2026-04",
+      "note": ""
+    },
+    {
+      "metric": "designation",
+      "item": "海外学校間交流推進校",
+      "fiscal_year": 2024,
+      "value_text": "東京都教育委員会指定。ユタ州ブリガムヤング大学と文化交流を実施",
+      "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/filelink/filelink-pdffile-18765.pdf",
+      "source_label": "令和6年度学校経営報告「第1 今年度の取組と自己評価 8 学校運営・その他」",
+      "as_of": "2025-03",
+      "note": ""
+    },
+    {
+      "metric": "uniform",
+      "fiscal_year": 2026,
+      "value_text": "紺・臙脂・ブルーを基調としたダブルブレストのブレザー(平成30年度改定)。Ⅰ型(スラックス+ネクタイ)とⅡ型(スカート+リボン)を選べる。夏は白ワイシャツか指定の白・紺ポロシャツも可。冬はベスト・セーター・カーディガン・コート類の着用可(色・形状の指定あり)。",
+      "source_url": "https://www.metro.ed.jp/fuchunishi-h/school_life/symbols.html",
+      "source_label": "東京都立府中西高等学校「制服・校章・校歌」および生徒心得（校則R8）",
+      "as_of": "2026-09",
+      "note": ""
+    },
+    {
+      "metric": "rules_summary",
+      "fiscal_year": 2026,
+      "value_text": "頭髪はパーマ・脱色・染色不可。ピアス等装身具、化粧、カラーコンタクトレンズ禁止。自転車通学はヘルメット必須で二人乗り等禁止、単車・自動車通学は不可。下校時刻は平日午後5時(居残り届出で6時30分まで延長可)。",
+      "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/filelink/filelink-pdffile-37236.pdf",
+      "source_label": "生徒心得（校則R8）",
+      "as_of": "2026-09",
+      "note": "スマートフォン・アルバイトに関する個別規定の記載は資料中に見当たらず。"
+    }
+  ],
+  "clubs": [
+    {
+      "name": "サッカー部",
+      "kind": "運動",
+      "tier": 3,
+      "tier_basis": "2026年度 高円宮杯U-18サッカーリーグ 東京 T1〜T5のいずれにも所属なし（支部リーグ）。T1〜T5参加チーム一覧 https://www.tleague-u18.com/team.php?dy=2026&dt=1 〜 dt=5 で確認（2026-09-24）。",
+      "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/pamphlet/pamphlet-pdffile-4263.pdf",
+      "as_of": "2026-09",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "インターハイ予選",
+          "level": "都県",
+          "result": "ブロック決勝進出",
+          "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/pamphlet/pamphlet-pdffile-4263.pdf"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "全国高校サッカー選手権 予選",
+          "level": "都県",
+          "result": "ブロック決勝進出",
+          "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/pamphlet/pamphlet-pdffile-4263.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "全国高校サッカー選手権 予選",
+          "level": "都県",
+          "result": "ブロック決勝進出",
+          "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/pamphlet/pamphlet-pdffile-4263.pdf"
+        }
+      ]
+    },
+    {
+      "name": "ラグビー部",
+      "kind": "運動",
+      "tier": 2,
+      "tier_basis": "東京都教育委員会「部活動特別強化プロジェクト」Premiere Club（Tier1）指定(令和8年度)。2025年度全国大会東京都予選第二地区ベスト8（私立も出場する大会）。直近3年でベスト8は1回のみのため段階1の基準（2回以上）は満たさず、指定を踏まえ段階2。",
+      "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/pamphlet/pamphlet-pdffile-4263.pdf",
+      "as_of": "2026-09",
+      "results": [
+        {
+          "fiscal_year": 2022,
+          "competition": "東京都新人大会",
+          "level": "都県",
+          "result": "ベスト16",
+          "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/pamphlet/pamphlet-pdffile-4263.pdf"
+        },
+        {
+          "fiscal_year": 2022,
+          "competition": "東京都春季大会",
+          "level": "都県",
+          "result": "ベスト16",
+          "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/pamphlet/pamphlet-pdffile-4263.pdf"
+        },
+        {
+          "fiscal_year": 2022,
+          "competition": "全国大会東京都予選 第一地区",
+          "level": "都県",
+          "result": "ベスト8",
+          "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/pamphlet/pamphlet-pdffile-4263.pdf"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "全国大会東京都予選 第二地区",
+          "level": "都県",
+          "result": "ベスト16",
+          "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/pamphlet/pamphlet-pdffile-4263.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "東京都春季大会",
+          "level": "都県",
+          "result": "ベスト16",
+          "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/pamphlet/pamphlet-pdffile-4263.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "全国大会東京都予選 第二地区",
+          "level": "都県",
+          "result": "ベスト8",
+          "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/pamphlet/pamphlet-pdffile-4263.pdf"
+        }
+      ]
+    },
+    {
+      "name": "男子ハンドボール部",
+      "kind": "運動",
+      "tier": 2,
+      "tier_basis": "東京都教育委員会Premiere Club（Tier3）指定(令和8年度)。2024・2025年度国公立大会優勝（都立公立限定大会のため1段低く読む）。都大会・インターハイ予選・関東大会予選はいずれもベスト16止まり。",
+      "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/pamphlet/pamphlet-pdffile-4263.pdf",
+      "as_of": "2026-09",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "国公立大会",
+          "level": "都県",
+          "result": "優勝",
+          "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/pamphlet/pamphlet-pdffile-4263.pdf"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "東京都大会",
+          "level": "都県",
+          "result": "ベスト16",
+          "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/pamphlet/pamphlet-pdffile-4263.pdf"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "冬季大会",
+          "level": "都県",
+          "result": "優勝",
+          "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/pamphlet/pamphlet-pdffile-4263.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "インターハイ予選",
+          "level": "都県",
+          "result": "ベスト16",
+          "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/pamphlet/pamphlet-pdffile-4263.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "国公立大会",
+          "level": "都県",
+          "result": "優勝",
+          "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/pamphlet/pamphlet-pdffile-4263.pdf"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "関東大会予選",
+          "level": "都県",
+          "result": "ベスト16",
+          "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/pamphlet/pamphlet-pdffile-4263.pdf"
+        }
+      ]
+    },
+    {
+      "name": "女子ハンドボール部",
+      "kind": "運動",
+      "tier": 1,
+      "tier_basis": "東京都教育委員会Premiere Club（Tier3）指定(令和8年度)。2024・2025・2026年度と3年連続で関東大会に出場（私立も出場する大会）。2024年東京都大会第3位、2025年東京都大会ベスト4。直近3年で全国・関東大会出場が2回以上の基準（3回）を満たすため段階1。",
+      "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/pamphlet/pamphlet-pdffile-4263.pdf",
+      "as_of": "2026-09",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "東京都大会",
+          "level": "都県",
+          "result": "第3位",
+          "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/pamphlet/pamphlet-pdffile-4263.pdf"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "関東大会",
+          "level": "関東",
+          "result": "出場",
+          "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/pamphlet/pamphlet-pdffile-4263.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "東京都国公立大会",
+          "level": "都県",
+          "result": "優勝",
+          "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/pamphlet/pamphlet-pdffile-4263.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "東京都大会",
+          "level": "都県",
+          "result": "ベスト4",
+          "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/pamphlet/pamphlet-pdffile-4263.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "関東大会",
+          "level": "関東",
+          "result": "出場",
+          "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/pamphlet/pamphlet-pdffile-4263.pdf"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "関東大会",
+          "level": "関東",
+          "result": "出場",
+          "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/pamphlet/pamphlet-pdffile-4263.pdf"
+        }
+      ]
+    },
+    {
+      "name": "男子硬式テニス部",
+      "kind": "運動",
+      "days_note": "平日4日(基礎練習中心)、土曜(対外練習)。日曜・祝日はOFF(大会がある場合あり)",
+      "days_per_week": 5,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "2025年東京都高等学校テニス選手権大会(個人)シングルス2回戦・ダブルス3回戦進出、2024年新人テニス選手権大会(個人)シングルス2回戦・ダブルス3回戦進出。いずれも序盤敗退。",
+      "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/pamphlet/pamphlet-pdffile-4263.pdf",
+      "as_of": "2026-09",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "東京都高等学校新人テニス選手権大会(個人)",
+          "level": "都県",
+          "result": "シングルス2回戦・ダブルス3回戦進出",
+          "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/pamphlet/pamphlet-pdffile-4263.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "東京都高等学校テニス選手権大会(個人)",
+          "level": "都県",
+          "result": "シングルス2回戦・ダブルス3回戦進出",
+          "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/pamphlet/pamphlet-pdffile-4263.pdf"
+        }
+      ]
+    },
+    {
+      "name": "女子硬式テニス部",
+      "kind": "運動",
+      "days_note": "平日は月・水・金。土・日は練習試合や大会が入る場合のみ",
+      "days_per_week": 3,
+      "weekend": "試合のみ",
+      "tier": 3,
+      "tier_basis": "2025年度 都立対抗テニス選手権大会(団体)2回戦進出、都立高テニス選手権大会シングルス3回戦進出。いずれも都立限定大会のため1段低く読み、序盤敗退にとどまる。",
+      "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/pamphlet/pamphlet-pdffile-4263.pdf",
+      "as_of": "2026-09",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "都立対抗テニス選手権大会(団体)",
+          "level": "都県",
+          "result": "2回戦進出",
+          "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/pamphlet/pamphlet-pdffile-4263.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "都立高テニス選手権大会(個人シングルス)",
+          "level": "都県",
+          "result": "3回戦進出",
+          "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/pamphlet/pamphlet-pdffile-4263.pdf"
+        }
+      ]
+    },
+    {
+      "name": "陸上競技部",
+      "kind": "運動",
+      "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/pamphlet/pamphlet-pdffile-4263.pdf",
+      "as_of": "2026-09",
+      "note": "学校案内パンフレットに参加大会名・練習内容の記載はあるが、順位・記録などの具体的な成績の記載がなく、段階を付けなかった。"
+    },
+    {
+      "name": "剣道部",
+      "kind": "運動",
+      "days_note": "稽古日:火・水・金　休日:土",
+      "days_per_week": 3,
+      "weekend": "なし",
+      "tier": 3,
+      "tier_basis": "都大会支部予選通過、都大会出場男子団体Best32。秋季剣道大会男子団体Ⅱ部準優勝（Ⅱ部は下位クラス）。都大会ベスト32は序盤敗退にとどまる。",
+      "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/pamphlet/pamphlet-pdffile-4263.pdf",
+      "as_of": "2026-09"
+    },
+    {
+      "name": "男子バスケットボール部",
+      "kind": "運動",
+      "days_note": "月・水・木(体育館練習)、火・水・木(器具トレーニング)、土・日(練習・試合)。朝練あり",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2019〜2026年度にかけて毎年インターハイ予選・関東大会予選とも2回戦進出どまり（新人戦支部大会のみ2021年度3回戦進出）。",
+      "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/pamphlet/pamphlet-pdffile-4263.pdf",
+      "as_of": "2026-09",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "関東大会予選・インターハイ予選",
+          "level": "都県",
+          "result": "2回戦進出",
+          "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/pamphlet/pamphlet-pdffile-4263.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "関東大会予選",
+          "level": "都県",
+          "result": "2回戦進出",
+          "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/pamphlet/pamphlet-pdffile-4263.pdf"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "インターハイ予選",
+          "level": "都県",
+          "result": "2回戦進出",
+          "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/pamphlet/pamphlet-pdffile-4263.pdf"
+        }
+      ]
+    },
+    {
+      "name": "女子バスケットボール部",
+      "kind": "運動",
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2025年度関東予選4回戦進出(都ベスト56)・総体予選5回戦進出(都ベスト32)・新人大会5回戦進出(都ベスト32)、2026年度関東予選5回戦進出(都ベスト32)。目標の都ベスト16には届いていない。",
+      "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/pamphlet/pamphlet-pdffile-4263.pdf",
+      "as_of": "2026-09",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "関東大会予選",
+          "level": "都県",
+          "result": "4回戦進出(都ベスト56)",
+          "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/pamphlet/pamphlet-pdffile-4263.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "総体予選",
+          "level": "都県",
+          "result": "5回戦進出(都ベスト32)",
+          "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/pamphlet/pamphlet-pdffile-4263.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "新人大会",
+          "level": "都県",
+          "result": "5回戦進出(都ベスト32)",
+          "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/pamphlet/pamphlet-pdffile-4263.pdf"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "関東大会予選",
+          "level": "都県",
+          "result": "5回戦進出(都ベスト32)",
+          "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/pamphlet/pamphlet-pdffile-4263.pdf"
+        }
+      ]
+    },
+    {
+      "name": "男子バレーボール部",
+      "kind": "運動",
+      "days_note": "火・水・木・金(体育館練習・外練・トレーニングルーム)、土・日(練習試合・公式戦)",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2023年スプリングカップ(世田谷総合会場)第3位、2024年同大会(府中西会場)準優勝と好成績があるが大会の規模・出場校の範囲が確認できない民間招待大会。都立限定の冬季・夏季都立校大会は4年連続で都立ベスト32どまり(1段低く読む)。",
+      "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/pamphlet/pamphlet-pdffile-4263.pdf",
+      "as_of": "2026-09",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "スプリングカップ(世田谷総合会場)",
+          "level": "その他",
+          "result": "第3位",
+          "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/pamphlet/pamphlet-pdffile-4263.pdf"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "冬季都立校大会",
+          "level": "都県",
+          "result": "都立ベスト32",
+          "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/pamphlet/pamphlet-pdffile-4263.pdf"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "スプリングカップ(府中西会場)",
+          "level": "その他",
+          "result": "準優勝",
+          "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/pamphlet/pamphlet-pdffile-4263.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "インターハイ予選",
+          "level": "都県",
+          "result": "3回戦進出",
+          "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/pamphlet/pamphlet-pdffile-4263.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "夏季都立校大会",
+          "level": "都県",
+          "result": "都立ベスト32",
+          "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/pamphlet/pamphlet-pdffile-4263.pdf"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "冬季都立校大会",
+          "level": "都県",
+          "result": "都立ベスト32",
+          "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/pamphlet/pamphlet-pdffile-4263.pdf"
+        }
+      ]
+    },
+    {
+      "name": "女子バレーボール部",
+      "kind": "運動",
+      "days_note": "月・水・木・金(体育館練習・トレーニングルーム・外練)、土・日(練習・練習試合・公式戦)",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "高体連春季大会・総体予選・夏季大会・新人戦に出場するが、春季大会・新人戦は2部大会にとどまる。具体的な上位進出の記載なし。",
+      "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/pamphlet/pamphlet-pdffile-4263.pdf",
+      "as_of": "2026-09"
+    },
+    {
+      "name": "バドミントン部",
+      "kind": "運動",
+      "tier": 3,
+      "tier_basis": "高体連春季大会・インターハイ予選(個人・団体)・新人戦Ⅰ部/Ⅱ部大会・冬季ブロック大会・東京都国公立大会に出場するが、順位の記載なし。",
+      "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/pamphlet/pamphlet-pdffile-4263.pdf",
+      "as_of": "2026-09"
+    },
+    {
+      "name": "水泳部",
+      "kind": "運動",
+      "tier": 3,
+      "tier_basis": "春季大会・東京都大会に出場、西東京国公立高校水泳競技大会・三多摩水泳競技大会・府中市民体育大会で入賞多数とあるが具体的な順位の記載なし。",
+      "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/pamphlet/pamphlet-pdffile-4263.pdf",
+      "as_of": "2026-09"
+    },
+    {
+      "name": "体操部",
+      "kind": "運動",
+      "tier": 3,
+      "tier_basis": "2024年度男子3年生大会団体3位・女子秋季大会段違い平行棒第3位、2025年度男子3年生大会団体1位・新人大会団体5位・女子1年生大会団体5位・秋季大会団体9位。学年別の小規模大会が中心で、都大会上位に相当する実績は確認できず。",
+      "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/pamphlet/pamphlet-pdffile-4263.pdf",
+      "as_of": "2026-09",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "3年生大会",
+          "level": "その他",
+          "result": "男子団体3位",
+          "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/pamphlet/pamphlet-pdffile-4263.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "新人大会",
+          "level": "都県",
+          "result": "男子団体5位",
+          "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/pamphlet/pamphlet-pdffile-4263.pdf"
+        }
+      ]
+    },
+    {
+      "name": "硬式野球部",
+      "kind": "運動",
+      "days_note": "月・水・木・金・土・日(火曜オフ)。週末は主に練習試合(年間100試合程度)",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "一球速報(baseball.omyutech.com、teamId=12024)で直近3年を確認。2024年秋季都大会1回戦敗退(vs小山台0-8)、2025年春季都大会1回戦敗退(7回コールド、vs郁文館1-11)、2025年夏(西東京大会)2回戦敗退(vs創価2-15)、2025年秋季一次予選2回戦敗退(vs朋優学院1-11)、2026年夏(西東京大会)2回戦敗退(vs日大三2-6)。いずれも1〜2回戦での敗退。",
+      "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/pamphlet/pamphlet-pdffile-4263.pdf",
+      "as_of": "2026-09",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "秋季東京都大会",
+          "level": "都県",
+          "result": "1回戦敗退(vs小山台 0-8)",
+          "happened_on": "2024-10-07",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=12024"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "春季東京都大会",
+          "level": "都県",
+          "result": "1回戦敗退(7回コールド、vs郁文館 1-11)",
+          "happened_on": "2025-04-05",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=12024"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第107回全国高等学校野球選手権西東京大会",
+          "level": "都県",
+          "result": "2回戦敗退(vs創価 2-15)",
+          "happened_on": "2025-07-11",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=12024"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "秋季東京都高等学校野球大会 一次予選",
+          "level": "都県",
+          "result": "2回戦敗退(1回戦vs穎明館6-5勝利、2回戦vs朋優学院1-11敗退)",
+          "happened_on": "2025-09-20",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=12024"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "全国高等学校野球選手権西東京大会",
+          "level": "都県",
+          "result": "2回戦敗退(vs日大三 2-6)",
+          "happened_on": "2026-07-14",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=12024"
+        }
+      ]
+    },
+    {
+      "name": "ソフトテニス部",
+      "kind": "運動",
+      "tier": 3,
+      "tier_basis": "2025年度国公立大会男子5回戦進出(ベスト16、2年連続2日目進出)。2026年度多摩地区大会団体男子ベスト128、関東大会予選団体戦男子ベスト32。国公立大会は都立公立限定のため1段低く読み、他も序盤敗退。",
+      "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/pamphlet/pamphlet-pdffile-4263.pdf",
+      "as_of": "2026-09",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "国公立大会(男子)",
+          "level": "都県",
+          "result": "5回戦進出(ベスト16、2年連続2日目進出)",
+          "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/pamphlet/pamphlet-pdffile-4263.pdf"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "関東大会予選団体戦(男子)",
+          "level": "都県",
+          "result": "ベスト32",
+          "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/pamphlet/pamphlet-pdffile-4263.pdf"
+        }
+      ]
+    },
+    {
+      "name": "卓球部",
+      "kind": "運動",
+      "tier": 3,
+      "tier_basis": "春季大会・インターハイ予選・学年別大会でいずれも都ベスト32前後。国公立大会(男子ダブルスBクラス)優勝は都立公立限定＋下位クラスのため段階2の根拠にしない。年度不明の「地区別大会(西部)都立高では最高位」の記載は年度が特定できないため根拠に使わず。",
+      "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/pamphlet/pamphlet-pdffile-4263.pdf",
+      "as_of": "2026-09"
+    },
+    {
+      "name": "ダンス部",
+      "kind": "運動",
+      "days_note": "毎日基礎練習を実施",
+      "tier": 1,
+      "tier_basis": "全日本高等学校チームダンス選手権大会の関東大会に2024年度(小編成・大編成部門)・2025年度(小編成部門)と2年連続で出場（私立も出場する全国規模大会の関東大会）。直近3年で全国・関東大会出場が2回以上の基準を満たすため段階1。",
+      "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/pamphlet/pamphlet-pdffile-4263.pdf",
+      "as_of": "2026-09",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "全日本高等学校チームダンス選手権大会",
+          "level": "関東",
+          "result": "関東大会 小編成・大編成部門参加",
+          "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/pamphlet/pamphlet-pdffile-4263.pdf"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "MUSIC DAYS東京大会",
+          "level": "都県",
+          "result": "オンライン予選参加",
+          "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/pamphlet/pamphlet-pdffile-4263.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "全日本高等学校チームダンス選手権大会",
+          "level": "関東",
+          "result": "関東大会 小編成部門出場",
+          "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/pamphlet/pamphlet-pdffile-4263.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "MUSIC DAYS東京大会",
+          "level": "都県",
+          "result": "オンライン予選通過、東京大会本戦出場",
+          "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/pamphlet/pamphlet-pdffile-4263.pdf"
+        }
+      ]
+    },
+    {
+      "name": "演劇部",
+      "kind": "文化",
+      "tier": 3,
+      "tier_basis": "2023・2024年東京都短編発表会(2023年優秀賞・流行語大賞)、2023年度東京都高等学校文化祭多摩南地区大会(奨励賞)。地区大会の奨励賞クラスにとどまる。",
+      "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/pamphlet/pamphlet-pdffile-4263.pdf",
+      "as_of": "2026-09"
+    },
+    {
+      "name": "写真部",
+      "kind": "文化",
+      "days_note": "原則週1回。月1回休日に撮影会",
+      "days_per_week": 1,
+      "tier": 3,
+      "tier_basis": "東京都高文祭地区大会16人16作品出品、中央大会2名2作品入選。中央大会での「入選」は最上位賞ではないため段階3。",
+      "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/pamphlet/pamphlet-pdffile-4263.pdf",
+      "as_of": "2026-09"
+    },
+    {
+      "name": "漫画研究部",
+      "kind": "文化",
+      "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/pamphlet/pamphlet-pdffile-4263.pdf",
+      "as_of": "2026-09",
+      "note": "文化祭での部誌発表・個人作品展示が中心で、対外的な大会成績の記載なし。"
+    },
+    {
+      "name": "天文部",
+      "kind": "文化",
+      "days_note": "毎週金曜日の放課後",
+      "days_per_week": 1,
+      "tier": 4,
+      "tier_basis": "活動日は週1日(金曜)で、対外的な大会成績はない(文化祭での展示発表・観望会が中心)。",
+      "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/pamphlet/pamphlet-pdffile-4263.pdf",
+      "as_of": "2026-09"
+    },
+    {
+      "name": "合唱部",
+      "kind": "文化",
+      "tier": 2,
+      "tier_basis": "東京都教育委員会Premiere Club（Tier3）指定(令和8年度)。2024・2025年東京都合唱コンクールで金賞(2025年は審査員特別賞も)。NHK全国学校音楽コンクールは東京都本選で銀賞にとどまる。2023年全日本合唱コンクール全国大会銀賞(2年連続との記載あり)は2022年分の年度が特定できないため段階1の根拠にはしない。",
+      "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/pamphlet/pamphlet-pdffile-4263.pdf",
+      "as_of": "2026-09",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "全日本合唱コンクール全国大会",
+          "level": "全国",
+          "result": "銀賞(2年連続との記載あり)",
+          "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/pamphlet/pamphlet-pdffile-4263.pdf"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "NHK全国学校音楽コンクール(東京都本選)",
+          "level": "都県",
+          "result": "銀賞",
+          "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/pamphlet/pamphlet-pdffile-4263.pdf"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "東京都合唱コンクール",
+          "level": "都県",
+          "result": "金賞",
+          "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/pamphlet/pamphlet-pdffile-4263.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "NHK全国学校音楽コンクール(東京都本選)",
+          "level": "都県",
+          "result": "銀賞",
+          "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/pamphlet/pamphlet-pdffile-4263.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "東京都合唱コンクール",
+          "level": "都県",
+          "result": "金賞及び審査員特別賞",
+          "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/pamphlet/pamphlet-pdffile-4263.pdf"
+        }
+      ]
+    },
+    {
+      "name": "吹奏楽部",
+      "kind": "文化",
+      "tier": 3,
+      "tier_basis": "東京都高校吹奏楽コンクールB組で銀賞(3年連続)ののち銅賞。金賞や都県代表選出には至っていない。",
+      "source_url": "https://www.metro.ed.jp/fuchunishi-h/school_life/activities.html",
+      "as_of": "2026-09"
+    },
+    {
+      "name": "美術部",
+      "kind": "文化",
+      "tier": 2,
+      "tier_basis": "高文連中央展(東京都高等学校文化祭美術・工芸部門)に出品(地区代表として選出)。黒板アート甲子園(民間主催)で審査委員特別賞。都県代表選出に相当する実績があり段階2。全国入賞など段階1相当の実績は確認できず。",
+      "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/pamphlet/pamphlet-pdffile-4263.pdf",
+      "as_of": "2026-09"
+    },
+    {
+      "name": "軽音楽部",
+      "kind": "文化",
+      "tier": 3,
+      "tier_basis": "第9回高等学校軽音楽コンテスト関東大会(民間主催)で音源審査通過、ライブ審査出場。東京都高等学校文化祭軽音楽部門大会は地区大会出場にとどまる。民間主催の大会は全国決勝2回以上でなければ段階2までのため、優勝等の記載がない現状は段階3。",
+      "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/pamphlet/pamphlet-pdffile-4263.pdf",
+      "as_of": "2026-09"
+    },
+    {
+      "name": "デジタルクリエイト部",
+      "kind": "文化",
+      "tier": 3,
+      "tier_basis": "第6回Minecraftカップ「まちづくり部門」で予選通過、Minecraft東京都大会で学校賞を受賞(民間主催)。全国大会での入賞等の記載はなし。",
+      "source_url": "https://www.metro.ed.jp/fuchunishi-h/school_life/activities.html",
+      "as_of": "2026-09"
+    },
+    {
+      "name": "茶華道部",
+      "kind": "文化",
+      "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/pamphlet/pamphlet-pdffile-4263.pdf",
+      "as_of": "2026-09",
+      "note": "東京都高等学校文化連盟茶道部門の大会やお茶会に参加とあるが、順位を競う活動ではなく成績の記載もない。"
+    },
+    {
+      "name": "ホームメイキング部",
+      "kind": "文化",
+      "days_note": "週2回",
+      "days_per_week": 2,
+      "source_url": "https://www.metro.ed.jp/fuchunishi-h/school_life/activities.html",
+      "as_of": "2026-09",
+      "note": "調理実習・小物製作等が中心で、対外的な大会成績の記載なし。"
+    },
+    {
+      "name": "日本語クラブ",
+      "kind": "同好会",
+      "days_note": "火・金の放課後、土曜午前中",
+      "days_per_week": 3,
+      "weekend": "土",
+      "source_url": "https://www.metro.ed.jp/fuchunishi-h/school_life/activities.html",
+      "as_of": "2026-09",
+      "note": "在京外国人生徒対象の日本語学習の部活動で、競技的な大会は無い。"
+    }
+  ],
+  "designated_universities": [
+    { "university": "亜細亜大学", "fiscal_year": 2025, "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/pamphlet/pamphlet-pdffile-4263.pdf", "note": "学校案内「2027学校案内」p.6「指定校推薦で進学できる主な学校名(2025年度)」" },
+    { "university": "桜美林大学", "fiscal_year": 2025, "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/pamphlet/pamphlet-pdffile-4263.pdf", "note": "学校案内「2027学校案内」p.6「指定校推薦で進学できる主な学校名(2025年度)」" },
+    { "university": "大妻女子大学", "fiscal_year": 2025, "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/pamphlet/pamphlet-pdffile-4263.pdf", "note": "学校案内「2027学校案内」p.6「指定校推薦で進学できる主な学校名(2025年度)」" },
+    { "university": "国士舘大学", "fiscal_year": 2025, "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/pamphlet/pamphlet-pdffile-4263.pdf", "note": "学校案内「2027学校案内」p.6「指定校推薦で進学できる主な学校名(2025年度)」" },
+    { "university": "駒澤大学", "fiscal_year": 2025, "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/pamphlet/pamphlet-pdffile-4263.pdf", "note": "学校案内「2027学校案内」p.6「指定校推薦で進学できる主な学校名(2025年度)」" },
+    { "university": "白梅学園大学", "fiscal_year": 2025, "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/pamphlet/pamphlet-pdffile-4263.pdf", "note": "学校案内「2027学校案内」p.6「指定校推薦で進学できる主な学校名(2025年度)」" },
+    { "university": "成蹊大学", "fiscal_year": 2025, "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/pamphlet/pamphlet-pdffile-4263.pdf", "note": "学校案内「2027学校案内」p.6「指定校推薦で進学できる主な学校名(2025年度)」" },
+    { "university": "専修大学", "fiscal_year": 2025, "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/pamphlet/pamphlet-pdffile-4263.pdf", "note": "学校案内「2027学校案内」p.6「指定校推薦で進学できる主な学校名(2025年度)」" },
+    { "university": "大東文化大学", "fiscal_year": 2025, "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/pamphlet/pamphlet-pdffile-4263.pdf", "note": "学校案内「2027学校案内」p.6「指定校推薦で進学できる主な学校名(2025年度)」" },
+    { "university": "拓殖大学", "fiscal_year": 2025, "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/pamphlet/pamphlet-pdffile-4263.pdf", "note": "学校案内「2027学校案内」p.6「指定校推薦で進学できる主な学校名(2025年度)」" },
+    { "university": "中央大学", "fiscal_year": 2025, "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/pamphlet/pamphlet-pdffile-4263.pdf", "note": "学校案内「2027学校案内」p.6「指定校推薦で進学できる主な学校名(2025年度)」" },
+    { "university": "津田塾大学", "fiscal_year": 2025, "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/pamphlet/pamphlet-pdffile-4263.pdf", "note": "学校案内「2027学校案内」p.6「指定校推薦で進学できる主な学校名(2025年度)」" },
+    { "university": "帝京大学", "fiscal_year": 2025, "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/pamphlet/pamphlet-pdffile-4263.pdf", "note": "学校案内「2027学校案内」p.6「指定校推薦で進学できる主な学校名(2025年度)」" },
+    { "university": "東京医療保健大学", "fiscal_year": 2025, "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/pamphlet/pamphlet-pdffile-4263.pdf", "note": "学校案内「2027学校案内」p.6「指定校推薦で進学できる主な学校名(2025年度)」" },
+    { "university": "東京経済大学", "fiscal_year": 2025, "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/pamphlet/pamphlet-pdffile-4263.pdf", "note": "学校案内「2027学校案内」p.6「指定校推薦で進学できる主な学校名(2025年度)」" },
+    { "university": "東京電機大学", "fiscal_year": 2025, "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/pamphlet/pamphlet-pdffile-4263.pdf", "note": "学校案内「2027学校案内」p.6「指定校推薦で進学できる主な学校名(2025年度)」" },
+    { "university": "東洋大学", "fiscal_year": 2025, "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/pamphlet/pamphlet-pdffile-4263.pdf", "note": "学校案内「2027学校案内」p.6「指定校推薦で進学できる主な学校名(2025年度)」" },
+    { "university": "日本大学", "fiscal_year": 2025, "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/pamphlet/pamphlet-pdffile-4263.pdf", "note": "学校案内「2027学校案内」p.6「指定校推薦で進学できる主な学校名(2025年度)」" },
+    { "university": "日本体育大学", "fiscal_year": 2025, "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/pamphlet/pamphlet-pdffile-4263.pdf", "note": "学校案内「2027学校案内」p.6「指定校推薦で進学できる主な学校名(2025年度)」" },
+    { "university": "武蔵野大学", "fiscal_year": 2025, "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/pamphlet/pamphlet-pdffile-4263.pdf", "note": "学校案内「2027学校案内」p.6「指定校推薦で進学できる主な学校名(2025年度)」" },
+    { "university": "明星大学", "fiscal_year": 2025, "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/pamphlet/pamphlet-pdffile-4263.pdf", "note": "学校案内「2027学校案内」p.6「指定校推薦で進学できる主な学校名(2025年度)」" }
+  ],
+  "events": [
+    {
+      "kind": "指定",
+      "period_label": "令和8年度から",
+      "summary": "ラグビー部(Tier1)、男子・女子ハンドボール部と合唱部(Tier3)が東京都「部活動特別強化プロジェクト」Premiere Clubに指定された",
+      "source_url": "https://www.metro.ed.jp/fuchunishi-h/news/2026/08/premier_club.html"
+    },
+    {
+      "kind": "施設",
+      "period_label": "令和10年度から(予定)",
+      "summary": "グラウンドが全面人工芝化される予定。照明設備やトレーニングルームも新設される予定",
+      "source_url": "https://www.metro.ed.jp/fuchunishi-h/assets/pamphlet/pamphlet-pdffile-4263.pdf"
+    },
+    {
+      "kind": "制服",
+      "period_label": "平成30年度から",
+      "summary": "紺を基調としたダブルブレストのブレザーに制服を刷新した",
+      "source_url": "https://www.metro.ed.jp/fuchunishi-h/school_life/symbols.html"
+    },
+    {
+      "kind": "その他",
+      "period_label": "令和6年11月8日",
+      "happened_on": "2024-11-08",
+      "summary": "開校50周年記念式典を挙行",
+      "source_url": "https://www.metro.ed.jp/fuchunishi-h/our_school/history.html"
+    }
+  ],
+  "unresolved": [
+    "男女別の在籍生徒数：公式資料に国籍別の内訳表はあるが、学年・男女別の在籍者数の合計は見当たらず。",
+    "入試方式別割合（一般/指定校推薦/公募推薦/総合型）：進路状況資料の選考方法別内訳（指定校/学校推薦型/総合型/一般型/共通テスト）が手引きの4区分に一対一で対応するか確認できず、admission_route_shareには入れなかった。",
+    "推薦（文化・スポーツ推薦等）の応募倍率：学校経営報告には学力検査による選抜の応募倍率のみ記載。推薦の倍率は校内資料で確認できず、東京都教育委員会の「過去の応募状況」（外部サイト）は未確認。",
+    "陸上競技部・バドミントン部・水泳部・女子バレーボール部：大会名や活動内容の記載はあるが具体的な順位の記載がなく、段階を付けなかった（陸上競技部）か、確実な根拠のみで段階3とした。",
+    "卓球部の「地区別大会(西部)女子シングルスベスト4(都立高では最高位)」：学校案内パンフレットに年度の記載がなく、段階判定の根拠には使わなかった。",
+    "合唱部の「2023年全日本合唱コンクール全国大会銀賞(2年連続)」の前年(2022年)分：年度が個別に明記されておらず、段階1の根拠には使わなかった。",
+    "学級数の増減：都教育委員会「第一学年生徒の募集人員等について」を確認しておらず、events に学級増減の記載なし。"
+  ],
+  "conflicts": [
+    "四年制大学合格実績の合計：学校案内パンフレット「2027学校案内」p.6「主な大学」表を自分で合算すると282（延べ）になるが、49期生進路状況資料の「大学合格者総計」は272（延べ）。進路状況資料の集計を優先し、パンフレットの表からの合算は使わなかった。"
+  ]
+}

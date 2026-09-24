@@ -1,0 +1,970 @@
+{
+  "prefecture": "東京都",
+  "school_name": "八王子東",
+  "official_url": "https://www.metro.ed.jp/hachiojihigashi-h/",
+  "researched_at": "2026-09-24",
+  "stats": [
+    {
+      "metric": "university_count",
+      "item": "国公立",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 110,
+      "source_url": "https://www.metro.ed.jp/hachiojihigashi-h/career/course.html",
+      "source_label": "東京都立八王子東高等学校 進路状況【2026.04.10現在】 令和8(2026)年 大学合格者数一覧（48期）",
+      "as_of": "2026-04-10",
+      "note": "48期(2026年3月卒業)現役合格者数。学校経営報告(令和7年度)本文の「国公立大学合格者数(現役)R7実績110名」とも一致。"
+    },
+    {
+      "metric": "university_count",
+      "item": "早慶上理",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 83,
+      "source_url": "https://www.metro.ed.jp/hachiojihigashi-h/career/course.html",
+      "source_label": "東京都立八王子東高等学校 進路状況【2026.04.10現在】 令和8(2026)年 大学合格者数一覧（48期）",
+      "as_of": "2026-04-10",
+      "note": "早稲田23・慶應12・上智21・東京理科37のうち現役分(23+12+21+27)の合算。大学別の表から合算。"
+    },
+    {
+      "metric": "university_count",
+      "item": "GMARCH",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 232,
+      "source_url": "https://www.metro.ed.jp/hachiojihigashi-h/career/course.html",
+      "source_label": "東京都立八王子東高等学校 進路状況【2026.04.10現在】 令和8(2026)年 大学合格者数一覧（48期）",
+      "as_of": "2026-04-10",
+      "note": "学習院9・明治59・青山学院30・立教27・中央52・法政55の現役分の合算。大学別の表から合算。"
+    },
+    {
+      "metric": "university_count",
+      "item": "成成明武",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 44,
+      "source_url": "https://www.metro.ed.jp/hachiojihigashi-h/career/course.html",
+      "source_label": "東京都立八王子東高等学校 進路状況【2026.04.10現在】 令和8(2026)年 大学合格者数一覧（48期）",
+      "as_of": "2026-04-10",
+      "note": "成蹊18・成城12・明治学院13・武蔵1の現役分の合算。大学別の表から合算。"
+    },
+    {
+      "metric": "university_count",
+      "item": "難関国公立(東大・京大・一橋大・東京科学大・国公立医学部)",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 10,
+      "source_url": "https://www.metro.ed.jp/hachiojihigashi-h/assets/令和７年度学校経営報告 .pdf",
+      "source_label": "令和7年度 東京都立八王子東高等学校 学校経営報告 進学指導重点校としての数値目標①",
+      "as_of": "2026-03-31",
+      "note": "学校独自の大学群(進学指導重点校の数値目標)。目標値は現役15名以上。R6実績12名。"
+    },
+    {
+      "metric": "university_count",
+      "item": "合計",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 739,
+      "source_url": "https://www.metro.ed.jp/hachiojihigashi-h/career/course.html",
+      "source_label": "東京都立八王子東高等学校 進路状況【2026.04.10現在】 令和8(2026)年 大学合格者数一覧（48期）",
+      "as_of": "2026-04-10",
+      "note": "48期(2026年3月卒業)現役の全大学合計(国公立現役110+私立現役629)。過年卒を含む合計は895。"
+    },
+    {
+      "metric": "university_count",
+      "item": "明治大学",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 59,
+      "source_url": "https://www.metro.ed.jp/hachiojihigashi-h/career/course.html",
+      "source_label": "東京都立八王子東高等学校 進路状況【2026.04.10現在】 令和8(2026)年 大学合格者数一覧（48期）",
+      "as_of": "2026-04-10",
+      "note": "現役合格者数が私立大学の中で最多。"
+    },
+    {
+      "metric": "university_count",
+      "item": "法政大学",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 55,
+      "source_url": "https://www.metro.ed.jp/hachiojihigashi-h/career/course.html",
+      "source_label": "東京都立八王子東高等学校 進路状況【2026.04.10現在】 令和8(2026)年 大学合格者数一覧（48期）",
+      "as_of": "2026-04-10",
+      "note": ""
+    },
+    {
+      "metric": "university_count",
+      "item": "中央大学",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 52,
+      "source_url": "https://www.metro.ed.jp/hachiojihigashi-h/career/course.html",
+      "source_label": "東京都立八王子東高等学校 進路状況【2026.04.10現在】 令和8(2026)年 大学合格者数一覧（48期）",
+      "as_of": "2026-04-10",
+      "note": ""
+    },
+    {
+      "metric": "university_count",
+      "item": "青山学院大学",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 30,
+      "source_url": "https://www.metro.ed.jp/hachiojihigashi-h/career/course.html",
+      "source_label": "東京都立八王子東高等学校 進路状況【2026.04.10現在】 令和8(2026)年 大学合格者数一覧（48期）",
+      "as_of": "2026-04-10",
+      "note": ""
+    },
+    {
+      "metric": "university_count",
+      "item": "立教大学",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 27,
+      "source_url": "https://www.metro.ed.jp/hachiojihigashi-h/career/course.html",
+      "source_label": "東京都立八王子東高等学校 進路状況【2026.04.10現在】 令和8(2026)年 大学合格者数一覧（48期）",
+      "as_of": "2026-04-10",
+      "note": "東京理科大学も同数(現役27名)。"
+    },
+    {
+      "metric": "career_decided_rate",
+      "fiscal_year": 2025,
+      "value_num": 80.3,
+      "source_url": "https://www.metro.ed.jp/hachiojihigashi-h/assets/令和７年度学校経営報告 .pdf",
+      "source_label": "令和7年度 東京都立八王子東高等学校 学校経営報告 その他の数値動向",
+      "as_of": "2026-03-31",
+      "note": "令和6年度実績は81.5%。"
+    },
+    {
+      "metric": "club_join_rate",
+      "fiscal_year": 2025,
+      "value_num": 97.1,
+      "source_url": "https://www.metro.ed.jp/hachiojihigashi-h/assets/令和７年度学校経営報告 .pdf",
+      "source_label": "令和7年度 東京都立八王子東高等学校 学校経営報告 その他の数値動向",
+      "as_of": "2026-03-31",
+      "note": "令和6年度実績は94.3%。"
+    },
+    {
+      "metric": "satisfaction",
+      "item": "生徒:学校生活",
+      "fiscal_year": 2025,
+      "value_num": 88,
+      "source_url": "https://www.metro.ed.jp/hachiojihigashi-h/assets/令和７年度学校経営報告 .pdf",
+      "source_label": "令和7年度 東京都立八王子東高等学校 学校経営報告 その他の数値動向",
+      "as_of": "2026-03-31",
+      "note": "令和6年度実績は85%。原文は「在校生の学校満足度」。"
+    },
+    {
+      "metric": "satisfaction",
+      "item": "生徒:授業",
+      "fiscal_year": 2025,
+      "value_num": 90,
+      "source_url": "https://www.metro.ed.jp/hachiojihigashi-h/assets/令和７年度学校経営報告 .pdf",
+      "source_label": "令和7年度 東京都立八王子東高等学校 学校経営報告 その他の数値動向",
+      "as_of": "2026-03-31",
+      "note": "令和6年度実績は86%。原文は「在校生の授業満足度」。"
+    },
+    {
+      "metric": "satisfaction",
+      "item": "生徒:探究活動",
+      "fiscal_year": 2025,
+      "value_num": 85,
+      "source_url": "https://www.metro.ed.jp/hachiojihigashi-h/assets/令和７年度学校経営報告 .pdf",
+      "source_label": "令和7年度 東京都立八王子東高等学校 学校経営報告 その他の数値動向",
+      "as_of": "2026-03-31",
+      "note": "令和6年度実績は80%。原文は「在校生の探究活動に対する満足度」。"
+    },
+    {
+      "metric": "exam_ratio",
+      "item": "推薦",
+      "fiscal_year": 2023,
+      "value_num": 1.57,
+      "source_url": "https://www.metro.ed.jp/hachiojihigashi-h/assets/令和８年度学校経営計画.pdf",
+      "source_label": "令和8年度 東京都立八王子東高等学校 学校経営計画 入学者選抜の最終応募倍率(R4実績)",
+      "as_of": "2026-04-16",
+      "note": "応募倍率。学校経営計画の重点数値目標表に記載の値をそのまま使用(2023年4月入学生の選抜)。"
+    },
+    {
+      "metric": "exam_ratio",
+      "item": "推薦",
+      "fiscal_year": 2024,
+      "value_num": 2.27,
+      "source_url": "https://www.metro.ed.jp/hachiojihigashi-h/assets/入学者選抜応募状況について_1.pdf",
+      "source_label": "東京都立八王子東高等学校 過去の入試データ 令和6年度(2024年度)推薦選抜倍率",
+      "as_of": "2026-09",
+      "note": "応募倍率。学校経営計画の「R5実績2.27倍」とも一致。"
+    },
+    {
+      "metric": "exam_ratio",
+      "item": "推薦",
+      "fiscal_year": 2025,
+      "value_num": 2.03,
+      "source_url": "https://www.metro.ed.jp/hachiojihigashi-h/assets/入学者選抜応募状況について_1.pdf",
+      "source_label": "東京都立八王子東高等学校 令和7年(2025)度 入試概況 推薦に基づく選抜",
+      "as_of": "2026-09",
+      "note": "応募倍率(募集64名・出願130名)。学校経営計画の「R6実績2.03倍」とも一致。"
+    },
+    {
+      "metric": "exam_ratio",
+      "item": "推薦",
+      "fiscal_year": 2026,
+      "value_num": 1.52,
+      "source_url": "https://www.metro.ed.jp/hachiojihigashi-h/assets/令和７年度学校経営報告 .pdf",
+      "source_label": "令和7年度 東京都立八王子東高等学校 学校経営報告 進学指導重点校としての数値目標⑤",
+      "as_of": "2026-03-31",
+      "note": "「入学者選抜の最終応募倍率(推薦)R7実績」として本文に明記。応募倍率。"
+    },
+    {
+      "metric": "designation",
+      "item": "進学指導重点校",
+      "fiscal_year": 2022,
+      "value_text": "東京都教育委員会指定。平成13(2001)年度に多摩地区最初の進学指導重点校(都立高校7校のうちの1校)に指定。2022年9月22日に令和9(2027)年度までの指定継続を決定。",
+      "source_url": "https://www.metro.ed.jp/hachiojihigashi-h/our_school/history.html",
+      "source_label": "東京都立八王子東高等学校 沿革",
+      "as_of": "2026-09",
+      "note": ""
+    },
+    {
+      "metric": "designation",
+      "item": "Global Education Network 20 Premium（GE-NET20）",
+      "fiscal_year": 2025,
+      "value_text": "東京都教育委員会指定。2022年度にGE-NET20として新規指定(3年間)、2025年4月1日にGE-NET20 Premiumとして指定(3年間)。",
+      "source_url": "https://www.metro.ed.jp/hachiojihigashi-h/our_school/history.html",
+      "source_label": "東京都立八王子東高等学校 沿革",
+      "as_of": "2026-09",
+      "note": ""
+    },
+    {
+      "metric": "designation",
+      "item": "海外学校間交流推進校",
+      "fiscal_year": 2025,
+      "value_text": "東京都教育委員会指定。2020年度新規指定、以降毎年度継続指定(2025年度も継続指定)。台湾・高雄高級中学との姉妹校交流等を実施。",
+      "source_url": "https://www.metro.ed.jp/hachiojihigashi-h/our_school/history.html",
+      "source_label": "東京都立八王子東高等学校 沿革",
+      "as_of": "2026-09",
+      "note": ""
+    },
+    {
+      "metric": "designation",
+      "item": "探究的な学び推進校",
+      "fiscal_year": 2025,
+      "value_text": "東京都教育委員会指定。2022年度新規指定、以降毎年度継続指定(2025年度も継続指定)。",
+      "source_url": "https://www.metro.ed.jp/hachiojihigashi-h/our_school/history.html",
+      "source_label": "東京都立八王子東高等学校 沿革",
+      "as_of": "2026-09",
+      "note": ""
+    },
+    {
+      "metric": "designation",
+      "item": "理数研究校",
+      "fiscal_year": 2026,
+      "value_text": "東京都教育委員会指定。2018年度新規指定、2019〜2024年度は毎年度継続指定の記載あり。学校特色ページでは現行の指定として案内。",
+      "source_url": "https://www.metro.ed.jp/hachiojihigashi-h/our_school/feature.html",
+      "source_label": "東京都立八王子東高等学校 特色",
+      "as_of": "2026-09",
+      "note": "沿革ページの2025年度(令和7年度)指定一覧には継続指定の記載が見当たらない(conflicts参照)。"
+    },
+    {
+      "metric": "designation",
+      "item": "理数教育における教科等横断的な学びの推進事業校",
+      "fiscal_year": 2025,
+      "value_text": "東京都教育委員会指定(2025年6月1日、1年間)。",
+      "source_url": "https://www.metro.ed.jp/hachiojihigashi-h/our_school/history.html",
+      "source_label": "東京都立八王子東高等学校 沿革",
+      "as_of": "2026-09",
+      "note": ""
+    },
+    {
+      "metric": "designation",
+      "item": "高等学校DX加速化推進事業",
+      "fiscal_year": 2024,
+      "value_text": "文部科学省指定（2024年4月16日）。いわゆるDXハイスクール。",
+      "source_url": "https://www.metro.ed.jp/hachiojihigashi-h/our_school/history.html",
+      "source_label": "東京都立八王子東高等学校 沿革",
+      "as_of": "2026-09",
+      "note": ""
+    },
+    {
+      "metric": "students",
+      "item": "",
+      "sex": "male",
+      "fiscal_year": 2026,
+      "value_num": 157,
+      "source_url": "https://www.metro.ed.jp/hachiojihigashi-h/our_school/history.html",
+      "source_label": "東京都立八王子東高等学校 沿革 2026年4月7日 第51回入学式",
+      "as_of": "2026-04-07",
+      "note": "入学者数(在籍生徒数ではない)。"
+    },
+    {
+      "metric": "students",
+      "item": "",
+      "sex": "female",
+      "fiscal_year": 2026,
+      "value_num": 161,
+      "source_url": "https://www.metro.ed.jp/hachiojihigashi-h/our_school/history.html",
+      "source_label": "東京都立八王子東高等学校 沿革 2026年4月7日 第51回入学式",
+      "as_of": "2026-04-07",
+      "note": "入学者数(在籍生徒数ではない)。"
+    },
+    {
+      "metric": "uniform",
+      "fiscal_year": 2026,
+      "value_text": "ブレザー(縦長シルエット、撥水・ストレッチ性)。スラックス(ストライプ柄)とスカート(シャドーチェック)を選択可。ネクタイ・リボンはエンジ色織柄。ボタンは八王子東オリジナル。2018年度入学生からリニューアル。",
+      "source_url": "https://www.metro.ed.jp/hachiojihigashi-h/school_life/symbols.html",
+      "source_label": "東京都立八王子東高等学校「制服・校章・校歌」、沿革(2018年4月 制服リニューアル)",
+      "as_of": "2026-09",
+      "note": ""
+    }
+  ],
+  "clubs": [
+    {
+      "name": "サッカー部",
+      "kind": "運動",
+      "days_note": "火・水・木・金・土・日",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2026年度 高円宮杯U-18サッカーリーグ東京 T1〜T5のいずれにも所属なし(支部リーグ扱い、手引き§6の決め)。八王子地区の「7地区ユースリーグ1部」に所属し2025年度は1部残留。",
+      "source_url": "https://www.metro.ed.jp/hachiojihigashi-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "全国高等学校サッカー選手権大会 東京都1次予選",
+          "level": "都県",
+          "result": "惜敗",
+          "happened_on": "2025-09-08",
+          "source_url": "https://www.metro.ed.jp/hachiojihigashi-h/activities/2025/09/1_5.html"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "八王子U-17選手権",
+          "level": "地区",
+          "result": "第三位",
+          "happened_on": "2026-03-29",
+          "source_url": "https://www.metro.ed.jp/hachiojihigashi-h/activities/2026/03/u-17_4.html"
+        }
+      ]
+    },
+    {
+      "name": "軟式野球部",
+      "kind": "運動",
+      "days_note": "月・水・木・金・土・日",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "tier": 1,
+      "tier_basis": "2024年度春季関東大会出場、2026年度春季東京都大会準優勝・春季関東大会出場決定と、直近3年で関東大会出場が複数回(2024・2026)。硬式野球ではないため一球速報(baseball.omyutech.com)の対象外(全国高等学校軟式野球選手権)。",
+      "source_url": "https://www.metro.ed.jp/hachiojihigashi-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "春季東京都大会",
+          "level": "都県",
+          "result": "ベスト8",
+          "happened_on": "2023-05-01",
+          "source_url": "https://www.metro.ed.jp/hachiojihigashi-h/activities/2023/05/1.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "春季東京都大会",
+          "level": "都県",
+          "result": "第3位、春季関東大会出場",
+          "happened_on": "2024-05-10",
+          "source_url": "https://www.metro.ed.jp/hachiojihigashi-h/activities/2024/05/3.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第70回全国高等学校軟式野球選手権大会 東京大会",
+          "level": "都県",
+          "result": "本戦3回戦敗退(ベスト16、城西大学附属城西に3-5)",
+          "happened_on": "2025-08-14",
+          "source_url": "https://www.metro.ed.jp/hachiojihigashi-h/activities/2025/08/70.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "秋季東京都大会",
+          "level": "都県",
+          "result": "ベスト8",
+          "happened_on": "2025-09-30",
+          "source_url": "https://www.metro.ed.jp/hachiojihigashi-h/activities/2025/09/8.html"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "春季東京都高等学校軟式野球大会",
+          "level": "都県",
+          "result": "準優勝、春季関東大会出場決定",
+          "happened_on": "2026-04-28",
+          "source_url": "https://www.metro.ed.jp/hachiojihigashi-h/activities/2026/04/8_1.html"
+        }
+      ]
+    },
+    {
+      "name": "陸上競技部",
+      "kind": "運動",
+      "days_note": "月・火・木・金・土",
+      "days_per_week": 5,
+      "weekend": "土",
+      "tier": 1,
+      "tier_basis": "2024年度・2025年度と2年連続で全国高等学校総合体育大会(インターハイ)出場決定。直近3年で全国大会出場が2回以上。",
+      "source_url": "https://www.metro.ed.jp/hachiojihigashi-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "関東大会",
+          "level": "関東",
+          "result": "出場",
+          "happened_on": "2023-10-05",
+          "source_url": "https://www.metro.ed.jp/hachiojihigashi-h/activities/2023/10/.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "東京都高校総体 走高跳",
+          "level": "都県",
+          "result": "第2位",
+          "happened_on": "2024-05-23",
+          "source_url": "https://www.metro.ed.jp/hachiojihigashi-h/activities/2024/05/2_1.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "全国高等学校総合体育大会(インターハイ)",
+          "level": "全国",
+          "result": "出場決定",
+          "happened_on": "2024-06-19",
+          "source_url": "https://www.metro.ed.jp/hachiojihigashi-h/activities/2024/06/.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "全国高等学校総合体育大会(インターハイ)",
+          "level": "全国",
+          "result": "出場決定",
+          "happened_on": "2025-06-28",
+          "source_url": "https://www.metro.ed.jp/hachiojihigashi-h/activities/2025/06/.html"
+        }
+      ]
+    },
+    {
+      "name": "男子バスケットボール部",
+      "kind": "運動",
+      "days_note": "月・水・木・土・日",
+      "days_per_week": 5,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "部活動ページに「週末には練習試合や公式戦などがたくさんあります」とあり公式戦に出場しているが、直近3年の具体的な大会結果の記載はニュース欄になし(2021年以前の記録のみ)。目標は「公式戦4回戦出場」。",
+      "source_url": "https://www.metro.ed.jp/hachiojihigashi-h/school_life/activities.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "女子バスケットボール部",
+      "kind": "運動",
+      "days_note": "月・水・木・金・土・日",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "メッセージに「夏季大会でのリーグ優勝を目標」とあり大会に出場しているが、直近3年の具体的な大会結果の記載はニュース欄になし(2021年以前の記録のみ)。",
+      "source_url": "https://www.metro.ed.jp/hachiojihigashi-h/school_life/activities.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "男子バレーボール部",
+      "kind": "運動",
+      "days_note": "月・金・土・日",
+      "days_per_week": 4,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2025年7月の「優勝しました」は八王子市バレーボール連盟夏季大会(地区大会)での優勝。都県大会レベルの成績の記載はなし。",
+      "source_url": "https://www.metro.ed.jp/hachiojihigashi-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "八王子市バレーボール連盟夏季大会",
+          "level": "地区",
+          "result": "優勝",
+          "happened_on": "2025-07-27",
+          "source_url": "https://www.metro.ed.jp/hachiojihigashi-h/activities/2025/07/clubentry_73.html"
+        }
+      ]
+    },
+    {
+      "name": "女子バレーボール部",
+      "kind": "運動",
+      "days_note": "月・火・木・金・土・日（※土日はどちらか1日のみ、大会前などは両日）",
+      "days_per_week": 4.5,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2024年度春季大会予選を通過し二部大会へ進出(都リーグの下位区分と見られ上位大会の成績ではない)。2025年度も春季大会予選結果を報告しているが具体的な成績不明。都県大会での上位成績の記載はなし。",
+      "source_url": "https://www.metro.ed.jp/hachiojihigashi-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "春季大会予選",
+          "level": "都県",
+          "result": "予選通過、二部大会へ進出",
+          "happened_on": "2024-04-30",
+          "source_url": "https://www.metro.ed.jp/hachiojihigashi-h/activities/2024/04/clubentry_58.html"
+        }
+      ]
+    },
+    {
+      "name": "男子バドミントン部",
+      "kind": "運動",
+      "days_note": "火・水・金・土・日（※土曜日と日曜日はどちらか1日）",
+      "days_per_week": 3.5,
+      "weekend": "土日",
+      "source_url": "https://www.metro.ed.jp/hachiojihigashi-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "note": "ニュース欄に記事が無く大会結果の記載を確認できず。部活動ページの記載は「他校と練習試合をすることもあります」のみで公式戦の明記もないため段階を付けなかった。"
+    },
+    {
+      "name": "女子バドミントン部",
+      "kind": "運動",
+      "days_note": "月・木・金・土・日",
+      "days_per_week": 5,
+      "weekend": "土日",
+      "tier": 2,
+      "tier_basis": "2026年度 関東公立高等学校バドミントン大会東京都予選(公立高校限定大会)の女子個人ダブルスでブロック2位となり、12月の関東公立大会への出場権を獲得。公立限定大会のため手引き§6の決めで1段階下げて判定。",
+      "source_url": "https://www.metro.ed.jp/hachiojihigashi-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "関東公立高等学校バドミントン大会東京都予選",
+          "level": "都県",
+          "result": "女子個人ダブルス ブロック2位、関東公立大会出場決定",
+          "happened_on": "2026-08-26",
+          "source_url": "https://www.metro.ed.jp/hachiojihigashi-h/activities/2026/08/clubentry_110.html"
+        }
+      ]
+    },
+    {
+      "name": "男子ハンドボール部",
+      "kind": "運動",
+      "days_note": "火・水・木・金・土・日（※日曜日に公式戦や練習試合が入ることもある）",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2023年度インターハイ予選で東京都ベスト16。ベスト16〜32が1回のみで「複数回」に届かないため段階2ではなく段階3。",
+      "source_url": "https://www.metro.ed.jp/hachiojihigashi-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "インターハイ予選",
+          "level": "都県",
+          "result": "ベスト16",
+          "happened_on": "2023-06-14",
+          "source_url": "https://www.metro.ed.jp/hachiojihigashi-h/activities/2023/06/16.html"
+        }
+      ]
+    },
+    {
+      "name": "女子ハンドボール部",
+      "kind": "運動",
+      "days_note": "火・水・木・金・土・日（※日曜日に公式戦や練習試合が入ることもある）",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "tier": 2,
+      "tier_basis": "2024年度、東京都ベスト16とインターハイ予選ベスト16の2つの大会でともにベスト16。ベスト16〜32が複数回。",
+      "source_url": "https://www.metro.ed.jp/hachiojihigashi-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "東京都大会",
+          "level": "都県",
+          "result": "ベスト16",
+          "happened_on": "2024-05-04",
+          "source_url": "https://www.metro.ed.jp/hachiojihigashi-h/activities/2024/05/16.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "インターハイ予選",
+          "level": "都県",
+          "result": "ベスト16",
+          "happened_on": "2024-05-29",
+          "source_url": "https://www.metro.ed.jp/hachiojihigashi-h/activities/2024/05/16_2.html"
+        }
+      ]
+    },
+    {
+      "name": "男子硬式テニス部",
+      "kind": "運動",
+      "days_note": "月・水・木・金・土（※日曜日に公式戦や練習試合が入る場合がある）",
+      "days_per_week": 5,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "部活動ページに「日曜日に公式戦や練習試合が入る場合がある」と明記され公式戦に出場しているが、直近3年の具体的な大会結果の記載はニュース欄になし(月間報告のみ)。",
+      "source_url": "https://www.metro.ed.jp/hachiojihigashi-h/school_life/activities.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "女子硬式テニス部",
+      "kind": "運動",
+      "days_note": "月・火・水・金・土",
+      "days_per_week": 5,
+      "weekend": "土",
+      "tier": 2,
+      "tier_basis": "2023年度、都立対抗テニス選手権大会(都立限定大会)女子団体5位は上位8チーム相当のため手引き§6の決めでベスト8以上=段階2相当。2024年度新人テニス大会女子団体ベスト16、2025年度東京都ジュニアチームテニスチャンピオンシップでブロック2位も踏まえ段階2。",
+      "source_url": "https://www.metro.ed.jp/hachiojihigashi-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "都立対抗テニス選手権大会",
+          "level": "都県",
+          "result": "女子団体5位（都立限定大会）",
+          "happened_on": "2023-07-27",
+          "source_url": "https://www.metro.ed.jp/hachiojihigashi-h/activities/2023/07/5.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "新人テニス大会",
+          "level": "都県",
+          "result": "女子団体ベスト16",
+          "happened_on": "2024-01-15",
+          "source_url": "https://www.metro.ed.jp/hachiojihigashi-h/activities/2024/01/16.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "東京都ジュニアチームテニスチャンピオンシップ",
+          "level": "都県",
+          "result": "ブロック2位",
+          "happened_on": "2025-09-12",
+          "source_url": "https://www.metro.ed.jp/hachiojihigashi-h/activities/2025/09/2.html"
+        }
+      ]
+    },
+    {
+      "name": "水泳部",
+      "kind": "運動",
+      "days_note": "火・水・木・金・土",
+      "days_per_week": 5,
+      "weekend": "土",
+      "source_url": "https://www.metro.ed.jp/hachiojihigashi-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "note": "部活動ページの活動内容は練習メニューの説明のみで大会参加・結果の記載が無く、段階を付けなかった。"
+    },
+    {
+      "name": "剣道部",
+      "kind": "運動",
+      "days_note": "火・水・木・金・土（※日曜日は公式戦、練習試合などが入ることがある）",
+      "days_per_week": 5,
+      "weekend": "土",
+      "tier": 2,
+      "tier_basis": "2025年1月「第12回東京都国公立高等学校剣道大会」(都立・国公立限定大会)で男子団体準優勝(決勝で富士高校に敗退、過去最高成績)。限定大会のため手引き§6の決めで1段階下げても段階2に相当。女子団体は同大会2回戦敗退。",
+      "source_url": "https://www.metro.ed.jp/hachiojihigashi-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "第12回東京都国公立高等学校剣道大会",
+          "level": "都県",
+          "result": "男子団体 準優勝（都立・国公立限定大会）、女子団体 2回戦敗退",
+          "happened_on": "2025-01-16",
+          "source_url": "https://www.metro.ed.jp/hachiojihigashi-h/activities/2025/01/12.html"
+        }
+      ]
+    },
+    {
+      "name": "卓球部",
+      "kind": "運動",
+      "days_note": "火・木・金",
+      "days_per_week": 3,
+      "weekend": "なし",
+      "tier": 3,
+      "tier_basis": "2025年8月「東京都国公立高等学校卓球大会」(都立・国公立限定大会)に出場した記事があるが順位・戦績の記載はなし。予選なしで申し込めば出られる大会かは不明のため、出場のみを根拠に段階2以上とはしなかった。",
+      "source_url": "https://www.metro.ed.jp/hachiojihigashi-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "東京都国公立高等学校卓球大会",
+          "level": "都県",
+          "result": "出場（都立・国公立限定大会、成績不明）",
+          "happened_on": "2025-08-20",
+          "source_url": "https://www.metro.ed.jp/hachiojihigashi-h/activities/2025/08/clubentry_78.html"
+        }
+      ]
+    },
+    {
+      "name": "ダンス部",
+      "kind": "運動",
+      "days_note": "月・火・木・金・土",
+      "days_per_week": 5,
+      "weekend": "土",
+      "source_url": "https://www.metro.ed.jp/hachiojihigashi-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "note": "文化祭公演や外部イベント出演が中心で、順位を競う大会への出場の記載が見当たらず段階を付けなかった。"
+    },
+    {
+      "name": "ブレイクダンス部",
+      "kind": "運動",
+      "days_note": "火・水・木・金・土",
+      "days_per_week": 5,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "部活動ページで「DANCEATTACK」という大会での全国出場を目指すと明記(目標であり実績ではない)。2022年5月に民間主催「Dance of The City Tokyo 2022」で優勝した実績があるが直近3年の範囲外。直近3年の確定した大会結果は無いが、大会に出場している部として段階3。",
+      "source_url": "https://www.metro.ed.jp/hachiojihigashi-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2022,
+          "competition": "Dance of The City Tokyo 2022",
+          "level": "その他",
+          "result": "優勝（民間主催）",
+          "happened_on": "2022-05-06",
+          "source_url": "https://www.metro.ed.jp/hachiojihigashi-h/activities/2022/05/.html"
+        }
+      ]
+    },
+    {
+      "name": "弓道部",
+      "kind": "運動",
+      "days_note": "火・水・木・金（※大会や練習試合がある場合のみ土日も活動）",
+      "days_per_week": 4,
+      "weekend": "試合のみ",
+      "tier": 2,
+      "tier_basis": "2026年2月「東京武道館杯」(都内公立私立の指定校から選抜された選手による招待大会、個人戦)で個人準優勝。2025年8月には東京都個人選手権大会で個人8位入賞。いずれも個人成績だが都内トップ級の大会での複数回の上位入賞。",
+      "source_url": "https://www.metro.ed.jp/hachiojihigashi-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "東京都個人選手権大会",
+          "level": "都県",
+          "result": "個人8位入賞",
+          "happened_on": "2025-08-28",
+          "source_url": "https://www.metro.ed.jp/hachiojihigashi-h/activities/2025/08/clubentry_79.html"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "東京武道館杯",
+          "level": "都県",
+          "result": "個人準優勝（招待大会）",
+          "happened_on": "2026-02-12",
+          "source_url": "https://www.metro.ed.jp/hachiojihigashi-h/activities/2026/02/clubentry_91.html"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "東京都遠的大会",
+          "level": "都県",
+          "result": "個人第4位",
+          "happened_on": "2026-02-16",
+          "source_url": "https://www.metro.ed.jp/hachiojihigashi-h/activities/2026/02/4.html"
+        }
+      ]
+    },
+    {
+      "name": "ソフトボール同好会",
+      "kind": "同好会",
+      "days_note": "水",
+      "days_per_week": 1,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "週1日(水曜)の活動で、大会成績の記載はなし。",
+      "source_url": "https://www.metro.ed.jp/hachiojihigashi-h/school_life/activities.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "体操同好会",
+      "kind": "同好会",
+      "days_note": "火・水・木",
+      "days_per_week": 3,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "週3日の活動で部員4人、大会成績の記載はなし。",
+      "source_url": "https://www.metro.ed.jp/hachiojihigashi-h/school_life/activities.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "吹奏楽部",
+      "kind": "文化",
+      "days_note": "火・水・木・金・土（※本番が近い場合は月曜・日曜にも練習することがある）",
+      "days_per_week": 5,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "2025年度東京都高等学校吹奏楽コンクールA組で銅賞(都代表選出や金賞ではない)。2026年1月のTAMAアンサンブルフェスタ・アンサンブルコンテストでの金賞は多摩地区大会の賞のため、手引き§6の決めで段階3にとどまる。",
+      "source_url": "https://www.metro.ed.jp/hachiojihigashi-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "東京都高等学校吹奏楽コンクール A組",
+          "level": "都県",
+          "result": "銅賞",
+          "happened_on": "2025-08-31",
+          "source_url": "https://www.metro.ed.jp/hachiojihigashi-h/activities/2025/08/clubentry_80.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "TAMAアンサンブルフェスタ・アンサンブルコンテスト",
+          "level": "地区",
+          "result": "金管五重奏・サックス四重奏が金賞、クラリネット四重奏が銀賞（多摩地区大会）",
+          "happened_on": "2026-01-07",
+          "source_url": "https://www.metro.ed.jp/hachiojihigashi-h/activities/2026/01/tama.html"
+        }
+      ]
+    },
+    {
+      "name": "室内楽部",
+      "kind": "文化",
+      "days_note": "火・水・木・金・土",
+      "days_per_week": 5,
+      "weekend": "土",
+      "source_url": "https://www.metro.ed.jp/hachiojihigashi-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "note": "定期演奏会・合宿・全国高校オーケストラフェスタ等参加の記載はあるが、順位を競うコンクールでの成績の記載が見当たらず段階を付けなかった。"
+    },
+    {
+      "name": "コーラス部",
+      "kind": "文化",
+      "days_note": "火・水・木・金・土",
+      "days_per_week": 5,
+      "weekend": "土",
+      "source_url": "https://www.metro.ed.jp/hachiojihigashi-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "note": "「毎年夏に行われるコンクール」への参加は説明にあるが、直近の結果の記載が見当たらず段階を付けなかった。"
+    },
+    {
+      "name": "自然科学部",
+      "kind": "文化",
+      "days_note": "月・火・水・金・土",
+      "days_per_week": 5,
+      "weekend": "土",
+      "source_url": "https://www.metro.ed.jp/hachiojihigashi-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "note": "TOKYOサイエンスフェアや科学の甲子園などへの参加は説明にあるが、順位・入賞等の結果の記載が見当たらず段階を付けなかった。"
+    },
+    {
+      "name": "調理部",
+      "kind": "文化",
+      "days_note": "週１回、今年度は木曜日に活動",
+      "days_per_week": 1,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "週1日の活動で、コンクール等の実績の記載はなし。",
+      "source_url": "https://www.metro.ed.jp/hachiojihigashi-h/school_life/activities.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "華道部",
+      "kind": "文化",
+      "days_note": "金曜日（月２回）",
+      "days_per_week": 0.5,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "月2回(週0.5日相当)の活動で、コンクール等の実績の記載はなし。",
+      "source_url": "https://www.metro.ed.jp/hachiojihigashi-h/school_life/activities.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "美術部",
+      "kind": "文化",
+      "days_note": "火・木・金",
+      "days_per_week": 3,
+      "weekend": "なし",
+      "tier": 2,
+      "tier_basis": "2025年度(部活動ページの「昨年度」表記より)、東京都高等学校文化祭美術・工芸部門の中央展に出展(都の代表選出に相当)。1回だが手引き§6の決めで都県の代表選出1回は段階2。",
+      "source_url": "https://www.metro.ed.jp/hachiojihigashi-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "東京都高等学校文化祭 美術・工芸部門 中央展",
+          "level": "都県",
+          "result": "出展（代表選出）",
+          "source_url": "https://www.metro.ed.jp/hachiojihigashi-h/activities/cat2111/index.html"
+        }
+      ]
+    },
+    {
+      "name": "文芸部",
+      "kind": "文化",
+      "days_note": "木（週１回）",
+      "days_per_week": 1,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "週1日の活動で、部誌発行が中心。コンクール等の実績の記載はなし。",
+      "source_url": "https://www.metro.ed.jp/hachiojihigashi-h/school_life/activities.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "ネイチャー・ウォッチング同好会",
+      "kind": "同好会",
+      "days_note": "月曜日",
+      "days_per_week": 1,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "週1日(月曜)の活動で、花壇整備や自然観察が中心。競技・コンクール等の実績はなし。",
+      "source_url": "https://www.metro.ed.jp/hachiojihigashi-h/school_life/activities.html",
+      "as_of": "2026-09-24"
+    }
+  ],
+  "designated_universities": [],
+  "events": [
+    {
+      "kind": "指定",
+      "period_label": "2020年4月",
+      "happened_on": "2020-04-01",
+      "summary": "海外学校間交流推進校に新規指定",
+      "source_url": "https://www.metro.ed.jp/hachiojihigashi-h/our_school/history.html"
+    },
+    {
+      "kind": "指定",
+      "period_label": "2022年4月",
+      "happened_on": "2022-04-01",
+      "summary": "Global Education Network 20（GE-NET20）に指定（3年間）、探究的な学び推進校に新規指定",
+      "source_url": "https://www.metro.ed.jp/hachiojihigashi-h/our_school/history.html"
+    },
+    {
+      "kind": "指定",
+      "period_label": "2022年9月",
+      "happened_on": "2022-09-22",
+      "summary": "進学指導重点校の指定が令和9(2027)年度まで継続決定",
+      "source_url": "https://www.metro.ed.jp/hachiojihigashi-h/our_school/history.html"
+    },
+    {
+      "kind": "指定",
+      "period_label": "2024年4月",
+      "happened_on": "2024-04-16",
+      "summary": "文部科学省「高等学校DX加速化推進事業」の指定を受ける",
+      "source_url": "https://www.metro.ed.jp/hachiojihigashi-h/our_school/history.html"
+    },
+    {
+      "kind": "指定",
+      "period_label": "2025年4月",
+      "happened_on": "2025-04-01",
+      "summary": "Global Education Network 20 Premium（GE-NET20）に指定（3年間）",
+      "source_url": "https://www.metro.ed.jp/hachiojihigashi-h/our_school/history.html"
+    },
+    {
+      "kind": "指定",
+      "period_label": "2025年6月",
+      "happened_on": "2025-06-01",
+      "summary": "理数教育における教科等横断的な学びの推進事業校に指定",
+      "source_url": "https://www.metro.ed.jp/hachiojihigashi-h/our_school/history.html"
+    },
+    {
+      "kind": "その他",
+      "period_label": "2025年11月",
+      "happened_on": "2025-11-07",
+      "summary": "創立50周年記念式典を挙行、50周年記念誌を発行",
+      "source_url": "https://www.metro.ed.jp/hachiojihigashi-h/our_school/history.html"
+    }
+  ],
+  "unresolved": [
+    "在籍生徒数の男女内訳：公式資料に総数の記載なし。沿革ページの入学式・卒業式の男女別人数(式典出席者数)のみ判明。",
+    "大学合格実績のうち日東駒専：進路状況PDFの大学別表に日本大学・東洋大学・駒澤大学・専修大学が個別掲載されておらず「その他の私立大」に含まれるため合算できない。",
+    "校則・生徒心得(頭髪・スマートフォン・アルバイト等)：公式サイトに公開ページが見当たらない。",
+    "指定校推薦の大学一覧：学校案内パンフレット・進路指導ページのいずれにも記載が見当たらない。",
+    "保護者の学校満足度：学校経営報告・学校経営計画のいずれも在校生(生徒)の満足度のみで保護者向けの数値の記載なし。",
+    "男子バドミントン部・水泳部・ダンス部・室内楽部・コーラス部・自然科学部：直近3年の大会結果やコンクール成績の記載が見当たらず、段階を付けなかった。",
+    "理数研究校の2025年度(令和7年度)の継続指定：沿革ページの指定一覧に明記がなく、学校特色ページ(feature.html)の現行案内のみで確認(conflicts参照)。"
+  ],
+  "conflicts": [
+    "理数研究校の指定状況：学校特色ページ(feature.html)は理数研究校を現行の指定として案内しているが、沿革ページの2025年度(令和7年度)4月1日の指定一覧(海外学校間交流推進校・探究的な学び推進校・GE-NET20 Premium)には理数研究校の継続指定が記載されていない(2019〜2024年度は継続指定の記載が毎年ある)。",
+    "推薦選抜倍率(2023年4月入学分)：学校経営計画の重点数値目標表は「R4実績1.57倍」(応募倍率)とするが、入学者選抜応募状況PDFの過去の入試データ表では令和5年度(2023年度)入試の推薦選抜実質倍率を男子1.09倍・女子2.10倍(男女別)としており、単純に一致しない。2024・2025年度入試分は両資料の数値が一致している。"
+  ]
+}

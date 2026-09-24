@@ -1,0 +1,1095 @@
+{
+  "prefecture": "神奈川県",
+  "school_name": "横浜瀬谷",
+  "official_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/",
+  "researched_at": "2026-09-24",
+  "stats": [
+    {
+      "metric": "university_count",
+      "item": "国公立",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 2,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/shinro/documents/sinroyondai.pdf",
+      "source_label": "神奈川県立横浜瀬谷高等学校 令和7年度進路状況（大学別合格者数）",
+      "as_of": "2026-05-01",
+      "note": "大学別の表から合算（横浜市立大学1・神奈川県立保健福祉大学1。横浜国立大学・東京農工大学など他の国公立は令和7年度は0）"
+    },
+    {
+      "metric": "university_count",
+      "item": "早慶上理",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 0,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/shinro/documents/sinroyondai.pdf",
+      "source_label": "神奈川県立横浜瀬谷高等学校 令和7年度進路状況（大学別合格者数）",
+      "as_of": "2026-05-01",
+      "note": "大学別の表から合算（早稲田・東京理科は令和7年度0。慶應義塾・上智は表に掲載なし）"
+    },
+    {
+      "metric": "university_count",
+      "item": "GMARCH",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 38,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/shinro/documents/sinroyondai.pdf",
+      "source_label": "神奈川県立横浜瀬谷高等学校 令和7年度進路状況（大学別合格者数）",
+      "as_of": "2026-05-01",
+      "note": "大学別の表から合算（学習院5・明治5・青山学院12・中央9・法政7。立教大学は表に掲載なし）"
+    },
+    {
+      "metric": "university_count",
+      "item": "成成明武",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 21,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/shinro/documents/sinroyondai.pdf",
+      "source_label": "神奈川県立横浜瀬谷高等学校 令和7年度進路状況（大学別合格者数）",
+      "as_of": "2026-05-01",
+      "note": "大学別の表から合算（成蹊4・成城1・明治学院16・武蔵は令和7年度0）"
+    },
+    {
+      "metric": "university_count",
+      "item": "日東駒専",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 92,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/shinro/documents/sinroyondai.pdf",
+      "source_label": "神奈川県立横浜瀬谷高等学校 令和7年度進路状況（大学別合格者数）",
+      "as_of": "2026-05-01",
+      "note": "大学別の表から合算（日本25・東洋16・駒澤9・専修42）"
+    },
+    {
+      "metric": "university_count",
+      "item": "合計",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 502,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/shinro/documents/sinroyondai.pdf",
+      "source_label": "神奈川県立横浜瀬谷高等学校 令和7年度進路状況（大学別合格者数）",
+      "as_of": "2026-05-01",
+      "note": "表末尾の合計行（3期485・既卒17）。学校案内パンフレット掲載の令和6・令和5年度分（571・597）とも整合"
+    },
+    {
+      "metric": "university_count",
+      "item": "神奈川大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 71,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/shinro/documents/sinroyondai.pdf",
+      "source_label": "神奈川県立横浜瀬谷高等学校 令和7年度進路状況（大学別合格者数）",
+      "as_of": "2026-05-01",
+      "note": "令和7年度で最多の合格大学"
+    },
+    {
+      "metric": "university_count",
+      "item": "東海大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 51,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/shinro/documents/sinroyondai.pdf",
+      "source_label": "神奈川県立横浜瀬谷高等学校 令和7年度進路状況（大学別合格者数）",
+      "as_of": "2026-05-01",
+      "note": ""
+    },
+    {
+      "metric": "university_count",
+      "item": "関東学院大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 43,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/shinro/documents/sinroyondai.pdf",
+      "source_label": "神奈川県立横浜瀬谷高等学校 令和7年度進路状況（大学別合格者数）",
+      "as_of": "2026-05-01",
+      "note": ""
+    },
+    {
+      "metric": "university_count",
+      "item": "専修大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 42,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/shinro/documents/sinroyondai.pdf",
+      "source_label": "神奈川県立横浜瀬谷高等学校 令和7年度進路状況（大学別合格者数）",
+      "as_of": "2026-05-01",
+      "note": ""
+    },
+    {
+      "metric": "university_count",
+      "item": "日本大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 25,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/shinro/documents/sinroyondai.pdf",
+      "source_label": "神奈川県立横浜瀬谷高等学校 令和7年度進路状況（大学別合格者数）",
+      "as_of": "2026-05-01",
+      "note": ""
+    },
+    {
+      "metric": "admission_route_share",
+      "item": "一般",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 44.1,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/shinro/documents/sinrojyoukyou.pdf",
+      "source_label": "神奈川県立横浜瀬谷高等学校 令和7年度進路状況（受験方法別進学者数）",
+      "as_of": "2026-05-01",
+      "note": "一般選抜105／大学計238から算出（一般選抜のみ。共通テスト利用は別枠で集計）"
+    },
+    {
+      "metric": "admission_route_share",
+      "item": "共通テスト",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 5,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/shinro/documents/sinrojyoukyou.pdf",
+      "source_label": "神奈川県立横浜瀬谷高等学校 令和7年度進路状況（受験方法別進学者数）",
+      "as_of": "2026-05-01",
+      "note": "共通テスト12／238から算出。手引きの4区分にない、資料独自の区分"
+    },
+    {
+      "metric": "admission_route_share",
+      "item": "総合型",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 16.8,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/shinro/documents/sinrojyoukyou.pdf",
+      "source_label": "神奈川県立横浜瀬谷高等学校 令和7年度進路状況（受験方法別進学者数）",
+      "as_of": "2026-05-01",
+      "note": "総合型選抜40／238から算出"
+    },
+    {
+      "metric": "admission_route_share",
+      "item": "公募推薦",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 2.1,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/shinro/documents/sinrojyoukyou.pdf",
+      "source_label": "神奈川県立横浜瀬谷高等学校 令和7年度進路状況（受験方法別進学者数）",
+      "as_of": "2026-05-01",
+      "note": "公募5／238から算出"
+    },
+    {
+      "metric": "admission_route_share",
+      "item": "指定校推薦",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 31.9,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/shinro/documents/sinrojyoukyou.pdf",
+      "source_label": "神奈川県立横浜瀬谷高等学校 令和7年度進路状況（受験方法別進学者数）",
+      "as_of": "2026-05-01",
+      "note": "指定校76／238から算出"
+    },
+    {
+      "metric": "career_decided_rate",
+      "item": "",
+      "basis": "",
+      "fiscal_year": 2025,
+      "value_num": 92.1,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/shinro/documents/sinrojyoukyou.pdf",
+      "source_label": "神奈川県立横浜瀬谷高等学校 令和7年度進路状況（学校種別進学者・就職者数とその割合）",
+      "as_of": "2026-05-01",
+      "note": "卒業者数305名のうち大学239・短期大学4・専門38・就職0の計281名／305名から算出（進学準備・その他24名を除く）。学校が自ら決定率として公表した数値ではない"
+    },
+    {
+      "metric": "club_join_rate",
+      "item": "",
+      "basis": "",
+      "fiscal_year": 2025,
+      "value_num": 80,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/nyugaku/documents/r7_yokohamaseya_gakkoannai.pdf",
+      "source_label": "神奈川県立横浜瀬谷高等学校 学校案内（令和7年度版）",
+      "as_of": "2025-07-01",
+      "note": "パンフレット記載の「約8割の生徒が部活に加入している」という概数（正確な数値の公表ではない）"
+    },
+    {
+      "metric": "designation",
+      "item": "教育課程研究開発校（シチズンシップ教育に係る研究）",
+      "basis": "",
+      "fiscal_year": 2025,
+      "value_text": "神奈川県教育委員会より指定。指定期間の記載はパンフレットになし",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/nyugaku/documents/r7_yokohamaseya_gakkoannai.pdf",
+      "source_label": "神奈川県立横浜瀬谷高等学校 学校案内（令和7年度版）",
+      "as_of": "2025-07-01",
+      "note": ""
+    },
+    {
+      "metric": "uniform",
+      "item": "",
+      "basis": "",
+      "fiscal_year": 2025,
+      "value_text": "ズボン・スカート・キュロット・ハーフパンツから選択。Yシャツは白無地か指定の青の長袖シャツ、夏はポロシャツも可でネクタイ・リボンは任意。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/hogosha/documents/r7seitotecho.pdf",
+      "source_label": "神奈川県立横浜瀬谷高等学校 生徒手帳「学校生活のきまり」",
+      "as_of": "2025-04-01",
+      "note": "選択肢の幅は学校案内パンフレットの説明とも整合"
+    },
+    {
+      "metric": "rules_summary",
+      "item": "",
+      "basis": "",
+      "fiscal_year": 2025,
+      "value_text": "頭髪の染色・パーマ等は禁止、ピアス等の装飾品も禁止。スマホ・携帯は所持可だがマナーを守って使用。アルバイトは保護者同意の上でHR担任に届け出れば可。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/hogosha/documents/r7seitotecho.pdf",
+      "source_label": "神奈川県立横浜瀬谷高等学校 生徒手帳「学校生活のきまり」",
+      "as_of": "2025-04-01",
+      "note": ""
+    }
+  ],
+  "clubs": [
+    {
+      "name": "陸上競技部",
+      "kind": "運動",
+      "days_note": "水曜・日曜が休養日。日曜日に競技会がある場合は翌の月曜日が休養日。土曜日は大和の競技場で練習することもある。",
+      "days_per_week": 5,
+      "weekend": "土",
+      "tier": 1,
+      "tier_basis": "2023・2024年度の神奈川県高校新人で都県ベスト8以上を計4回獲得（2024年度: 男子走高跳4位・女子三段跳3位→関東選抜大会出場決定、2023年度: 女子3000m第4位・女子砲丸投8位入賞）。都県ベスト8以上が2年で4回のため段階1（学校サイト）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/bukatudou/rikujou.html",
+      "as_of": "2026-05-25",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "神奈川県高校新人",
+          "level": "都県",
+          "result": "女子三段跳3位入賞→関東選抜大会出場決定",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/bukatudou/rikujou.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "神奈川県高校新人",
+          "level": "都県",
+          "result": "男子走高跳4位入賞",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/bukatudou/rikujou.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "横浜地区高等学校陸上競技選手権",
+          "level": "地区",
+          "result": "女子砲丸投優勝、女子三段跳2位入賞、女子3000m8位入賞、男子800m6位入賞、男子走高跳7位入賞",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/bukatudou/rikujou.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "神奈川県高校総体",
+          "level": "都県",
+          "result": "男女とも出場（上位入賞の記載なし）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/bukatudou/rikujou.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "神奈川県高校新人",
+          "level": "都県",
+          "result": "女子3000m第4位、女子砲丸投8位入賞",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/bukatudou/rikujou.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "神奈川県高校総体",
+          "level": "都県",
+          "result": "出場（上位入賞の記載なし）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/bukatudou/rikujou.html"
+        }
+      ]
+    },
+    {
+      "name": "サッカー部",
+      "kind": "運動",
+      "days_note": "火曜日～土曜日（基本、月曜日OFF）。土・日曜日、祝日は主に練習試合または公式戦。",
+      "days_per_week": 5,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2026年度 高円宮杯U-18サッカーリーグ神奈川 K5（div5・Group L）所属。Aチーム単独（他校との合同チームではない）。K5・K6は段階3（活動日は週5日以上のため活動日基準の段階4にはならない）（神奈川県サッカー協会）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/bukatudou/soccer.html",
+      "as_of": "2026-05-25",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "高円宮杯U-18サッカーリーグ神奈川 2026年度 K5 Group L",
+          "level": "都県",
+          "result": "8チーム中4位（2026年9月時点の暫定順位）",
+          "source_url": "https://www.kanagawa-fa.gr.jp/cms/u18-league/2026/div5/"
+        }
+      ]
+    },
+    {
+      "name": "硬式野球部",
+      "kind": "運動",
+      "days_note": "月曜日オフ。火曜日～金曜日は練習。土曜日・日曜日は他校とのオープン戦など。",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2024年秋(本大会1回戦敗退vs山手学院3-6)・2025年春(予選3勝を経て本大会2回戦敗退vs横浜商大4-6)・2026年春(1回戦は岸根に13-1で勝利、2回戦は桐光学園に2-11で敗退)・2026年夏(1回戦敗退vs七里ガ浜0-5)。都県大会（本大会）でベスト8以上の実績はない（一球速報.com）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/bukatudou/yakyuu.html",
+      "as_of": "2026-06-09",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "第108回全国高等学校野球選手権神奈川大会",
+          "level": "都県",
+          "result": "1回戦敗退（七里ガ浜に0-5）",
+          "happened_on": "2026-07-07",
+          "source_url": "https://baseball.omyutech.com/CupHomePageTeamSchedule.action?teamId=136696&cupId=20260013579"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "令和8年度神奈川県高等学校野球春季県大会",
+          "level": "都県",
+          "result": "1回戦は岸根に13-1で勝利、2回戦は桐光学園に2-11で敗退",
+          "happened_on": "2026-04-05",
+          "source_url": "https://baseball.omyutech.com/CupHomePageTeamSchedule.action?teamId=136696&cupId=20260007465"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "令和7年度神奈川県高等学校野球春季県大会",
+          "level": "都県",
+          "result": "予選3勝を経て本大会出場、2回戦敗退（横浜商大に4-6）",
+          "happened_on": "2025-04-05",
+          "source_url": "https://baseball.omyutech.com/CupHomePageTeamSchedule.action?teamId=136696&cupId=20250024190"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "令和7年度神奈川県高等学校野球秋季県大会",
+          "level": "都県",
+          "result": "本大会の出場記録なし（地区予選敗退とみられる）",
+          "source_url": "https://baseball.omyutech.com/CupHomePageTeamSchedule.action?teamId=136696&cupId=20250005743"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "令和6年度神奈川県高等学校野球秋季県大会",
+          "level": "都県",
+          "result": "予選2勝1敗を経て本大会出場、1回戦敗退（山手学院に3-6）",
+          "happened_on": "2024-09-07",
+          "source_url": "https://baseball.omyutech.com/CupHomePageTeamSchedule.action?teamId=136696&cupId=20240012872"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "令和6年度神奈川県高等学校野球春季県大会",
+          "level": "都県",
+          "result": "予選ブロック1勝2敗で本大会出場ならず",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/bukatudou/yakyuu.html"
+        }
+      ]
+    },
+    {
+      "name": "卓球部",
+      "kind": "運動",
+      "days_note": "基本的に平日4日＋土曜日（半日）。公式戦や練習試合により調整。",
+      "days_per_week": 4.5,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "毎年、関東高校卓球大会県予選・高校総体卓球競技の部・神奈川県ジュニアオープン卓球大会・新人卓球大会に出場しているが、順位・結果の記載はない（学校サイト）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/bukatudou/takkyuu.html",
+      "as_of": "2026-05-25"
+    },
+    {
+      "name": "器械体操部",
+      "kind": "運動",
+      "days_note": "体育館での練習：月曜日と土曜日or日曜日。武道場での練習：木曜日。",
+      "days_per_week": 3,
+      "tier": 4,
+      "tier_basis": "大会に参加しない方針（学校サイトに「大会参加なし」と明記）。活動日は週3日",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/bukatudou/taisou.html",
+      "as_of": "2026-05-25"
+    },
+    {
+      "name": "水泳部",
+      "kind": "運動",
+      "days_note": "5～9月は主に学校のプール、10月からは週数回のドライランドトレーニングと外部施設・他校との合同練習。学校の授業期間は月曜日と土日いずれかがOFF。",
+      "days_per_week": 5,
+      "tier": 3,
+      "tier_basis": "2024年度 神奈川県高等学校総合体育大会・新人戦に出場。男子400m個人メドレーで決勝進出10位。都県ベスト8以上の実績はない（学校サイト）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/bukatudou/suiei.html",
+      "as_of": "2026-05-25",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "神奈川県高等学校総合体育大会",
+          "level": "都県",
+          "result": "男子400m個人メドレー決勝進出10位",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/bukatudou/suiei.html"
+        }
+      ]
+    },
+    {
+      "name": "剣道部",
+      "kind": "運動",
+      "days_note": "平日週3回(火水金)で18時ごろまで稽古。土曜日は9時～12時。日曜・祝日は基本OFF(大会や練習試合が入ることがある)。",
+      "days_per_week": 4,
+      "weekend": "土",
+      "tier": 2,
+      "tier_basis": "2023～2025年度、関東予選男子団体・県新人剣道大会・剣道選抜大会県代表選考会などで都県ベスト32が複数回（男子団体ベスト32が3回、女子団体ベスト32が2回など）。都県ベスト8以上の実績はない（学校サイト）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/bukatudou/kenndo.html",
+      "as_of": "2026-06-04",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "関東予選（女子個人）",
+          "level": "都県",
+          "result": "ベスト64",
+          "happened_on": "2025-04-26",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/bukatudou/kenndo.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "関東予選（男子団体）",
+          "level": "都県",
+          "result": "ベスト32",
+          "happened_on": "2025-05-10",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/bukatudou/kenndo.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "横浜地区高等学校剣道大会（女子個人戦1学年の部）",
+          "level": "地区",
+          "result": "ベスト8",
+          "happened_on": "2025-05-18",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/bukatudou/kenndo.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "インターハイ予選（男子団体）",
+          "level": "都県",
+          "result": "ベスト64",
+          "happened_on": "2025-06-23",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/bukatudou/kenndo.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "インターハイ予選（女子団体）",
+          "level": "都県",
+          "result": "ベスト64",
+          "happened_on": "2025-06-23",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/bukatudou/kenndo.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "神奈川県高等学校新人剣道大会（女子団体）",
+          "level": "都県",
+          "result": "ベスト32",
+          "happened_on": "2025-11-23",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/bukatudou/kenndo.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "神奈川県高等学校新人剣道大会（男子団体）",
+          "level": "都県",
+          "result": "ベスト64",
+          "happened_on": "2025-11-24",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/bukatudou/kenndo.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "剣道選抜大会神奈川県代表選考会（女子団体）",
+          "level": "都県",
+          "result": "ベスト32",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/bukatudou/kenndo.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "関東予選（女子個人）",
+          "level": "都県",
+          "result": "ベスト64",
+          "happened_on": "2024-04-27",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/bukatudou/kenndo.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "関東予選（男子団体）",
+          "level": "都県",
+          "result": "ベスト32",
+          "happened_on": "2024-05-11",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/bukatudou/kenndo.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "インターハイ予選（男子団体）",
+          "level": "都県",
+          "result": "ベスト64",
+          "happened_on": "2024-06-23",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/bukatudou/kenndo.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "神奈川県高等学校新人剣道大会（男子団体）",
+          "level": "都県",
+          "result": "ベスト64",
+          "happened_on": "2024-11-24",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/bukatudou/kenndo.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "関東予選（男子個人）",
+          "level": "都県",
+          "result": "ベスト64",
+          "happened_on": "2023-04-22",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/bukatudou/kenndo.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "関東予選（男子団体）",
+          "level": "都県",
+          "result": "ベスト32",
+          "happened_on": "2023-05-06",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/bukatudou/kenndo.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "横浜地区高等学校剣道大会（男子個人戦2学年の部）",
+          "level": "地区",
+          "result": "3位入賞",
+          "happened_on": "2023-05-21",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/bukatudou/kenndo.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "インターハイ予選（男子団体）",
+          "level": "都県",
+          "result": "ベスト64",
+          "happened_on": "2023-06-24",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/bukatudou/kenndo.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "神奈川県高等学校新人剣道大会（男子団体）",
+          "level": "都県",
+          "result": "ベスト64",
+          "happened_on": "2023-11-19",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/bukatudou/kenndo.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "神奈川県高等学校新人剣道大会（男子個人）",
+          "level": "都県",
+          "result": "ベスト32",
+          "happened_on": "2023-12-10",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/bukatudou/kenndo.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "剣道選抜大会神奈川県代表選考会（男子団体）",
+          "level": "都県",
+          "result": "ベスト32",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/bukatudou/kenndo.html"
+        }
+      ]
+    },
+    {
+      "name": "ワンダーフォーゲル部",
+      "kind": "運動",
+      "days_note": "通常は週に3回、火曜日・木曜日・金曜日にトレーニング。不定期で休日に丹沢・箱根等へ山行。",
+      "days_per_week": 3,
+      "tier": 4,
+      "tier_basis": "登山を目的とした活動で、大会参加の実績記載はない。活動日は週3日（学校サイト）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/bukatudou/wannda-fo-geru.html",
+      "as_of": "2026-05-25"
+    },
+    {
+      "name": "ハンドボール部",
+      "kind": "運動",
+      "days_note": "火曜日～日曜日（月曜日はOFF）",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "令和6年度 横浜市民大会ブロック2位・横浜地区秋季大会2回戦進出（いずれも地区）、令和7年度 関東大会県予選・インターハイ予選ともに2回戦進出にとどまる。都県大会での上位入賞の記載はない（学校サイト）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/bukatudou/handball.html",
+      "as_of": "2025-05-22",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "横浜市民大会",
+          "level": "地区",
+          "result": "ブロック2位",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/bukatudou/handball.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "横浜地区秋季大会",
+          "level": "地区",
+          "result": "2回戦進出",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/bukatudou/handball.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "関東大会県予選",
+          "level": "都県",
+          "result": "2回戦進出",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/bukatudou/handball.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "インターハイ予選",
+          "level": "都県",
+          "result": "2回戦進出",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/bukatudou/handball.html"
+        }
+      ]
+    },
+    {
+      "name": "バレーボール部",
+      "kind": "運動",
+      "days_note": "火：トレーニング　水・木・金：体育館　土・日：練習or練習試合",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "令和5年度 神奈川県高等学校バレーボール新人大会(県大会)出場、令和7年度 横浜市民スポーツ大会バレーボール競技高校男子の部でベスト8（地区）。都県大会での上位入賞の記載はない（学校サイト）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/bukatudou/bare-bo-ru.html",
+      "as_of": "2026-05-25",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "神奈川県高等学校バレーボール新人大会",
+          "level": "都県",
+          "result": "出場",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/bukatudou/bare-bo-ru.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "横浜市民スポーツ大会バレーボール競技高校男子の部",
+          "level": "地区",
+          "result": "ベスト8",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/bukatudou/bare-bo-ru.html"
+        }
+      ]
+    },
+    {
+      "name": "バトン部",
+      "kind": "運動",
+      "days_note": "月・火・木・金・土",
+      "days_per_week": 5,
+      "weekend": "土",
+      "tier": 1,
+      "tier_basis": "ダンスドリル秋季大会の関東大会に2021～2024年度の4年連続で出場し、DRILLPOM部門Medium編成で1位(2021・2022年度)・3位(2023年度)・2位(2024年度)。関東大会出場が2回以上のため段階1（学校サイト）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/bukatudou/batonn.html",
+      "as_of": "2026-05-25",
+      "results": [
+        {
+          "fiscal_year": 2021,
+          "competition": "ダンスドリル秋季大会 関東大会 DRILLPOM部門Medium編成",
+          "level": "関東",
+          "result": "1位",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/bukatudou/batonn.html"
+        },
+        {
+          "fiscal_year": 2022,
+          "competition": "ダンスドリル秋季大会 関東大会 DRILLPOM部門Medium編成",
+          "level": "関東",
+          "result": "1位",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/bukatudou/batonn.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "ダンスドリル秋季大会 関東大会 DRILLPOM部門Medium編成",
+          "level": "関東",
+          "result": "3位",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/bukatudou/batonn.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "ダンスドリル秋季大会 関東大会 DRILLPOM部門Medium編成",
+          "level": "関東",
+          "result": "2位",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/bukatudou/batonn.html"
+        }
+      ]
+    },
+    {
+      "name": "バドミントン部",
+      "kind": "運動",
+      "days_note": "月・火・木・金・土・日（水曜日オフ）",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "地区大会（横浜中地区）で上位に入り、毎年のように県大会に出場している（男子団体2〜5位、男子シングルス3〜4位など）が、県大会での順位の記載はない（学校サイト）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/bukatudou/badominntonn.html",
+      "as_of": "2026-05-25",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "横浜地区冬季バドミントン大会",
+          "level": "地区",
+          "result": "男子シングルスブロック3位",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/bukatudou/badominntonn.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "高校総体（横浜中地区）",
+          "level": "地区",
+          "result": "男子ダブルス4位・男子シングルス4位、いずれも県大会出場",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/bukatudou/badominntonn.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "関東高等学校バドミントン大会（横浜中地区）",
+          "level": "地区",
+          "result": "男子団体4位、県大会出場",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/bukatudou/badominntonn.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "新人大会（横浜中地区）",
+          "level": "地区",
+          "result": "男子団体2位・男子シングルス3位・男子ダブルス2位、いずれも県大会出場",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/bukatudou/badominntonn.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "総体予選（横浜中地区）",
+          "level": "地区",
+          "result": "男子ダブルス2位、県大会出場",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/bukatudou/badominntonn.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "関東高等学校バドミントン大会（横浜中地区）",
+          "level": "地区",
+          "result": "男子団体5位・女子団体3位、いずれも県大会出場",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/bukatudou/badominntonn.html"
+        }
+      ]
+    },
+    {
+      "name": "バスケットボール部",
+      "kind": "運動",
+      "days_note": "月:外トレーニング、火・水・金:フロア、木:OFF、土日:練習orゲーム",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "tier": 2,
+      "tier_basis": "男子: 新人戦県ベスト32、関東大会県ベスト16（学校サイト）。都県ベスト16〜32が複数回のため段階2。女子は令和元年度の横浜地区大会ブロック優勝以降の実績記載がなく、現在の部員も1名のみ",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/bukatudou/basukettobo-ru.html",
+      "as_of": "2026-05-08",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "新人戦",
+          "level": "都県",
+          "result": "男子 県ベスト32",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/bukatudou/basukettobo-ru.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "関東大会",
+          "level": "都県",
+          "result": "男子 県ベスト16",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/bukatudou/basukettobo-ru.html"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "横浜地区大会",
+          "level": "地区",
+          "result": "男子 ブロック優勝",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/bukatudou/basukettobo-ru.html"
+        },
+        {
+          "fiscal_year": 2019,
+          "competition": "横浜地区大会",
+          "level": "地区",
+          "result": "女子 ブロック優勝",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/bukatudou/basukettobo-ru.html"
+        }
+      ]
+    },
+    {
+      "name": "硬式テニス部",
+      "kind": "運動",
+      "days_note": "月曜日を除く平日放課後。土曜・休日は午前(9:00～12:00)または午後(13:00～16:00)。",
+      "days_per_week": 5,
+      "weekend": "土",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/bukatudou/tennis.html",
+      "as_of": "2026-05-25"
+    },
+    {
+      "name": "ソフトテニス部",
+      "kind": "運動",
+      "days_note": "火曜日～日曜日（公式戦等の日程により変更あり）",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "直近では2025年度 全国高校総体県予選(個人)ベスト64、2023年度 横浜地区市民大会(個人)5位（地区）。2019・2022年度は関東大会地区予選・県予選でベスト8・ベスト32の実績があるが、直近3年より前のため段階の根拠にはしない（学校サイト）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/bukatudou/softtennis.html",
+      "as_of": "2026-05-25",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "全国高校総体県予選（個人）",
+          "level": "都県",
+          "result": "ベスト64",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/bukatudou/softtennis.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "横浜地区市民大会（個人）",
+          "level": "地区",
+          "result": "5位",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/bukatudou/softtennis.html"
+        },
+        {
+          "fiscal_year": 2022,
+          "competition": "関東大会地区予選（個人）",
+          "level": "地区",
+          "result": "ベスト8",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/bukatudou/softtennis.html"
+        },
+        {
+          "fiscal_year": 2022,
+          "competition": "全国高校総体地区予選（個人）",
+          "level": "地区",
+          "result": "ベスト8",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/bukatudou/softtennis.html"
+        },
+        {
+          "fiscal_year": 2019,
+          "competition": "関東大会県予選（団体）",
+          "level": "都県",
+          "result": "ベスト32",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/bukatudou/softtennis.html"
+        },
+        {
+          "fiscal_year": 2019,
+          "competition": "全国高校総体県予選（団体）",
+          "level": "都県",
+          "result": "ベスト32",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/bukatudou/softtennis.html"
+        },
+        {
+          "fiscal_year": 2019,
+          "competition": "県新人大会地区予選（個人）",
+          "level": "地区",
+          "result": "4位",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/bukatudou/softtennis.html"
+        }
+      ]
+    },
+    {
+      "name": "漫画研究部",
+      "kind": "文化",
+      "days_note": "火・水・木。文化祭部誌の締め切り前は毎日活動。",
+      "days_per_week": 3,
+      "tier": 4,
+      "tier_basis": "文化祭の部誌発行が中心で、コンクール等の実績記載はない。活動日は週3日（学校サイト）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/bukatudou/manngakennkyuu.html",
+      "as_of": "2026-05-25"
+    },
+    {
+      "name": "美術部",
+      "kind": "文化",
+      "days_note": "火曜日・水曜日・木曜日",
+      "days_per_week": 3,
+      "tier": 4,
+      "tier_basis": "文化祭・地域イベントへの出展のみで、コンクール等の実績記載はない。活動日は週3日（学校サイト）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/bukatudou/bijutu.html",
+      "as_of": "2026-05-25"
+    },
+    {
+      "name": "茶道部",
+      "kind": "文化",
+      "days_note": "水曜日・木曜日（木曜日は裏千家の先生の指導）",
+      "days_per_week": 2,
+      "tier": 4,
+      "tier_basis": "裏千家学校茶道の研修茶会等に参加しているが、コンクール等の実績記載はない。活動日は週2日（学校サイト）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/bukatudou/sadou.html",
+      "as_of": "2026-05-25"
+    },
+    {
+      "name": "吹奏楽部",
+      "kind": "文化",
+      "days_note": "火・水・木・金・土",
+      "days_per_week": 5,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "2025年度 横浜吹奏楽コンクール高校生の部B部門で金賞・横浜支部代表となり、神奈川県吹奏楽コンクール高校生の部B部門に進んだが結果は銅賞。都県代表選出・金賞・最上位の賞には届かないため段階3（学校サイト）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/bukatudou/suisougaku.html",
+      "as_of": "2026-05-25",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "第25回横浜吹奏楽コンクール高校生の部B部門",
+          "level": "地区",
+          "result": "金賞・横浜支部代表",
+          "happened_on": "2025-07-27",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/bukatudou/suisougaku.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第74回神奈川県吹奏楽コンクール高校生の部B部門",
+          "level": "都県",
+          "result": "銅賞",
+          "happened_on": "2025-08-13",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/bukatudou/suisougaku.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第26回横浜アンサンブルコンテスト",
+          "level": "地区",
+          "result": "金管八重奏銀賞・木管八重奏銅賞",
+          "happened_on": "2025-11-22",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/bukatudou/suisougaku.html"
+        }
+      ]
+    },
+    {
+      "name": "写真部",
+      "kind": "文化",
+      "days_note": "週3日。コンテスト出品前は毎日準備。",
+      "days_per_week": 3,
+      "tier": 2,
+      "tier_basis": "全国高等学校総合文化祭（全国大会）写真部門に県代表として複数年出場（令和3年度優秀賞、令和4年度最優秀賞・文化庁長官賞、令和6年度は県代表として生徒2名派遣）。全国大会出場が2回以上のため段階1（学校サイト）（2026-09-24 Opus見直し: 直近3年＝2023年度以降に入る全国は2024年度の1回だけなので段階2）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/bukatudou/syasinn.html",
+      "as_of": "2026-07-22",
+      "results": [
+        {
+          "fiscal_year": 2021,
+          "competition": "全国高等学校総合文化祭 写真部門",
+          "level": "全国",
+          "result": "優秀賞",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/bukatudou/syasinn.html"
+        },
+        {
+          "fiscal_year": 2022,
+          "competition": "全国高等学校総合文化祭 写真部門",
+          "level": "全国",
+          "result": "最優秀賞・文化庁長官賞",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/bukatudou/syasinn.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "第48回全国高等学校総合文化祭（岐阜大会）写真部門",
+          "level": "全国",
+          "result": "県代表として出場（生徒2名派遣）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/bukatudou/syasinn.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第3回TopEyeフォトコンテスト",
+          "level": "全国",
+          "result": "TopEye賞（表紙掲載）。年間の入賞ポイント合計が全国4位でTopEye全国高校生写真サミット2026出場",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/bukatudou/syasinn.html"
+        }
+      ]
+    },
+    {
+      "name": "フォークソング部",
+      "kind": "文化",
+      "days_note": "火水木金土。大会や合同ライブ等で日曜日に活動することもある。",
+      "days_per_week": 5.5,
+      "weekend": "土",
+      "tier": 2,
+      "tier_basis": "ガールズバンドステージコンテスト高校生全国決勝大会に令和4年度・令和6年度と2回入選（全国大会出場が2回以上のため段階1）。令和7年度もwe_are_SNEAKER_AGES関東甲信越グランプリ大会に出場（学校サイト）（2026-09-24 Opus見直し: 直近3年＝2023年度以降に入る全国は2024年度の1回だけなので段階2）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/bukatudou/fo-kusong.html",
+      "as_of": "2026-05-25",
+      "results": [
+        {
+          "fiscal_year": 2022,
+          "competition": "第6回ガールズバンドステージコンテスト高校生全国決勝大会",
+          "level": "全国",
+          "result": "入選",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/bukatudou/fo-kusong.html"
+        },
+        {
+          "fiscal_year": 2022,
+          "competition": "第20回神奈川県高等学校軽音楽コンクール",
+          "level": "都県",
+          "result": "奨励賞",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/bukatudou/fo-kusong.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "第8回ガールズバンドステージコンテスト高校生全国決勝大会",
+          "level": "全国",
+          "result": "入選",
+          "happened_on": "2024-07-26",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/bukatudou/fo-kusong.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "第22回神奈川県高等学校軽音楽コンクール",
+          "level": "都県",
+          "result": "専門部会長賞",
+          "happened_on": "2024-12-22",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/bukatudou/fo-kusong.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第11回we_are_SNEAKER_AGES関東甲信越グランプリ大会",
+          "level": "関東",
+          "result": "出場",
+          "happened_on": "2025-09-23",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/bukatudou/fo-kusong.html"
+        }
+      ]
+    },
+    {
+      "name": "ハンドメイド部",
+      "kind": "文化",
+      "days_note": "週2日（木曜日、金曜日）",
+      "days_per_week": 2,
+      "tier": 4,
+      "tier_basis": "地域マルシェ・フリーマーケットへの出店が中心で、コンクール等の実績記載はない。活動日は週2日（学校サイト）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/bukatudou/handmade.html",
+      "as_of": "2026-08-26"
+    },
+    {
+      "name": "パソコン部",
+      "kind": "文化",
+      "days_note": "毎週火曜・水曜・木曜・金曜",
+      "days_per_week": 4,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/bukatudou/pasokon.html",
+      "as_of": "2026-05-25"
+    },
+    {
+      "name": "ダンス部",
+      "kind": "文化",
+      "days_note": "火・水・金",
+      "days_per_week": 3,
+      "tier": 4,
+      "tier_basis": "校内公演・地域イベントでの発表が中心で、コンクール等の実績記載はない。活動日は週3日（学校サイト）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/bukatudou/dance.html",
+      "as_of": "2026-05-25"
+    },
+    {
+      "name": "JRC部",
+      "kind": "文化",
+      "days_note": "あづまの幼稚園でのボランティアは毎週火・水・木曜日。その他、土日や夏休みなどに地域イベント等のボランティアに参加。",
+      "days_per_week": 3,
+      "tier": 4,
+      "tier_basis": "地域でのボランティア活動が中心で、大会・コンクールにあたる実績はない。基本の活動日は週3日（学校サイト）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/bukatudou/jrc.html",
+      "as_of": "2025-05-21"
+    },
+    {
+      "name": "文化祭実行委員会（文化祭スタッフ）",
+      "days_note": "不定期。スタッフ全員で動き始めるのは夏休み前から。月1程度の人も週4程度の人もいる。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/bukatudou/bunkasaistaff.html",
+      "as_of": "2026-06-05"
+    },
+    {
+      "name": "未来共創推進委員会（未来共創ラボ）",
+      "days_note": "月曜日・水曜日放課後・土曜日午後",
+      "days_per_week": 3,
+      "weekend": "土",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/bukatudou/miraikyosolabo.html",
+      "as_of": "2026-06-05"
+    }
+  ],
+  "designated_universities": [],
+  "events": [
+    {
+      "kind": "統合",
+      "period_label": "2022年11月設置・2023年4月開校",
+      "summary": "県立瀬谷高等学校と県立瀬谷西高等学校を再編統合し、県立横浜瀬谷高等学校として新設した",
+      "happened_on": "2022-11-01",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamaseya-h/gaiyou/enkaku.html"
+    }
+  ],
+  "unresolved": [
+    "推薦の倍率：神奈川県公立高校入試は共通選抜のみで推薦単独の選考区分がないため対象外（入学者選抜関連ページも共通選抜の志願者数のみ掲載）",
+    "学校評価の満足度：神奈川県様式のため数値の記載がない。当校は「学校評価報告書」単独の公開PDFがなく、学校運営協議会議事録（文章のみ）で報告事項として言及されるにとどまる（手引き§4のとおり）",
+    "男女別の生徒数：学校概要・沿革ページは男女合計のみで内訳非公開。進路状況PDFには大学等進学者の男女内訳はあるが、学年・学科全体の男女別生徒数ではないため採用しなかった",
+    "指定校推薦の大学名の一覧：学校案内パンフレット・進路ページのいずれにも大学名を列挙した「指定校」一覧は見つからなかった（指定校推薦の人数は受験方法別進学者数「指定校76」で判明）",
+    "硬式テニス部・パソコン部の大会結果：学校サイトに年間予定・活動内容の記載はあるが、順位や結果の記載がない",
+    "教育課程研究開発校（シチズンシップ教育に係る研究）の指定期間：学校案内パンフレットに指定の事実は記載されているが、開始・終了年度の記載がない"
+  ],
+  "conflicts": [
+    "硬式野球部の令和6年度（2024年）夏の成績：部活動ページ（学校サイト）は「令和6年度選手権大会初戦敗退」と記載しているが、一球速報.comの当該大会（第106回全国高等学校野球選手権神奈川大会）チームページには試合記録が一件もない（「試合はありません」）。地区予選で敗退し本大会に出場していない可能性があるが、学校記載をそのまま採用せず両方を残す"
+  ]
+}

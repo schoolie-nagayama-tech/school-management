@@ -1,0 +1,716 @@
+{
+  "prefecture": "神奈川県",
+  "school_name": "舞岡",
+  "official_url": "https://www.pen-kanagawa.ed.jp/maioka-h/",
+  "researched_at": "2026-09-24",
+  "stats": [
+    {
+      "metric": "university_count",
+      "item": "国公立",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 0,
+      "source_url": "https://www.pen-kanagawa.ed.jp/maioka-h/shinro/documents/r7daigaku.pdf",
+      "source_label": "舞岡高校 大学別合格実績（令和3〜7年度）",
+      "as_of": "2026-03-31",
+      "note": "大学別の表から合算（掲載は東京学芸大学のみで令和7年度欄は空欄。令和6年度に1件のみ）"
+    },
+    {
+      "metric": "university_count",
+      "item": "早慶上理",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 1,
+      "source_url": "https://www.pen-kanagawa.ed.jp/maioka-h/shinro/documents/r7daigaku.pdf",
+      "source_label": "舞岡高校 大学別合格実績（令和3〜7年度）",
+      "as_of": "2026-03-31",
+      "note": "大学別の表から合算（東京理科大学1。早稲田・慶應義塾・上智は令和7年度欄になし）"
+    },
+    {
+      "metric": "university_count",
+      "item": "GMARCH",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 0,
+      "source_url": "https://www.pen-kanagawa.ed.jp/maioka-h/shinro/documents/r7daigaku.pdf",
+      "source_label": "舞岡高校 大学別合格実績（令和3〜7年度）",
+      "as_of": "2026-03-31",
+      "note": "大学別の表から合算（学習院・明治・青山学院・立教・中央・法政いずれも令和7年度欄になし）"
+    },
+    {
+      "metric": "university_count",
+      "item": "成成明武",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 3,
+      "source_url": "https://www.pen-kanagawa.ed.jp/maioka-h/shinro/documents/r7daigaku.pdf",
+      "source_label": "舞岡高校 大学別合格実績（令和3〜7年度）",
+      "as_of": "2026-03-31",
+      "note": "大学別の表から合算（成蹊1、明治学院2。成城・武蔵は令和7年度欄になし）"
+    },
+    {
+      "metric": "university_count",
+      "item": "日東駒専",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 34,
+      "source_url": "https://www.pen-kanagawa.ed.jp/maioka-h/shinro/documents/r7daigaku.pdf",
+      "source_label": "舞岡高校 大学別合格実績（令和3〜7年度）",
+      "as_of": "2026-03-31",
+      "note": "大学別の表から合算（日本16、東洋3〈現役2＋過年度1〉、駒澤5、専修10）"
+    },
+    {
+      "metric": "university_count",
+      "item": "合計",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 259,
+      "source_url": "https://www.pen-kanagawa.ed.jp/maioka-h/shinro/documents/r7daigaku.pdf",
+      "source_label": "舞岡高校 大学別合格実績（令和3〜7年度）",
+      "as_of": "2026-03-31",
+      "note": "表末尾「現役生合格数255／過年度生合格数4」の合計"
+    },
+    {
+      "metric": "university_count",
+      "item": "関東学院大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 64,
+      "source_url": "https://www.pen-kanagawa.ed.jp/maioka-h/shinro/documents/r7daigaku.pdf",
+      "source_label": "舞岡高校 大学別合格実績（令和3〜7年度）",
+      "as_of": "2026-03-31",
+      "note": "令和7年度で最多の合格大学"
+    },
+    {
+      "metric": "university_count",
+      "item": "神奈川大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 30,
+      "source_url": "https://www.pen-kanagawa.ed.jp/maioka-h/shinro/documents/r7daigaku.pdf",
+      "source_label": "舞岡高校 大学別合格実績（令和3〜7年度）",
+      "as_of": "2026-03-31",
+      "note": ""
+    },
+    {
+      "metric": "university_count",
+      "item": "日本大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 16,
+      "source_url": "https://www.pen-kanagawa.ed.jp/maioka-h/shinro/documents/r7daigaku.pdf",
+      "source_label": "舞岡高校 大学別合格実績（令和3〜7年度）",
+      "as_of": "2026-03-31",
+      "note": ""
+    },
+    {
+      "metric": "university_count",
+      "item": "桜美林大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 14,
+      "source_url": "https://www.pen-kanagawa.ed.jp/maioka-h/shinro/documents/r7daigaku.pdf",
+      "source_label": "舞岡高校 大学別合格実績（令和3〜7年度）",
+      "as_of": "2026-03-31",
+      "note": ""
+    },
+    {
+      "metric": "university_count",
+      "item": "専修大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 10,
+      "source_url": "https://www.pen-kanagawa.ed.jp/maioka-h/shinro/documents/r7daigaku.pdf",
+      "source_label": "舞岡高校 大学別合格実績（令和3〜7年度）",
+      "as_of": "2026-03-31",
+      "note": "日東駒専の内数でもある"
+    },
+    {
+      "metric": "club_join_rate",
+      "item": "",
+      "basis": "",
+      "fiscal_year": 2026,
+      "value_num": 74,
+      "source_url": "https://www.pen-kanagawa.ed.jp/maioka-h/nyugaku/documents/maiokaqanda.pdf",
+      "source_label": "舞岡高校 よくある質問Q&A",
+      "as_of": "2026-09",
+      "note": "運動部454名・文化部267名（兼部含む）から算出。学校サイト『部活動紹介』『特色』・学校案内2026はいずれも『約70%』としており食い違う（conflictsに記載）"
+    },
+    {
+      "metric": "designation",
+      "item": "教育課程研究開発校（神奈川県教育委員会）",
+      "basis": "",
+      "fiscal_year": 2025,
+      "value_text": "『総合的な探究の時間』の研究指定校（通称 MAIOKA Project）。2019年度から指定継続中",
+      "source_url": "https://www.pen-kanagawa.ed.jp/maioka-h/tokushoku/index.html",
+      "source_label": "舞岡高校 特色ページ",
+      "as_of": "2026-09-24",
+      "note": ""
+    },
+    {
+      "metric": "uniform",
+      "item": "",
+      "basis": "",
+      "fiscal_year": 2022,
+      "value_text": "紺ブレザー（2022年度に『選べる制服』へリニューアル）。オリジナルエンブレム・ボタン、ネクタイ2種・リボンから選択、スラックス2種・スカートを性別問わず選択可",
+      "source_url": "https://www.pen-kanagawa.ed.jp/maioka-h/gaiyou/documents/seihuku.jpg",
+      "source_label": "舞岡高校 制服紹介",
+      "as_of": "2026-09-24",
+      "note": ""
+    },
+    {
+      "metric": "rules_summary",
+      "item": "",
+      "basis": "",
+      "fiscal_year": 2026,
+      "value_text": "パーマ・脱色・染色・化粧・ピアス等は禁止。スマートフォンは持込可だが授業中等は電源offでカバン等へ。アルバイトの規定は記載なし。下校は原則17時（部活動時19時）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/maioka-h/gaiyou/documents/seitokokoroe.pdf",
+      "source_label": "舞岡高校 生徒心得",
+      "as_of": "2026-09-24",
+      "note": ""
+    }
+  ],
+  "clubs": [
+    {
+      "name": "野球部",
+      "kind": "運動",
+      "tier": 2,
+      "tier_basis": "直近3年で県大会ベスト16〜32が複数回：2023年夏(第105回選手権)ベスト16（部創部後最高）、2023年秋県大会2回戦敗退、2024年夏(第106回選手権)ベスト32、2025年秋県大会3回戦敗退（一球速報.com）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/maioka-h/bukatsu/baseball.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "第107回全国高等学校野球選手権神奈川大会",
+          "level": "都県",
+          "result": "初戦敗退（桜丘に1-9、8回コールド）",
+          "happened_on": "2025-07-09",
+          "source_url": "https://baseball.omyutech.com/CupHomePageMain.action?cupId=20250000302"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "令和7年度神奈川県高等学校野球秋季県大会",
+          "level": "都県",
+          "result": "2回戦は厚木北に8-7で勝利、3回戦は橘に1-6で敗退",
+          "happened_on": "2025-09-13",
+          "source_url": "https://baseball.omyutech.com/CupHomePageMain.action?cupId=20250005743"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "第106回全国高等学校野球選手権神奈川大会",
+          "level": "都県",
+          "result": "4回戦敗退（向上に0-14、6回コールド）＝ベスト32。1〜3回戦は津久井に22-0、中央大学附属横浜に11-4（ともにコールド）、相模田名に6-2で勝利",
+          "happened_on": "2024-07-16",
+          "source_url": "https://baseball.omyutech.com/CupHomePageMain.action?cupId=20240009752"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "令和6年度神奈川県高等学校野球秋季県大会 地区予選",
+          "level": "地区",
+          "result": "1勝2敗(3位)で県大会出場ならず",
+          "source_url": "https://www.pen-kanagawa.ed.jp/maioka-h/bukatsu/baseball.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "第105回全国高等学校野球選手権記念神奈川大会",
+          "level": "都県",
+          "result": "5回戦敗退（横浜商に0-9、7回コールド）＝ベスト16（部創部後最高成績）。2回戦は城郷に10-6、3回戦は光陵に8-0(7回コールド)、4回戦は立花学園に8-7(延長10回タイブレーク)で勝利",
+          "happened_on": "2023-07-18",
+          "source_url": "https://baseball.omyutech.com/CupHomePageMain.action?cupId=20230006682"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "令和5年度神奈川県高等学校野球秋季県大会",
+          "level": "都県",
+          "result": "1回戦は藤沢西に16-14で勝利、2回戦は慶應義塾に1-22(5回コールド)で敗退",
+          "happened_on": "2023-09-10",
+          "source_url": "https://baseball.omyutech.com/CupHomePageMain.action?cupId=20230007306"
+        }
+      ]
+    },
+    {
+      "name": "サッカー部",
+      "kind": "運動",
+      "tier": 3,
+      "tier_basis": "2026年度 高円宮杯U-18サッカーリーグ神奈川 K5グループL所属（神奈川県サッカー協会）",
+      "source_url": "https://www.kanagawa-fa.gr.jp/cms/u18-league/2026/div5/",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "高円宮杯JFA U-18サッカーリーグ2026 神奈川 K5グループL",
+          "level": "その他",
+          "result": "8チーム中6位（1勝1分3敗、得点6失点12、2026年9月時点）",
+          "source_url": "https://www.kanagawa-fa.gr.jp/cms/u18-league/2026/div5/"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "関東大会県2次予選（新人大会）横浜地区予選",
+          "level": "地区",
+          "result": "Dグループ突破後シード決定トーナメント1回戦は光陵に2-1で勝利、2回戦は市立桜丘に0-4で敗退",
+          "source_url": "https://www.pen-kanagawa.ed.jp/maioka-h/bukatsu/soccer.html"
+        }
+      ]
+    },
+    {
+      "name": "アメリカンフットボール部",
+      "kind": "運動",
+      "source_url": "https://www.pen-kanagawa.ed.jp/maioka-h/seikatsu/bukatsu.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "陸上競技部",
+      "kind": "運動",
+      "tier": 1,
+      "tier_basis": "直近3年で関東・全国大会に2回以上出場：2024年度 男子400mで関東大会出場、2025年度 男子800mで関東選手権3位→全国総体(インターハイ)出場・総合12位（学校サイト）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/maioka-h/seikatsu/bukatsu.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "全国高等学校総合体育大会陸上競技（インターハイ）",
+          "level": "全国",
+          "result": "男子800m出場・総合12位（関東選手権3位を経て出場）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/maioka-h/seikatsu/bukatsu.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "神奈川県高等学校駅伝競走大会",
+          "level": "都県",
+          "result": "男子37位・女子17位",
+          "source_url": "https://www.pen-kanagawa.ed.jp/maioka-h/seikatsu/bukatsu.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "関東高等学校陸上競技大会",
+          "level": "関東",
+          "result": "男子400mで出場",
+          "source_url": "https://www.pen-kanagawa.ed.jp/maioka-h/seikatsu/bukatsu.html"
+        }
+      ]
+    },
+    {
+      "name": "男子バレーボール部",
+      "kind": "運動",
+      "tier": 1,
+      "tier_basis": "2024・2025・2026年度と関東大会に連続出場（私立も出場する大会）。2024年度は関東大会ベスト16、2024年度にU18ユースアジア選手権代表に1名選出（学校サイト）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/maioka-h/seikatsu/bukatsu.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "関東高等学校男子バレーボール大会",
+          "level": "関東",
+          "result": "ベスト16",
+          "source_url": "https://www.pen-kanagawa.ed.jp/maioka-h/seikatsu/bukatsu.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "関東高等学校男子バレーボール大会",
+          "level": "関東",
+          "result": "出場",
+          "source_url": "https://www.pen-kanagawa.ed.jp/maioka-h/seikatsu/bukatsu.html"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "関東高等学校男子バレーボール大会",
+          "level": "関東",
+          "result": "出場（2026年度上半期）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/maioka-h/seikatsu/bukatsu.html"
+        }
+      ]
+    },
+    {
+      "name": "女子バレーボール部",
+      "kind": "運動",
+      "days_note": "水曜OFFの週6日",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "source_url": "https://www.pen-kanagawa.ed.jp/maioka-h/seikatsu/bukatsu.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "男子バスケットボール部",
+      "kind": "運動",
+      "source_url": "https://www.pen-kanagawa.ed.jp/maioka-h/seikatsu/bukatsu.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "女子バスケットボール部",
+      "kind": "運動",
+      "days_note": "月曜休み、火〜日",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2023年度 南支部予選を勝ち抜き県大会に出場（上位入賞の記載なし）（学校サイト）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/maioka-h/seikatsu/bukatsu.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "神奈川県高等学校バスケットボール大会 南支部予選",
+          "level": "地区",
+          "result": "予選を勝ち抜き県大会出場",
+          "source_url": "https://www.pen-kanagawa.ed.jp/maioka-h/seikatsu/bukatsu.html"
+        }
+      ]
+    },
+    {
+      "name": "男子バドミントン部",
+      "kind": "運動",
+      "source_url": "https://www.pen-kanagawa.ed.jp/maioka-h/seikatsu/bukatsu.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "女子バドミントン部",
+      "kind": "運動",
+      "source_url": "https://www.pen-kanagawa.ed.jp/maioka-h/seikatsu/bukatsu.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "卓球部",
+      "kind": "運動",
+      "days_note": "火水木金＋休日1日(月休み)",
+      "days_per_week": 4.5,
+      "weekend": "試合のみ",
+      "source_url": "https://www.pen-kanagawa.ed.jp/maioka-h/seikatsu/bukatsu.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "柔道部",
+      "kind": "運動",
+      "source_url": "https://www.pen-kanagawa.ed.jp/maioka-h/seikatsu/bukatsu.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "剣道部",
+      "kind": "運動",
+      "source_url": "https://www.pen-kanagawa.ed.jp/maioka-h/seikatsu/bukatsu.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "男子テニス部（硬式）",
+      "kind": "運動",
+      "days_note": "月火木金日(大会時は土も)",
+      "days_per_week": 5,
+      "weekend": "日",
+      "source_url": "https://www.pen-kanagawa.ed.jp/maioka-h/seikatsu/bukatsu.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "女子テニス部",
+      "kind": "運動",
+      "days_note": "活動休止（2023年7月時点、部員0名）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/maioka-h/seikatsu/bukatsu.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "水泳部",
+      "kind": "運動",
+      "source_url": "https://www.pen-kanagawa.ed.jp/maioka-h/seikatsu/bukatsu.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "ダンス部",
+      "kind": "運動",
+      "days_note": "インストラクター指導週1回＋自主練習",
+      "source_url": "https://www.pen-kanagawa.ed.jp/maioka-h/seikatsu/bukatsu.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "山岳部",
+      "kind": "運動",
+      "days_note": "平日はランニング・筋トレ、週末は月1〜2回山行",
+      "source_url": "https://www.pen-kanagawa.ed.jp/maioka-h/seikatsu/bukatsu.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "ソフトテニス部",
+      "kind": "運動",
+      "days_note": "火水木金(放課後)+土(午前)",
+      "days_per_week": 5,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "2024年6月に同好会から部へ昇格。2024年度 横浜地区高校大会女子準優勝、戸塚区民大会準優勝（地区大会レベル）（学校サイト）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/maioka-h/seikatsu/bukatsu.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "横浜地区高等学校ソフトテニス大会",
+          "level": "地区",
+          "result": "女子準優勝",
+          "source_url": "https://www.pen-kanagawa.ed.jp/maioka-h/seikatsu/bukatsu.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "戸塚区民大会",
+          "level": "地区",
+          "result": "準優勝",
+          "source_url": "https://www.pen-kanagawa.ed.jp/maioka-h/seikatsu/bukatsu.html"
+        }
+      ]
+    },
+    {
+      "name": "吹奏楽部",
+      "kind": "文化",
+      "source_url": "https://www.pen-kanagawa.ed.jp/maioka-h/seikatsu/bukatsu.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "フォークソング部",
+      "kind": "文化",
+      "source_url": "https://www.pen-kanagawa.ed.jp/maioka-h/seikatsu/bukatsu.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "美術部",
+      "kind": "文化",
+      "source_url": "https://www.pen-kanagawa.ed.jp/maioka-h/seikatsu/bukatsu.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "茶道部",
+      "kind": "文化",
+      "days_note": "週2回",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日が週2回（週3日以下）で、目立つ大会・コンクール実績の記載がない（学校サイト）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/maioka-h/seikatsu/bukatsu.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "パソコン部",
+      "kind": "文化",
+      "days_note": "火木金週3回",
+      "days_per_week": 3,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日が週3回（週3日以下）で、目立つ大会・コンクール実績の記載がない（学校サイト）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/maioka-h/seikatsu/bukatsu.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "漫画研究部",
+      "kind": "文化",
+      "source_url": "https://www.pen-kanagawa.ed.jp/maioka-h/seikatsu/bukatsu.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "園芸部",
+      "kind": "文化",
+      "days_note": "全体週1回",
+      "days_per_week": 1,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日が週1回（週3日以下）で、目立つ大会・コンクール実績の記載がない（地域連携が主活動）（学校サイト）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/maioka-h/seikatsu/bukatsu.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "写真部",
+      "kind": "文化",
+      "source_url": "https://www.pen-kanagawa.ed.jp/maioka-h/seikatsu/bukatsu.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "クッキング部",
+      "kind": "文化",
+      "days_note": "火木＋月1回土日",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日が週2回程度（週3日以下）で、目立つ大会・コンクール実績の記載がない（学校サイト）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/maioka-h/seikatsu/bukatsu.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "演劇部",
+      "kind": "文化",
+      "tier": 3,
+      "tier_basis": "2025年3月・10月と横浜市高校演劇発表会（横浜地区大会）で優秀賞・最優秀賞を受賞（高文連系の地区大会。都県代表選出の明記はないため段階3にとどめた）（学校サイト）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/maioka-h/seikatsu/bukatsu.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "横浜市高校演劇発表会 春季発表会",
+          "level": "地区",
+          "result": "優秀賞",
+          "source_url": "https://www.pen-kanagawa.ed.jp/maioka-h/seikatsu/bukatsu.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "横浜市高校演劇発表会（横浜地区大会）",
+          "level": "地区",
+          "result": "最優秀賞",
+          "source_url": "https://www.pen-kanagawa.ed.jp/maioka-h/seikatsu/bukatsu.html"
+        }
+      ]
+    },
+    {
+      "name": "棋道部",
+      "kind": "文化",
+      "source_url": "https://www.pen-kanagawa.ed.jp/maioka-h/seikatsu/bukatsu.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "科学部",
+      "kind": "文化",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "横浜薬科大学発表会",
+          "level": "その他",
+          "result": "ライフサイエンス賞（2024年2月。大学主催の発表会で、高体連・高文連の公的な大会ではないため段階は付けなかった）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/maioka-h/seikatsu/bukatsu.html"
+        }
+      ],
+      "source_url": "https://www.pen-kanagawa.ed.jp/maioka-h/seikatsu/bukatsu.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "競技かるた部",
+      "kind": "文化",
+      "days_note": "月金週2日",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "source_url": "https://www.pen-kanagawa.ed.jp/maioka-h/seikatsu/bukatsu.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "第106回全国競技かるた選手権横浜大会（E級）",
+          "level": "地区",
+          "result": "出場（申し込めば出られる大会のため段階の根拠にはしていない）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/maioka-h/seikatsu/bukatsu.html"
+        }
+      ]
+    }
+  ],
+  "designated_universities": [
+    {
+      "university": "桜美林大学",
+      "fiscal_year": null,
+      "source_url": "https://www.pen-kanagawa.ed.jp/maioka-h/nyugaku/documents/r8pamphlet.pdf",
+      "note": "学校案内2026「主な指定校推薦」（五十音順、年度表記なし）"
+    },
+    {
+      "university": "神奈川大学",
+      "fiscal_year": null,
+      "source_url": "https://www.pen-kanagawa.ed.jp/maioka-h/nyugaku/documents/r8pamphlet.pdf",
+      "note": "学校案内2026「主な指定校推薦」（五十音順、年度表記なし）"
+    },
+    {
+      "university": "鎌倉女子大学",
+      "fiscal_year": null,
+      "source_url": "https://www.pen-kanagawa.ed.jp/maioka-h/nyugaku/documents/r8pamphlet.pdf",
+      "note": "学校案内2026「主な指定校推薦」（五十音順、年度表記なし）"
+    },
+    {
+      "university": "関東学院大学",
+      "fiscal_year": null,
+      "source_url": "https://www.pen-kanagawa.ed.jp/maioka-h/nyugaku/documents/r8pamphlet.pdf",
+      "note": "学校案内2026「主な指定校推薦」（五十音順、年度表記なし）"
+    },
+    {
+      "university": "専修大学",
+      "fiscal_year": null,
+      "source_url": "https://www.pen-kanagawa.ed.jp/maioka-h/nyugaku/documents/r8pamphlet.pdf",
+      "note": "学校案内2026「主な指定校推薦」（五十音順、年度表記なし）"
+    },
+    {
+      "university": "玉川大学",
+      "fiscal_year": null,
+      "source_url": "https://www.pen-kanagawa.ed.jp/maioka-h/nyugaku/documents/r8pamphlet.pdf",
+      "note": "学校案内2026「主な指定校推薦」（五十音順、年度表記なし）"
+    },
+    {
+      "university": "東京電機大学",
+      "fiscal_year": null,
+      "source_url": "https://www.pen-kanagawa.ed.jp/maioka-h/nyugaku/documents/r8pamphlet.pdf",
+      "note": "学校案内2026「主な指定校推薦」（五十音順、年度表記なし）"
+    },
+    {
+      "university": "東京都市大学",
+      "fiscal_year": null,
+      "source_url": "https://www.pen-kanagawa.ed.jp/maioka-h/nyugaku/documents/r8pamphlet.pdf",
+      "note": "学校案内2026「主な指定校推薦」（五十音順、年度表記なし）"
+    },
+    {
+      "university": "日本大学",
+      "fiscal_year": null,
+      "source_url": "https://www.pen-kanagawa.ed.jp/maioka-h/nyugaku/documents/r8pamphlet.pdf",
+      "note": "学校案内2026「主な指定校推薦」（五十音順、年度表記なし）"
+    },
+    {
+      "university": "文教大学",
+      "fiscal_year": null,
+      "source_url": "https://www.pen-kanagawa.ed.jp/maioka-h/nyugaku/documents/r8pamphlet.pdf",
+      "note": "学校案内2026「主な指定校推薦」（五十音順、年度表記なし）"
+    },
+    {
+      "university": "武蔵野大学",
+      "fiscal_year": null,
+      "source_url": "https://www.pen-kanagawa.ed.jp/maioka-h/nyugaku/documents/r8pamphlet.pdf",
+      "note": "学校案内2026「主な指定校推薦」（五十音順、年度表記なし）"
+    },
+    {
+      "university": "明治学院大学",
+      "fiscal_year": null,
+      "source_url": "https://www.pen-kanagawa.ed.jp/maioka-h/nyugaku/documents/r8pamphlet.pdf",
+      "note": "学校案内2026「主な指定校推薦」（五十音順、年度表記なし）"
+    }
+  ],
+  "events": [
+    {
+      "kind": "制服",
+      "period_label": "2022年度",
+      "summary": "紺ブレザーの制服を性別に関わらず選べる『選べる制服』にリニューアルした（ネクタイ・リボン、スラックス・スカートを選択可）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/maioka-h/gaiyou/documents/seihuku.jpg"
+    },
+    {
+      "kind": "その他",
+      "period_label": "2022年3月",
+      "happened_on": "2022-03-10",
+      "summary": "スクール・ポリシー（グラデュエーション/カリキュラム/アドミッション）を策定した。アドミッション・ポリシーは2023年度入試から運用",
+      "source_url": "https://www.pen-kanagawa.ed.jp/maioka-h/gaiyou/documents/schoolpolicy.pdf"
+    },
+    {
+      "kind": "施設",
+      "period_label": "2024年度",
+      "summary": "全教室に電子黒板を導入した",
+      "source_url": "https://www.pen-kanagawa.ed.jp/maioka-h/gaiyou/documents/giiziroku1.pdf"
+    },
+    {
+      "kind": "その他",
+      "period_label": "2025年6月",
+      "happened_on": "2025-06-13",
+      "summary": "創立50周年記念式典を鎌倉芸術館で開催した",
+      "source_url": "https://www.pen-kanagawa.ed.jp/maioka-h/gaiyou/documents/giiziroku1.pdf"
+    },
+    {
+      "kind": "統合",
+      "period_label": "2031年度予定",
+      "summary": "神奈川県立金井高等学校との再編・統合により新校として開校予定。現行の『舞岡高校』としての卒業生は現在の中学3年生（2027年4月入学者）が最後になる",
+      "source_url": "https://www.pen-kanagawa.ed.jp/maioka-h/nyugaku/documents/maiokaqanda.pdf"
+    }
+  ],
+  "unresolved": [
+    "admission_route_share（一般・指定校推薦・公募推薦・総合型の実進学割合）：進路関連の公式資料に記載が見つからなかった",
+    "career_decided_rate（進路決定率）：学校が公式に『進路決定率』として公表した数値は見当たらなかった（進路状況の内訳実数のみ確認）",
+    "satisfaction（学校評価アンケートの満足度）：神奈川県様式の学校評価は学校運営協議会での文章による協議のみで、数値の記載がない（手引き§4のとおり）",
+    "exam_ratio（推薦入試の応募倍率・受検倍率）：神奈川県公立高校入試は共通選抜のみで推薦という選考区分自体が無い。共通選抜自体の学校別応募倍率も一次資料を特定できなかった",
+    "students（男女別人数）：公式に男女別人数を公表した資料が見つからなかった",
+    "以下の部の直近3年（2023〜2025年度）の大会結果・活動日：アメリカンフットボール部・男子バスケットボール部・男子バドミントン部・女子バドミントン部・柔道部（成績の年度が不明瞭）・剣道部・水泳部・棋道部（直近の掲載が2020年度で古い）・美術部・フォークソング部・漫画研究部・写真部について、学校公式サイトに直近3年の記載が見つからなかった、または年度が特定できず使えなかった",
+    "野球部 2023年春・2024年春の地区予選詳細：一球速報.comには県大会出場分のみ掲載され、地区予選のスコアの一次資料は確認できなかった",
+    "体育館の改築（新設）時期：令和7年度第3回学校運営協議会議事録（2026年3月16日開催、2025年9月の文化祭時点の記述）で『体育館が新しくなった』ことは分かるが、着工・竣工の具体的な時期は確認できなかった",
+    "部活動一覧ページの部活動数の正確な内訳：本文『31の部活動があります』という記載と、掲載されている部を数え直した結果（32部）が一致しない"
+  ],
+  "conflicts": [
+    "大学進学者数（令和7年度卒業生）：進学実績PDF（r7zentai.pdf）は『216名(64%)』とする一方、学校案内2026（r8pamphlet.pdf）は同じ実績を『217名(64%)』としており1名分ずれがある",
+    "部活動加入率：部活動紹介ページ・特色ページ・学校案内2026はいずれも『約70%』とする一方、よくある質問Q&A（maiokaqanda.pdf）は『74%（運動部454名・文化部267名、兼部含む）』としており数値が食い違う",
+    "部活動の総数：部活動一覧ページの本文は『31の部活動があります』とするが、掲載内容を数え直すと運動部19・文化部13の計32部だった。よくある質問Q&A（maiokaqanda.pdf）は男女ペア種目を1つに数えて『運動部15・文化部13＝28』としており、いずれとも一致しない"
+  ]
+}

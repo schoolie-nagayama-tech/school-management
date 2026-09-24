@@ -1,0 +1,382 @@
+{
+  "prefecture": "東京都",
+  "school_name": "山崎",
+  "official_url": "https://www.metro.ed.jp/yamasaki-h/",
+  "researched_at": "2026-09-24",
+  "stats": [
+    {
+      "metric": "university_count",
+      "item": "GMARCH",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 1,
+      "source_url": "https://www.metro.ed.jp/yamasaki-h/img_sub/filelink/filelink-pdffile-5216.pdf",
+      "source_label": "41期 令和7年度 進路状況（合格者数）(1)私立大学合格者（現役）",
+      "as_of": "2026-03-25",
+      "note": "法政大学（通信教育学部）1名のみ。通学課程のGMARCH合格者はなし。学校独自の大学群区分の記載は資料になし。"
+    },
+    {
+      "metric": "university_count",
+      "item": "日東駒専",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 2,
+      "source_url": "https://www.metro.ed.jp/yamasaki-h/img_sub/filelink/filelink-pdffile-5216.pdf",
+      "source_label": "41期 令和7年度 進路状況（合格者数）(1)私立大学合格者（現役）",
+      "as_of": "2026-03-25",
+      "note": "専修大学1名・日本大学1名の合算。表から合算。"
+    },
+    {
+      "metric": "university_count",
+      "item": "合計",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 67,
+      "source_url": "https://www.metro.ed.jp/yamasaki-h/img_sub/filelink/filelink-pdffile-5216.pdf",
+      "source_label": "41期 令和7年度 進路状況（合格者数）(1)私立大学合格者（現役）合計",
+      "as_of": "2026-03-25",
+      "note": "四年制私立大学の合計（資料に明記）。短期大学10名・専門/各種学校58名・就職17名は含まない。国公立大学の区分は資料になし（unresolved参照）。"
+    },
+    {
+      "metric": "university_count",
+      "item": "桜美林大学",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 10,
+      "source_url": "https://www.metro.ed.jp/yamasaki-h/img_sub/filelink/filelink-pdffile-5216.pdf",
+      "source_label": "41期 令和7年度 進路状況（合格者数）(1)私立大学合格者（現役）",
+      "as_of": "2026-03-25",
+      "note": "四年制大学合格者数の中で最多。高大連携協定校。"
+    },
+    {
+      "metric": "university_count",
+      "item": "和光大学",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 8,
+      "source_url": "https://www.metro.ed.jp/yamasaki-h/img_sub/filelink/filelink-pdffile-5216.pdf",
+      "source_label": "41期 令和7年度 進路状況（合格者数）(1)私立大学合格者（現役）",
+      "as_of": "2026-03-25",
+      "note": ""
+    },
+    {
+      "metric": "university_count",
+      "item": "明星大学",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 5,
+      "source_url": "https://www.metro.ed.jp/yamasaki-h/img_sub/filelink/filelink-pdffile-5216.pdf",
+      "source_label": "41期 令和7年度 進路状況（合格者数）(1)私立大学合格者（現役）",
+      "as_of": "2026-03-25",
+      "note": ""
+    },
+    {
+      "metric": "university_count",
+      "item": "帝京大学",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 4,
+      "source_url": "https://www.metro.ed.jp/yamasaki-h/img_sub/filelink/filelink-pdffile-5216.pdf",
+      "source_label": "41期 令和7年度 進路状況（合格者数）(1)私立大学合格者（現役）",
+      "as_of": "2026-03-25",
+      "note": ""
+    },
+    {
+      "metric": "career_decided_rate",
+      "fiscal_year": 2025,
+      "value_num": 93,
+      "source_url": "https://www.metro.ed.jp/yamasaki-h/img_sub/filelink/filelink-pdffile-35955.pdf",
+      "source_label": "令和7年度学校経営報告 進路指導「重点目標と方策」欄の実績",
+      "as_of": "2026-03-31",
+      "note": "「進路決定率　93％」（方策と数値目標「進路決定率100%」に対する自己評価・報告欄の実績）。"
+    },
+    {
+      "metric": "exam_ratio",
+      "item": "推薦",
+      "fiscal_year": 2024,
+      "value_num": 1.63,
+      "source_url": "https://www.kyoiku.metro.tokyo.lg.jp/documents/d/kyoiku/1_74",
+      "source_label": "令和6年度東京都立高等学校入学者選抜応募状況（推薦応募）普通科（コース・単位制以外）",
+      "as_of": "2024-01-22",
+      "note": "応募倍率。募集40名・応募65名（男女問わず）。"
+    },
+    {
+      "metric": "exam_ratio",
+      "item": "推薦",
+      "fiscal_year": 2025,
+      "value_num": 1.73,
+      "source_url": "https://www.kyoiku.metro.tokyo.lg.jp/documents/d/kyoiku/02-13",
+      "source_label": "令和7年度東京都立高等学校入学者選抜応募状況（推薦応募）普通科（コース・単位制以外）",
+      "as_of": "2025-01-20",
+      "note": "応募倍率。募集40名・応募69名（男女問わず）。"
+    },
+    {
+      "metric": "exam_ratio",
+      "item": "推薦",
+      "fiscal_year": 2026,
+      "value_num": 0.78,
+      "source_url": "https://www.kyoiku.metro.tokyo.lg.jp/documents/d/kyoiku/20260121_suisen_futsu",
+      "source_label": "令和8年度東京都立高等学校入学者選抜応募状況（推薦応募）普通科（コース・単位制以外）",
+      "as_of": "2026-01-20",
+      "note": "応募倍率。募集40名・応募31名（男女問わず）。募集人員割れ（3年間で最低）。"
+    },
+    {
+      "metric": "designation",
+      "item": "ユネスコスクール",
+      "fiscal_year": 2026,
+      "value_text": "日本ユネスコ協会連盟認定。都立高校で3校のみ認定（令和4年11月認定）",
+      "source_url": "https://www.metro.ed.jp/yamasaki-h/img_sub/filelink/filelink-pdffile-35954.pdf",
+      "source_label": "令和8年度学校経営計画 表紙欄の指定一覧",
+      "as_of": "2026-04-30",
+      "note": ""
+    },
+    {
+      "metric": "designation",
+      "item": "教育課程実践検証協力校",
+      "fiscal_year": 2026,
+      "value_text": "国立教育政策研究所指定",
+      "source_url": "https://www.metro.ed.jp/yamasaki-h/img_sub/filelink/filelink-pdffile-35954.pdf",
+      "source_label": "令和8年度学校経営計画 表紙欄の指定一覧",
+      "as_of": "2026-04-30",
+      "note": ""
+    },
+    {
+      "metric": "designation",
+      "item": "生成AI研究校",
+      "fiscal_year": 2026,
+      "value_text": "東京都教育庁総務部情報企画指定",
+      "source_url": "https://www.metro.ed.jp/yamasaki-h/img_sub/filelink/filelink-pdffile-35954.pdf",
+      "source_label": "令和8年度学校経営計画 表紙欄の指定一覧",
+      "as_of": "2026-04-30",
+      "note": ""
+    },
+    {
+      "metric": "designation",
+      "item": "AI教材活用推進校・学力向上研究校",
+      "fiscal_year": 2026,
+      "value_text": "東京都教育庁指導部高校教育改革担当指定",
+      "source_url": "https://www.metro.ed.jp/yamasaki-h/img_sub/filelink/filelink-pdffile-35954.pdf",
+      "source_label": "令和8年度学校経営計画 表紙欄の指定一覧",
+      "as_of": "2026-04-30",
+      "note": "資料では一つの指定名として併記されている。"
+    },
+    {
+      "metric": "uniform",
+      "fiscal_year": 2026,
+      "value_text": "ブレザー。ズボン/スカートは本校指定、加工不可。ネクタイ・リボンはオプション含め選択可。夏服・冬服の期間指定なし。靴はローファーか運動靴（ブーツ・パンプス・サンダル不可）。",
+      "source_url": "https://www.metro.ed.jp/yamasaki-h/school_life/symbols.html",
+      "source_label": "東京都立山崎高等学校「制服・校章・校歌」および令和8年度生徒の心得（服装のきまり）",
+      "as_of": "2026-09",
+      "note": ""
+    },
+    {
+      "metric": "rules_summary",
+      "fiscal_year": 2026,
+      "value_text": "頭髪は染色・脱色・パーマ・エクステ等不可。化粧・ピアス（透明含む）・ネイル等の装身具は禁止。オートバイ通学禁止。スマホは使用可能時間帯以外は電源を切り自己管理。",
+      "source_url": "https://www.metro.ed.jp/yamasaki-h/img_sub/filelink/filelink-pdffile-34588.pdf",
+      "source_label": "令和8年度 生徒の心得（学校生活のきまり・身だしなみについて）",
+      "as_of": "2026-09",
+      "note": "アルバイトに関する個別規定の記載は資料中に見当たらず。"
+    }
+  ],
+  "clubs": [
+    {
+      "name": "サッカー部",
+      "kind": "運動",
+      "days_note": "火・木・金・土（日は試合が入ることがある）",
+      "days_per_week": 4,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2026年度 高円宮杯U-18東京 T1〜T5に所属なし（支部リーグ扱い）。参加チーム一覧は https://www.tleague-u18.com/team.php?dy=2026&dt=1 〜 dt=5 （2026-09-24確認）。活動日は週4日のため段階4にはならず段階3。部自身も「現在部員が少なく、このままだと来年単独チームで大会参加ができません」と説明。",
+      "source_url": "https://www.metro.ed.jp/yamasaki-h/school_life/activities.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "陸上競技部",
+      "kind": "運動",
+      "days_note": "火・木・金",
+      "days_per_week": 3,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日は週3日（火・木・金）。部活動ページの目標は「自己ベスト更新」で、直近3年の大会成績の記載は確認できなかった。",
+      "source_url": "https://www.metro.ed.jp/yamasaki-h/school_life/activities.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "男子バスケットボール部",
+      "kind": "運動",
+      "days_note": "火・水・木・金・土",
+      "days_per_week": 5,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "活動日は週5日。目標は「公式戦勝利！」だが具体的な大会成績の記載は確認できなかった。",
+      "source_url": "https://www.metro.ed.jp/yamasaki-h/school_life/activities.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "女子バスケットボール部",
+      "kind": "運動",
+      "days_note": "月・金・土",
+      "days_per_week": 3,
+      "weekend": "土",
+      "tier": 4,
+      "tier_basis": "活動日は週3日（月・金・土）。具体的な大会成績の記載は確認できなかった。",
+      "source_url": "https://www.metro.ed.jp/yamasaki-h/school_life/activities.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "バドミントン部",
+      "kind": "運動",
+      "days_note": "月・水・木・土",
+      "days_per_week": 4,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "活動日は週4日、外部指導員による技術指導あり。具体的な大会成績の記載は確認できなかった。",
+      "source_url": "https://www.metro.ed.jp/yamasaki-h/school_life/activities.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "硬式テニス部",
+      "kind": "運動",
+      "days_note": "月・火・木・金・土（朝練）",
+      "days_per_week": 5,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "活動日は週5日。目標は「本選に出場する」だが、直近3年の具体的な大会成績の記載は確認できなかった。",
+      "source_url": "https://www.metro.ed.jp/yamasaki-h/school_life/activities.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "アーチェリー部",
+      "kind": "運動",
+      "days_note": "日・月・木・金（朝・自主練）",
+      "days_per_week": 4,
+      "weekend": "日",
+      "tier": 3,
+      "tier_basis": "活動日は週4日。目標は「インターハイ出場！」（目標のため実績としては使わない）。2020年度に全国大会出場の実績があるが直近3年の対象外で、それ以降の大会成績の記載は確認できなかった。",
+      "source_url": "https://www.metro.ed.jp/yamasaki-h/school_life/activities.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "ダンス部",
+      "kind": "運動",
+      "days_note": "月・水・金",
+      "days_per_week": 3,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日は週3日。目標は「楽しく活動しながら基礎を固める」で、大会・コンクール等への言及なし。",
+      "source_url": "https://www.metro.ed.jp/yamasaki-h/school_life/activities.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "吹奏楽部",
+      "kind": "文化",
+      "days_note": "火曜、木曜、金曜",
+      "days_per_week": 3,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日は週3日。部員3名で活動中と部自身が説明しており、コンクール等への参加の記載は確認できなかった。",
+      "source_url": "https://www.metro.ed.jp/yamasaki-h/school_life/activities.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "茶道・華道部",
+      "kind": "文化",
+      "days_note": "（茶道）毎週木曜、（華道）月1・2回火曜",
+      "days_per_week": 1.5,
+      "tier": 4,
+      "tier_basis": "活動日は週1〜2回程度。目標は「みんなで仲良く活動する」で、大会・コンクール等への言及なし。",
+      "source_url": "https://www.metro.ed.jp/yamasaki-h/school_life/activities.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "演劇部",
+      "kind": "文化",
+      "days_note": "月・火・木・金（大会前は不定期に）土・日",
+      "days_per_week": 4,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2026年3月、高文連多摩南地区「春の演劇フェスティバル」で最優秀賞にあたる「桜美林賞」を受賞（学校ニュース）。地区大会の賞のため段階3。",
+      "source_url": "https://www.metro.ed.jp/yamasaki-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "高文連多摩南地区 春の演劇フェスティバル",
+          "level": "地区",
+          "result": "最優秀賞（桜美林賞・初代受賞）",
+          "happened_on": "2026-03-27",
+          "source_url": "https://www.metro.ed.jp/yamasaki-h/news/2026/07/newsentry_140.html"
+        }
+      ]
+    },
+    {
+      "name": "芸術部",
+      "kind": "文化",
+      "days_note": "月曜日、金曜日　15:30〜17:00",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日は週2日。「アットホームな部活」と部自身が説明しており、コンクール等への参加の記載は確認できなかった。",
+      "source_url": "https://www.metro.ed.jp/yamasaki-h/school_life/activities.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "Baseball5部",
+      "kind": "運動",
+      "tier": 2,
+      "tier_basis": "2025年1月13日、侍ジャパン チャレンジカップ 第2回Baseball5日本選手権（全国大会、一般財団法人全日本野球協会主催）に初出場しベスト4。全国大会出場は直近3年で1回のため段階2。硬式野球部の部員不足（令和6年度に部員2名まで減少）を受け、硬式野球部員と野球未経験の女子生徒を中心に結成されたチーム「Spirit bonds YAMASAKI」による実績。",
+      "source_url": "https://www.metro.ed.jp/yamasaki-h/our_school/pamphlet.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "侍ジャパン チャレンジカップ 第2回Baseball5日本選手権（全国大会）",
+          "level": "全国",
+          "result": "ベスト4（初戦：横浜隼人Brave Heartに2セット連取で勝利、準決勝：市立船橋5に1勝2敗で敗退）",
+          "happened_on": "2025-01-13",
+          "source_url": "https://www.metro.ed.jp/yamasaki-h/news/2025/01/no_37_baseball5.html"
+        }
+      ]
+    }
+  ],
+  "designated_universities": [],
+  "events": [
+    {
+      "kind": "その他",
+      "period_label": "2020年12月",
+      "happened_on": "2020-12-10",
+      "summary": "東京家政学院大学との高大教育連携協定を締結",
+      "source_url": "https://www.metro.ed.jp/yamasaki-h/our_school/history.html"
+    },
+    {
+      "kind": "指定",
+      "period_label": "2021年8月",
+      "happened_on": "2021-08-12",
+      "summary": "ユネスコのキャンディデート校に選ばれる",
+      "source_url": "https://www.metro.ed.jp/yamasaki-h/our_school/history.html"
+    },
+    {
+      "kind": "指定",
+      "period_label": "2022年11月",
+      "summary": "ユネスコスクールに認定される（都立高校で3校のみ）",
+      "source_url": "https://www.metro.ed.jp/yamasaki-h/our_school/history.html"
+    },
+    {
+      "kind": "その他",
+      "period_label": "2024年度（令和6年度）以降",
+      "summary": "部員不足で存続が危ぶまれた硬式野球部を母体に、男女混合5人制の新競技「Baseball5」のチーム「Spirit bonds YAMASAKI」が始動。2025年1月の全国大会でベスト4",
+      "source_url": "https://www.metro.ed.jp/yamasaki-h/news/2025/01/no_37_baseball5.html"
+    }
+  ],
+  "unresolved": [
+    "国公立大学・早慶上理・成成明武の合格者数：「41期 令和7年度 進路状況（合格者数）」と学校案内パンフレット「主な進路先」のいずれにも国公立大学の区分自体が無い（私立大学・短期大学・専門学校・就職のみ）。実質0名とみられるが、0名と明記した公式資料は確認できなかった。",
+    "指定校推薦（大学名の一覧）：学校案内パンフレット・進路関連ページとも「令和7年度卒業生　主な進路先」（合格大学の一覧、私立大学23校ほか）はあるが、「主な指定校推薦」という見出しの一覧は見当たらなかった。日野の前例（合格大学一覧と指定校の取り違え）を踏まえ、合格大学一覧を指定校としては採用していない。",
+    "部活動加入率：学校経営計画・学校経営報告とも数値目標に部活動加入率の記載がなく、確認できなかった。",
+    "満足度（生徒:学校生活・保護者:学校生活など）：学校運営連絡協議会実施報告書（令和7年度）は5観点でアンケートを実施しているが、結果は「肯定的評価が多数」等の定性的な記載のみで、観点別の具体的な満足度（%）の記載は確認できなかった。学校経営報告にある「生徒の77.1%の評価、保護者の60.1%から肯定的な評価」は校則（授業規律）見直しに対する評価であり、学校生活全般の満足度ではないため、statsには採用しなかった。",
+    "男女別の在籍生徒数：直近（令和4年度入学以降）の入学式記事に男女別人数の記載がなく、公式に確認できる最新の内訳は令和3年度入学（39期生、男子109名・女子83名）で5年前と古いため採用しなかった。",
+    "硬式野球部の2023年度（令和5年度）夏の大会結果：学校ニュース（No.32・No.36）はPDFへのリンクのみで本文に結果の記載がなく、一球速報.comでも本校チームの成績を確認できなかった。同部は令和6年度に部員2名まで減少し、Baseball5チームに移行したとみられる。",
+    "校舎改築の時期：学校運営連絡協議会実施報告書（令和7年度）に「本校校舎改築工事の概況」との記述があるが、具体的な期間・内容を示す公式資料は確認できなかった。"
+  ],
+  "conflicts": []
+}

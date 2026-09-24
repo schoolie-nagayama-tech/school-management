@@ -1,0 +1,729 @@
+{
+  "prefecture": "東京都",
+  "school_name": "片倉",
+  "official_url": "https://www.metro.ed.jp/katakura-h/",
+  "researched_at": "2026-09-24",
+  "stats": [
+    {
+      "metric": "university_count",
+      "item": "国公立",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 1,
+      "source_url": "https://www.metro.ed.jp/katakura-h/img_sub/令和8年3月卒業生(52期生)_進路決定状況.pdf",
+      "source_label": "片倉高校 52期生(2026年3月卒業) 合格状況(3月31日時点)",
+      "as_of": "2026-03-31",
+      "note": "大学別の表から合算。国公立大学は東京藝術大学1のみ。学校側が示した塊集計は見当たらない。"
+    },
+    {
+      "metric": "university_count",
+      "item": "早慶上理",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 0,
+      "source_url": "https://www.metro.ed.jp/katakura-h/img_sub/令和8年3月卒業生(52期生)_進路決定状況.pdf",
+      "source_label": "片倉高校 52期生(2026年3月卒業) 合格状況(3月31日時点)",
+      "as_of": "2026-03-31",
+      "note": "大学別の表に早稲田・慶應・上智・東京理科大学の合格者記載なし。"
+    },
+    {
+      "metric": "university_count",
+      "item": "GMARCH",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 4,
+      "source_url": "https://www.metro.ed.jp/katakura-h/img_sub/令和8年3月卒業生(52期生)_進路決定状況.pdf",
+      "source_label": "片倉高校 52期生(2026年3月卒業) 合格状況(3月31日時点)",
+      "as_of": "2026-03-31",
+      "note": "大学別の表から合算。中央大学4のみ(学習院・明治・青山学院・立教・法政は記載なし)。"
+    },
+    {
+      "metric": "university_count",
+      "item": "成成明武",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 3,
+      "source_url": "https://www.metro.ed.jp/katakura-h/img_sub/令和8年3月卒業生(52期生)_進路決定状況.pdf",
+      "source_label": "片倉高校 52期生(2026年3月卒業) 合格状況(3月31日時点)",
+      "as_of": "2026-03-31",
+      "note": "大学別の表から合算。成蹊1・成城2(明治学院・武蔵は記載なし)。"
+    },
+    {
+      "metric": "university_count",
+      "item": "日東駒専",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 6,
+      "source_url": "https://www.metro.ed.jp/katakura-h/img_sub/令和8年3月卒業生(52期生)_進路決定状況.pdf",
+      "source_label": "片倉高校 52期生(2026年3月卒業) 合格状況(3月31日時点)",
+      "as_of": "2026-03-31",
+      "note": "大学別の表から合算。日本大学3・東洋大学1・駒澤大学1・専修大学1の合計。"
+    },
+    {
+      "metric": "university_count",
+      "item": "合計",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 206,
+      "source_url": "https://www.metro.ed.jp/katakura-h/img_sub/令和8年3月卒業生(52期生)_進路決定状況.pdf",
+      "source_label": "片倉高校 52期生(2026年3月卒業) 合格状況(3月31日時点)",
+      "as_of": "2026-03-31",
+      "note": "四年制大学の合格人数(延べ)を大学別の表から合算。短大・専門学校は含まない。"
+    },
+    {
+      "metric": "university_count",
+      "item": "明星大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 31,
+      "source_url": "https://www.metro.ed.jp/katakura-h/img_sub/令和8年3月卒業生(52期生)_進路決定状況.pdf",
+      "source_label": "片倉高校 52期生(2026年3月卒業) 合格状況(3月31日時点)",
+      "as_of": "2026-03-31",
+      "note": "合格人数が最も多い大学。"
+    },
+    {
+      "metric": "university_count",
+      "item": "帝京大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 24,
+      "source_url": "https://www.metro.ed.jp/katakura-h/img_sub/令和8年3月卒業生(52期生)_進路決定状況.pdf",
+      "source_label": "片倉高校 52期生(2026年3月卒業) 合格状況(3月31日時点)",
+      "as_of": "2026-03-31",
+      "note": ""
+    },
+    {
+      "metric": "university_count",
+      "item": "東京経済大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 9,
+      "source_url": "https://www.metro.ed.jp/katakura-h/img_sub/令和8年3月卒業生(52期生)_進路決定状況.pdf",
+      "source_label": "片倉高校 52期生(2026年3月卒業) 合格状況(3月31日時点)",
+      "as_of": "2026-03-31",
+      "note": ""
+    },
+    {
+      "metric": "university_count",
+      "item": "桜美林大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 8,
+      "source_url": "https://www.metro.ed.jp/katakura-h/img_sub/令和8年3月卒業生(52期生)_進路決定状況.pdf",
+      "source_label": "片倉高校 52期生(2026年3月卒業) 合格状況(3月31日時点)",
+      "as_of": "2026-03-31",
+      "note": "多摩美術大学(8)と同数タイ。"
+    },
+    {
+      "metric": "university_count",
+      "item": "多摩美術大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 8,
+      "source_url": "https://www.metro.ed.jp/katakura-h/img_sub/令和8年3月卒業生(52期生)_進路決定状況.pdf",
+      "source_label": "片倉高校 52期生(2026年3月卒業) 合格状況(3月31日時点)",
+      "as_of": "2026-03-31",
+      "note": "造形美術コースの合格実績を反映。桜美林大学(8)と同数タイ。"
+    },
+    {
+      "metric": "exam_ratio",
+      "item": "推薦:普通科",
+      "fiscal_year": 2026,
+      "value_num": 2.9,
+      "source_url": "https://www.metro.ed.jp/katakura-h/img_sub/filelink/filelink-pdffile-34733.pdf",
+      "source_label": "片倉高校 令和7年度学校経営報告 重点目標(7)広報活動 入試倍率",
+      "as_of": "2026-04-15",
+      "note": "「普通科及び造形美術コースの入試倍率 推薦3.0倍以上」の実績値。応募倍率・受検倍率のいずれかは資料に明記なし。一般入試(学力検査)倍率は全校まとめ資料で取込済みのためここでは扱わない。"
+    },
+    {
+      "metric": "exam_ratio",
+      "item": "推薦:造形美術コース",
+      "fiscal_year": 2026,
+      "value_num": 2.0,
+      "source_url": "https://www.metro.ed.jp/katakura-h/img_sub/filelink/filelink-pdffile-34733.pdf",
+      "source_label": "片倉高校 令和7年度学校経営報告 重点目標(7)広報活動 入試倍率",
+      "as_of": "2026-04-15",
+      "note": "応募倍率・受検倍率のいずれかは資料に明記なし。"
+    },
+    {
+      "metric": "career_decided_rate",
+      "fiscal_year": 2025,
+      "value_num": 98,
+      "source_url": "https://www.metro.ed.jp/katakura-h/img_sub/filelink/filelink-pdffile-34733.pdf",
+      "source_label": "片倉高校 令和7年度学校経営報告 重点目標(2)学習指導・進路指導",
+      "as_of": "2026-04-15",
+      "note": "「進路決定率(進学準備除く)95%以上」の実績値98%。52期生の合格状況PDFでは受験準備中の生徒も含めて「未定0名」としており、定義が異なる(conflicts参照)。"
+    },
+    {
+      "metric": "club_join_rate",
+      "fiscal_year": 2025,
+      "value_num": 71.0,
+      "source_url": "https://www.metro.ed.jp/katakura-h/img_sub/filelink/filelink-pdffile-34733.pdf",
+      "source_label": "片倉高校 令和7年度学校経営報告 重点目標(5)特別活動について",
+      "as_of": "2026-04-15",
+      "note": "「1年生加入率75%以上」の実績値。目標未達(B評価)。"
+    },
+    {
+      "metric": "satisfaction",
+      "item": "生徒:授業",
+      "fiscal_year": 2025,
+      "value_num": 94,
+      "source_url": "https://www.metro.ed.jp/katakura-h/img_sub/filelink/filelink-pdffile-34733.pdf",
+      "source_label": "片倉高校 令和7年度学校経営報告 重点目標(2)学習指導・進路指導",
+      "as_of": "2026-04-15",
+      "note": "「生徒の授業満足度80%以上」の実績値。目標は達成(B評価、一部未達成の教科あり)。保護者・学校生活全体の満足度は公式サイトに学校評価アンケート報告のリンクが見当たらず不明(unresolved参照)。"
+    },
+    {
+      "metric": "uniform",
+      "fiscal_year": 2026,
+      "value_text": "紺のブレザーにグレーのスラックス・スカート。ネクタイは赤・青の2種類、リボンも赤・青の2種類。女子もスラックスを選択し通常着用できる。夏服は半袖・長袖とも選択可能。",
+      "source_url": "https://www.metro.ed.jp/katakura-h/our_school/pamphlet.html",
+      "source_label": "片倉高校 学校案内パンフレット「KATAKURA」(2027年入学生向け) 校章・制服",
+      "as_of": "2026-07-08",
+      "note": ""
+    },
+    {
+      "metric": "designation",
+      "item": "Premiere Club（Tier1）",
+      "fiscal_year": 2026,
+      "value_text": "都立学校における部活動の特別強化プロジェクト。吹奏楽部が指定(東京都全体で11部活動のみ・文化系では選出例が少ない)。学校経営計画ではTier1のモデルケース構築を目標に掲げる。",
+      "source_url": "https://www.metro.ed.jp/katakura-h/activities/club_23/index.html",
+      "source_label": "片倉高校 吹奏楽部ページ",
+      "as_of": "2026-09-23",
+      "note": "東京都教育委員会指定。docs/data/tokyo-premiere-club-2026.csvでも吹奏楽・tier1として取込済み。"
+    },
+    {
+      "metric": "designation",
+      "item": "海外学校間交流推進校",
+      "fiscal_year": 2026,
+      "value_text": "シンガポール国立芸術中等学校(School of the Arts, Singapore, SOTA)との交流を推進(東京都教育委員会指定)。",
+      "source_url": "https://www.metro.ed.jp/katakura-h/img_sub/filelink/filelink-pdffile-37055.pdf",
+      "source_label": "片倉高校 令和8年度学校経営計画 5(1)地域と社会に参画する態度及び国際理解の育成",
+      "as_of": "2026-06-15",
+      "note": ""
+    }
+  ],
+  "clubs": [
+    {
+      "name": "硬式野球",
+      "kind": "運動",
+      "days_note": "平日：月・水・木・金15:30〜19:00(火曜定休)、土・日・祝：シーズン中は他校との練習試合(A・B戦)が基本",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2023〜2025年度、夏季西東京大会・秋季都大会とも上位進出の記録は見当たらない(直近の好成績は2024年春 東京都ベスト32が最高。一球速報.comの2024・2025年夏季大会でも1回戦相当で敗退とみられる)。学校案内パンフレットに掲載の好成績(2018夏ベスト8、2019春ベスト16)は2023年度より前のため段階の根拠にしていない。",
+      "source_url": "https://www.metro.ed.jp/katakura-h/activities/club_1/index.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "全国高等学校野球選手権 西東京大会",
+          "level": "都県",
+          "result": "2回戦敗退",
+          "happened_on": "2023-07-13",
+          "source_url": "https://www.metro.ed.jp/katakura-h/activities/2023/07/2_1.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "東京都高等学校野球大会(春季)",
+          "level": "都県",
+          "result": "ベスト32",
+          "source_url": "https://www.metro.ed.jp/katakura-h/img_sub/pamphlet/pamphlet-pdffile-4218.pdf"
+        }
+      ]
+    },
+    {
+      "name": "アメリカンフットボール",
+      "kind": "運動",
+      "days_note": "週5〜6日(木曜OFF、月曜または日曜のいずれかOFF)",
+      "days_per_week": 5.5,
+      "weekend": "土日",
+      "source_url": "https://www.metro.ed.jp/katakura-h/activities/club_2/index.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "秋季大会 マスタリートーナメント",
+          "level": "その他",
+          "result": "優勝",
+          "source_url": "https://www.metro.ed.jp/katakura-h/img_sub/pamphlet/pamphlet-pdffile-4218.pdf"
+        }
+      ]
+    },
+    {
+      "name": "サッカー",
+      "kind": "運動",
+      "tier": 3,
+      "tier_basis": "サッカー部はリーグ所属で判定(手引き§6)。2026年度 高円宮杯U-18東京 T1〜T5のいずれにも所属が確認できず(支部リーグ相当)。2024年度はT5リーグ所属だった(学校案内パンフレット)。活動日は資料に記載がなく段階4への引き下げはしていない。",
+      "source_url": "https://www.metro.ed.jp/katakura-h/activities/club_3/index.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "全国高校サッカー選手権 東京都大会",
+          "level": "都県",
+          "result": "ベスト8",
+          "source_url": "https://www.metro.ed.jp/katakura-h/img_sub/pamphlet/pamphlet-pdffile-4218.pdf"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "地区1部リーグ",
+          "level": "地区",
+          "result": "優勝(地区トップリーグ昇格)",
+          "source_url": "https://www.metro.ed.jp/katakura-h/img_sub/pamphlet/pamphlet-pdffile-4218.pdf"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "全国高校サッカー選手権 東京都大会",
+          "level": "都県",
+          "result": "ベスト16(T5リーグ所属)",
+          "source_url": "https://www.metro.ed.jp/katakura-h/img_sub/pamphlet/pamphlet-pdffile-4218.pdf"
+        }
+      ]
+    },
+    {
+      "name": "陸上競技部",
+      "kind": "運動",
+      "days_note": "週5日間",
+      "days_per_week": 5,
+      "tier": 1,
+      "tier_basis": "2023年度 全国高校総合体育大会(インターハイ)出場・国民体育大会第2位入賞、2024年度 南関東大会出場、2025年度 関東高校選抜新人大会出場、2026年度 南関東大会出場(学校案内パンフレット)。直近3年+今年度で全国・関東大会級の出場が5回。",
+      "source_url": "https://www.metro.ed.jp/katakura-h/activities/club_4/index.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "全国高等学校総合体育大会",
+          "level": "全国",
+          "result": "出場",
+          "source_url": "https://www.metro.ed.jp/katakura-h/img_sub/pamphlet/pamphlet-pdffile-4218.pdf"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "国民体育大会",
+          "level": "全国",
+          "result": "第2位入賞",
+          "source_url": "https://www.metro.ed.jp/katakura-h/img_sub/pamphlet/pamphlet-pdffile-4218.pdf"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "南関東大会",
+          "level": "関東",
+          "result": "出場",
+          "source_url": "https://www.metro.ed.jp/katakura-h/img_sub/pamphlet/pamphlet-pdffile-4218.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "関東高校選抜新人大会",
+          "level": "関東",
+          "result": "出場",
+          "source_url": "https://www.metro.ed.jp/katakura-h/img_sub/pamphlet/pamphlet-pdffile-4218.pdf"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "南関東大会",
+          "level": "関東",
+          "result": "出場",
+          "source_url": "https://www.metro.ed.jp/katakura-h/img_sub/pamphlet/pamphlet-pdffile-4218.pdf"
+        }
+      ]
+    },
+    {
+      "name": "男子バスケットボール部",
+      "kind": "運動",
+      "days_note": "週5日活動(週当たり2日以上の休養日：平日1日・週末1日)",
+      "days_per_week": 5,
+      "source_url": "https://www.metro.ed.jp/katakura-h/activities/club_5/index.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "女子バレーボール部",
+      "kind": "運動",
+      "days_note": "平日週3日、週末は近隣高校との練習試合等",
+      "days_per_week": 3,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2025〜2026年度、ブロック予選レベルの成績(夏季大会Gブロックベスト8等)にとどまり、都県大会での上位進出は2026年春季大会兼関東大会予選本戦の都ベスト64が最高(学校案内パンフレット)。段階2の基準(都県大会ベスト8以上)には届かない。",
+      "source_url": "https://www.metro.ed.jp/katakura-h/activities/club_6/index.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "秋季八王子市民大会",
+          "level": "地区",
+          "result": "第2位",
+          "source_url": "https://www.metro.ed.jp/katakura-h/img_sub/pamphlet/pamphlet-pdffile-4218.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "夏季大会",
+          "level": "その他",
+          "result": "Gブロックベスト8",
+          "source_url": "https://www.metro.ed.jp/katakura-h/img_sub/pamphlet/pamphlet-pdffile-4218.pdf"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "春季大会兼関東大会予選本戦",
+          "level": "都県",
+          "result": "都ベスト64",
+          "source_url": "https://www.metro.ed.jp/katakura-h/img_sub/pamphlet/pamphlet-pdffile-4218.pdf"
+        }
+      ]
+    },
+    {
+      "name": "バドミントン部",
+      "kind": "運動",
+      "days_note": "月・水・木・金(隔週)・土の週5日",
+      "days_per_week": 5,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "2023・2025年度とも、チャレンジカップ等の下部大会でのベスト4・準優勝どまりで、都県大会本戦での上位進出の記録は見当たらない(学校案内パンフレット)。",
+      "source_url": "https://www.metro.ed.jp/katakura-h/activities/club_7/index.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "新人戦Ⅱ部個人戦",
+          "level": "その他",
+          "result": "4回戦進出、チャレンジカップ決勝トーナメント進出",
+          "source_url": "https://www.metro.ed.jp/katakura-h/img_sub/pamphlet/pamphlet-pdffile-4218.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第50回フジ杯(女子ダブルス初心者の部)",
+          "level": "その他",
+          "result": "準優勝",
+          "source_url": "https://www.metro.ed.jp/katakura-h/img_sub/pamphlet/pamphlet-pdffile-4218.pdf"
+        }
+      ]
+    },
+    {
+      "name": "卓球部",
+      "kind": "運動",
+      "tier": 2,
+      "tier_basis": "2025年度 新人大会 女子団体東京都ベスト8(都立限定でない公開大会でのベスト8、学校案内パンフレット)。同年度の国公立大会(都立・国公立校限定)は女子団体優勝・男子団体3位だが、手引き§6により都立限定大会の成績は1段低く読むため段階2相当。",
+      "source_url": "https://www.metro.ed.jp/katakura-h/activities/club_8/index.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "春季大会",
+          "level": "都県",
+          "result": "男子団体東京都ベスト16",
+          "source_url": "https://www.metro.ed.jp/katakura-h/img_sub/pamphlet/pamphlet-pdffile-4218.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "多摩地区大会",
+          "level": "地区",
+          "result": "男子団体5位、シングルス9位",
+          "source_url": "https://www.metro.ed.jp/katakura-h/img_sub/pamphlet/pamphlet-pdffile-4218.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "新人大会",
+          "level": "都県",
+          "result": "女子団体東京都ベスト8",
+          "source_url": "https://www.metro.ed.jp/katakura-h/img_sub/pamphlet/pamphlet-pdffile-4218.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "国公立大会(都立・国公立校限定)",
+          "level": "都県",
+          "result": "女子団体優勝、男子団体3位",
+          "source_url": "https://www.metro.ed.jp/katakura-h/img_sub/pamphlet/pamphlet-pdffile-4218.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "冬季大会",
+          "level": "都県",
+          "result": "女子シングルスベスト8×2名",
+          "source_url": "https://www.metro.ed.jp/katakura-h/img_sub/pamphlet/pamphlet-pdffile-4218.pdf"
+        }
+      ]
+    },
+    {
+      "name": "なぎなた部",
+      "kind": "運動",
+      "days_note": "月・火・水・木・土の週5日",
+      "days_per_week": 5,
+      "weekend": "土",
+      "tier": 2,
+      "tier_basis": "2026年度 全国選抜大会 男子ベスト16(全国大会出場、学校案内パンフレット)。1回のみのため段階1にはしていない(2020年度の出場権獲得は直近3年より前のため根拠にしていない)。",
+      "source_url": "https://www.metro.ed.jp/katakura-h/activities/club_9/index.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "全国選抜大会",
+          "level": "全国",
+          "result": "男子ベスト16",
+          "source_url": "https://www.metro.ed.jp/katakura-h/img_sub/pamphlet/pamphlet-pdffile-4218.pdf"
+        }
+      ]
+    },
+    {
+      "name": "剣道部",
+      "kind": "運動",
+      "days_note": "月、水、金、土曜日の週4日",
+      "days_per_week": 4,
+      "weekend": "土",
+      "source_url": "https://www.metro.ed.jp/katakura-h/activities/club_10/index.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "硬式テニス部",
+      "kind": "運動",
+      "days_note": "週5日練習",
+      "days_per_week": 5,
+      "source_url": "https://www.metro.ed.jp/katakura-h/activities/club_11/index.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "水泳部",
+      "kind": "運動",
+      "days_note": "月〜金の毎日(水中練習期間)、月・水・金(プール閉鎖期間)",
+      "source_url": "https://www.metro.ed.jp/katakura-h/activities/club_12/index.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "アウトドア部",
+      "kind": "運動",
+      "days_note": "月に1〜2回",
+      "source_url": "https://www.metro.ed.jp/katakura-h/activities/club_13/index.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "女子バスケットボール部",
+      "kind": "運動",
+      "days_note": "週5日程度(休日は練習ゲームや合同練習)",
+      "days_per_week": 5,
+      "source_url": "https://www.metro.ed.jp/katakura-h/activities/club_14/index.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "女子ラクロス部",
+      "kind": "運動",
+      "days_note": "週5日程度",
+      "days_per_week": 5,
+      "source_url": "https://www.metro.ed.jp/katakura-h/activities/club_15/index.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "茶道部",
+      "kind": "文化",
+      "days_note": "毎週水曜日",
+      "days_per_week": 1,
+      "weekend": "なし",
+      "source_url": "https://www.metro.ed.jp/katakura-h/activities/club_16/index.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "陶芸美術部",
+      "kind": "文化",
+      "days_note": "陶芸：月・火・水、美術：月・水・金",
+      "tier": 2,
+      "tier_basis": "2025年度 東京都高等学校総合文化祭中央大会「中央展」最優秀賞(1名)・全国大会出場(公的な高文連主催コンクールでの都代表選出、学校案内パンフレット)。最上位の年は2025年度のみのため段階1にはしていない(2024年度は奨励賞どまり)。",
+      "source_url": "https://www.metro.ed.jp/katakura-h/activities/club_17/index.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "東京都高等学校総合文化祭中央大会「中央展」",
+          "level": "都県",
+          "result": "奨励賞(1名)",
+          "source_url": "https://www.metro.ed.jp/katakura-h/img_sub/pamphlet/pamphlet-pdffile-4218.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "東京都高等学校総合文化祭中央大会「中央展」",
+          "level": "全国",
+          "result": "最優秀賞(1名)・奨励賞(1名)、全国大会出場",
+          "source_url": "https://www.metro.ed.jp/katakura-h/img_sub/pamphlet/pamphlet-pdffile-4218.pdf"
+        }
+      ]
+    },
+    {
+      "name": "演劇部",
+      "kind": "文化",
+      "tier": 3,
+      "tier_basis": "2024・2025年度とも都大会に出場しているが、賞などの上位成績の記載はない(学校案内パンフレット)。",
+      "source_url": "https://www.metro.ed.jp/katakura-h/activities/club_18/index.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "都大会",
+          "level": "都県",
+          "result": "出場",
+          "source_url": "https://www.metro.ed.jp/katakura-h/img_sub/pamphlet/pamphlet-pdffile-4218.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "都大会",
+          "level": "都県",
+          "result": "出場",
+          "source_url": "https://www.metro.ed.jp/katakura-h/img_sub/pamphlet/pamphlet-pdffile-4218.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "短編都大会",
+          "level": "都県",
+          "result": "出場",
+          "source_url": "https://www.metro.ed.jp/katakura-h/img_sub/pamphlet/pamphlet-pdffile-4218.pdf"
+        }
+      ]
+    },
+    {
+      "name": "家庭部",
+      "kind": "文化",
+      "days_note": "月1〜2回",
+      "source_url": "https://www.metro.ed.jp/katakura-h/activities/club_19/index.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "園芸部",
+      "kind": "文化",
+      "source_url": "https://www.metro.ed.jp/katakura-h/activities/club_20/index.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "華道部",
+      "kind": "文化",
+      "days_note": "月に1回 火曜日",
+      "source_url": "https://www.metro.ed.jp/katakura-h/activities/club_21/index.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "マンガ部",
+      "kind": "文化",
+      "days_note": "週2回(火、木)",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "source_url": "https://www.metro.ed.jp/katakura-h/activities/club_22/index.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "吹奏楽部",
+      "kind": "文化",
+      "tier": 1,
+      "tier_basis": "Premiere Club Tier1指定(東京都教育委員会)に加え、2023年度(第25回)・2026年度(第28回)の2回、全日本高等学校吹奏楽大会in横浜(全国規模・日本高等学校吹奏楽連盟主催)に出場を確認(同連盟公式サイト)。2025年度は東京都吹奏楽コンクール(都大会)金賞・日本管楽合奏コンテスト全国大会最優秀賞・同大会(第27回)連盟会長賞・全日本高等学校選抜吹奏楽大会(浜松)優秀賞と全国規模の実績が重なっている(学校案内パンフレット)。",
+      "source_url": "https://www.metro.ed.jp/katakura-h/activities/club_23/index.html",
+      "as_of": "2026-09-23",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "全日本高等学校吹奏楽大会in横浜(第25回)",
+          "level": "全国",
+          "result": "出場・連盟会長賞",
+          "happened_on": "2023-11-11",
+          "source_url": "http://www.nipponkousuiren.com/yokohama%20kekka.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "東京都吹奏楽コンクール(都大会)",
+          "level": "都県",
+          "result": "金賞",
+          "source_url": "https://www.metro.ed.jp/katakura-h/img_sub/pamphlet/pamphlet-pdffile-4218.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "日本管楽合奏コンテスト全国大会",
+          "level": "全国",
+          "result": "最優秀賞",
+          "source_url": "https://www.metro.ed.jp/katakura-h/img_sub/pamphlet/pamphlet-pdffile-4218.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "全日本高等学校吹奏楽大会in横浜(第27回)",
+          "level": "全国",
+          "result": "連盟会長賞",
+          "source_url": "https://www.metro.ed.jp/katakura-h/img_sub/pamphlet/pamphlet-pdffile-4218.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "全日本高等学校選抜吹奏楽大会(浜松)",
+          "level": "全国",
+          "result": "優秀賞",
+          "source_url": "https://www.metro.ed.jp/katakura-h/img_sub/pamphlet/pamphlet-pdffile-4218.pdf"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "東京都高等学校吹奏楽コンクール A組",
+          "level": "都県",
+          "result": "金賞",
+          "happened_on": "2026-08-10",
+          "source_url": "https://www.metro.ed.jp/katakura-h/activities/club_23/index.html"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "東京都高等学校吹奏楽コンクール C組",
+          "level": "都県",
+          "result": "銀賞",
+          "happened_on": "2026-08-13",
+          "source_url": "https://www.metro.ed.jp/katakura-h/activities/club_23/index.html"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "東京都吹奏楽コンクール(都大会)",
+          "level": "都県",
+          "result": "銅賞",
+          "happened_on": "2026-09-12",
+          "source_url": "https://www.metro.ed.jp/katakura-h/activities/club_23/index.html"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "全日本高等学校吹奏楽大会in横浜(第28回)",
+          "level": "全国",
+          "result": "出場",
+          "happened_on": "2026-11-15",
+          "source_url": "http://www.nipponkousuiren.com/28ichiran.pdf"
+        }
+      ]
+    },
+    {
+      "name": "合唱部",
+      "kind": "文化",
+      "days_note": "週3日(月・火・木)",
+      "days_per_week": 3,
+      "weekend": "なし",
+      "source_url": "https://www.metro.ed.jp/katakura-h/activities/club_24/index.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "写真部",
+      "kind": "文化",
+      "days_note": "不定期",
+      "source_url": "https://www.metro.ed.jp/katakura-h/activities/club_25/index.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "IT部",
+      "kind": "文化",
+      "days_note": "週3日",
+      "days_per_week": 3,
+      "source_url": "https://www.metro.ed.jp/katakura-h/activities/club_26/index.html",
+      "as_of": "2026-09-24"
+    }
+  ],
+  "designated_universities": [],
+  "events": [
+    {
+      "kind": "施設",
+      "period_label": "2024年",
+      "summary": "剣道場に空調を設置",
+      "source_url": "https://www.metro.ed.jp/katakura-h/img_sub/pamphlet/pamphlet-pdffile-4218.pdf"
+    }
+  ],
+  "unresolved": [
+    "指定校推薦の大学名の一覧：公開なし。パンフレット・進路ページとも大学別合格実績と受験方法別の人数(指定校82名等)のみで、指定校推薦の大学名一覧は見当たらない。",
+    "校則(頭髪・スマートフォン・アルバイト等)の要約：公式サイトのQ&Aページ(guide/qanda.html)は準備中で、生徒心得のページ・PDFが見当たらない。",
+    "保護者・生徒の「学校生活」全体の満足度：公式サイトに学校評価アンケート報告へのリンクが見当たらない(学校運営方針ページで未掲載を確認)。",
+    "在校生の男女別人数：公式資料(経営報告・経営計画・パンフレット)に在校生ベースの男女別人数の公表が見当たらない(進路決定状況の卒業生の男女数のみ確認できた)。",
+    "アメリカンフットボール部「マスタリートーナメント」の大会内での位置づけ(上位・下位いずれの部門か)：東京都高等学校体育連盟アメリカンフットボール専門部の公式サイトで大会方式の詳細記載が見当たらず、段階判定を保留した。"
+  ],
+  "conflicts": [
+    "文化部の数：学校サイトの部活動ページ(activities.html、26部の内訳を明記)には「ボランティア同好会」の記載がないが、学校案内パンフレットの部活動一覧(文化部のまとめ)には「ボランティア同好会」が挙げられている。活動内容・活動日が確認できないため、このプロファイルでは同好会としてのクラブ登録はしていない。",
+    "進路決定率：学校経営報告(令和7年度)は「進路決定率(進学準備除く)98%」としているが、52期生の合格状況PDF(パンフレット掲載元と同じ進路部作成)では受験準備中の生徒も「決定」に含めて集計し「未定0名(合計301名に対し決定者301名)」としている。定義(進学準備を除くか含むか)が異なるための数値差とみられる。"
+  ]
+}

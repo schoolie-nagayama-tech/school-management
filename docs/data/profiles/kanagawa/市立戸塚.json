@@ -1,0 +1,424 @@
+{
+  "prefecture": "神奈川県",
+  "school_name": "市立戸塚",
+  "official_url": "https://www.edu.city.yokohama.lg.jp/school/hs/totsuka/",
+  "researched_at": "2026-09-24",
+  "stats": [
+    {
+      "metric": "university_count",
+      "item": "国公立",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 19,
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/totsuka/index.cfm/1,4436,c,html/4436/20260912-122424.pdf",
+      "source_label": "戸塚高等学校 最近3年間の大学・短期大学のべ合格者数（令和8年3月31日現在）",
+      "as_of": "2026-03-31",
+      "note": "大学別の表から合算（現役18+既卒1）。短期大学は含まない。"
+    },
+    {
+      "metric": "university_count",
+      "item": "早慶上理",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 5,
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/totsuka/index.cfm/1,4436,c,html/4436/20260912-122424.pdf",
+      "source_label": "戸塚高等学校 最近3年間の大学・短期大学のべ合格者数（令和8年3月31日現在）",
+      "as_of": "2026-03-31",
+      "note": "大学別の表から合算、現役+既卒（早稲田1+慶應2+上智0+東京理科2）。"
+    },
+    {
+      "metric": "university_count",
+      "item": "GMARCH",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 88,
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/totsuka/index.cfm/1,4436,c,html/4436/20260912-122424.pdf",
+      "source_label": "戸塚高等学校 最近3年間の大学・短期大学のべ合格者数（令和8年3月31日現在）",
+      "as_of": "2026-03-31",
+      "note": "大学別の表から合算、現役+既卒（学習院7+明治19+青山学院12+立教12+中央12+法政26）。"
+    },
+    {
+      "metric": "university_count",
+      "item": "成成明武",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 53,
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/totsuka/index.cfm/1,4436,c,html/4436/20260912-122424.pdf",
+      "source_label": "戸塚高等学校 最近3年間の大学・短期大学のべ合格者数（令和8年3月31日現在）",
+      "as_of": "2026-03-31",
+      "note": "大学別の表から合算、現役+既卒（成蹊12+成城1+明治学院36+武蔵4）。"
+    },
+    {
+      "metric": "university_count",
+      "item": "日東駒専",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 99,
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/totsuka/index.cfm/1,4436,c,html/4436/20260912-122424.pdf",
+      "source_label": "戸塚高等学校 最近3年間の大学・短期大学のべ合格者数（令和8年3月31日現在）",
+      "as_of": "2026-03-31",
+      "note": "大学別の表から合算、現役+既卒（日本37+東洋21+駒澤26+専修15）。"
+    },
+    {
+      "metric": "university_count",
+      "item": "合計",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 633,
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/totsuka/index.cfm/1,4436,c,html/4436/20260912-122424.pdf",
+      "source_label": "戸塚高等学校 最近3年間の大学・短期大学のべ合格者数（令和8年3月31日現在）",
+      "as_of": "2026-03-31",
+      "note": "学校集計の合計行から（国公立19+私立614）。4年制大学のみ、短期大学（2）は含まない。"
+    },
+    {
+      "metric": "university_count",
+      "item": "神奈川大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 62,
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/totsuka/index.cfm/1,4436,c,html/4436/20260912-122424.pdf",
+      "source_label": "戸塚高等学校 最近3年間の大学・短期大学のべ合格者数（令和8年3月31日現在）",
+      "as_of": "2026-03-31",
+      "note": "大学別の表から（現役60+既卒2）。合格が多い大学の1位。"
+    },
+    {
+      "metric": "university_count",
+      "item": "日本大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 37,
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/totsuka/index.cfm/1,4436,c,html/4436/20260912-122424.pdf",
+      "source_label": "戸塚高等学校 最近3年間の大学・短期大学のべ合格者数（令和8年3月31日現在）",
+      "as_of": "2026-03-31",
+      "note": "大学別の表から（現役36+既卒1）。合格が多い大学の2位。"
+    },
+    {
+      "metric": "university_count",
+      "item": "明治学院大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 36,
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/totsuka/index.cfm/1,4436,c,html/4436/20260912-122424.pdf",
+      "source_label": "戸塚高等学校 最近3年間の大学・短期大学のべ合格者数（令和8年3月31日現在）",
+      "as_of": "2026-03-31",
+      "note": "大学別の表から（現役36）。合格が多い大学の3位。"
+    },
+    {
+      "metric": "university_count",
+      "item": "法政大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 26,
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/totsuka/index.cfm/1,4436,c,html/4436/20260912-122424.pdf",
+      "source_label": "戸塚高等学校 最近3年間の大学・短期大学のべ合格者数（令和8年3月31日現在）",
+      "as_of": "2026-03-31",
+      "note": "大学別の表から（現役26）。合格が多い大学の4位（駒澤大学と同数）。"
+    },
+    {
+      "metric": "university_count",
+      "item": "駒澤大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 26,
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/totsuka/index.cfm/1,4436,c,html/4436/20260912-122424.pdf",
+      "source_label": "戸塚高等学校 最近3年間の大学・短期大学のべ合格者数（令和8年3月31日現在）",
+      "as_of": "2026-03-31",
+      "note": "大学別の表から（現役25+既卒1）。合格が多い大学の5位（法政大学と同数）。"
+    },
+    {
+      "metric": "career_decided_rate",
+      "item": "",
+      "basis": "",
+      "fiscal_year": 2024,
+      "value_num": 95.9,
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/totsuka/index.cfm/1,4588,c,html/4588/20251126-083707.pdf",
+      "source_label": "戸塚高等学校 2025（令和7）年度 学校案内（現役卒業生進路状況）",
+      "as_of": "2025-03-31",
+      "note": "現役卒業生293名のうち、大学255+短期大学3+専修学校等22+就職1=281名（95.9%）。既卒（浪人）は含まない現役のみの値。"
+    },
+    {
+      "metric": "satisfaction",
+      "item": "生徒:学校生活",
+      "basis": "",
+      "fiscal_year": 2025,
+      "value_num": 96,
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/totsuka/index.cfm/1,1238,c,html/1238/20260527-133417.pdf",
+      "source_label": "戸塚高等学校 令和7年度 学校評価アンケート【生徒】",
+      "as_of": "2026-05-27",
+      "note": "Q11「あなたの学校生活は充実していますか」のA(十分に実現できている)49.6%+B(おおむね実現できている)46.4%。学校評価報告書が採用する「肯定的な回答」の定義（A+B）による。"
+    },
+    {
+      "metric": "satisfaction",
+      "item": "保護者:学校生活",
+      "basis": "",
+      "fiscal_year": 2025,
+      "value_num": 96.4,
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/totsuka/index.cfm/1,1238,c,html/1238/20260527-133536.pdf",
+      "source_label": "戸塚高等学校 令和7年度 学校評価アンケート【保護者】",
+      "as_of": "2026-05-27",
+      "note": "Q6「生徒は充実した学校生活を送っていると思いますか」のA(そう思う)63.7%+B(ややそう思う)32.7%。"
+    },
+    {
+      "metric": "satisfaction",
+      "item": "生徒:部活動",
+      "basis": "",
+      "fiscal_year": 2025,
+      "value_num": 96.4,
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/totsuka/index.cfm/1,1238,c,html/1238/20260527-133417.pdf",
+      "source_label": "戸塚高等学校 令和7年度 学校評価アンケート【生徒】",
+      "as_of": "2026-05-27",
+      "note": "Q14「本校の部活動は、活発に行われていると思いますか」のA53.7%+B42.7%。ただし学校評価報告書本文には「部活動は年々加入率が下がっている」との記述もある。"
+    },
+    {
+      "metric": "uniform",
+      "item": "",
+      "basis": "",
+      "fiscal_year": 2025,
+      "value_text": "紺のブレザー。スカート・スラックスは男女とも選択可（スラックスは柄2種から選べる）。ベスト・リボンあり。",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/totsuka/index.cfm/1,4588,c,html/4588/20251126-083707.pdf",
+      "source_label": "戸塚高等学校 2025（令和7）年度 学校案内",
+      "as_of": "2025-11-26"
+    }
+  ],
+  "clubs": [
+    {
+      "name": "野球部",
+      "kind": "運動",
+      "tier": 3,
+      "tier_basis": "2024〜2026年の夏はいずれも1〜2回戦で敗退（2024年2回戦、2025年1回戦、2026年1回戦）、2025年春季県大会も2回戦敗退（一球速報）。",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/totsuka/index.cfm/1,0,66,html",
+      "as_of": "2025-05-01",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "第108回全国高等学校野球選手権神奈川大会",
+          "level": "都県",
+          "result": "初戦敗退（麻布大付に1-2）",
+          "happened_on": "2026-07-07",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=12227&year=2026"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第107回全国高等学校野球選手権神奈川大会",
+          "level": "都県",
+          "result": "1回戦敗退（桐光学園に0-12、7回コールド）",
+          "happened_on": "2025-07-10",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=12227&year=2025"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "令和7年度神奈川県高等学校野球春季県大会",
+          "level": "都県",
+          "result": "2回戦敗退（横浜隼人に1-13、5回コールド）",
+          "happened_on": "2025-04-06",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=12227&year=2025"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "第106回全国高等学校野球選手権神奈川大会",
+          "level": "都県",
+          "result": "2回戦敗退（上矢部に3-4）",
+          "happened_on": "2024-07-09",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=12227&year=2024"
+        }
+      ]
+    },
+    {
+      "name": "サッカー部",
+      "kind": "運動",
+      "tier": 3,
+      "tier_basis": "2026年度 高円宮杯JFA U-18サッカーリーグ神奈川 K5所属（Aチーム）（神奈川県サッカー協会、手引きの決まりでK5・K6は段階3）。",
+      "source_url": "https://www.kanagawa-fa.gr.jp/cms/u18-league/club/totsuka/",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "陸上競技部",
+      "kind": "運動",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/totsuka/index.cfm/1,0,66,html",
+      "as_of": "2025-05-01"
+    },
+    {
+      "name": "男子ハンドボール部",
+      "kind": "運動",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/totsuka/index.cfm/1,0,66,html",
+      "as_of": "2025-05-01"
+    },
+    {
+      "name": "女子ハンドボール部",
+      "kind": "運動",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/totsuka/index.cfm/1,0,66,html",
+      "as_of": "2025-05-01"
+    },
+    {
+      "name": "ソフトテニス部",
+      "kind": "運動",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/totsuka/index.cfm/1,0,66,html",
+      "as_of": "2025-05-01"
+    },
+    {
+      "name": "バドミントン部",
+      "kind": "運動",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/totsuka/index.cfm/1,0,66,html",
+      "as_of": "2025-05-01"
+    },
+    {
+      "name": "男子バスケットボール部",
+      "kind": "運動",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/totsuka/index.cfm/1,0,66,html",
+      "as_of": "2025-05-01"
+    },
+    {
+      "name": "剣道部",
+      "kind": "運動",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/totsuka/index.cfm/1,0,66,html",
+      "as_of": "2025-05-01"
+    },
+    {
+      "name": "水泳部",
+      "kind": "運動",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/totsuka/index.cfm/1,0,66,html",
+      "as_of": "2025-05-01"
+    },
+    {
+      "name": "男子バレーボール部",
+      "kind": "運動",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/totsuka/index.cfm/1,0,66,html",
+      "as_of": "2025-05-01"
+    },
+    {
+      "name": "女子バレーボール部",
+      "kind": "運動",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/totsuka/index.cfm/1,0,66,html",
+      "as_of": "2025-05-01"
+    },
+    {
+      "name": "ラクロス部",
+      "kind": "運動",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/totsuka/index.cfm/1,0,66,html",
+      "as_of": "2025-05-01"
+    },
+    {
+      "name": "バトントワリング部",
+      "kind": "運動",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/totsuka/index.cfm/1,0,66,html",
+      "as_of": "2025-05-01"
+    },
+    {
+      "name": "ダンス部",
+      "kind": "運動",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/totsuka/index.cfm/1,0,66,html",
+      "as_of": "2025-05-01"
+    },
+    {
+      "name": "吹奏楽部",
+      "kind": "文化",
+      "tier": 1,
+      "tier_basis": "2026年度 神奈川県吹奏楽コンクール高校の部A部門 金賞・代表（神奈川県吹奏楽連盟）。2025年度 東関東吹奏楽コンクール高校A部門 金（21位、全国大会代表なし）（東関東吹奏楽連盟）。全国大会出場はまだ無いため段階1にはしない。（2026-09-24 Opus見直し: 東関東大会は運動部の関東大会にあたる。2025年度出場（金賞）と2026年度の県代表選出で関東レベル2回とみて段階1）",
+      "source_url": "https://www.kanasuiren.com/concours/cresult.html",
+      "as_of": "2026-08-08",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "第75回神奈川県吹奏楽コンクール 高校の部A部門",
+          "level": "都県",
+          "result": "金賞・代表",
+          "happened_on": "2026-08-08",
+          "source_url": "https://www.kanasuiren.com/concours/cresult.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "第31回東関東吹奏楽コンクール 高校A部門（神奈川会場）",
+          "level": "関東",
+          "result": "金（21位、全国大会代表選出なし）",
+          "source_url": "https://hksuiren.gr.jp/suicon/2025-result-kanagawa.html"
+        }
+      ]
+    },
+    {
+      "name": "軽音楽部",
+      "kind": "文化",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/totsuka/index.cfm/1,0,66,html",
+      "as_of": "2025-05-01"
+    },
+    {
+      "name": "天文部",
+      "kind": "文化",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/totsuka/index.cfm/1,0,66,html",
+      "as_of": "2025-05-01"
+    },
+    {
+      "name": "調理部",
+      "kind": "文化",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/totsuka/index.cfm/1,0,66,html",
+      "as_of": "2025-05-01"
+    },
+    {
+      "name": "美術部",
+      "kind": "文化",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/totsuka/index.cfm/1,0,66,html",
+      "as_of": "2025-05-01"
+    },
+    {
+      "name": "演劇部",
+      "kind": "文化",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/totsuka/index.cfm/1,0,66,html",
+      "as_of": "2025-05-01"
+    },
+    {
+      "name": "インターアクト部",
+      "kind": "文化",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/totsuka/index.cfm/1,0,66,html",
+      "as_of": "2025-05-01"
+    },
+    {
+      "name": "茶道部",
+      "kind": "文化",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/totsuka/index.cfm/1,0,66,html",
+      "as_of": "2025-05-01"
+    },
+    {
+      "name": "漫画研究部",
+      "kind": "文化",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/totsuka/index.cfm/1,0,66,html",
+      "as_of": "2025-05-01"
+    },
+    {
+      "name": "書道部",
+      "kind": "文化",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/totsuka/index.cfm/1,4588,c,html/4588/20251126-083707.pdf",
+      "as_of": "2025-04-01"
+    },
+    {
+      "name": "ボランティアセンター",
+      "kind": "文化",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/totsuka/index.cfm/1,4588,c,html/4588/20251126-083707.pdf",
+      "as_of": "2025-04-01"
+    }
+  ],
+  "designated_universities": [],
+  "events": [
+    {
+      "kind": "施設",
+      "period_label": "令和7年度（2025年度）",
+      "summary": "女子トイレを全面改修した。",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/totsuka/index.cfm/1,1238,c,html/1238/20260527-133756.pdf"
+    },
+    {
+      "kind": "施設",
+      "period_label": "令和7年度（2025年度）",
+      "summary": "全ホームルーム教室にプロジェクターを設置した。",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/totsuka/index.cfm/1,1238,c,html/1238/20260527-133756.pdf"
+    }
+  ],
+  "unresolved": [
+    "校則（頭髪・スマホ・アルバイトの規定）：生徒手帳PDF「戸塚高校のきまりについて」（生徒手帳ページ）はパスワード保護がかかっておりRead/pdftoppmとも開けなかった。他に校則を要約できる公開資料が見当たらなかった。",
+    "指定校推薦の大学：学校案内・進路指導ページに一覧の掲載がなかった。",
+    "admission_route_share（入試方式別の割合）：学校案内・進路指導ページに内訳の掲載がなかった。",
+    "club_join_rate（部活加入率）：学校評価報告書に「部活動は年々加入率が下がっている」との記述はあるが、数値そのものは非公開だった。",
+    "野球部・サッカー部・吹奏楽部以外の部の活動日・週の活動日数：生徒手帳PDF「部活動」（p32〜33）がパスワード保護で読めず、部活動ページにも活動日の記載がなかった。",
+    "野球部の2025年度秋季・2026年度春季の大会結果：一球速報のチームページに試合結果の掲載がなかった。"
+  ],
+  "conflicts": [
+    "部活動（文化部）の一覧：学校サイトの部活動ページ（2025-05-01更新）には書道部・ボランティアセンターが無いが、2025（令和7）年度学校案内パンフレット（2025年4月現在）には両方掲載されている。両資料の内容を合わせて26部として記載した。"
+  ]
+}

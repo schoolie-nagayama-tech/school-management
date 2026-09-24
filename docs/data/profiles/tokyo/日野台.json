@@ -1,0 +1,1154 @@
+{
+  "prefecture": "東京都",
+  "school_name": "日野台",
+  "official_url": "https://www.metro.ed.jp/hinodai-h/",
+  "researched_at": "2026-09-24",
+  "stats": [
+    {
+      "metric": "university_count",
+      "item": "国公立",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 70,
+      "source_url": "https://www.metro.ed.jp/hinodai-h/img_sub/%E5%A4%A7%E5%AD%A6%E5%90%88%E6%A0%BC%E8%80%85%E6%95%B0%E9%80%9F%E5%A0%B1%EF%BC%88%E4%BB%A4%E5%92%8C8%E5%B9%B4%E5%BA%A6%E5%85%A5%E8%A9%A6%EF%BC%89%EF%BC%882026410%E7%8F%BE%E5%9C%A8%EF%BC%89.pdf",
+      "source_label": "日野台高校 大学合格者数速報（令和8年度入試）（2026/4/10現在）進路指導部",
+      "as_of": "2026-04-10",
+      "note": "既卒3名を含めた合計は73名。令和7年度学校経営報告の「国公立大学合格者数(大学校含む)70名[前年68名]」と一致。"
+    },
+    {
+      "metric": "university_count",
+      "item": "早慶上理",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 38,
+      "source_url": "https://www.metro.ed.jp/hinodai-h/img_sub/%E5%A4%A7%E5%AD%A6%E5%90%88%E6%A0%BC%E8%80%85%E6%95%B0%E9%80%9F%E5%A0%B1%EF%BC%88%E4%BB%A4%E5%92%8C8%E5%B9%B4%E5%BA%A6%E5%85%A5%E8%A9%A6%EF%BC%89%EF%BC%882026410%E7%8F%BE%E5%9C%A8%EF%BC%89.pdf",
+      "source_label": "日野台高校 大学合格者数速報（令和8年度入試）（2026/4/10現在）進路指導部",
+      "as_of": "2026-04-10",
+      "note": "早稲田15・慶應4・上智7・東京理科11の合算(既卒6・合計44)。学校経営報告は「早慶上智理科大延合格者数38名[前年45名]」と表記し数値は一致するが、学校案内パンフレットの合格状況表は同年の早慶上理小計を現役37・既卒6としており1名の食い違いがある（conflicts参照）。"
+    },
+    {
+      "metric": "university_count",
+      "item": "GMARCH",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 281,
+      "source_url": "https://www.metro.ed.jp/hinodai-h/img_sub/%E5%A4%A7%E5%AD%A6%E5%90%88%E6%A0%BC%E8%80%85%E6%95%B0%E9%80%9F%E5%A0%B1%EF%BC%88%E4%BB%A4%E5%92%8C8%E5%B9%B4%E5%BA%A6%E5%85%A5%E8%A9%A6%EF%BC%89%EF%BC%882026410%E7%8F%BE%E5%9C%A8%EF%BC%89.pdf",
+      "source_label": "日野台高校 大学合格者数速報（令和8年度入試）（2026/4/10現在）進路指導部",
+      "as_of": "2026-04-10",
+      "note": "明治50・青学33・立教27・中央77・法政83・学習院11の合算(既卒21・合計302)。学校経営報告の「GMARCH延合格者数281名[前年281名]」・学校案内パンフレットの合格状況表(現役281・既卒21)と一致。"
+    },
+    {
+      "metric": "university_count",
+      "item": "日東駒専",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 196,
+      "source_url": "https://www.metro.ed.jp/hinodai-h/img_sub/%E5%A4%A7%E5%AD%A6%E5%90%88%E6%A0%BC%E8%80%85%E6%95%B0%E9%80%9F%E5%A0%B1%EF%BC%88%E4%BB%A4%E5%92%8C8%E5%B9%B4%E5%BA%A6%E5%85%A5%E8%A9%A6%EF%BC%89%EF%BC%882026410%E7%8F%BE%E5%9C%A8%EF%BC%89.pdf",
+      "source_label": "日野台高校 大学合格者数速報（令和8年度入試）（2026/4/10現在）進路指導部",
+      "as_of": "2026-04-10",
+      "note": "日本62・東洋74・駒澤10・専修50の合算。学校経営報告の「日東駒専延合格者数196名[前年175名]」と一致。"
+    },
+    {
+      "metric": "university_count",
+      "item": "成成明武",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 39,
+      "source_url": "https://www.metro.ed.jp/hinodai-h/img_sub/%E5%A4%A7%E5%AD%A6%E5%90%88%E6%A0%BC%E8%80%85%E6%95%B0%E9%80%9F%E5%A0%B1%EF%BC%88%E4%BB%A4%E5%92%8C8%E5%B9%B4%E5%BA%A6%E5%85%A5%E8%A9%A6%EF%BC%89%EF%BC%882026410%E7%8F%BE%E5%9C%A8%EF%BC%89.pdf",
+      "source_label": "日野台高校 大学合格者数速報（令和8年度入試）（2026/4/10現在）進路指導部",
+      "as_of": "2026-04-10",
+      "note": "成蹊23・成城3・明治学院10・武蔵3の合算。学校経営報告の「成成明武現役合格者数39名[前年82名]」と一致。"
+    },
+    {
+      "metric": "university_count",
+      "item": "合計",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 921,
+      "source_url": "https://www.metro.ed.jp/hinodai-h/img_sub/%E5%A4%A7%E5%AD%A6%E5%90%88%E6%A0%BC%E8%80%85%E6%95%B0%E9%80%9F%E5%A0%B1%EF%BC%88%E4%BB%A4%E5%92%8C8%E5%B9%B4%E5%BA%A6%E5%85%A5%E8%A9%A6%EF%BC%89%EF%BC%882026410%E7%8F%BE%E5%9C%A8%EF%BC%89.pdf",
+      "source_label": "日野台高校 大学合格者数速報（令和8年度入試）（2026/4/10現在）進路指導部",
+      "as_of": "2026-04-10",
+      "note": "国公立大学現役合計70名と私立大学現役合計851名を合算（速報PDFの現役計を合算）。"
+    },
+    {
+      "metric": "university_count",
+      "item": "工学院大学",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 24,
+      "source_url": "https://www.metro.ed.jp/hinodai-h/img_sub/%E5%A4%A7%E5%AD%A6%E5%90%88%E6%A0%BC%E8%80%85%E6%95%B0%E9%80%9F%E5%A0%B1%EF%BC%88%E4%BB%A4%E5%92%8C8%E5%B9%B4%E5%BA%A6%E5%85%A5%E8%A9%A6%EF%BC%89%EF%BC%882026410%E7%8F%BE%E5%9C%A8%EF%BC%89.pdf",
+      "source_label": "日野台高校 大学合格者数速報（令和8年度入試）（2026/4/10現在）進路指導部",
+      "as_of": "2026-04-10",
+      "note": "早慶上理・GMARCH・日東駒専・成成明武以外で最多。"
+    },
+    {
+      "metric": "university_count",
+      "item": "國學院大学",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 16,
+      "source_url": "https://www.metro.ed.jp/hinodai-h/img_sub/%E5%A4%A7%E5%AD%A6%E5%90%88%E6%A0%BC%E8%80%85%E6%95%B0%E9%80%9F%E5%A0%B1%EF%BC%88%E4%BB%A4%E5%92%8C8%E5%B9%B4%E5%BA%A6%E5%85%A5%E8%A9%A6%EF%BC%89%EF%BC%882026410%E7%8F%BE%E5%9C%A8%EF%BC%89.pdf",
+      "source_label": "日野台高校 大学合格者数速報（令和8年度入試）（2026/4/10現在）進路指導部",
+      "as_of": "2026-04-10",
+      "note": ""
+    },
+    {
+      "metric": "university_count",
+      "item": "津田塾大学",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 14,
+      "source_url": "https://www.metro.ed.jp/hinodai-h/img_sub/%E5%A4%A7%E5%AD%A6%E5%90%88%E6%A0%BC%E8%80%85%E6%95%B0%E9%80%9F%E5%A0%B1%EF%BC%88%E4%BB%A4%E5%92%8C8%E5%B9%B4%E5%BA%A6%E5%85%A5%E8%A9%A6%EF%BC%89%EF%BC%882026410%E7%8F%BE%E5%9C%A8%EF%BC%89.pdf",
+      "source_label": "日野台高校 大学合格者数速報（令和8年度入試）（2026/4/10現在）進路指導部",
+      "as_of": "2026-04-10",
+      "note": ""
+    },
+    {
+      "metric": "university_count",
+      "item": "東京農業大学",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 12,
+      "source_url": "https://www.metro.ed.jp/hinodai-h/img_sub/%E5%A4%A7%E5%AD%A6%E5%90%88%E6%A0%BC%E8%80%85%E6%95%B0%E9%80%9F%E5%A0%B1%EF%BC%88%E4%BB%A4%E5%92%8C8%E5%B9%B4%E5%BA%A6%E5%85%A5%E8%A9%A6%EF%BC%89%EF%BC%882026410%E7%8F%BE%E5%9C%A8%EF%BC%89.pdf",
+      "source_label": "日野台高校 大学合格者数速報（令和8年度入試）（2026/4/10現在）進路指導部",
+      "as_of": "2026-04-10",
+      "note": "東京薬科大学と同数タイ。"
+    },
+    {
+      "metric": "university_count",
+      "item": "東京薬科大学",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 12,
+      "source_url": "https://www.metro.ed.jp/hinodai-h/img_sub/%E5%A4%A7%E5%AD%A6%E5%90%88%E6%A0%BC%E8%80%85%E6%95%B0%E9%80%9F%E5%A0%B1%EF%BC%88%E4%BB%A4%E5%92%8C8%E5%B9%B4%E5%BA%A6%E5%85%A5%E8%A9%A6%EF%BC%89%EF%BC%882026410%E7%8F%BE%E5%9C%A8%EF%BC%89.pdf",
+      "source_label": "日野台高校 大学合格者数速報（令和8年度入試）（2026/4/10現在）進路指導部",
+      "as_of": "2026-04-10",
+      "note": "東京農業大学と同数タイ。"
+    },
+    {
+      "metric": "career_decided_rate",
+      "fiscal_year": 2025,
+      "value_num": 89,
+      "source_url": "https://www.metro.ed.jp/hinodai-h/img_sub/令和7年度学校経営報告.pdf",
+      "source_label": "日野台高校 令和7年度学校経営報告 重点目標への取組と自己評価",
+      "as_of": "2026-03",
+      "note": "前年度92%。"
+    },
+    {
+      "metric": "club_join_rate",
+      "fiscal_year": 2026,
+      "value_num": 99,
+      "source_url": "https://www.metro.ed.jp/hinodai-h/img_sub/pamphlet/pamphlet-pdffile-3958.pdf",
+      "source_label": "学校案内パンフレット「日野台2027」 部活動紹介ページ",
+      "as_of": "2026-09",
+      "note": "兼部者を含む加入率（学校側の説明文中の数値）。"
+    },
+    {
+      "metric": "satisfaction",
+      "item": "生徒:学校生活",
+      "fiscal_year": 2025,
+      "value_num": 93,
+      "source_url": "https://www.metro.ed.jp/hinodai-h/img_sub/令和7年度学校経営報告.pdf",
+      "source_label": "日野台高校 令和7年度学校経営報告 学校評価アンケート結果",
+      "as_of": "2026-03",
+      "note": "「学校生活は充実」の回答率。前年94%。回収率88%、全学年平均。生徒・保護者の別は資料に明記なし。"
+    },
+    {
+      "metric": "satisfaction",
+      "item": "生徒:入学",
+      "fiscal_year": 2025,
+      "value_num": 92,
+      "source_url": "https://www.metro.ed.jp/hinodai-h/img_sub/令和7年度学校経営報告.pdf",
+      "source_label": "日野台高校 令和7年度学校経営報告 学校評価アンケート結果",
+      "as_of": "2026-03",
+      "note": "「入学してよかった」の回答率。前年94%(1年のみ)。"
+    },
+    {
+      "metric": "satisfaction",
+      "item": "生徒:授業",
+      "fiscal_year": 2025,
+      "value_num": 88,
+      "source_url": "https://www.metro.ed.jp/hinodai-h/img_sub/令和7年度学校経営報告.pdf",
+      "source_label": "日野台高校 令和7年度学校経営報告 学校評価アンケート結果",
+      "as_of": "2026-03",
+      "note": "「授業で教員と、あるいは生徒間で対話が行われている」の回答率。前年84%(「授業に満足」)。"
+    },
+    {
+      "metric": "exam_ratio",
+      "item": "推薦",
+      "fiscal_year": 2026,
+      "value_num": 1.84,
+      "source_url": "https://www.metro.ed.jp/hinodai-h/img_sub/令和7年度学校経営報告.pdf",
+      "source_label": "日野台高校 令和7年度学校経営報告 学校ＰＲ活動",
+      "as_of": "2026-03",
+      "note": "応募倍率。前年1.57倍。一次募集応募倍率は1.38倍[前年1.10倍]。"
+    },
+    {
+      "metric": "uniform",
+      "fiscal_year": 2026,
+      "value_text": "男子:ジャケット・スラックス・ネクタイ。女子:ジャケット・スカートまたはスラックス・ネクタイ。夏(6/1〜9/30)は白無地の長袖/半袖ワイシャツまたは白無地ポロシャツで、ネクタイ任意。ベスト・セーター着用可(指定色のみ)。",
+      "source_url": "https://www.metro.ed.jp/hinodai-h/img_sub/校則.pdf",
+      "source_label": "日野台高校「校則」服装規定",
+      "as_of": "2026-09",
+      "note": ""
+    },
+    {
+      "metric": "rules_summary",
+      "fiscal_year": 2026,
+      "value_text": "登校8:25・下校16:55厳守。アルバイトは原則禁止(特別な事情は担任に相談)。頭髪はパーマ・染色・脱色・特異な髪型を禁止し、ピアス等の装身具・化粧も禁止。スマートフォンに関する個別規定の記載は資料中に見当たらず。",
+      "source_url": "https://www.metro.ed.jp/hinodai-h/img_sub/生徒心得.pdf",
+      "source_label": "日野台高校「生徒心得」",
+      "as_of": "2026-09",
+      "note": "スマホ規定：見当たらず。"
+    },
+    {
+      "metric": "designation",
+      "item": "進学指導推進校",
+      "fiscal_year": 2026,
+      "value_text": "東京都教育委員会指定。国公立・難関私立大学進学を目指す進学指導の充実校。",
+      "source_url": "https://www.metro.ed.jp/hinodai-h/img_sub/pamphlet/pamphlet-pdffile-3958.pdf",
+      "source_label": "学校案内パンフレット「日野台2027」 日野台高校の魅力",
+      "as_of": "2026-09",
+      "note": ""
+    },
+    {
+      "metric": "designation",
+      "item": "GE-NET EE",
+      "fiscal_year": 2026,
+      "value_text": "東京都教育委員会指定。Tokyo Metropolitan Global Education Network School for English Education。英語教育の充実校。",
+      "source_url": "https://www.metro.ed.jp/hinodai-h/img_sub/pamphlet/pamphlet-pdffile-3958.pdf",
+      "source_label": "学校案内パンフレット「日野台2027」 日野台高校の魅力",
+      "as_of": "2026-09",
+      "note": ""
+    },
+    {
+      "metric": "designation",
+      "item": "海外学校間交流推進校",
+      "fiscal_year": 2026,
+      "value_text": "東京都教育委員会指定。海外学校間交流を推進。多摩地区で唯一、海外帰国生徒を募集。",
+      "source_url": "https://www.metro.ed.jp/hinodai-h/img_sub/pamphlet/pamphlet-pdffile-3958.pdf",
+      "source_label": "学校案内パンフレット「日野台2027」 日野台高校の魅力・日野台の教育",
+      "as_of": "2026-09",
+      "note": ""
+    },
+    {
+      "metric": "designation",
+      "item": "東京IBLハイスクール",
+      "fiscal_year": 2026,
+      "value_text": "東京都教育委員会指定。SDGsを基本コンセプトに地域社会と連携した探究活動を実践。",
+      "source_url": "https://www.metro.ed.jp/hinodai-h/img_sub/pamphlet/pamphlet-pdffile-3958.pdf",
+      "source_label": "学校案内パンフレット「日野台2027」 日野台高校の魅力",
+      "as_of": "2026-09",
+      "note": ""
+    },
+    {
+      "metric": "designation",
+      "item": "高校DX加速化推進事業",
+      "fiscal_year": 2026,
+      "value_text": "文部科学省指定の採択校。デジタルを中心とした学習・体験に取り組む。令和7年度入学生から2年次に「情報Ⅱ」を選択可能。",
+      "source_url": "https://www.metro.ed.jp/hinodai-h/img_sub/pamphlet/pamphlet-pdffile-3958.pdf",
+      "source_label": "学校案内パンフレット「日野台2027」 日野台の教育",
+      "as_of": "2026-09",
+      "note": ""
+    }
+  ],
+  "clubs": [
+    {
+      "name": "陸上競技部",
+      "kind": "運動",
+      "days_note": "月・火・水・金・土・(日：自主練習)",
+      "weekend": "土日",
+      "tier": 1,
+      "tier_basis": "2023〜2025年度、都総体で南関東大会に3年連続出場（2023男子走高跳、2024男子3000mSC6位、2025男子400m3位）。2023年新人では女子100mが繰り上げで関東大会出場（学校サイト部活動ページ）",
+      "source_url": "https://www.metro.ed.jp/hinodai-h/activities/club_17/index.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "東京都高等学校総合体育大会 陸上競技（男子400m）",
+          "level": "都県",
+          "result": "3位入賞→南関東大会出場",
+          "source_url": "https://www.metro.ed.jp/hinodai-h/activities/club_17/index.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "東京都高等学校総合体育大会 陸上競技（男子3000mSC）",
+          "level": "都県",
+          "result": "6位入賞→南関東大会出場",
+          "source_url": "https://www.metro.ed.jp/hinodai-h/activities/club_17/index.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "東京都高等学校総合体育大会 陸上競技（男子走高跳）",
+          "level": "都県",
+          "result": "入賞→南関東大会出場",
+          "source_url": "https://www.metro.ed.jp/hinodai-h/activities/club_17/index.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "東京都高等学校新人陸上競技対校選手権大会（女子100m）",
+          "level": "都県",
+          "result": "7位入賞→繰り上げにより関東大会出場",
+          "source_url": "https://www.metro.ed.jp/hinodai-h/activities/club_17/index.html"
+        }
+      ]
+    },
+    {
+      "name": "サッカー部",
+      "kind": "運動",
+      "days_note": "月・水・木・金（土日は練習試合・大会）",
+      "weekend": "試合のみ",
+      "tier": 3,
+      "tier_basis": "2026年度 高円宮杯U-18サッカーリーグ東京T5リーグ所属（学校サイト部活動ページ）",
+      "source_url": "https://www.metro.ed.jp/hinodai-h/activities/club_1/index.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "高円宮杯JFA U-18サッカーリーグ東京",
+          "level": "都県",
+          "result": "T5リーグ所属",
+          "source_url": "https://www.metro.ed.jp/hinodai-h/activities/club_1/index.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "東京都高等学校サッカー新人選手権大会",
+          "level": "都県",
+          "result": "ベスト16",
+          "source_url": "https://www.metro.ed.jp/hinodai-h/activities/club_1/index.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "全国高等学校サッカー選手権大会 東京都予選",
+          "level": "都県",
+          "result": "ベスト32",
+          "source_url": "https://www.metro.ed.jp/hinodai-h/activities/club_1/index.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "全国高等学校総合体育大会サッカー競技 地区予選",
+          "level": "地区",
+          "result": "決勝進出",
+          "source_url": "https://www.metro.ed.jp/hinodai-h/activities/club_1/index.html"
+        }
+      ]
+    },
+    {
+      "name": "硬式野球部",
+      "kind": "運動",
+      "days_note": "火・水・木・金（土日は頻繁に活動）",
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2023年春2回戦敗退、2024年秋1回戦敗退、2025年夏は1勝して3回戦敗退、2025年秋一次予選は初戦敗退（一球速報）",
+      "source_url": "https://baseball.omyutech.com/teamStats.action?teamId=12013",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "春季東京都高等学校野球大会",
+          "level": "都県",
+          "result": "2回戦敗退（対日体大荏原 0-7、7回コールド）",
+          "happened_on": "2023-04-04",
+          "source_url": "https://baseball.omyutech.com/teamStats.action?teamId=12013"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "秋季東京都高等学校野球大会",
+          "level": "都県",
+          "result": "1回戦敗退（対修徳 1-8、7回コールド）",
+          "happened_on": "2024-10-05",
+          "source_url": "https://baseball.omyutech.com/teamStats.action?teamId=12013"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "全国高等学校野球選手権 西東京大会",
+          "level": "都県",
+          "result": "1勝の後3回戦敗退（対東海大菅生 0-21、5回コールド）",
+          "happened_on": "2025-07-16",
+          "source_url": "https://baseball.omyutech.com/teamStats.action?teamId=12013"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "秋季東京都高等学校野球大会 一次予選",
+          "level": "都県",
+          "result": "初戦敗退",
+          "source_url": "https://baseball.omyutech.com/teamStats.action?teamId=12013"
+        }
+      ]
+    },
+    {
+      "name": "男子ハンドボール部",
+      "kind": "運動",
+      "days_note": "月・火・木・金（土日は練習試合・大会・合同練習）",
+      "weekend": "試合のみ",
+      "tier": 3,
+      "tier_basis": "直近3年で確認できる実績は2024年度都ベスト16の1回のみ（学校サイト部活動ページ）",
+      "source_url": "https://www.metro.ed.jp/hinodai-h/activities/club_7/index.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "東京都高等学校ハンドボール選手権大会",
+          "level": "都県",
+          "result": "ベスト16",
+          "source_url": "https://www.metro.ed.jp/hinodai-h/activities/club_7/index.html"
+        }
+      ]
+    },
+    {
+      "name": "女子ハンドボール部",
+      "kind": "運動",
+      "days_note": "月・火・木・金（土日は練習試合または学校練習）",
+      "weekend": "土日",
+      "source_url": "https://www.metro.ed.jp/hinodai-h/activities/club_8/index.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "男子バレーボール部",
+      "kind": "運動",
+      "days_note": "月・火・木・金（土日は練習試合・大会など）",
+      "weekend": "試合のみ",
+      "tier": 3,
+      "tier_basis": "2024年度西部地区ウィンターカップ3位、2025年度西部地区スプリングカップ優勝など地区大会レベルにとどまり、都大会以上の実績なし（学校サイト部活動ページ）",
+      "source_url": "https://www.metro.ed.jp/hinodai-h/activities/club/index.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "西部地区スプリングカップ",
+          "level": "地区",
+          "result": "優勝",
+          "source_url": "https://www.metro.ed.jp/hinodai-h/activities/club/index.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "東京都高等学校バレーボール新人大会",
+          "level": "都県",
+          "result": "2日目出場",
+          "source_url": "https://www.metro.ed.jp/hinodai-h/activities/club/index.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "西部地区ウィンターカップ",
+          "level": "地区",
+          "result": "第3位",
+          "source_url": "https://www.metro.ed.jp/hinodai-h/activities/club/index.html"
+        }
+      ]
+    },
+    {
+      "name": "女子バレーボール部",
+      "kind": "運動",
+      "days_note": "火・水・木・金（土日は練習・練習試合・大会）",
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "直近3年の最高成績は2024年度夏季大会都ベスト32の1回のみ、ほかはベスト64（学校サイト部活動ページ）",
+      "source_url": "https://www.metro.ed.jp/hinodai-h/activities/club_13/index.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "東京都高等学校バレーボール専門部公立校大会",
+          "level": "都県",
+          "result": "本大会出場",
+          "source_url": "https://www.metro.ed.jp/hinodai-h/activities/club_13/index.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "東京都高等学校総合体育大会（インターハイ予選）",
+          "level": "都県",
+          "result": "ベスト64",
+          "source_url": "https://www.metro.ed.jp/hinodai-h/activities/club_13/index.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "夏季大会",
+          "level": "都県",
+          "result": "ベスト32",
+          "source_url": "https://www.metro.ed.jp/hinodai-h/activities/club_13/index.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "春季大会東京都予選",
+          "level": "都県",
+          "result": "ベスト64",
+          "source_url": "https://www.metro.ed.jp/hinodai-h/activities/club_13/index.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "新人戦",
+          "level": "都県",
+          "result": "ベスト64",
+          "source_url": "https://www.metro.ed.jp/hinodai-h/activities/club_13/index.html"
+        }
+      ]
+    },
+    {
+      "name": "男子バスケットボール部",
+      "kind": "運動",
+      "days_note": "月・火・水・木（土日は練習・練習試合・大会など）",
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "直近3年で確認できる実績は2025年度4校リーグ準優勝のみで、都大会レベルの実績なし（学校サイト部活動ページ）",
+      "source_url": "https://www.metro.ed.jp/hinodai-h/activities/club_3/index.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "4校リーグ",
+          "level": "その他",
+          "result": "準優勝",
+          "source_url": "https://www.metro.ed.jp/hinodai-h/activities/club_3/index.html"
+        }
+      ]
+    },
+    {
+      "name": "女子バスケットボール部",
+      "kind": "運動",
+      "days_note": "月・火・水・木・金（木は昼練のみ）、土・日のどちらか（大会時は土日）",
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "直近3年は都大会・関東予選とも早期敗退（2〜3回戦）で上位進出なし（学校サイト部活動ページ）",
+      "source_url": "https://www.metro.ed.jp/hinodai-h/activities/club_4/index.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "春季大会",
+          "level": "都県",
+          "result": "3回戦敗退",
+          "source_url": "https://www.metro.ed.jp/hinodai-h/activities/club_4/index.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "関東大会予選",
+          "level": "都県",
+          "result": "2回戦敗退",
+          "source_url": "https://www.metro.ed.jp/hinodai-h/activities/club_4/index.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "総体予選",
+          "level": "都県",
+          "result": "3回戦敗退",
+          "source_url": "https://www.metro.ed.jp/hinodai-h/activities/club_4/index.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "新人戦",
+          "level": "都県",
+          "result": "2回戦敗退",
+          "source_url": "https://www.metro.ed.jp/hinodai-h/activities/club_4/index.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "関東大会予選",
+          "level": "都県",
+          "result": "2回戦敗退",
+          "source_url": "https://www.metro.ed.jp/hinodai-h/activities/club_4/index.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "総体予選",
+          "level": "都県",
+          "result": "3回戦敗退",
+          "source_url": "https://www.metro.ed.jp/hinodai-h/activities/club_4/index.html"
+        }
+      ]
+    },
+    {
+      "name": "バドミントン部",
+      "kind": "運動",
+      "days_note": "月・水・木・金（土日はどちらかで半日部活、月1回ペースで練習試合）",
+      "weekend": "土日",
+      "tier": 2,
+      "tier_basis": "2025年度 女子関東公立大会ダブルス西東京代表（公立校限定大会のため上限段階2、学校サイト部活動ページ）",
+      "source_url": "https://www.metro.ed.jp/hinodai-h/activities/club_5/index.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "関東公立高等学校バドミントン大会（女子ダブルス西東京予選）",
+          "level": "関東",
+          "result": "西東京代表",
+          "source_url": "https://www.metro.ed.jp/hinodai-h/activities/club_5/index.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "東京都高等学校バドミントン新人大会Ⅰ部",
+          "level": "都県",
+          "result": "西東京ベスト16・ベスト32など",
+          "source_url": "https://www.metro.ed.jp/hinodai-h/activities/club_5/index.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "東京都高等学校バドミントン新人大会・インターハイ予選",
+          "level": "都県",
+          "result": "西東京ベスト16進出",
+          "source_url": "https://www.metro.ed.jp/hinodai-h/activities/club_5/index.html"
+        }
+      ]
+    },
+    {
+      "name": "卓球部",
+      "kind": "運動",
+      "days_note": "火・水・木・金（水はトレーニング）（土日は練習試合・大会など）",
+      "weekend": "試合のみ",
+      "tier": 2,
+      "tier_basis": "2023年度春季大会 女子学校対抗都6位で関東大会出場（1回、学校サイト部活動ページ）",
+      "source_url": "https://www.metro.ed.jp/hinodai-h/activities/club_15/index.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "春季大会（女子学校対抗）",
+          "level": "都県",
+          "result": "都6位→関東大会出場",
+          "source_url": "https://www.metro.ed.jp/hinodai-h/activities/club_15/index.html"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "東京都高等学校卓球選手権大会（国公立の部）",
+          "level": "都県",
+          "result": "男子団体・男子シングルス・女子シングルス優勝",
+          "source_url": "https://www.metro.ed.jp/hinodai-h/activities/club_15/index.html"
+        }
+      ]
+    },
+    {
+      "name": "ソフトボール部",
+      "kind": "運動",
+      "days_note": "月・水・木・金（土は頻繁に活動、日は練習試合）",
+      "weekend": "土日",
+      "tier": 1,
+      "tier_basis": "2024年度高体連新人大会ベスト8、2025年度春季大会ベスト8（都大会、2回以上、学校サイト部活動ページ）",
+      "source_url": "https://www.metro.ed.jp/hinodai-h/activities/club_2/index.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "春季大会",
+          "level": "都県",
+          "result": "ベスト8",
+          "source_url": "https://www.metro.ed.jp/hinodai-h/activities/club_2/index.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "関東大会都予選",
+          "level": "都県",
+          "result": "出場",
+          "source_url": "https://www.metro.ed.jp/hinodai-h/activities/club_2/index.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "東京都公立高等学校選手権大会",
+          "level": "都県",
+          "result": "ベスト8",
+          "source_url": "https://www.metro.ed.jp/hinodai-h/activities/club_2/index.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "高体連新人大会",
+          "level": "都県",
+          "result": "ベスト8",
+          "source_url": "https://www.metro.ed.jp/hinodai-h/activities/club_2/index.html"
+        }
+      ]
+    },
+    {
+      "name": "男子硬式テニス部",
+      "kind": "運動",
+      "days_note": "月・火・水・金（土日はほぼ毎週練習・練習試合・大会など）",
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "直近3年の最高成績は2024年度都テニス選手権個人戦ダブルス本戦ベスト16の1回のみ（学校サイト部活動ページ）",
+      "source_url": "https://www.metro.ed.jp/hinodai-h/activities/club_10/index.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "東京都高校新人テニス大会",
+          "level": "都県",
+          "result": "4回戦進出",
+          "source_url": "https://www.metro.ed.jp/hinodai-h/activities/club_10/index.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "東京都高等学校テニス選手権大会（個人戦ダブルス）",
+          "level": "都県",
+          "result": "本戦ベスト16",
+          "source_url": "https://www.metro.ed.jp/hinodai-h/activities/club_10/index.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "新人戦ダブルス予選",
+          "level": "都県",
+          "result": "5回戦進出",
+          "source_url": "https://www.metro.ed.jp/hinodai-h/activities/club_10/index.html"
+        }
+      ]
+    },
+    {
+      "name": "女子硬式テニス部",
+      "kind": "運動",
+      "days_note": "月・火・木・金（毎週土曜あり。練習試合・大会など）",
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "直近3年の最高成績は2023年度都テニス選手権団体戦ベスト32の1回のみ（都立高戦は公立限定のためベスト16でも段階に届かない、学校サイト部活動ページ）",
+      "source_url": "https://www.metro.ed.jp/hinodai-h/activities/club_11/index.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "東京都高等学校テニス選手権大会（シングルス）",
+          "level": "都県",
+          "result": "4回戦進出",
+          "source_url": "https://www.metro.ed.jp/hinodai-h/activities/club_11/index.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "都立高等学校テニス大会",
+          "level": "都県",
+          "result": "ベスト32",
+          "source_url": "https://www.metro.ed.jp/hinodai-h/activities/club_11/index.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "東京都高等学校テニス選手権大会（団体戦）",
+          "level": "都県",
+          "result": "ベスト32",
+          "source_url": "https://www.metro.ed.jp/hinodai-h/activities/club_11/index.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "都立高等学校テニス大会",
+          "level": "都県",
+          "result": "ベスト16",
+          "source_url": "https://www.metro.ed.jp/hinodai-h/activities/club_11/index.html"
+        }
+      ]
+    },
+    {
+      "name": "剣道部",
+      "kind": "運動",
+      "days_note": "月・水・木・金（土日は基本的になし）",
+      "weekend": "なし",
+      "source_url": "https://www.metro.ed.jp/hinodai-h/activities/club_9/index.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "水泳部",
+      "kind": "運動",
+      "days_note": "月・火・水・木（週により変更あり）（土曜日は基本的にあり、日曜日は大会がある場合あり）",
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "直近数年は都大会・地区大会で入賞止まり、上位大会進出やベスト8相当の実績なし（学校サイト部活動ページ）",
+      "source_url": "https://www.metro.ed.jp/hinodai-h/activities/club_14/index.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "東京都高等学校春季水泳競技大会",
+          "level": "都県",
+          "result": "男子50m自由形決勝9位",
+          "source_url": "https://www.metro.ed.jp/hinodai-h/activities/club_14/index.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "東京都高等学校新人水泳競技大会",
+          "level": "都県",
+          "result": "男子50m自由形B決勝4位など",
+          "source_url": "https://www.metro.ed.jp/hinodai-h/activities/club_14/index.html"
+        }
+      ]
+    },
+    {
+      "name": "バトン部",
+      "kind": "運動",
+      "days_note": "月・火・水・木（土日は基本的になし）",
+      "weekend": "なし",
+      "source_url": "https://www.metro.ed.jp/hinodai-h/activities/club_6/index.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "美術部",
+      "kind": "文化",
+      "days_note": "火・金（ときどき水）（土曜授業日は活動、美術館鑑賞など）",
+      "weekend": "土",
+      "tier": 4,
+      "tier_basis": "活動日は週2〜3日で、年度が特定できる大会実績の記載なし（学校サイト部活動ページ）",
+      "source_url": "https://www.metro.ed.jp/hinodai-h/activities/club_24/index.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "演劇部",
+      "kind": "文化",
+      "days_note": "火・水・金（発表前は増やす場合あり）（土日は授業日のみ）",
+      "weekend": "なし",
+      "tier": 2,
+      "tier_basis": "2023・2024年度 東京都高等学校文化祭演劇部門中央大会に連続出場（都代表選出、学校サイト部活動ページ）",
+      "source_url": "https://www.metro.ed.jp/hinodai-h/activities/club_19/index.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "東京都高等学校文化祭演劇部門中央大会",
+          "level": "都県",
+          "result": "出場",
+          "source_url": "https://www.metro.ed.jp/hinodai-h/activities/club_19/index.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "東京都高等学校文化祭演劇部門中央大会",
+          "level": "都県",
+          "result": "出場",
+          "source_url": "https://www.metro.ed.jp/hinodai-h/activities/club_19/index.html"
+        }
+      ]
+    },
+    {
+      "name": "写真部",
+      "kind": "文化",
+      "days_note": "木（土日は基本的にはなし）",
+      "weekend": "なし",
+      "tier": 2,
+      "tier_basis": "2025年度 東京都高等学校文化祭写真部門中央大会で2作品入賞（都大会出品・入賞、学校サイト部活動ページ）",
+      "source_url": "https://www.metro.ed.jp/hinodai-h/activities/club_21/index.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "東京都高等学校文化祭写真部門中央大会",
+          "level": "都県",
+          "result": "2作品入賞",
+          "source_url": "https://www.metro.ed.jp/hinodai-h/activities/club_21/index.html"
+        }
+      ]
+    },
+    {
+      "name": "吹奏楽部",
+      "kind": "文化",
+      "days_note": "月・火・木・金（毎週土曜）",
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "2025年度東京都高等学校吹奏楽コンクールB部門銅賞にとどまり、都県代表選出や金賞など最上位の実績なし（学校案内パンフレット）",
+      "source_url": "https://www.metro.ed.jp/hinodai-h/activities/club_28/index.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "東京都高等学校吹奏楽コンクールB部門",
+          "level": "都県",
+          "result": "銅賞",
+          "source_url": "https://www.metro.ed.jp/hinodai-h/activities/club_28/index.html"
+        }
+      ]
+    },
+    {
+      "name": "将棋部",
+      "kind": "文化",
+      "days_note": "月・火・水・木（土曜日は授業がある日にあり、たまに土日に練習試合）",
+      "weekend": "土",
+      "tier": 2,
+      "tier_basis": "2026年度 全国高等学校将棋選手権大会東京地区予選 女子個人戦準優勝で全国大会出場（1回、学校サイト部活動ページ）",
+      "source_url": "https://www.metro.ed.jp/hinodai-h/activities/club_26/index.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "全国高等学校将棋選手権大会東京地区予選（女子個人戦）",
+          "level": "全国",
+          "result": "準優勝→全国大会出場",
+          "source_url": "https://www.metro.ed.jp/hinodai-h/activities/club_26/index.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "東京都高等学校将棋新人大会",
+          "level": "都県",
+          "result": "団体戦7位・個人戦16位",
+          "source_url": "https://www.metro.ed.jp/hinodai-h/activities/club_26/index.html"
+        }
+      ]
+    },
+    {
+      "name": "コーラス部",
+      "kind": "文化",
+      "days_note": "月・火・木・金（毎週土曜日あり、午前または午後）",
+      "weekend": "土",
+      "tier": 2,
+      "tier_basis": "2023年度 NHK全国学校音楽コンクール東京都予選金賞・本選優良賞、2025年度 東京都予選銀賞・全国高等学校総合文化祭合唱部門地区代表推薦（学校サイト部活動ページ）",
+      "source_url": "https://www.metro.ed.jp/hinodai-h/activities/club_18/index.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "第92回NHK全国学校音楽コンクール高等学校の部",
+          "level": "都県",
+          "result": "東京都予選銀賞",
+          "source_url": "https://www.metro.ed.jp/hinodai-h/activities/club_18/index.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "高文連地区大会",
+          "level": "地区",
+          "result": "全国高等学校総合文化祭合唱部門第6地区代表に推薦",
+          "source_url": "https://www.metro.ed.jp/hinodai-h/activities/club_18/index.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "第91回NHK全国学校音楽コンクール高等学校の部",
+          "level": "都県",
+          "result": "東京都予選銅賞",
+          "source_url": "https://www.metro.ed.jp/hinodai-h/activities/club_18/index.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "第90回NHK全国学校音楽コンクール高等学校の部",
+          "level": "都県",
+          "result": "東京都予選金賞・本選優良賞",
+          "source_url": "https://www.metro.ed.jp/hinodai-h/activities/club_18/index.html"
+        }
+      ]
+    },
+    {
+      "name": "茶道部",
+      "kind": "文化",
+      "days_note": "火・金（土日はなし）",
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日は週2日で、大会・コンクール実績の記載なし（学校サイト部活動ページ）",
+      "source_url": "https://www.metro.ed.jp/hinodai-h/activities/club_23/index.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "家庭部",
+      "kind": "文化",
+      "days_note": "木（土日は基本的に無し）",
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日は週1日で、大会・コンクール実績の記載なし（学校サイト部活動ページ）",
+      "source_url": "https://www.metro.ed.jp/hinodai-h/activities/club_20/index.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "生物部",
+      "kind": "文化",
+      "days_note": "月・水・金（土日は基本的になし）",
+      "weekend": "なし",
+      "source_url": "https://www.metro.ed.jp/hinodai-h/activities/club_22_1/index.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "軽音楽同好会",
+      "kind": "同好会",
+      "days_note": "月〜金（シフト制）（土日は土曜授業日のみ）",
+      "weekend": "土",
+      "source_url": "https://www.metro.ed.jp/hinodai-h/activities/club_27/index.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "外国語同好会",
+      "kind": "同好会",
+      "days_note": "木・金（土日は基本的になし）",
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日は週2日で、大会・コンクール実績の記載なし（学校サイト部活動ページ）",
+      "source_url": "https://www.metro.ed.jp/hinodai-h/activities/club_16/index.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "漫画同好会",
+      "kind": "同好会",
+      "days_note": "木（土日は基本的になし）",
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日は週1日で、大会・コンクール実績の記載なし（学校サイト部活動ページ）",
+      "source_url": "https://www.metro.ed.jp/hinodai-h/activities/club_29/index.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "文芸同好会",
+      "kind": "同好会",
+      "days_note": "不定期（土日はなし）",
+      "weekend": "なし",
+      "source_url": "https://www.metro.ed.jp/hinodai-h/activities/club_25/index.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "コンピュータ研究同好会",
+      "kind": "同好会",
+      "days_note": "週1以上＋α（個別の予定に合わせる）（土日は行事・コンテスト前のみ）",
+      "source_url": "https://www.metro.ed.jp/hinodai-h/activities/club_31/index.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "ひのミラ（持続可能な日野の未来を創る高校生チーム）",
+      "kind": "同好会",
+      "days_note": "不定期（土日は月1回程度の定例ミーティング、昨年度は土曜午後）",
+      "source_url": "https://www.metro.ed.jp/hinodai-h/activities/club_30/index.html",
+      "as_of": "2026-09-24"
+    }
+  ],
+  "designated_universities": [
+    {
+      "university": "東京都立大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/hinodai-h/img_sub/pamphlet/pamphlet-pdffile-3958.pdf",
+      "note": "7名"
+    },
+    {
+      "university": "国立看護大学校",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/hinodai-h/img_sub/pamphlet/pamphlet-pdffile-3958.pdf",
+      "note": "1名"
+    },
+    {
+      "university": "青山学院大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/hinodai-h/img_sub/pamphlet/pamphlet-pdffile-3958.pdf",
+      "note": "8名"
+    },
+    {
+      "university": "学習院大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/hinodai-h/img_sub/pamphlet/pamphlet-pdffile-3958.pdf",
+      "note": "3名"
+    },
+    {
+      "university": "中央大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/hinodai-h/img_sub/pamphlet/pamphlet-pdffile-3958.pdf",
+      "note": "5名"
+    },
+    {
+      "university": "法政大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/hinodai-h/img_sub/pamphlet/pamphlet-pdffile-3958.pdf",
+      "note": "3名"
+    },
+    {
+      "university": "明治大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/hinodai-h/img_sub/pamphlet/pamphlet-pdffile-3958.pdf",
+      "note": "1名"
+    },
+    {
+      "university": "立教大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/hinodai-h/img_sub/pamphlet/pamphlet-pdffile-3958.pdf",
+      "note": "2名"
+    },
+    {
+      "university": "東京理科大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/hinodai-h/img_sub/pamphlet/pamphlet-pdffile-3958.pdf",
+      "note": "7名"
+    },
+    {
+      "university": "成蹊大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/hinodai-h/img_sub/pamphlet/pamphlet-pdffile-3958.pdf",
+      "note": "3名"
+    },
+    {
+      "university": "明治学院大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/hinodai-h/img_sub/pamphlet/pamphlet-pdffile-3958.pdf",
+      "note": "2名"
+    },
+    {
+      "university": "津田塾大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/hinodai-h/img_sub/pamphlet/pamphlet-pdffile-3958.pdf",
+      "note": "2名"
+    },
+    {
+      "university": "東京女子大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/hinodai-h/img_sub/pamphlet/pamphlet-pdffile-3958.pdf",
+      "note": "2名"
+    },
+    {
+      "university": "日本女子大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/hinodai-h/img_sub/pamphlet/pamphlet-pdffile-3958.pdf",
+      "note": "2名"
+    },
+    {
+      "university": "東洋大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/hinodai-h/img_sub/pamphlet/pamphlet-pdffile-3958.pdf",
+      "note": "2名"
+    },
+    {
+      "university": "日本大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/hinodai-h/img_sub/pamphlet/pamphlet-pdffile-3958.pdf",
+      "note": "2名"
+    },
+    {
+      "university": "関西学院大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/hinodai-h/img_sub/pamphlet/pamphlet-pdffile-3958.pdf",
+      "note": "2名"
+    },
+    {
+      "university": "北里大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/hinodai-h/img_sub/pamphlet/pamphlet-pdffile-3958.pdf",
+      "note": "5名"
+    },
+    {
+      "university": "東京薬科大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/hinodai-h/img_sub/pamphlet/pamphlet-pdffile-3958.pdf",
+      "note": "4名"
+    },
+    {
+      "university": "明治薬科大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/hinodai-h/img_sub/pamphlet/pamphlet-pdffile-3958.pdf",
+      "note": "3名"
+    },
+    {
+      "university": "武蔵野美術大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/hinodai-h/img_sub/pamphlet/pamphlet-pdffile-3958.pdf",
+      "note": "1名"
+    },
+    {
+      "university": "国立音楽大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/hinodai-h/img_sub/pamphlet/pamphlet-pdffile-3958.pdf",
+      "note": "人数無制限と表記"
+    }
+  ],
+  "events": [
+    {
+      "kind": "施設",
+      "period_label": "令和3年度",
+      "summary": "体育館にエアコンを設置",
+      "source_url": "https://www.metro.ed.jp/hinodai-h/img_sub/pamphlet/pamphlet-pdffile-3958.pdf"
+    },
+    {
+      "kind": "施設",
+      "period_label": "令和5年度",
+      "summary": "格技棟(柔剣道場)にエアコンを設置",
+      "source_url": "https://www.metro.ed.jp/hinodai-h/img_sub/pamphlet/pamphlet-pdffile-3958.pdf"
+    },
+    {
+      "kind": "学科改編",
+      "period_label": "令和7年度入学生から",
+      "summary": "高校DX加速化推進事業の採択校として、2年次に「情報Ⅱ」を選択科目として追加",
+      "source_url": "https://www.metro.ed.jp/hinodai-h/our_school/pamphlet.html"
+    }
+  ],
+  "unresolved": [
+    "生徒数（男女別人数）：学校公式の全体人数は資料に見当たらない。",
+    "admission_route_share（進学先の入試方式別割合）：資料に記載なし。",
+    "学級数の増減：都教委「第一学年生徒の募集人員等について」を本調査では参照しておらず未確認。"
+  ],
+  "conflicts": [
+    "大学合格実績「早慶上理」：令和7年度学校経営報告および大学合格者数速報（2026/4/10）は現役38名とするが、学校案内パンフレット「日野台2027」の合格状況表（小計）は同年を現役37名としており1名の食い違いがある。"
+  ]
+}

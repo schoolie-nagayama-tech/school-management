@@ -1,0 +1,686 @@
+{
+  "prefecture": "神奈川県",
+  "school_name": "藤沢総合",
+  "official_url": "https://www.pen-kanagawa.ed.jp/fujisawasogo-ih/",
+  "researched_at": "2026-09-24",
+  "stats": [
+    {
+      "metric": "university_count",
+      "item": "国公立",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 3,
+      "source_url": "https://www.pen-kanagawa.ed.jp/fujisawasogo-ih/shinro/documents/2026sotugyouseisinro.pdf",
+      "source_label": "藤沢総合高校 令和8(2026)年3月卒業生 進路状況",
+      "as_of": "2026-03-31",
+      "note": "大学別の表から合算（筑波大学1・横浜国立大学1・神奈川県立保健福祉大学1、実進学者数）。"
+    },
+    {
+      "metric": "university_count",
+      "item": "早慶上理",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 0,
+      "source_url": "https://www.pen-kanagawa.ed.jp/fujisawasogo-ih/shinro/documents/2026sotugyouseisinro.pdf",
+      "source_label": "藤沢総合高校 令和8(2026)年3月卒業生 進路状況",
+      "as_of": "2026-03-31",
+      "note": "大学別の表に早稲田・慶應・上智・東京理科の実進学者は記載なし。"
+    },
+    {
+      "metric": "university_count",
+      "item": "GMARCH",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 1,
+      "source_url": "https://www.pen-kanagawa.ed.jp/fujisawasogo-ih/shinro/documents/2026sotugyouseisinro.pdf",
+      "source_label": "藤沢総合高校 令和8(2026)年3月卒業生 進路状況",
+      "as_of": "2026-03-31",
+      "note": "大学別の表から合算（法政大学1のみ。学習院・明治・青山学院・立教・中央は実進学者0）。"
+    },
+    {
+      "metric": "university_count",
+      "item": "成成明武",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 2,
+      "source_url": "https://www.pen-kanagawa.ed.jp/fujisawasogo-ih/shinro/documents/2026sotugyouseisinro.pdf",
+      "source_label": "藤沢総合高校 令和8(2026)年3月卒業生 進路状況",
+      "as_of": "2026-03-31",
+      "note": "大学別の表から合算（明治学院大学2のみ。成蹊・成城・武蔵は実進学者0）。"
+    },
+    {
+      "metric": "university_count",
+      "item": "日東駒専",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 2,
+      "source_url": "https://www.pen-kanagawa.ed.jp/fujisawasogo-ih/shinro/documents/2026sotugyouseisinro.pdf",
+      "source_label": "藤沢総合高校 令和8(2026)年3月卒業生 進路状況",
+      "as_of": "2026-03-31",
+      "note": "大学別の表から合算（日本大学1+専修大学1。東洋・駒澤は実進学者0）。"
+    },
+    {
+      "metric": "university_count",
+      "item": "合計",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 116,
+      "source_url": "https://www.pen-kanagawa.ed.jp/fujisawasogo-ih/shinro/documents/2026sotugyouseisinro.pdf",
+      "source_label": "藤沢総合高校 令和8(2026)年3月卒業生 進路状況",
+      "as_of": "2026-03-31",
+      "note": "学校集計の「大学」計（男43+女73）。専門職大学を含む4年制大学の実進学者数（短期大学10名は含まない）。"
+    },
+    {
+      "metric": "university_count",
+      "item": "関東学院大学",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 13,
+      "source_url": "https://www.pen-kanagawa.ed.jp/fujisawasogo-ih/shinro/documents/2026sotugyouseisinro.pdf",
+      "source_label": "藤沢総合高校 令和8(2026)年3月卒業生 進路状況",
+      "as_of": "2026-03-31",
+      "note": "大学別の表（実進学者数）から。上位1位。"
+    },
+    {
+      "metric": "university_count",
+      "item": "神奈川大学",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 11,
+      "source_url": "https://www.pen-kanagawa.ed.jp/fujisawasogo-ih/shinro/documents/2026sotugyouseisinro.pdf",
+      "source_label": "藤沢総合高校 令和8(2026)年3月卒業生 進路状況",
+      "as_of": "2026-03-31",
+      "note": "大学別の表（実進学者数）から。上位2位。"
+    },
+    {
+      "metric": "university_count",
+      "item": "和光大学",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 7,
+      "source_url": "https://www.pen-kanagawa.ed.jp/fujisawasogo-ih/shinro/documents/2026sotugyouseisinro.pdf",
+      "source_label": "藤沢総合高校 令和8(2026)年3月卒業生 進路状況",
+      "as_of": "2026-03-31",
+      "note": "大学別の表（実進学者数）から。上位3位。"
+    },
+    {
+      "metric": "university_count",
+      "item": "東海大学",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 6,
+      "source_url": "https://www.pen-kanagawa.ed.jp/fujisawasogo-ih/shinro/documents/2026sotugyouseisinro.pdf",
+      "source_label": "藤沢総合高校 令和8(2026)年3月卒業生 進路状況",
+      "as_of": "2026-03-31",
+      "note": "大学別の表（実進学者数）から。上位4位（相模女子大学と同数）。"
+    },
+    {
+      "metric": "university_count",
+      "item": "相模女子大学",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 6,
+      "source_url": "https://www.pen-kanagawa.ed.jp/fujisawasogo-ih/shinro/documents/2026sotugyouseisinro.pdf",
+      "source_label": "藤沢総合高校 令和8(2026)年3月卒業生 進路状況",
+      "as_of": "2026-03-31",
+      "note": "大学別の表（実進学者数）から。上位5位（東海大学と同数）。"
+    },
+    {
+      "metric": "uniform",
+      "item": "",
+      "basis": "",
+      "fiscal_year": 2023,
+      "value_text": "濃紺ブレザー（男女共通）・白シャツ。下衣はズボン・スカート・スラックスから選択。ネクタイ/リボンは任意。夏季(5〜10月)は上着なしで半袖白無地ポロシャツも可。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/fujisawasogo-ih/documents/gakkouseikatukisoku.pdf",
+      "source_label": "藤沢総合高校 学校生活のルール・服装・通学について",
+      "as_of": "2023-11-09",
+      "note": ""
+    },
+    {
+      "metric": "rules_summary",
+      "item": "",
+      "basis": "",
+      "fiscal_year": 2023,
+      "value_text": "頭髪は染色・脱色・加工を禁止。授業中の携帯電話使用を禁止（所持自体は規定に明記なし）。アルバイトに関する規定の記載はなし。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/fujisawasogo-ih/documents/gakkouseikatukisoku.pdf",
+      "source_label": "藤沢総合高校 学校生活のルール・服装・通学について",
+      "as_of": "2023-11-09",
+      "note": ""
+    }
+  ],
+  "clubs": [
+    {
+      "name": "吹奏楽部",
+      "kind": "文化",
+      "days_note": "月・火・水(自主練習)・木・金・土",
+      "days_per_week": 6,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "2023・2024年度とも湘南地区吹奏楽コンクールA部門で銀賞（地区大会止まりで県大会選出の記載なし、部公式ページ）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/fujisawasogo-ih/seikatsu/suisogaku.html",
+      "as_of": "2025-01",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "湘南吹奏楽コンクールA部門",
+          "level": "地区",
+          "result": "銀賞",
+          "source_url": "https://www.pen-kanagawa.ed.jp/fujisawasogo-ih/seikatsu/suisogaku.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "湘南吹奏楽コンクールA部門",
+          "level": "地区",
+          "result": "銀賞",
+          "source_url": "https://www.pen-kanagawa.ed.jp/fujisawasogo-ih/seikatsu/suisogaku.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "湘南地区アンサンブルコンテスト",
+          "level": "地区",
+          "result": "金管打楽器七重奏で銀賞",
+          "source_url": "https://www.pen-kanagawa.ed.jp/fujisawasogo-ih/seikatsu/suisogaku.html"
+        }
+      ]
+    },
+    {
+      "name": "演劇部",
+      "kind": "文化",
+      "days_note": "火・木・金（秋大会前・校内公演稽古期間は月・水・土も）",
+      "days_per_week": 3,
+      "weekend": "なし",
+      "source_url": "https://www.pen-kanagawa.ed.jp/fujisawasogo-ih/seikatsu/engeki.html",
+      "as_of": "2020-12-03"
+    },
+    {
+      "name": "コンピュータ部",
+      "kind": "文化",
+      "source_url": "https://www.pen-kanagawa.ed.jp/fujisawasogo-ih/seikatsu/bukatsudoiinkai.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "書道部",
+      "kind": "文化",
+      "days_note": "火・水（夏休み・翡翠祭・校外書道展前は増える）",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "tier": 2,
+      "tier_basis": "令和5(2023)年度 神奈川県高等学校総合文化祭 第60回高等学校書道展で特選（最上位賞、2名）受賞（部公式ページ）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/fujisawasogo-ih/seikatsu/syodo.html",
+      "as_of": "2023-12",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "神奈川県高等学校総合文化祭 第60回高等学校書道展",
+          "level": "都県",
+          "result": "特選（2名）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/fujisawasogo-ih/seikatsu/syodo.html"
+        }
+      ]
+    },
+    {
+      "name": "美術部",
+      "kind": "文化",
+      "days_note": "火・水・金(15:45〜18:30)",
+      "days_per_week": 3,
+      "weekend": "なし",
+      "source_url": "https://www.pen-kanagawa.ed.jp/fujisawasogo-ih/seikatsu/bijyutsu.html",
+      "as_of": "2025-01-29"
+    },
+    {
+      "name": "家庭科部",
+      "kind": "文化",
+      "days_note": "月のみ（ミーティング・調理）",
+      "days_per_week": 1,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日は週1日（月）のみで、活動実績は「特になし」（部公式ページ）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/fujisawasogo-ih/seikatsu/kateika.html",
+      "as_of": "2022-05-02"
+    },
+    {
+      "name": "漫画研究部",
+      "kind": "文化",
+      "source_url": "https://www.pen-kanagawa.ed.jp/fujisawasogo-ih/seikatsu/bukatsudoiinkai.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "写真部",
+      "kind": "文化",
+      "days_note": "火のみ(16:00〜17:00)。土日は撮影会等で臨時に活動",
+      "days_per_week": 1,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日は週1日（火）のみで、活動実績は文化祭展示や体育祭撮影など校内活動にとどまり対外的な大会成績はない（部公式ページ）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/fujisawasogo-ih/seikatsu/shashin.html",
+      "as_of": "2017-05-25"
+    },
+    {
+      "name": "茶道部",
+      "kind": "文化",
+      "days_note": "金のみ（お稽古日、行事前は臨時活動）",
+      "days_per_week": 1,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日は週1日（金）のみで、活動実績は文化祭でのお茶会や講習会聴講など、大会成績の記載はない（部公式ページ）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/fujisawasogo-ih/seikatsu/sado.html",
+      "as_of": "2016-05-20"
+    },
+    {
+      "name": "軽音楽部",
+      "kind": "文化",
+      "days_note": "月・火・木・金(15:55〜18:30)",
+      "days_per_week": 4,
+      "weekend": "試合のみ",
+      "tier": 2,
+      "tier_basis": "2023年度 全国中学校・高等学校ギター部＆軽音楽部フェスティバルで銅賞（全国大会、1回）、神奈川県高等学校総合文化祭で会長賞（部公式ページ）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/fujisawasogo-ih/seikatsu/k-on.html",
+      "as_of": "2025-01-30",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "全国中学校・高等学校ギター部＆軽音楽部フェスティバル",
+          "level": "全国",
+          "result": "2023年9月、銅賞（バンド「ALciel」）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/fujisawasogo-ih/seikatsu/k-on.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "神奈川県高等学校総合文化祭",
+          "level": "都県",
+          "result": "2024年1月、会長賞（バンド「UPs WINGs」）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/fujisawasogo-ih/seikatsu/k-on.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "神奈川県高等学校軽音楽コンクール",
+          "level": "都県",
+          "result": "2023年12月、奨励賞（バンド「UPs WINGs」）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/fujisawasogo-ih/seikatsu/k-on.html"
+        }
+      ]
+    },
+    {
+      "name": "服飾研究部",
+      "kind": "文化",
+      "days_note": "火・水(16:00〜17:00)",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "source_url": "https://www.pen-kanagawa.ed.jp/fujisawasogo-ih/seikatsu/hukusyoku.html",
+      "as_of": "2025-01-29"
+    },
+    {
+      "name": "ボランティア部",
+      "kind": "文化",
+      "days_note": "月＋土日（ボランティア活動がある日）",
+      "weekend": "土日",
+      "source_url": "https://www.pen-kanagawa.ed.jp/fujisawasogo-ih/seikatsu/volunteer.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "競技かるた部",
+      "kind": "文化",
+      "days_note": "月・水・金(練習)、土日は大会",
+      "days_per_week": 3,
+      "weekend": "試合のみ",
+      "source_url": "https://www.pen-kanagawa.ed.jp/fujisawasogo-ih/seikatsu/karuta.html",
+      "as_of": "2025-01-29"
+    },
+    {
+      "name": "華道部",
+      "kind": "文化",
+      "days_note": "月〜金（応相談、実質月2回程度）",
+      "weekend": "なし",
+      "tier": 3,
+      "tier_basis": "令和7(2025)年度 小原流学生いけばな競技会で入賞、藤沢市展(華道の部)で奨励賞（いずれも流派主催・市レベルの賞、部公式ページ）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/fujisawasogo-ih/seikatsu/kado.html",
+      "as_of": "2026-06-26",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "小原流学生いけばな競技会",
+          "level": "その他",
+          "result": "入賞（1名、流派主催）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/fujisawasogo-ih/seikatsu/kado.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "藤沢市展（華道の部）",
+          "level": "地区",
+          "result": "奨励賞（2名）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/fujisawasogo-ih/seikatsu/kado.html"
+        }
+      ]
+    },
+    {
+      "name": "映像研究部",
+      "kind": "文化",
+      "days_note": "水のみ",
+      "days_per_week": 1,
+      "weekend": "なし",
+      "source_url": "https://www.pen-kanagawa.ed.jp/fujisawasogo-ih/seikatsu/eizokenkyu.html",
+      "as_of": "2025-01-30"
+    },
+    {
+      "name": "競技麻雀同好会",
+      "kind": "同好会",
+      "source_url": "https://www.pen-kanagawa.ed.jp/fujisawasogo-ih/seikatsu/bukatsudoiinkai.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "サッカー部",
+      "kind": "運動",
+      "days_note": "月・火・木・金(放課後グラウンド)、水はオフ",
+      "days_per_week": 4,
+      "weekend": "試合のみ",
+      "source_url": "https://www.pen-kanagawa.ed.jp/fujisawasogo-ih/soccer.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "陸上競技部",
+      "kind": "運動",
+      "days_note": "月・火・水・金(16:15〜18:30)、土は練習か大会",
+      "days_per_week": 5,
+      "weekend": "土",
+      "tier": 2,
+      "tier_basis": "2023年度 神奈川県高等学校新人陸上競技大会 5000m競歩で第4位入賞（県ベスト8以上、部公式ページ）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/fujisawasogo-ih/seikatsu/rikujyo.html",
+      "as_of": "2023-09",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "神奈川県高等学校新人陸上競技大会",
+          "level": "都県",
+          "result": "2023年9月、5000m競歩で第4位入賞",
+          "source_url": "https://www.pen-kanagawa.ed.jp/fujisawasogo-ih/seikatsu/rikujyo.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "神奈川県高等学校総合体育大会 陸上競技の部",
+          "level": "都県",
+          "result": "2023年5月、400mH出場",
+          "source_url": "https://www.pen-kanagawa.ed.jp/fujisawasogo-ih/seikatsu/rikujyo.html"
+        }
+      ]
+    },
+    {
+      "name": "硬式野球部",
+      "kind": "運動",
+      "days_note": "月曜完全休養、火〜日は練習・試合(平日16:00〜18:30)",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2023年度、いずれも他校との連合チームで大会に出場。春季県大会予選は勝ち上がり県大会に出場するも1回戦で敗退、秋季地区予選は初戦以外で大差の敗退（部公式ページ）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/fujisawasogo-ih/seikatsu/yakyu.html",
+      "as_of": "2024-03-31",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "神奈川県高等学校野球春季県大会 横浜南・横須賀地区予選（9校連合チーム）",
+          "level": "都県",
+          "result": "地区予選を勝ち上がり県大会に出場も、1回戦で藤沢西に0-7で敗退",
+          "happened_on": "2023-04-09",
+          "source_url": "https://www.pen-kanagawa.ed.jp/fujisawasogo-ih/seikatsu/yakyu.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "神奈川県高等学校野球秋季県大会 横浜南・横須賀地区予選（3校連合チーム）",
+          "level": "地区",
+          "result": "初戦で平沼に10-3で勝利も、2回戦は創学館に1-29、3回戦は金沢総合に0-16で敗退（2023年8月17〜20日）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/fujisawasogo-ih/seikatsu/yakyu.html"
+        }
+      ]
+    },
+    {
+      "name": "ハンドボール部",
+      "kind": "運動",
+      "days_note": "火・水・木・金・土",
+      "days_per_week": 5,
+      "weekend": "土",
+      "source_url": "https://www.pen-kanagawa.ed.jp/fujisawasogo-ih/seikatsu/hand.html",
+      "as_of": "2025-01-30"
+    },
+    {
+      "name": "女子バレーボール部",
+      "kind": "運動",
+      "days_note": "月・水・木・金(外練習)、土日は半日練習・半日試合",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "source_url": "https://www.pen-kanagawa.ed.jp/fujisawasogo-ih/seikatsu/volley.html",
+      "as_of": "2022-05-02"
+    },
+    {
+      "name": "男子バレーボール部",
+      "kind": "運動",
+      "days_note": "月・水・木・金(トレーニング・外練習)、土日は半日練習・半日試合",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "source_url": "https://www.pen-kanagawa.ed.jp/fujisawasogo-ih/seikatsu/volleymens.html",
+      "as_of": "2022-05-02"
+    },
+    {
+      "name": "男子バスケットボール部",
+      "kind": "運動",
+      "days_note": "月・水・金(体育館)、木(トレーニング)、土日(練習または対外試合)",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2023年度、各大会の西支部予選で概ね1〜2回戦で敗退。湘南地区夏季大会はブロック準優勝（いずれも地区・支部レベル、部公式ページ）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/fujisawasogo-ih/seikatsu/danbasu.html",
+      "as_of": "2025-01-30",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "湘南地区夏季大会",
+          "level": "地区",
+          "result": "ブロック準優勝",
+          "source_url": "https://www.pen-kanagawa.ed.jp/fujisawasogo-ih/seikatsu/danbasu.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "関東大会西支部予選",
+          "level": "都県",
+          "result": "1回戦敗退（藤沢総合56-88茅ケ崎）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/fujisawasogo-ih/seikatsu/danbasu.html"
+        }
+      ]
+    },
+    {
+      "name": "女子バスケットボール部",
+      "kind": "運動",
+      "days_note": "月・水・金(体育館)、土日(練習または練習試合)",
+      "days_per_week": 5,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2024年度、関東予選・インターハイ県予選・新人戦いずれも西支部予選に出場（部公式ページ、上位進出の記載なし）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/fujisawasogo-ih/seikatsu/jyobasu.html",
+      "as_of": "2025-04-10",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "インターハイ県予選西支部予選",
+          "level": "都県",
+          "result": "出場",
+          "source_url": "https://www.pen-kanagawa.ed.jp/fujisawasogo-ih/seikatsu/jyobasu.html"
+        }
+      ]
+    },
+    {
+      "name": "バドミントン部",
+      "kind": "運動",
+      "days_note": "月・火・木(練習)、土日(半日)",
+      "days_per_week": 4,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2025年度、地区大会で入賞して県大会出場権を得るも、県大会での上位成績の記載はない（部公式ページ）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/fujisawasogo-ih/seikatsu/badminton.html",
+      "as_of": "2025-11-12",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "神奈川県高等学校バドミントン新人大会地区予選",
+          "level": "地区",
+          "result": "2025年10月、女子学校対抗で地区6位入賞（県大会出場）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/fujisawasogo-ih/seikatsu/badminton.html"
+        }
+      ]
+    },
+    {
+      "name": "卓球部",
+      "kind": "運動",
+      "days_note": "月・水・金(16:15〜17:45)、土は大会が近いとき",
+      "days_per_week": 3,
+      "weekend": "試合のみ",
+      "tier": 2,
+      "tier_basis": "2023年度、関東大会・高校総体の県予選で女子ダブルスが2度県ベスト32（部公式ページ）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/fujisawasogo-ih/seikatsu/takkyu.html",
+      "as_of": "2023-05",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "神奈川高等学校総合体育大会 神奈川県予選",
+          "level": "都県",
+          "result": "2023年5月、女子ダブルス 県ベスト32",
+          "source_url": "https://www.pen-kanagawa.ed.jp/fujisawasogo-ih/seikatsu/takkyu.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "関東大会神奈川県予選",
+          "level": "都県",
+          "result": "女子ダブルス 県ベスト32",
+          "source_url": "https://www.pen-kanagawa.ed.jp/fujisawasogo-ih/seikatsu/takkyu.html"
+        }
+      ]
+    },
+    {
+      "name": "テニス部",
+      "kind": "運動",
+      "days_note": "月・火・水・金、土は大会など",
+      "days_per_week": 4,
+      "weekend": "試合のみ",
+      "source_url": "https://www.pen-kanagawa.ed.jp/fujisawasogo-ih/seikatsu/tennis.html",
+      "as_of": "2022-05-02"
+    },
+    {
+      "name": "ダンス部",
+      "kind": "運動",
+      "days_note": "月・水・金(放課後武道場練習)、土(半日または1日)、日(半日または1日、(日)は不定期)",
+      "days_per_week": 4.5,
+      "weekend": "土日",
+      "tier": 1,
+      "tier_basis": "2023年度 日本高校ダンス部選手権 東日本大会でストリートダンス協会賞、2025年度 同全国大会（公式web戦）で第5位入賞（いずれも全国規模の大会、部公式ページ）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/fujisawasogo-ih/seikatsu/dance.html",
+      "as_of": "2026-07-07",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "第18回日本高校ダンス部選手権 公式web戦 全国大会",
+          "level": "全国",
+          "result": "第5位入賞",
+          "source_url": "https://www.pen-kanagawa.ed.jp/fujisawasogo-ih/seikatsu/dance.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "神奈川県ダンス新人大会",
+          "level": "都県",
+          "result": "7位",
+          "source_url": "https://www.pen-kanagawa.ed.jp/fujisawasogo-ih/seikatsu/dance.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "第16回日本高校ダンス部選手権 春の公式大会 東日本大会ビッグクラス",
+          "level": "関東",
+          "result": "ストリートダンス協会賞",
+          "source_url": "https://www.pen-kanagawa.ed.jp/fujisawasogo-ih/seikatsu/dance.html"
+        }
+      ]
+    },
+    {
+      "name": "空手道部",
+      "kind": "運動",
+      "days_note": "月・火・木(練習)、土(大会前のみ)",
+      "days_per_week": 3,
+      "weekend": "なし",
+      "tier": 2,
+      "tier_basis": "2023(R5)年度 新人大会 女子団体形7位・男子団体組手(3人制)7位入賞（いずれも県ベスト8、部公式ページ）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/fujisawasogo-ih/seikatsu/karate.html",
+      "as_of": "2025-01-29",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "神奈川県高等学校空手道新人大会",
+          "level": "都県",
+          "result": "女子団体形 7位入賞",
+          "source_url": "https://www.pen-kanagawa.ed.jp/fujisawasogo-ih/seikatsu/karate.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "神奈川県高等学校空手道新人大会",
+          "level": "都県",
+          "result": "男子団体組手(3人制) 7位入賞",
+          "source_url": "https://www.pen-kanagawa.ed.jp/fujisawasogo-ih/seikatsu/karate.html"
+        }
+      ]
+    },
+    {
+      "name": "剣道部",
+      "kind": "運動",
+      "days_note": "火・木・土",
+      "days_per_week": 3,
+      "weekend": "土",
+      "tier": 4,
+      "tier_basis": "活動日は週3日（火・木・土）で、活動実績は昇段審査・合同稽古会のみで大会成績の記載はない（部公式ページ）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/fujisawasogo-ih/seikatsu/kendo.html",
+      "as_of": "2022-05-02"
+    },
+    {
+      "name": "柔道部",
+      "kind": "運動",
+      "source_url": "https://www.pen-kanagawa.ed.jp/fujisawasogo-ih/documents/gakkouannnai_2024.pdf",
+      "as_of": "2024-09-12"
+    },
+    {
+      "name": "弓道部",
+      "kind": "運動",
+      "days_note": "月・火・木・金(放課後)、土日は大会",
+      "days_per_week": 4,
+      "weekend": "試合のみ",
+      "tier": 3,
+      "tier_basis": "例年4〜11月に県内大会へ出場するが、具体的な順位・成績の記載はない（部公式ページ）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/fujisawasogo-ih/seikatsu/kyuudou.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "ライフル射撃部",
+      "kind": "運動",
+      "days_note": "火・木(放課後〜18:30)、土(9:00〜12:00、部員相談の上)",
+      "days_per_week": 2.5,
+      "weekend": "土",
+      "tier": 4,
+      "tier_basis": "活動日は週2〜3日（火・木、土は不定期）で、年2回ほどの県予選出場にとどまり具体的な大会成績の記載はない（部公式ページ）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/fujisawasogo-ih/seikatsu/raifuru.html",
+      "as_of": "2026-09-24"
+    }
+  ],
+  "designated_universities": [],
+  "events": [],
+  "unresolved": [
+    "推薦入試の応募・受検倍率（exam_ratio/推薦）：神奈川県公立高校入試は共通選抜のみで、東京都のような別立ての推薦選抜がないため対象データなし。",
+    "部活動加入率（club_join_rate）・進路決定率（career_decided_rate）・満足度（satisfaction）：学校評価報告書（県様式、文章のみで数値なし）を確認したが数値の記載なし。学校案内パンフレットにも記載なし。",
+    "男女別生徒数（students）：学校案内パンフレットには総数「840名（21学級）」の記載のみで、男女別の実数は公表されていない。",
+    "指定校推薦の大学（designated_universities）：進路ページ・学校案内パンフレット（2024年版）を確認したが、「指定校」と見出しの付いた一覧は見当たらなかった（パンフレットの「主な進学先・就職先」は合格実績の一覧で指定校リストではない）。",
+    "学級増減・改築等の学校の変化（events）：沿革ページ・お知らせ一覧・学校経営計画等を確認したが、2020年以降で該当する発表は見当たらなかった（入学者数は令和2〜8年度でおおむね277〜279名で推移し大きな変化なし）。",
+    "サッカー部（男子）の段階：高円宮杯U-18サッカーリーグ神奈川2025・2026年度のK1〜K6いずれのチーム一覧にも「藤沢総合」の記載がなく、今年度のリーグ所属を確認できなかった（部自体は活動中で、部員は少人数と部公式ページに記載）。学校サイトの部ページには2021年度のK4リーグ参加実績のみで、直近3年（2023年度以降）の所属・大会成績は確認できず。",
+    "硬式野球部の2024・2025年度成績：一球速報.com のチームページ（神奈川県立藤沢総合高等学校、team_id=12254）では2024年度「第106回全国高等学校野球選手権神奈川大会」への出場記録が1件あるのみで、対戦相手・スコアはJavaScriptで動的に描画されており取得できなかった。学校公式サイトの部ページ（yakyu.html）は2023年度までの詳細な連合チームでの成績を掲載。2025年度分は未掲載。",
+    "競技かるた部：個人戦で「全国大会出場」「関東大会第4位」など全国・関東規模の実績が部公式ページに複数記載されているが、いずれも開催年度の記載がなく、直近3年（2023年度以降）の実績かどうか確認できなかったため段階を付けず。",
+    "柔道部：学校案内パンフレット（2024年版）に「女県総体 女子団体形 県ベスト8」「新人戦 女子団体組手(5人制)県ベスト8/団体形県ベスト8」「新人戦 男子団体組手(3人制)県ベスト8」の記載があるが、開催年度の記載がなく、また部活動・同好会一覧ページに柔道部の個別ページが見当たらないため、活動日・詳細な出典を確認できず段階を付けず。",
+    "美術部：第68回神奈川県高等学校美術展で奨励賞受賞の記載があるが開催年度が明記されておらず、また奨励賞は最上位の賞ではないため段階を付けず。",
+    "演劇部：湘南地区高等学校演劇発表会で優秀賞を4回（第54〜57回）受賞の記載があるが、いずれも開催年度が明記されておらず段階を付けず。",
+    "ハンドボール部：部公式ページの活動実績は【2021年度】の記載のみで直近3年（2023年度以降）の大会成績を確認できなかったため段階を付けず。学校案内パンフレットには年度不明の支部予選成績の記載あり。",
+    "女子バレーボール部・男子バレーボール部：部公式ページの活動実績に開催年度の記載がなく（「出場」のみの記述）、直近3年の実績かどうか確認できなかったため段階を付けず。",
+    "テニス部：部公式ページの活動実績は【2022年度】までの記載で、直近3年（2023年度以降）の大会成績を確認できなかったため段階を付けず。"
+  ],
+  "conflicts": [
+    "吹奏楽部の成績：学校案内パンフレット（2024年版、開催年度の記載なし）は「吹奏楽コンクールA部門県大会 銀賞」「アンサンブルコンテスト県大会 銀賞」と記載するが、部公式ページ（開催年度あり）では2023・2024年度とも「湘南吹奏楽コンクールA部門」等、地区大会名での銀賞受賞として記載されており、県大会進出の記載はない。日付が確認できる部公式ページの記載を採用した。"
+  ]
+}

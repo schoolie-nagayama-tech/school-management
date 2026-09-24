@@ -1,0 +1,937 @@
+{
+  "prefecture": "東京都",
+  "school_name": "田無",
+  "official_url": "https://www.metro.ed.jp/tanashi-h/",
+  "researched_at": "2026-09-24",
+  "stats": [
+    {
+      "metric": "university_count",
+      "item": "GMARCH",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 6,
+      "source_url": "https://www.metro.ed.jp/tanashi-h/assets/filelink/filelink-pdffile-34815.pdf",
+      "source_label": "令和7年度 学校経営報告 数値の経年変化と今年度の実績",
+      "as_of": "2026-03-31",
+      "note": "私立大学（GMARCH）現役合格者数、令和7年度実績。"
+    },
+    {
+      "metric": "university_count",
+      "item": "成成武明学",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 4,
+      "source_url": "https://www.metro.ed.jp/tanashi-h/assets/filelink/filelink-pdffile-34815.pdf",
+      "source_label": "令和7年度 学校経営報告 数値の経年変化と今年度の実績",
+      "as_of": "2026-03-31",
+      "note": "学校独自の大学群「成成武明学」（手引きの成成明武とは異なる区分）。私立大学（成成武明学）現役合格者数、令和7年度実績。"
+    },
+    {
+      "metric": "university_count",
+      "item": "日東駒専",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 12,
+      "source_url": "https://www.metro.ed.jp/tanashi-h/assets/filelink/filelink-pdffile-34815.pdf",
+      "source_label": "令和7年度 学校経営報告 数値の経年変化と今年度の実績",
+      "as_of": "2026-03-31",
+      "note": "私立大学（日東駒専）現役合格者数、令和7年度実績。"
+    },
+    {
+      "metric": "university_count",
+      "item": "大東亜帝国",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 66,
+      "source_url": "https://www.metro.ed.jp/tanashi-h/assets/filelink/filelink-pdffile-34815.pdf",
+      "source_label": "令和7年度 学校経営報告 数値の経年変化と今年度の実績",
+      "as_of": "2026-03-31",
+      "note": "学校独自の大学群「大東亜帝国」。私立大学（大東亜帝国）現役合格者数、令和7年度実績。"
+    },
+    {
+      "metric": "university_count",
+      "item": "合計",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 248,
+      "source_url": "https://www.metro.ed.jp/tanashi-h/assets/大学合格状況2026.pdf",
+      "source_label": "大学合格状況2026.pdf 四年制大学計",
+      "as_of": "2026-03",
+      "note": "現役生のみの合格者延べ数（四年制大学計、7年度列）。国公立0＋私立248。"
+    },
+    {
+      "metric": "university_count",
+      "item": "亜細亜大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 31,
+      "source_url": "https://www.metro.ed.jp/tanashi-h/assets/大学合格状況2026.pdf",
+      "source_label": "大学合格状況2026.pdf",
+      "as_of": "2026-03",
+      "note": "現役合格者延べ数のうち最多。"
+    },
+    {
+      "metric": "university_count",
+      "item": "帝京大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 24,
+      "source_url": "https://www.metro.ed.jp/tanashi-h/assets/大学合格状況2026.pdf",
+      "source_label": "大学合格状況2026.pdf",
+      "as_of": "2026-03",
+      "note": ""
+    },
+    {
+      "metric": "university_count",
+      "item": "明星大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 18,
+      "source_url": "https://www.metro.ed.jp/tanashi-h/assets/大学合格状況2026.pdf",
+      "source_label": "大学合格状況2026.pdf",
+      "as_of": "2026-03",
+      "note": ""
+    },
+    {
+      "metric": "university_count",
+      "item": "東京経済大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 18,
+      "source_url": "https://www.metro.ed.jp/tanashi-h/assets/大学合格状況2026.pdf",
+      "source_label": "大学合格状況2026.pdf",
+      "as_of": "2026-03",
+      "note": ""
+    },
+    {
+      "metric": "university_count",
+      "item": "東京国際大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 14,
+      "source_url": "https://www.metro.ed.jp/tanashi-h/assets/大学合格状況2026.pdf",
+      "source_label": "大学合格状況2026.pdf",
+      "as_of": "2026-03",
+      "note": ""
+    },
+    {
+      "metric": "career_decided_rate",
+      "fiscal_year": 2025,
+      "value_num": 90.1,
+      "source_url": "https://www.metro.ed.jp/tanashi-h/assets/filelink/filelink-pdffile-34815.pdf",
+      "source_label": "令和7年度 学校経営報告 数値の経年変化と今年度の実績",
+      "as_of": "2026-03-31",
+      "note": "現役進路決定率、令和7年度実績（令和7年度目標96%）。"
+    },
+    {
+      "metric": "club_join_rate",
+      "fiscal_year": 2025,
+      "value_num": 75,
+      "source_url": "https://www.metro.ed.jp/tanashi-h/assets/filelink/filelink-pdffile-34815.pdf",
+      "source_label": "令和7年度 学校経営報告 数値の経年変化と今年度の実績",
+      "as_of": "2026-03-31",
+      "note": "部活動加入率、令和7年度実績（令和6年度73%から上昇）。"
+    },
+    {
+      "metric": "satisfaction",
+      "item": "生徒:学校生活",
+      "fiscal_year": 2025,
+      "value_num": 85,
+      "source_url": "https://www.metro.ed.jp/tanashi-h/assets/filelink/filelink-pdffile-34815.pdf",
+      "source_label": "令和7年度 学校経営報告 数値の経年変化と今年度の実績／学校評価の分析",
+      "as_of": "2026-03-31",
+      "note": "学校満足度（生徒）、令和7年度実績。「私は学校生活に満足している」肯定率85.3%とも整合。"
+    },
+    {
+      "metric": "satisfaction",
+      "item": "保護者:学校生活",
+      "fiscal_year": 2025,
+      "value_num": 84,
+      "source_url": "https://www.metro.ed.jp/tanashi-h/assets/filelink/filelink-pdffile-34815.pdf",
+      "source_label": "令和7年度 学校経営報告 数値の経年変化と今年度の実績",
+      "as_of": "2026-03-31",
+      "note": "学校満足度（保護者）、令和7年度実績（令和6年度85%から微減）。"
+    },
+    {
+      "metric": "satisfaction",
+      "item": "生徒:授業",
+      "fiscal_year": 2025,
+      "value_num": 84,
+      "source_url": "https://www.metro.ed.jp/tanashi-h/assets/filelink/filelink-pdffile-34815.pdf",
+      "source_label": "令和7年度 学校経営報告 数値の経年変化と今年度の実績（授業満足度＝学力伸長）",
+      "as_of": "2026-03-31",
+      "note": "「学力を伸ばす授業が行われている」肯定率83.7%とも整合。"
+    },
+    {
+      "metric": "exam_ratio",
+      "item": "推薦",
+      "fiscal_year": 2026,
+      "value_num": 2.09,
+      "source_url": "https://www.metro.ed.jp/tanashi-h/assets/filelink/filelink-pdffile-34815.pdf",
+      "source_label": "令和7年度 学校経営報告 数値の経年変化と今年度の実績",
+      "as_of": "2026-03-31",
+      "note": "応募倍率。入学選抜応募倍率(推薦)、令和7年度実績＝令和8年4月入学者向け推薦入試（令和7年度目標2.80）。"
+    },
+    {
+      "metric": "designation",
+      "item": "海外学校間交流推進校",
+      "fiscal_year": 2025,
+      "value_text": "オンライン等による海外の学校との交流推進校（令和7年度新規指定）",
+      "source_url": "https://www.metro.ed.jp/tanashi-h/assets/filelink/filelink-pdffile-34815.pdf",
+      "source_label": "令和7年度 学校経営報告 都の教育施策活用状況",
+      "as_of": "2026-03-31",
+      "note": ""
+    },
+    {
+      "metric": "designation",
+      "item": "外部検定試験実施校",
+      "fiscal_year": 2025,
+      "value_text": "英検S-CBT方式の全員受験実施校（令和7年度新規）",
+      "source_url": "https://www.metro.ed.jp/tanashi-h/assets/filelink/filelink-pdffile-34815.pdf",
+      "source_label": "令和7年度 学校経営報告 都の教育施策活用状況",
+      "as_of": "2026-03-31",
+      "note": ""
+    },
+    {
+      "metric": "designation",
+      "item": "西部学校経営支援センター特別指定校",
+      "fiscal_year": 2025,
+      "value_text": "学習指導の充実を目的とした特別指定校（指定2年目）",
+      "source_url": "https://www.metro.ed.jp/tanashi-h/assets/filelink/filelink-pdffile-34815.pdf",
+      "source_label": "令和7年度 学校経営報告 都の教育施策活用状況",
+      "as_of": "2026-03-31",
+      "note": ""
+    },
+    {
+      "metric": "designation",
+      "item": "探究的な学び推進事業（TIPS-Type4）対象校",
+      "fiscal_year": 2025,
+      "value_text": "外部人材（東京学芸大学等）を活用した探究学習の対象校（令和7年度新規）",
+      "source_url": "https://www.metro.ed.jp/tanashi-h/assets/filelink/filelink-pdffile-34815.pdf",
+      "source_label": "令和7年度 学校経営報告 都の教育施策活用状況",
+      "as_of": "2026-03-31",
+      "note": ""
+    },
+    {
+      "metric": "uniform",
+      "fiscal_year": 2026,
+      "value_text": "ブレザー。男子はスラックス、女子はスカート（濃紺）またはスラックスを選択。ネクタイ（青）かリボン（青）着用。夏服はシャツと同ボトム。衣替えは6/1〜9/30が夏服。令和8年度から新デザインに変更。",
+      "source_url": "https://www.metro.ed.jp/tanashi-h/assets/filelink/filelink-pdffile-10628.pdf",
+      "source_label": "生徒心得・服装規定 X.服装規定",
+      "as_of": "2026-09-24",
+      "note": "学校案内パンフレットに「令和8年度から新しい制服に変わりました」とあるが、生徒心得のこの記述が新デザインを反映済みかは資料上確認できず（unresolved参照）。"
+    },
+    {
+      "metric": "rules_summary",
+      "fiscal_year": 2026,
+      "value_text": "頭髪は染色・脱色・パーマ・特異な髪型禁止、化粧・マニキュア不可。アルバイトは原則禁止。スマートフォンの規定記載なし。",
+      "source_url": "https://www.metro.ed.jp/tanashi-h/assets/filelink/filelink-pdffile-10628.pdf",
+      "source_label": "生徒心得 IX.校外生活／X.服装規定 2.頭髪",
+      "as_of": "2026-09-24",
+      "note": ""
+    },
+    {
+      "metric": "students",
+      "item": "",
+      "sex": "male",
+      "basis": "",
+      "fiscal_year": 2025,
+      "value_num": 174,
+      "source_url": "https://www.metro.ed.jp/tanashi-h/assets/令和９年度入学生用学校案内.pdf",
+      "source_label": "学校案内パンフレット 卒業生進路概況（令和7年度）",
+      "as_of": "2026-03-31",
+      "note": "令和7年度（令和8年3月）卒業生の男女数（男174・女128・計302）。在校生全学年の男女内訳ではなく卒業学年（3年生）の人数。"
+    },
+    {
+      "metric": "students",
+      "item": "",
+      "sex": "female",
+      "basis": "",
+      "fiscal_year": 2025,
+      "value_num": 128,
+      "source_url": "https://www.metro.ed.jp/tanashi-h/assets/令和９年度入学生用学校案内.pdf",
+      "source_label": "学校案内パンフレット 卒業生進路概況（令和7年度）",
+      "as_of": "2026-03-31",
+      "note": "令和7年度（令和8年3月）卒業生の男女数。在校生全学年の男女内訳ではなく卒業学年（3年生）の人数。"
+    }
+  ],
+  "clubs": [
+    {
+      "name": "硬式野球部",
+      "kind": "運動",
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2024〜2026年度の夏はいずれも1〜4回戦で敗退、秋・春も1〜2回戦で敗退（都県ベスト8には届かない）。一球速報で直近3年の夏・秋・春を確認。",
+      "source_url": "https://www.metro.ed.jp/tanashi-h/activities/club/index.html",
+      "as_of": "2026-09-24",
+      "note": "部活動ページに「木曜日以外は他部活とグラウンド併用」とあるのみで、専用の活動日程は非公開。学校案内パンフレットの「2021夏季西東京大会ベスト32」は直近3年の範囲外のため根拠にしなかった。",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "第106回全国高校野球選手権西東京大会",
+          "level": "都県",
+          "result": "1回戦敗退",
+          "source_url": "https://baseball.omyutech.com/teamStats.action?teamId=11928&year=2024"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "秋季東京都高等学校野球大会一次予選",
+          "level": "都県",
+          "result": "2回戦敗退",
+          "source_url": "https://baseball.omyutech.com/teamStats.action?teamId=11928&year=2024"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第107回全国高校野球選手権西東京大会",
+          "level": "都県",
+          "result": "4回戦敗退（日大三に0-10、6回コールド）",
+          "happened_on": "2025-07-19",
+          "source_url": "https://baseball.omyutech.com/teamStats.action?teamId=11928&year=2025"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "秋季東京都高等学校野球大会一次予選",
+          "level": "都県",
+          "result": "2回戦敗退（東亜学園に6-9）",
+          "happened_on": "2025-09-20",
+          "source_url": "https://baseball.omyutech.com/teamStats.action?teamId=11928&year=2025"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "第108回全国高校野球選手権西東京大会",
+          "level": "都県",
+          "result": "2回戦敗退（1回戦は保谷に勝利、2回戦は早稲田実業に敗退）",
+          "source_url": "https://baseball.omyutech.com/teamStats.action?teamId=11928&year=2026"
+        }
+      ]
+    },
+    {
+      "name": "サッカー部",
+      "kind": "運動",
+      "days_note": "火・水・木・金・土・（日）",
+      "days_per_week": 5.5,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "2026年度 高円宮杯JFA U-18サッカーリーグ東京のT1〜T5参加チーム一覧（team.php?dy=2026&dt=1〜5）のいずれにも「田無」を含むチームがなく、支部リーグ相当のため段階3（活動日は週5.5日のため段階4には該当しない）。",
+      "source_url": "https://www.metro.ed.jp/tanashi-h/activities/club_1/index.html",
+      "as_of": "2026-09-24",
+      "note": "部活動ページは「活動内容や大会実績は準備中」で成績の記載なし。"
+    },
+    {
+      "name": "陸上競技部",
+      "kind": "運動",
+      "days_note": "月・火・水・金・土・（日）",
+      "days_per_week": 5.5,
+      "weekend": "土",
+      "tier": 1,
+      "tier_basis": "2024年度インターハイ予選(東京都総体) 女子やり投げ都1位、2025年度新人大会 男子砲丸投げ都8位、2026年度インターハイ予選(東京都総体) 男子砲丸投げ都7位・8位。私立も出場する都県大会でベスト8以上が3回（複数回）。",
+      "source_url": "https://www.metro.ed.jp/tanashi-h/assets/令和９年度入学生用学校案内.pdf",
+      "as_of": "2026-09",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "東京都高等学校総合体育大会（インターハイ予選）",
+          "level": "都県",
+          "result": "女子やり投げ都1位",
+          "source_url": "https://www.metro.ed.jp/tanashi-h/assets/令和９年度入学生用学校案内.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "新人大会",
+          "level": "都県",
+          "result": "男子砲丸投げ都8位",
+          "source_url": "https://www.metro.ed.jp/tanashi-h/assets/令和９年度入学生用学校案内.pdf"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "東京都高等学校総合体育大会（インターハイ予選）",
+          "level": "都県",
+          "result": "男子砲丸投げ都7位・8位",
+          "source_url": "https://www.metro.ed.jp/tanashi-h/assets/令和９年度入学生用学校案内.pdf"
+        }
+      ]
+    },
+    {
+      "name": "女子ハンドボール部",
+      "kind": "運動",
+      "days_note": "月・火・水・金・土・（日）",
+      "days_per_week": 5.5,
+      "weekend": "土",
+      "source_url": "https://www.metro.ed.jp/tanashi-h/activities/club_3/index.html",
+      "as_of": "2026-09-24",
+      "note": "部活動ページ・学校案内パンフレットともに大会成績の記載がなく、段階を付けなかった。"
+    },
+    {
+      "name": "男子テニス部",
+      "kind": "運動",
+      "days_note": "月・水・木・金・土・（日）",
+      "days_per_week": 5.5,
+      "weekend": "土",
+      "tier": 1,
+      "tier_basis": "2025年度東京都新人テニス大会(団体)都5位、2026年度東京都高等学校総合体育大会(インターハイ予選)男子団体第5位。私立も出場する都県大会でベスト8以上が2年連続（2回以上）。",
+      "source_url": "https://www.metro.ed.jp/tanashi-h/activities/club_4/index.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "東京都新人テニス大会（団体の部）",
+          "level": "都県",
+          "result": "東京都5位",
+          "happened_on": "2025-11-11",
+          "source_url": "https://www.metro.ed.jp/tanashi-h/activities/club_4/index.html"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "東京都高等学校総合体育大会（インターハイ予選）",
+          "level": "都県",
+          "result": "男子団体第5位",
+          "happened_on": "2026-05-18",
+          "source_url": "https://www.metro.ed.jp/tanashi-h/activities/club_4/index.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "関東公立テニス選手権大会",
+          "level": "関東",
+          "result": "準優勝（都立・公立限定大会のため段階判定では1段低く扱う）",
+          "happened_on": "2025-08-14",
+          "source_url": "https://www.metro.ed.jp/tanashi-h/activities/club_4/index.html"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "都立対抗テニス大会",
+          "level": "都県",
+          "result": "男子団体優勝（都立限定大会のため段階判定では1段低く扱う）",
+          "happened_on": "2026-07-24",
+          "source_url": "https://www.metro.ed.jp/tanashi-h/activities/club_4/index.html"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "関東公立高等学校テニス選手権大会",
+          "level": "関東",
+          "result": "男子団体優勝（都立・公立限定大会のため段階判定では1段低く扱う）",
+          "happened_on": "2026-08-25",
+          "source_url": "https://www.metro.ed.jp/tanashi-h/activities/club_4/index.html"
+        }
+      ]
+    },
+    {
+      "name": "女子テニス部",
+      "kind": "運動",
+      "days_note": "火・水・木・金・（土）・日",
+      "days_per_week": 5.5,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2023年度東京都新人テニス選手権大会(団体)ベスト32（都県大会に出場するが都県ベスト8には届かない）。",
+      "source_url": "https://www.metro.ed.jp/tanashi-h/activities/club_5/index.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "東京都新人テニス選手権大会（団体）",
+          "level": "都県",
+          "result": "ベスト32",
+          "source_url": "https://www.metro.ed.jp/tanashi-h/assets/令和９年度入学生用学校案内.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "ジュニアティームテニスチャンピオンシップ",
+          "level": "その他",
+          "result": "団体ブロック優勝、本戦3位（高体連主催の都県大会ではなく民間主催の可能性あり）",
+          "happened_on": "2025-09-10",
+          "source_url": "https://www.metro.ed.jp/tanashi-h/activities/club_5/index.html"
+        }
+      ]
+    },
+    {
+      "name": "ダンス部",
+      "kind": "運動",
+      "days_note": "月・水・木・土",
+      "days_per_week": 4,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "2024年度 MUSIC DAYS東京本選出場（学校外イベントへの出場実績はあるが、都県／関東／全国の順位付けの記載はない）。",
+      "source_url": "https://www.metro.ed.jp/tanashi-h/assets/令和９年度入学生用学校案内.pdf",
+      "as_of": "2026-09"
+    },
+    {
+      "name": "卓球部",
+      "kind": "運動",
+      "days_note": "月・木・金・土",
+      "days_per_week": 4,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "2025年度東京都高等学校総合体育大会シングルス5回戦進出（都県大会に出場するが、都県ベスト8相当かは資料からは確認できない）。",
+      "source_url": "https://www.metro.ed.jp/tanashi-h/assets/令和９年度入学生用学校案内.pdf",
+      "as_of": "2026-09",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "東京都高等学校総合体育大会（シングルス）",
+          "level": "都県",
+          "result": "5回戦進出",
+          "source_url": "https://www.metro.ed.jp/tanashi-h/assets/令和９年度入学生用学校案内.pdf"
+        }
+      ]
+    },
+    {
+      "name": "柔道部",
+      "kind": "運動",
+      "days_note": "月・火・木・土",
+      "days_per_week": 4,
+      "weekend": "土",
+      "tier": 2,
+      "tier_basis": "2025年度 関東大会（東京都予選を勝ち抜き出場）女子団体戦で1回戦勝利・2回戦進出（関東大会出場1回で段階2の基準を満たす）。あわせて2025年度東京都国公立柔道大会（都立・公立限定大会）女子団体優勝も段階2相当。",
+      "source_url": "https://www.metro.ed.jp/tanashi-h/activities/club_8/index.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "関東大会（東京都予選を経て出場）",
+          "level": "関東",
+          "result": "女子団体 1回戦勝利、2回戦進出",
+          "happened_on": "2025-06-30",
+          "source_url": "https://www.metro.ed.jp/tanashi-h/activities/club_8/index.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "東京都国公立柔道大会",
+          "level": "その他",
+          "result": "女子団体優勝、個人2階級制覇（都立・公立限定大会）",
+          "happened_on": "2025-03-27",
+          "source_url": "https://www.metro.ed.jp/tanashi-h/activities/club_8/index.html"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "全国高校柔道選手権大会東京都予選",
+          "level": "都県",
+          "result": "団体・個人（1名）ベスト16",
+          "happened_on": "2026-03-25",
+          "source_url": "https://www.metro.ed.jp/tanashi-h/activities/club_8/index.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "東京都第三支部新人柔道大会",
+          "level": "地区",
+          "result": "女子団体優勝、男子団体準優勝",
+          "happened_on": "2024-11-25",
+          "source_url": "https://www.metro.ed.jp/tanashi-h/activities/club_8/index.html"
+        }
+      ]
+    },
+    {
+      "name": "水泳部",
+      "kind": "運動",
+      "days_note": "月・火・（水）・木・金",
+      "days_per_week": 4.5,
+      "weekend": "なし",
+      "tier": 3,
+      "tier_basis": "2023・2024年度東京都新人水泳競技大会で都ベスト19〜20位（都県大会に出場するが都県ベスト8には届かない）。西東京国公立大会・三多摩大会でのベスト7〜8入賞は地区・限定大会のため参考情報にとどめた。",
+      "source_url": "https://www.metro.ed.jp/tanashi-h/activities/club_9/index.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "東京都新人水泳競技大会",
+          "level": "都県",
+          "result": "100m男子背泳ぎ都ベスト19",
+          "source_url": "https://www.metro.ed.jp/tanashi-h/activities/club_9/index.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "東京都新人水泳競技大会",
+          "level": "都県",
+          "result": "200m個人メドレー都ベスト20、100m男子背泳ぎ都ベスト20",
+          "source_url": "https://www.metro.ed.jp/tanashi-h/activities/club_9/index.html"
+        }
+      ]
+    },
+    {
+      "name": "男子バスケットボール部",
+      "kind": "運動",
+      "days_note": "月・水・木・金・土・（日）",
+      "days_per_week": 5.5,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "2023〜2025年度いずれも公式戦2〜3回戦、東京都U18リーグはT5で2勝3敗（都県ベスト8には届かない）。",
+      "source_url": "https://www.metro.ed.jp/tanashi-h/activities/club_10/index.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "東京都関東大会予選",
+          "level": "都県",
+          "result": "2回戦進出",
+          "source_url": "https://www.metro.ed.jp/tanashi-h/activities/club_10/index.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "東京都インターハイ予選",
+          "level": "都県",
+          "result": "1回戦敗退",
+          "source_url": "https://www.metro.ed.jp/tanashi-h/activities/club_10/index.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "公式戦",
+          "level": "都県",
+          "result": "2回戦進出",
+          "source_url": "https://www.metro.ed.jp/tanashi-h/activities/club_10/index.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "公式戦",
+          "level": "都県",
+          "result": "3回戦進出",
+          "source_url": "https://www.metro.ed.jp/tanashi-h/activities/club_10/index.html"
+        }
+      ]
+    },
+    {
+      "name": "女子バスケットボール部",
+      "kind": "運動",
+      "days_note": "火・水・木・土・（日）",
+      "days_per_week": 4.5,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "2023年度夏季大会2回戦進出（都県ベスト8には届かない）。",
+      "source_url": "https://www.metro.ed.jp/tanashi-h/assets/令和９年度入学生用学校案内.pdf",
+      "as_of": "2026-09",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "夏季大会",
+          "level": "都県",
+          "result": "2回戦進出",
+          "source_url": "https://www.metro.ed.jp/tanashi-h/assets/令和９年度入学生用学校案内.pdf"
+        }
+      ]
+    },
+    {
+      "name": "男子バレーボール部",
+      "kind": "運動",
+      "days_note": "月・火・木・金・土・（日）",
+      "days_per_week": 5.5,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "2026年度関東大会予選3回戦進出、2026年度夏季都立校大会初戦敗退（都県ベスト8には届かない）。",
+      "source_url": "https://www.metro.ed.jp/tanashi-h/activities/club_12/index.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "関東大会予選",
+          "level": "都県",
+          "result": "3回戦進出",
+          "source_url": "https://www.metro.ed.jp/tanashi-h/assets/令和９年度入学生用学校案内.pdf"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "夏季都立校大会",
+          "level": "その他",
+          "result": "初戦敗退（0-2、都立限定大会）",
+          "happened_on": "2026-08-06",
+          "source_url": "https://www.metro.ed.jp/tanashi-h/activities/club_12/index.html"
+        }
+      ]
+    },
+    {
+      "name": "女子バレーボール部",
+      "kind": "運動",
+      "days_note": "月・火・水・金・土・（日）",
+      "days_per_week": 5.5,
+      "weekend": "土",
+      "tier": 2,
+      "tier_basis": "2024年度 公立高校大会（都立・公立限定大会）で3支部優勝・全都ベスト8位。限定大会のため1段低く判定してもベスト8以上で段階2の基準を満たす。2025年度は同大会で全都ベスト16。",
+      "source_url": "https://www.metro.ed.jp/tanashi-h/activities/club_13/index.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "公立高校大会",
+          "level": "都県",
+          "result": "3支部優勝、全都ベスト8位（都立・公立限定大会）",
+          "source_url": "https://www.metro.ed.jp/tanashi-h/activities/club_13/index.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "公立高校大会",
+          "level": "都県",
+          "result": "3支部優勝、全都ベスト16位（都立・公立限定大会）",
+          "happened_on": "2025-03-18",
+          "source_url": "https://www.metro.ed.jp/tanashi-h/activities/club_13/index.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "9ブロック大会",
+          "level": "地区",
+          "result": "優勝",
+          "happened_on": "2024-04-08",
+          "source_url": "https://www.metro.ed.jp/tanashi-h/activities/club_13/index.html"
+        }
+      ]
+    },
+    {
+      "name": "男子バドミントン部",
+      "kind": "運動",
+      "days_note": "月・（火）・水・木・土・（日）",
+      "days_per_week": 5,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "2024年度関東大会東京都予選で第6組1位・決勝トーナメント進出・男子団体東京都ベスト16（都県ベスト16は1回のみで複数回の基準に届かない）。2025年度インターハイ予選西東京ブロックでベスト8（都県より下位の地区大会）。",
+      "source_url": "https://www.metro.ed.jp/tanashi-h/activities/club_14/index.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "関東大会東京都予選",
+          "level": "都県",
+          "result": "第6組1位・決勝トーナメント進出、男子団体東京都ベスト16",
+          "happened_on": "2024-05-02",
+          "source_url": "https://www.metro.ed.jp/tanashi-h/assets/令和９年度入学生用学校案内.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "インターハイ予選（西東京ブロック）",
+          "level": "地区",
+          "result": "団体ベスト8",
+          "happened_on": "2025-06-30",
+          "source_url": "https://www.metro.ed.jp/tanashi-h/activities/club_14/index.html"
+        }
+      ]
+    },
+    {
+      "name": "女子バドミントン部",
+      "kind": "運動",
+      "days_note": "月・（火）・水・木・土・（日）",
+      "days_per_week": 5,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "2024年度関東大会東京都予選で第5組2位、女子団体東京都ベスト32（都県ベスト8には届かない）。",
+      "source_url": "https://www.metro.ed.jp/tanashi-h/assets/令和９年度入学生用学校案内.pdf",
+      "as_of": "2026-09",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "関東大会東京都予選",
+          "level": "都県",
+          "result": "第5組2位、女子団体東京都ベスト32",
+          "source_url": "https://www.metro.ed.jp/tanashi-h/assets/令和９年度入学生用学校案内.pdf"
+        }
+      ]
+    },
+    {
+      "name": "茶道部",
+      "kind": "文化",
+      "days_note": "火・金",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日は週2日。2023年度「東京都高等学校文化祭茶道部門中央大会『冬の茶会』」は参加の記載のみで、賞や代表選出の明記はなく実績として扱わなかった。",
+      "source_url": "https://www.metro.ed.jp/tanashi-h/activities/club_16/index.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "吹奏楽部",
+      "kind": "文化",
+      "days_note": "月・火・木・金・土",
+      "days_per_week": 5,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "2023〜2026年度の東京都高等学校吹奏楽コンクールでC組銀賞・銅賞が続く（金賞や都代表選出には届かない）。",
+      "source_url": "https://www.metro.ed.jp/tanashi-h/activities/club_17/index.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "東京都高等学校吹奏楽コンクール",
+          "level": "都県",
+          "result": "C組銅賞",
+          "happened_on": "2023-08-30",
+          "source_url": "https://www.metro.ed.jp/tanashi-h/activities/club_17/index.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "東京都高等学校吹奏楽コンクール",
+          "level": "都県",
+          "result": "C組銀賞",
+          "happened_on": "2024-08-20",
+          "source_url": "https://www.metro.ed.jp/tanashi-h/activities/club_17/index.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "東京都高等学校吹奏楽コンクール",
+          "level": "都県",
+          "result": "C組銅賞",
+          "happened_on": "2025-08-25",
+          "source_url": "https://www.metro.ed.jp/tanashi-h/assets/令和９年度入学生用学校案内.pdf"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "東京都高等学校吹奏楽コンクール",
+          "level": "都県",
+          "result": "C組銀賞",
+          "happened_on": "2026-08-21",
+          "source_url": "https://www.metro.ed.jp/tanashi-h/activities/club_17/index.html"
+        }
+      ]
+    },
+    {
+      "name": "演劇部",
+      "kind": "文化",
+      "source_url": "https://www.metro.ed.jp/tanashi-h/activities/club_18/index.html",
+      "as_of": "2026-09-24",
+      "note": "部活動ページ・学校案内パンフレットともに活動日・大会成績の記載がなく、段階を付けなかった。"
+    },
+    {
+      "name": "美術部",
+      "kind": "文化",
+      "days_note": "月・水・木・（土）＝月2回",
+      "days_per_week": 3.5,
+      "weekend": "土",
+      "tier": 2,
+      "tier_basis": "2023年度 東京都高等学校文化連盟主催「中央展」出展（都の代表選出に相当）。",
+      "source_url": "https://www.metro.ed.jp/tanashi-h/activities/club_19/index.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "東京都高等学校文化連盟主催「中央展」",
+          "level": "都県",
+          "result": "出展",
+          "happened_on": "2023-12-21",
+          "source_url": "https://www.metro.ed.jp/tanashi-h/activities/club_19/index.html"
+        }
+      ]
+    },
+    {
+      "name": "科学部",
+      "kind": "文化",
+      "days_note": "月・火・水・木・金",
+      "days_per_week": 5,
+      "weekend": "なし",
+      "source_url": "https://www.metro.ed.jp/tanashi-h/activities/club_20/index.html",
+      "as_of": "2026-09-24",
+      "note": "2023年度「Tokyoサイエンスフェア」でポスター発表の記載があるが、順位や賞の明記はなく順位付けのある大会と確認できないため段階を付けなかった。"
+    },
+    {
+      "name": "ギター音楽部",
+      "kind": "文化",
+      "days_note": "月・水",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日は週2日で、大会・コンクール等の実績記載なし。",
+      "source_url": "https://www.metro.ed.jp/tanashi-h/activities/club_21/index.html",
+      "as_of": "2026-09-24",
+      "note": "学校案内パンフレットでは同じ部と見られる団体が「軽音楽部」の名称で紹介されている（conflicts参照）。"
+    },
+    {
+      "name": "イラスト部",
+      "kind": "文化",
+      "days_note": "水・金",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日は週2日。正門・南門の交通安全パネル制作などが中心で、大会・コンクール等の実績記載なし。",
+      "source_url": "https://www.metro.ed.jp/tanashi-h/activities/club_22/index.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "コーラス部",
+      "kind": "文化",
+      "days_note": "月・（木）",
+      "days_per_week": 1.5,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日は週1.5日。サマーコンサート等の自主発表のみで、大会・コンクール等の実績記載なし。",
+      "source_url": "https://www.metro.ed.jp/tanashi-h/activities/club_23/index.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "パソコン部",
+      "kind": "文化",
+      "days_note": "火・水",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日は週2日。ITパスポート・情報処理検定の取得実績はあるが、部活動としての大会・コンクール実績ではない。",
+      "source_url": "https://www.metro.ed.jp/tanashi-h/activities/club_24/index.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "調理研究同好会",
+      "kind": "同好会",
+      "days_note": "水・木",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日は週2日。日々の調理活動が中心で、大会・コンクール等の実績記載なし。",
+      "source_url": "https://www.metro.ed.jp/tanashi-h/activities/club_25/index.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "ボランティア同好会",
+      "kind": "同好会",
+      "days_note": "金・（土）・（日）",
+      "days_per_week": 2,
+      "weekend": "土日",
+      "source_url": "https://www.metro.ed.jp/tanashi-h/activities/club_27/index.html",
+      "as_of": "2026-09-24",
+      "note": "校内外の清掃・保育園や地域行事の手伝いが中心で、勝敗や順位を競う活動ではないため段階を付けなかった。"
+    }
+  ],
+  "designated_universities": [
+    { "university": "学習院大学", "fiscal_year": 2025, "source_url": "https://www.metro.ed.jp/tanashi-h/assets/令和９年度入学生用学校案内.pdf", "note": "学校案内パンフレット「指定校推薦大学・短大（令和7年度実績）」。ほか100を超える大学・短期大学があるが、パンフレットには一部のみ列挙。" },
+    { "university": "成蹊大学", "fiscal_year": 2025, "source_url": "https://www.metro.ed.jp/tanashi-h/assets/令和９年度入学生用学校案内.pdf", "note": "同上" },
+    { "university": "武蔵大学", "fiscal_year": 2025, "source_url": "https://www.metro.ed.jp/tanashi-h/assets/令和９年度入学生用学校案内.pdf", "note": "同上" },
+    { "university": "駒澤大学", "fiscal_year": 2025, "source_url": "https://www.metro.ed.jp/tanashi-h/assets/令和９年度入学生用学校案内.pdf", "note": "同上" },
+    { "university": "東洋大学", "fiscal_year": 2025, "source_url": "https://www.metro.ed.jp/tanashi-h/assets/令和９年度入学生用学校案内.pdf", "note": "同上" },
+    { "university": "日本大学", "fiscal_year": 2025, "source_url": "https://www.metro.ed.jp/tanashi-h/assets/令和９年度入学生用学校案内.pdf", "note": "同上" },
+    { "university": "東京経済大学", "fiscal_year": 2025, "source_url": "https://www.metro.ed.jp/tanashi-h/assets/令和９年度入学生用学校案内.pdf", "note": "同上" },
+    { "university": "武蔵野大学", "fiscal_year": 2025, "source_url": "https://www.metro.ed.jp/tanashi-h/assets/令和９年度入学生用学校案内.pdf", "note": "同上" },
+    { "university": "亜細亜大学", "fiscal_year": 2025, "source_url": "https://www.metro.ed.jp/tanashi-h/assets/令和９年度入学生用学校案内.pdf", "note": "同上" },
+    { "university": "明星大学", "fiscal_year": 2025, "source_url": "https://www.metro.ed.jp/tanashi-h/assets/令和９年度入学生用学校案内.pdf", "note": "同上" },
+    { "university": "工学院大学", "fiscal_year": 2025, "source_url": "https://www.metro.ed.jp/tanashi-h/assets/令和９年度入学生用学校案内.pdf", "note": "同上" },
+    { "university": "東京電機大学", "fiscal_year": 2025, "source_url": "https://www.metro.ed.jp/tanashi-h/assets/令和９年度入学生用学校案内.pdf", "note": "同上" },
+    { "university": "東京工科大学", "fiscal_year": 2025, "source_url": "https://www.metro.ed.jp/tanashi-h/assets/令和９年度入学生用学校案内.pdf", "note": "同上" },
+    { "university": "創価大学", "fiscal_year": 2025, "source_url": "https://www.metro.ed.jp/tanashi-h/assets/令和９年度入学生用学校案内.pdf", "note": "同上" },
+    { "university": "国士舘大学", "fiscal_year": 2025, "source_url": "https://www.metro.ed.jp/tanashi-h/assets/令和９年度入学生用学校案内.pdf", "note": "同上" },
+    { "university": "立正大学", "fiscal_year": 2025, "source_url": "https://www.metro.ed.jp/tanashi-h/assets/令和９年度入学生用学校案内.pdf", "note": "同上" },
+    { "university": "大東文化大学", "fiscal_year": 2025, "source_url": "https://www.metro.ed.jp/tanashi-h/assets/令和９年度入学生用学校案内.pdf", "note": "同上" },
+    { "university": "帝京大学", "fiscal_year": 2025, "source_url": "https://www.metro.ed.jp/tanashi-h/assets/令和９年度入学生用学校案内.pdf", "note": "同上" },
+    { "university": "桜美林大学", "fiscal_year": 2025, "source_url": "https://www.metro.ed.jp/tanashi-h/assets/令和９年度入学生用学校案内.pdf", "note": "同上" },
+    { "university": "拓殖大学", "fiscal_year": 2025, "source_url": "https://www.metro.ed.jp/tanashi-h/assets/令和９年度入学生用学校案内.pdf", "note": "同上" },
+    { "university": "杏林大学", "fiscal_year": 2025, "source_url": "https://www.metro.ed.jp/tanashi-h/assets/令和９年度入学生用学校案内.pdf", "note": "同上" },
+    { "university": "白梅学園大学", "fiscal_year": 2025, "source_url": "https://www.metro.ed.jp/tanashi-h/assets/令和９年度入学生用学校案内.pdf", "note": "同上" },
+    { "university": "女子栄養大学", "fiscal_year": 2025, "source_url": "https://www.metro.ed.jp/tanashi-h/assets/令和９年度入学生用学校案内.pdf", "note": "パンフレット表記は「日本栄養」。学校法人の通称と見られるため大学名は女子栄養大学とした。" },
+    { "university": "大妻女子大学", "fiscal_year": 2025, "source_url": "https://www.metro.ed.jp/tanashi-h/assets/令和９年度入学生用学校案内.pdf", "note": "同上" },
+    { "university": "共立女子大学", "fiscal_year": 2025, "source_url": "https://www.metro.ed.jp/tanashi-h/assets/令和９年度入学生用学校案内.pdf", "note": "同上" },
+    { "university": "実践女子大学", "fiscal_year": 2025, "source_url": "https://www.metro.ed.jp/tanashi-h/assets/令和９年度入学生用学校案内.pdf", "note": "同上" }
+  ],
+  "events": [
+    {
+      "kind": "制服",
+      "period_label": "令和8年度から",
+      "summary": "気候の変化への対応と着心地向上のため制服を刷新",
+      "source_url": "https://www.metro.ed.jp/tanashi-h/assets/令和９年度入学生用学校案内.pdf"
+    },
+    {
+      "kind": "施設",
+      "period_label": "2026年3月",
+      "summary": "野球部グラウンドの改修が完了し、水はけが改善",
+      "source_url": "https://www.metro.ed.jp/tanashi-h/activities/club/index.html"
+    }
+  ],
+  "unresolved": [
+    "国公立・早慶上理の大学別現役合格者数（延べ）：大学合格状況2026.pdfの表がテキスト抽出で列がずれ、年度ごとの数値を正確に対応付けられなかった（国公立は都留文科大学以外に記載なし、早稲田大学・東京理科大学は年度不明の列に1〜2件のみ）。",
+    "学級増減：都教委「第一学年生徒の募集人員等について」を確認できず、学校サイトの沿革にも記載がない。",
+    "女子ハンドボール部・演劇部・科学部：活動日または大会成績の記載が乏しく、部活動の強さの段階を付けなかった。",
+    "指定校推薦の全大学名：学校案内パンフレットには「100を超える大学・短期大学」とあるが、明記されているのは一部のみで全リストは非公開。",
+    "在校生の学年別・男女別在籍数：公式資料に記載なし。卒業生（令和7年度3学年分）の男女数のみ判明。",
+    "制服の記載（生徒心得内）が令和8年度の新デザイン変更後の内容かどうか：学校案内パンフレットは「令和8年度から新しい制服に変わりました」とするが、生徒心得PDFに改定日の記載がなく確認できなかった。"
+  ],
+  "conflicts": [
+    "男子テニス部：関東公立高等学校テニス選手権大会（2026年度）の結果が、学校案内パンフレット（令和9年度入学生用）では「準優勝」、部活動ページのニュース（2026/08/25付）では「男子団体優勝」となっており食い違う。部活動ページの方が日付・内容とも具体的なため、段階判定は部活動ページの情報を主に用いた。",
+    "文化部の名称：部活動ページでは「ギター音楽部」（活動日は月・水）だが、学校案内パンフレットでは同じ位置・同じ活動内容の部が「軽音楽部」と表記されており、名称が食い違う（同一団体とみられる）。"
+  ]
+}

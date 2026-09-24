@@ -1,0 +1,966 @@
+{
+  "prefecture": "神奈川県",
+  "school_name": "光陵",
+  "official_url": "https://www.pen-kanagawa.ed.jp/koryo-h/",
+  "researched_at": "2026-09-24",
+  "stats": [
+    {
+      "metric": "university_count",
+      "item": "国公立",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 79,
+      "source_url": "https://www.pen-kanagawa.ed.jp/koryo-h/shinro/documents/r8shinrojoukyou.pdf",
+      "source_label": "光陵高等学校 令和8年度入試 合格者数（大学別合格者一覧）",
+      "as_of": "2026-04-01",
+      "note": "学校集計「国公立大学合計」（総数）。学校案内パンフレットの「国公立大学 合格79名」とも一致。現役70名。"
+    },
+    {
+      "metric": "university_count",
+      "item": "早慶上理",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 103,
+      "source_url": "https://www.pen-kanagawa.ed.jp/koryo-h/nyugaku/documents/r8_gakkouannai.pdf",
+      "source_label": "光陵高等学校 令和8年度学校案内（パンフレット）進路実績ページ",
+      "as_of": "2026-07",
+      "note": "学校集計「早慶上理 合格103名」（内訳：早稲田27・慶應23・上智17・東京理科36、いずれも合格者数総数）。合格者数一覧（進路状況PDF）の大学別数値と一致。"
+    },
+    {
+      "metric": "university_count",
+      "item": "GMARCH",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 302,
+      "source_url": "https://www.pen-kanagawa.ed.jp/koryo-h/nyugaku/documents/r8_gakkouannai.pdf",
+      "source_label": "光陵高等学校 令和8年度学校案内（パンフレット）進路実績ページ",
+      "as_of": "2026-07",
+      "note": "学校集計「GMARCH 合格302名」（内訳：学習院12・明治82・青山学院38・立教46・中央55・法政69、いずれも合格者数総数）。合格者数一覧（進路状況PDF）の大学別数値と一致。"
+    },
+    {
+      "metric": "university_count",
+      "item": "成成明武",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 69,
+      "source_url": "https://www.pen-kanagawa.ed.jp/koryo-h/shinro/documents/r8shinrojoukyou.pdf",
+      "source_label": "光陵高等学校 令和8年度入試 合格者数（大学別合格者一覧）",
+      "as_of": "2026-04-01",
+      "note": "大学別の表から合算（成蹊7＋成城12＋明治学院45＋武蔵5、いずれも合格者数総数）。学校集計の塊なし。"
+    },
+    {
+      "metric": "university_count",
+      "item": "日東駒専",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 131,
+      "source_url": "https://www.pen-kanagawa.ed.jp/koryo-h/shinro/documents/r8shinrojoukyou.pdf",
+      "source_label": "光陵高等学校 令和8年度入試 合格者数（大学別合格者一覧）",
+      "as_of": "2026-04-01",
+      "note": "大学別の表から合算（日本42＋東洋40＋駒澤25＋専修24、いずれも合格者数総数）。学校集計の塊なし。"
+    },
+    {
+      "metric": "university_count",
+      "item": "合計",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 956,
+      "source_url": "https://www.pen-kanagawa.ed.jp/koryo-h/shinro/documents/r8shinrojoukyou.pdf",
+      "source_label": "光陵高等学校 令和8年度入試 合格者数（大学別合格者一覧）",
+      "as_of": "2026-04-01",
+      "note": "国公立大学合計79＋私立大学合計877（いずれも合格者数総数）。4年制大学のみ（大学校・専門学校等を除く）。学校集計の塊なし。"
+    },
+    {
+      "metric": "university_count",
+      "item": "明治大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 82,
+      "source_url": "https://www.pen-kanagawa.ed.jp/koryo-h/shinro/documents/r8shinrojoukyou.pdf",
+      "source_label": "光陵高等学校 令和8年度入試 合格者数（大学別合格者一覧）",
+      "as_of": "2026-04-01",
+      "note": "大学別の表（合格者数総数）から。上位1位。"
+    },
+    {
+      "metric": "university_count",
+      "item": "法政大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 69,
+      "source_url": "https://www.pen-kanagawa.ed.jp/koryo-h/shinro/documents/r8shinrojoukyou.pdf",
+      "source_label": "光陵高等学校 令和8年度入試 合格者数（大学別合格者一覧）",
+      "as_of": "2026-04-01",
+      "note": "大学別の表（合格者数総数）から。上位2位。"
+    },
+    {
+      "metric": "university_count",
+      "item": "神奈川大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 60,
+      "source_url": "https://www.pen-kanagawa.ed.jp/koryo-h/shinro/documents/r8shinrojoukyou.pdf",
+      "source_label": "光陵高等学校 令和8年度入試 合格者数（大学別合格者一覧）",
+      "as_of": "2026-04-01",
+      "note": "大学別の表（合格者数総数）から。上位3位。"
+    },
+    {
+      "metric": "university_count",
+      "item": "中央大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 55,
+      "source_url": "https://www.pen-kanagawa.ed.jp/koryo-h/shinro/documents/r8shinrojoukyou.pdf",
+      "source_label": "光陵高等学校 令和8年度入試 合格者数（大学別合格者一覧）",
+      "as_of": "2026-04-01",
+      "note": "大学別の表（合格者数総数）から。上位4位。"
+    },
+    {
+      "metric": "university_count",
+      "item": "立教大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 46,
+      "source_url": "https://www.pen-kanagawa.ed.jp/koryo-h/shinro/documents/r8shinrojoukyou.pdf",
+      "source_label": "光陵高等学校 令和8年度入試 合格者数（大学別合格者一覧）",
+      "as_of": "2026-04-01",
+      "note": "大学別の表（合格者数総数）から。上位5位。"
+    },
+    {
+      "metric": "satisfaction",
+      "item": "生徒:キャリア教育による成長実感",
+      "basis": "",
+      "fiscal_year": 2025,
+      "value_num": 92,
+      "source_url": "https://www.pen-kanagawa.ed.jp/koryo-h/gaiyou/documents/hyouka_r7.pdf",
+      "source_label": "光陵高等学校 令和7年度学校評価報告書（実施結果）",
+      "as_of": "2026-03-31",
+      "note": "魅力と特色アンケート「キャリア教育を受けたことにより、自分が成長できたと思うか」の肯定的回答割合。神奈川県の学校評価様式は文章中心で、学校生活・授業satisfaction等の数値は記載がない（unresolved参照）。"
+    },
+    {
+      "metric": "designation",
+      "item": "学力向上進学重点校エントリー校",
+      "basis": "",
+      "fiscal_year": 2016,
+      "value_text": "神奈川県教育委員会指定。平成19〜27年度（2007〜2015年度）は「学力向上進学重点校」として9年間指定を受け、平成28年度（2016年度）以降は「学力向上進学重点校エントリー校」の指定による教育課程の研究開発を実施。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/koryo-h/nyugaku/documents/r8_gakkouannai.pdf",
+      "source_label": "光陵高等学校 令和8年度学校案内（パンフレット）／神奈川県教育委員会 学力向上進学重点校・エントリー校一覧",
+      "as_of": "2026-07"
+    },
+    {
+      "metric": "designation",
+      "item": "STEAM教育研究推進校",
+      "basis": "",
+      "fiscal_year": 2022,
+      "value_text": "神奈川県教育委員会指定（令和4年度から）。教科等横断的な学習を通して課題発見・解決力を養う取組を推進。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/koryo-h/nyugaku/documents/r8_gakkouannai.pdf",
+      "source_label": "光陵高等学校 令和8年度学校案内（パンフレット）",
+      "as_of": "2026-07"
+    },
+    {
+      "metric": "designation",
+      "item": "連携型中高一貫教育校",
+      "basis": "",
+      "fiscal_year": 2026,
+      "value_text": "横浜国立大学附属横浜中学校・横浜国立大学との連携協定に基づく中・高・大接続の教育実践モデル。中学との合同探究・大学体験授業・教員研修派遣等を実施。指定開始年度は資料に記載なし（value_num/fiscal_yearは資料の年度）。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/koryo-h/nyugaku/documents/r8_gakkouannai.pdf",
+      "source_label": "光陵高等学校 令和8年度学校案内（パンフレット）",
+      "as_of": "2026-07"
+    },
+    {
+      "metric": "uniform",
+      "item": "",
+      "basis": "",
+      "fiscal_year": 2026,
+      "value_text": "男子制服は黒学ラン。女子制服は黒ブレザーとスカート（夏期はグレーのスカートあり）で、スラックス選択可。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/koryo-h/nyugaku/documents/r8_gakkouannai.pdf",
+      "source_label": "光陵高等学校 令和8年度学校案内（パンフレット）",
+      "as_of": "2026-07"
+    }
+  ],
+  "clubs": [
+    {
+      "name": "硬式野球部",
+      "kind": "運動",
+      "days_note": "平日4日、土日は練習・練習試合中心",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "一球速報で2024〜2026年度の夏・秋・春を確認。いずれもベスト32以下（2025年夏の第107回選手権神奈川大会が最高で、2勝して4回戦敗退＝ベスト32相当）。都県大会ベスト8以上の実績なし。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/koryo-h/seikatsu/documents/r8-bukatsu-baseball.pdf",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "第106回全国高等学校野球選手権神奈川大会",
+          "level": "都県",
+          "result": "2回戦敗退（0-7、8回コールド、対横浜商大）",
+          "happened_on": "2024-07-11",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=12167&year=2024"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "令和6年度神奈川県高等学校野球秋季県大会",
+          "level": "都県",
+          "result": "1回戦敗退（6-12、対三浦学苑）",
+          "happened_on": "2024-09-07",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=12167&year=2024"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "令和7年度神奈川県高等学校野球春季県大会",
+          "level": "都県",
+          "result": "1回戦敗退（4-5、対横浜翠陵）",
+          "happened_on": "2025-04-05",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=12167&year=2025"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第107回全国高等学校野球選手権神奈川大会",
+          "level": "都県",
+          "result": "2勝（2回戦5-1対多摩、3回戦3-2対大師）して4回戦敗退（0-17対立花学園）＝ベスト32相当。学校発表も「4回戦進出（ベスト32）・31年ぶり」で一致。",
+          "happened_on": "2025-07-18",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=12167&year=2025"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "令和7年度神奈川県高等学校野球秋季県大会 地区予選",
+          "level": "地区",
+          "result": "地区予選敗退（1勝2敗、本大会未進出）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/koryo-h/seikatsu/documents/r8-bukatsu-baseball.pdf"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "第108回全国高等学校野球選手権神奈川大会",
+          "level": "都県",
+          "result": "1勝（1回戦7-4対旭）して2回戦敗退（5-12対横須賀大津）",
+          "happened_on": "2026-07-10",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=12167&year=2026"
+        }
+      ]
+    },
+    {
+      "name": "サッカー部",
+      "kind": "運動",
+      "tier": 3,
+      "tier_basis": "2026年度 高円宮杯JFA U-18サッカーリーグ神奈川 K5 Group A所属（6位、勝点7）。K5・K6所属は段階3（決定事項：サッカー部はリーグの所属で判定）。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/koryo-h/seikatsu/documents/r8-bukatsu-soccer.pdf",
+      "as_of": "2026-09-19",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "全国高等学校総合体育大会サッカー競技 一次予選",
+          "level": "地区",
+          "result": "ブロック決勝進出（県ベスト38）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/koryo-h/seikatsu/documents/r8-bukatsu-soccer.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "高円宮杯JFA U-18サッカーリーグ神奈川",
+          "level": "都県",
+          "result": "2026年度 K5 Group A所属（6位）",
+          "source_url": "https://www.kanagawa-fa.gr.jp/cms/u18-league/2026/div5/"
+        }
+      ]
+    },
+    {
+      "name": "陸上競技部",
+      "kind": "運動",
+      "source_url": "https://www.pen-kanagawa.ed.jp/koryo-h/seikatsu/documents/r8-bukatsu-trackfield.pdf",
+      "as_of": "2026-09",
+      "results": []
+    },
+    {
+      "name": "男子バスケットボール部",
+      "kind": "運動",
+      "tier": 3,
+      "tier_basis": "2024・2025年度とも関東大会・高校総体・新人大会で支部予選止まり（支部予選敗退）が中心。2024年度に高校総体・新人大会で県大会出場したが、それ以上の進出記録はない。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/koryo-h/seikatsu/documents/r8-bukatsu-basketball-m_1.pdf",
+      "as_of": "2026-09",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "全国高等学校総合体育大会バスケットボール競技",
+          "level": "都県",
+          "result": "県大会出場",
+          "source_url": "https://www.pen-kanagawa.ed.jp/koryo-h/seikatsu/documents/r8-bukatsu-basketball-m_1.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "横浜地区大会",
+          "level": "地区",
+          "result": "ブロック準優勝",
+          "source_url": "https://www.pen-kanagawa.ed.jp/koryo-h/seikatsu/documents/r8-bukatsu-basketball-m_1.pdf"
+        }
+      ]
+    },
+    {
+      "name": "女子バスケットボール部",
+      "kind": "運動",
+      "tier": 3,
+      "tier_basis": "2025年度は関東大会・総合体育大会・新人大会いずれも南支部予選止まり（都県大会に届かず）。横浜地区大会・YOKOHAMA CUPでは地区レベルの上位実績あり。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/koryo-h/seikatsu/documents/r8-bukatsu-basketball-f_1.pdf",
+      "as_of": "2026-09",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "夏季横浜地区大会",
+          "level": "地区",
+          "result": "ブロックトーナメント2位",
+          "source_url": "https://www.pen-kanagawa.ed.jp/koryo-h/seikatsu/documents/r8-bukatsu-basketball-f_1.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "YOKOHAMA CUP 1次トーナメント",
+          "level": "地区",
+          "result": "ブロックトーナメント1位",
+          "source_url": "https://www.pen-kanagawa.ed.jp/koryo-h/seikatsu/documents/r8-bukatsu-basketball-f_1.pdf"
+        }
+      ]
+    },
+    {
+      "name": "バドミントン部（男子）",
+      "kind": "運動",
+      "days_note": "体育館：平日2日・土日1日、外練：平日2日",
+      "days_per_week": 5,
+      "tier": 3,
+      "tier_basis": "2025年度、関東大会・高校総体・新人大会いずれも県大会出場はできなかった（男女合同での部活動紹介に基づく）。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/koryo-h/seikatsu/documents/r8-bukatsu-badminton_1.pdf",
+      "as_of": "2026-09",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "関東大会・高校総体・新人大会",
+          "level": "都県",
+          "result": "いずれも県大会出場はできず",
+          "source_url": "https://www.pen-kanagawa.ed.jp/koryo-h/seikatsu/documents/r8-bukatsu-badminton_1.pdf"
+        }
+      ]
+    },
+    {
+      "name": "バドミントン部（女子）",
+      "kind": "運動",
+      "days_note": "体育館：平日2日・土日1日、外練：平日2日",
+      "days_per_week": 5,
+      "tier": 3,
+      "tier_basis": "2025年度、関東大会・高校総体・新人大会いずれも県大会出場はできなかった（男女合同での部活動紹介に基づく）。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/koryo-h/seikatsu/documents/r8-bukatsu-badminton_1.pdf",
+      "as_of": "2026-09",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "関東大会・高校総体・新人大会",
+          "level": "都県",
+          "result": "いずれも県大会出場はできず",
+          "source_url": "https://www.pen-kanagawa.ed.jp/koryo-h/seikatsu/documents/r8-bukatsu-badminton_1.pdf"
+        }
+      ]
+    },
+    {
+      "name": "男子バレーボール部",
+      "kind": "運動",
+      "tier": 3,
+      "tier_basis": "2025年度、横浜市民大会・関東大会県予選会・夏季大会・春高予選・県新人大会のいずれも1回戦敗退。都県大会ベスト8以上の実績なし。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/koryo-h/seikatsu/documents/r8-bukatsu-volleyball-m_1.pdf",
+      "as_of": "2026-09",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "関東大会県予選会",
+          "level": "都県",
+          "result": "1回戦敗退",
+          "source_url": "https://www.pen-kanagawa.ed.jp/koryo-h/seikatsu/documents/r8-bukatsu-volleyball-m_1.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "県新人大会",
+          "level": "都県",
+          "result": "出場（1回戦敗退）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/koryo-h/seikatsu/documents/r8-bukatsu-volleyball-m_1.pdf"
+        }
+      ]
+    },
+    {
+      "name": "女子バレーボール部",
+      "kind": "運動",
+      "tier": 3,
+      "tier_basis": "2025年度、横浜市民大会・関東大会県予選会に出場（回戦の記載なし）。実績の詳細記載が乏しいが大会には出場している。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/koryo-h/seikatsu/documents/r8-bukatsu-volleyball-f_1.pdf",
+      "as_of": "2026-09",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "横浜市民大会",
+          "level": "地区",
+          "result": "出場",
+          "source_url": "https://www.pen-kanagawa.ed.jp/koryo-h/seikatsu/documents/r8-bukatsu-volleyball-f_1.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "関東大会県予選会",
+          "level": "都県",
+          "result": "出場",
+          "source_url": "https://www.pen-kanagawa.ed.jp/koryo-h/seikatsu/documents/r8-bukatsu-volleyball-f_1.pdf"
+        }
+      ]
+    },
+    {
+      "name": "男子ハンドボール部",
+      "kind": "運動",
+      "tier": 2,
+      "tier_basis": "2025年度、関東大会県予選ベスト32・秋季大会ベスト16と、都県大会でベスト16〜32が複数回。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/koryo-h/seikatsu/documents/r8-bukatsu-handball-m_1.pdf",
+      "as_of": "2026-09",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "関東大会県予選",
+          "level": "都県",
+          "result": "ベスト32",
+          "source_url": "https://www.pen-kanagawa.ed.jp/koryo-h/seikatsu/documents/r8-bukatsu-handball-m_1.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "秋季大会",
+          "level": "都県",
+          "result": "ベスト16",
+          "source_url": "https://www.pen-kanagawa.ed.jp/koryo-h/seikatsu/documents/r8-bukatsu-handball-m_1.pdf"
+        }
+      ]
+    },
+    {
+      "name": "女子ハンドボール部",
+      "kind": "運動",
+      "tier": 2,
+      "tier_basis": "2025年度は関東大会県予選・新人大会・県選手権でベスト16が3回、2024年度も関東大会県予選ベスト16。都県大会でベスト16〜32が複数回。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/koryo-h/seikatsu/documents/r8-bukatsu-handball-f.pdf",
+      "as_of": "2026-09",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "関東大会県予選",
+          "level": "都県",
+          "result": "ベスト16",
+          "source_url": "https://www.pen-kanagawa.ed.jp/koryo-h/seikatsu/documents/r8-bukatsu-handball-f.pdf"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "県選手権",
+          "level": "都県",
+          "result": "ベスト8",
+          "source_url": "https://www.pen-kanagawa.ed.jp/koryo-h/seikatsu/documents/r8-bukatsu-handball-f.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "関東大会県予選",
+          "level": "都県",
+          "result": "ベスト16",
+          "source_url": "https://www.pen-kanagawa.ed.jp/koryo-h/seikatsu/documents/r8-bukatsu-handball-f.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "新人大会",
+          "level": "都県",
+          "result": "ベスト16",
+          "source_url": "https://www.pen-kanagawa.ed.jp/koryo-h/seikatsu/documents/r8-bukatsu-handball-f.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "県選手権",
+          "level": "都県",
+          "result": "ベスト16",
+          "source_url": "https://www.pen-kanagawa.ed.jp/koryo-h/seikatsu/documents/r8-bukatsu-handball-f.pdf"
+        }
+      ]
+    },
+    {
+      "name": "水泳部",
+      "kind": "運動",
+      "tier": 3,
+      "tier_basis": "2024・2025年度とも県総体・県新人大会に出場（順位の記載なし）。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/koryo-h/seikatsu/documents/r8-bukatsu-swim_1.pdf",
+      "as_of": "2026-09",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "神奈川県高等学校総合体育大会水泳競技大会",
+          "level": "都県",
+          "result": "出場",
+          "source_url": "https://www.pen-kanagawa.ed.jp/koryo-h/seikatsu/documents/r8-bukatsu-swim_1.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "神奈川県新人大会",
+          "level": "都県",
+          "result": "出場",
+          "source_url": "https://www.pen-kanagawa.ed.jp/koryo-h/seikatsu/documents/r8-bukatsu-swim_1.pdf"
+        }
+      ]
+    },
+    {
+      "name": "ソフトテニス部",
+      "kind": "運動",
+      "source_url": "https://www.pen-kanagawa.ed.jp/koryo-h/seikatsu/documents/r8-bukatsu-softtennis_1.pdf",
+      "as_of": "2026-09",
+      "results": []
+    },
+    {
+      "name": "体操部",
+      "kind": "運動",
+      "source_url": "https://www.pen-kanagawa.ed.jp/koryo-h/seikatsu/documents/r8-bukatsu-taisou_1.pdf",
+      "as_of": "2026-09",
+      "results": []
+    },
+    {
+      "name": "卓球部",
+      "kind": "運動",
+      "tier": 2,
+      "tier_basis": "男子は2024年度に関東大会県予選・全国総体県予選でいずれも学校対抗ベスト32、全国総体県予選男子ダブルスベスト16と、都県大会でベスト16〜32が複数回。女子は2025年度関東大会県予選女子シングルスベスト32、新人大会女子学校対抗ベスト32。男女で成績差があるため強い方（男子）を中心に判定。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/koryo-h/seikatsu/documents/r8-bukatsu-takkyu_1.pdf",
+      "as_of": "2026-09",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "関東高等学校卓球大会神奈川県予選",
+          "level": "都県",
+          "result": "男子学校対抗ベスト32",
+          "source_url": "https://www.pen-kanagawa.ed.jp/koryo-h/seikatsu/documents/r8-bukatsu-takkyu_1.pdf"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "全国高等学校総合体育大会卓球競技の部神奈川県予選",
+          "level": "都県",
+          "result": "男子学校対抗ベスト32、男子ダブルス1ペアベスト16",
+          "source_url": "https://www.pen-kanagawa.ed.jp/koryo-h/seikatsu/documents/r8-bukatsu-takkyu_1.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "関東高等学校卓球大会神奈川県予選",
+          "level": "都県",
+          "result": "女子シングルス1名ベスト32",
+          "source_url": "https://www.pen-kanagawa.ed.jp/koryo-h/seikatsu/documents/r8-bukatsu-takkyu_1.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "神奈川県高等学校卓球新人大会",
+          "level": "都県",
+          "result": "女子学校対抗ベスト32",
+          "source_url": "https://www.pen-kanagawa.ed.jp/koryo-h/seikatsu/documents/r8-bukatsu-takkyu_1.pdf"
+        }
+      ]
+    },
+    {
+      "name": "ダンス部",
+      "kind": "運動",
+      "tier": 2,
+      "tier_basis": "2024・2025年度連続で日本高校ダンス部選手権の関東甲信越大会に出場（民間主催のため全国決勝到達がなければ段階2まで）。神奈川県ダンスコンクール新人戦は2024年度7位・2025年度8位。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/koryo-h/seikatsu/documents/r8-bukatsu-dance_1.pdf",
+      "as_of": "2026-09",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "日本高校ダンス部選手権",
+          "level": "関東",
+          "result": "関東甲信越大会出場",
+          "source_url": "https://www.pen-kanagawa.ed.jp/koryo-h/seikatsu/documents/r8-bukatsu-dance_1.pdf"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "神奈川県ダンスコンクール新人戦",
+          "level": "都県",
+          "result": "第7位",
+          "source_url": "https://www.pen-kanagawa.ed.jp/koryo-h/seikatsu/documents/r8-bukatsu-dance_1.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "日本高校ダンス部選手権",
+          "level": "関東",
+          "result": "関東甲信越大会出場",
+          "source_url": "https://www.pen-kanagawa.ed.jp/koryo-h/seikatsu/documents/r8-bukatsu-dance_1.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "神奈川県ダンスコンクール新人戦",
+          "level": "都県",
+          "result": "第8位",
+          "source_url": "https://www.pen-kanagawa.ed.jp/koryo-h/seikatsu/documents/r8-bukatsu-dance_1.pdf"
+        }
+      ]
+    },
+    {
+      "name": "硬式テニス部（男子）",
+      "kind": "運動",
+      "tier": 2,
+      "tier_basis": "2025年度県新人戦で男子団体県ベスト16、2026年度総体予選で男子団体県ベスト16と、都県大会でベスト16が複数回。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/koryo-h/seikatsu/documents/r8-bukatsu-tennis-m_1.pdf",
+      "as_of": "2026-09",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "県新人戦",
+          "level": "都県",
+          "result": "男子団体県ベスト16",
+          "source_url": "https://www.pen-kanagawa.ed.jp/koryo-h/seikatsu/documents/r8-bukatsu-tennis-m_1.pdf"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "総体予選",
+          "level": "都県",
+          "result": "男子団体県ベスト16、男子シングルス・ダブルスともベスト32",
+          "source_url": "https://www.pen-kanagawa.ed.jp/koryo-h/seikatsu/documents/r8-bukatsu-tennis-m_1.pdf"
+        }
+      ]
+    },
+    {
+      "name": "硬式テニス部（女子）",
+      "kind": "運動",
+      "tier": 3,
+      "tier_basis": "2025年度県新人戦で女子ダブルス県ベスト32（個人成績）にとどまり、団体でのベスト16〜32等の実績記載はない。横浜地区高等学校テニスリーグでは6部優勝（地区）。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/koryo-h/seikatsu/documents/r8-bukatsu-tennis-f_1.pdf",
+      "as_of": "2026-09",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "横浜地区高等学校テニスリーグ大会",
+          "level": "地区",
+          "result": "6部優勝（5部昇格）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/koryo-h/seikatsu/documents/r8-bukatsu-tennis-f_1.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "県新人戦",
+          "level": "都県",
+          "result": "女子ダブルス1組県ベスト32",
+          "source_url": "https://www.pen-kanagawa.ed.jp/koryo-h/seikatsu/documents/r8-bukatsu-tennis-f_1.pdf"
+        }
+      ]
+    },
+    {
+      "name": "ワンダーフォーゲル部",
+      "kind": "運動",
+      "days_note": "月1回登山、週2回トレーニング",
+      "days_per_week": 2,
+      "tier": 2,
+      "tier_basis": "2025年度、高校総体登山大会神奈川県予選で優秀校となり、関東登山大会に出場（1回）。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/koryo-h/seikatsu/documents/r8-bukatsu-wandafogeru.pdf",
+      "as_of": "2026-09",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "高校総体登山大会神奈川県予選",
+          "level": "都県",
+          "result": "優秀校",
+          "source_url": "https://www.pen-kanagawa.ed.jp/koryo-h/seikatsu/documents/r8-bukatsu-wandafogeru.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "関東登山大会",
+          "level": "関東",
+          "result": "出場",
+          "source_url": "https://www.pen-kanagawa.ed.jp/koryo-h/seikatsu/documents/r8-bukatsu-wandafogeru.pdf"
+        }
+      ]
+    },
+    {
+      "name": "剣道部",
+      "kind": "運動",
+      "source_url": "https://www.pen-kanagawa.ed.jp/koryo-h/seikatsu/documents/r8-bukatsu-kendo.pdf",
+      "as_of": "2026-09",
+      "results": []
+    },
+    {
+      "name": "英語部",
+      "kind": "文化",
+      "source_url": "https://www.pen-kanagawa.ed.jp/koryo-h/seikatsu/documents/r8-bukatsu-english.pdf",
+      "as_of": "2026-09",
+      "results": []
+    },
+    {
+      "name": "LMC",
+      "kind": "文化",
+      "tier": 3,
+      "tier_basis": "保土ヶ谷バンドバトル（地区・地域大会）を2021〜2025年度まで5年連続優勝しているが、都県・全国規模の大会実績の記載はない。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/koryo-h/seikatsu/documents/r8-bukatsu-lmc.pdf",
+      "as_of": "2026-09",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "保土ヶ谷バンドバトル",
+          "level": "地区",
+          "result": "優勝（5年連続）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/koryo-h/seikatsu/documents/r8-bukatsu-lmc.pdf"
+        }
+      ]
+    },
+    {
+      "name": "演劇部",
+      "kind": "文化",
+      "days_note": "平日3日、休日1回/週",
+      "days_per_week": 4,
+      "source_url": "https://www.pen-kanagawa.ed.jp/koryo-h/seikatsu/documents/r8-bukatsu-engeki.pdf",
+      "as_of": "2026-09",
+      "results": []
+    },
+    {
+      "name": "科学部",
+      "kind": "文化",
+      "tier": 2,
+      "tier_basis": "2025年度、神奈川県理科部研究発表大会で教育長賞（第1位）を受賞し、全国高等学校総合文化祭自然科学部門（秋田総文2026）の神奈川県代表に選出（都県の代表選出・最上位の賞）。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/koryo-h/seikatsu/documents/r8-bukatsu-kagaku.pdf",
+      "as_of": "2026-09",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "神奈川県理科部研究発表大会",
+          "level": "都県",
+          "result": "教育長賞受賞（第1位）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/koryo-h/seikatsu/documents/r8-bukatsu-kagaku.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第50回全国高等学校総合文化祭自然科学部門（秋田総文2026）",
+          "level": "全国",
+          "result": "神奈川県代表選出",
+          "source_url": "https://www.pen-kanagawa.ed.jp/koryo-h/seikatsu/documents/r8-bukatsu-kagaku.pdf"
+        }
+      ]
+    },
+    {
+      "name": "合唱部",
+      "kind": "文化",
+      "source_url": "https://www.pen-kanagawa.ed.jp/koryo-h/seikatsu/documents/r8-bukatsu-gassyou.pdf",
+      "as_of": "2026-09",
+      "results": []
+    },
+    {
+      "name": "クイズ研究部",
+      "kind": "文化",
+      "days_note": "火・水・金",
+      "days_per_week": 3,
+      "tier": 4,
+      "tier_basis": "週3日（火・水・金）の活動で、2026年度の大会結果は「特にありません」と明記。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/koryo-h/seikatsu/documents/r8-bukatsu-quiz.pdf",
+      "as_of": "2026-09",
+      "results": []
+    },
+    {
+      "name": "クッキング部",
+      "kind": "文化",
+      "source_url": "https://www.pen-kanagawa.ed.jp/koryo-h/seikatsu/documents/r8-bukatsu-cooking.pdf",
+      "as_of": "2026-09",
+      "results": []
+    },
+    {
+      "name": "弦楽部",
+      "kind": "文化",
+      "tier": 2,
+      "tier_basis": "2025年度、全国高等学校総合文化祭（香川大会）に出場し専門部会賞を受賞。神奈川県高文連器楽・管弦楽演奏会で教育長賞（県1位）を受賞し、2026年度全国大会（秋田大会）の県代表に選出（都県の代表選出・最上位の賞）。2026年度全国大会は年間スケジュールに記載があるが、大会結果欄への反映はまだない。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/koryo-h/seikatsu/documents/r8-bukatsu-gengaku.pdf",
+      "as_of": "2026-09",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "全国高等学校総合文化祭（香川大会）",
+          "level": "全国",
+          "result": "出場、専門部会賞",
+          "source_url": "https://www.pen-kanagawa.ed.jp/koryo-h/seikatsu/documents/r8-bukatsu-gengaku.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "神奈川県高文連器楽・管弦楽演奏会",
+          "level": "都県",
+          "result": "教育長賞（県1位）、2026年度全国大会（秋田大会）県代表選出",
+          "source_url": "https://www.pen-kanagawa.ed.jp/koryo-h/seikatsu/documents/r8-bukatsu-gengaku.pdf"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "神奈川県高文連器楽・管弦楽演奏会",
+          "level": "都県",
+          "result": "相鉄賞（県2〜3位相当）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/koryo-h/seikatsu/documents/r8-bukatsu-gengaku.pdf"
+        }
+      ]
+    },
+    {
+      "name": "茶道部",
+      "kind": "文化",
+      "days_note": "月・水（放課後）",
+      "days_per_week": 2,
+      "tier": 4,
+      "tier_basis": "週2日（月・水）の活動で、2025年度の大会結果は「特になし」と明記。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/koryo-h/seikatsu/documents/r8-bukatsu-sado.pdf",
+      "as_of": "2026-09",
+      "results": []
+    },
+    {
+      "name": "写真部",
+      "kind": "文化",
+      "source_url": "https://www.pen-kanagawa.ed.jp/koryo-h/seikatsu/documents/r8-bukatsu-picture.pdf",
+      "as_of": "2026-09",
+      "results": []
+    },
+    {
+      "name": "書道部",
+      "kind": "文化",
+      "tier": 2,
+      "tier_basis": "2025年度、神奈川県総合文化祭第62回高等学校書道展一般の部で特選を受賞（都県の最上位の賞）。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/koryo-h/seikatsu/documents/r8-bukatsu-syodo.pdf",
+      "as_of": "2026-09",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "神奈川県総合文化祭第62回高等学校書道展",
+          "level": "都県",
+          "result": "一般の部 特選受賞",
+          "source_url": "https://www.pen-kanagawa.ed.jp/koryo-h/seikatsu/documents/r8-bukatsu-syodo.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "全日本書道展",
+          "level": "全国",
+          "result": "書道連盟賞受賞",
+          "source_url": "https://www.pen-kanagawa.ed.jp/koryo-h/seikatsu/documents/r8-bukatsu-syodo.pdf"
+        }
+      ]
+    },
+    {
+      "name": "吹奏楽部",
+      "kind": "文化",
+      "tier": 3,
+      "tier_basis": "横浜コンクール高校A（地区）で2024・2025年度とも銅賞。アンサンブルコンテスト県大会でも2024年度に銀賞（Fl.3）と、都県レベルで金賞・最上位の賞には届いていない。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/koryo-h/seikatsu/documents/r8-bukatsu-suisougaku.pdf",
+      "as_of": "2026-09",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "横浜コンクール高校A",
+          "level": "地区",
+          "result": "銅賞",
+          "source_url": "https://www.pen-kanagawa.ed.jp/koryo-h/seikatsu/documents/r8-bukatsu-suisougaku.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "アンサンブルコンテスト横浜大会",
+          "level": "地区",
+          "result": "Fl.3 金賞、Cl.4 銀賞",
+          "source_url": "https://www.pen-kanagawa.ed.jp/koryo-h/seikatsu/documents/r8-bukatsu-suisougaku.pdf"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "アンサンブルコンテスト県大会",
+          "level": "都県",
+          "result": "Fl.3 銀賞",
+          "source_url": "https://www.pen-kanagawa.ed.jp/koryo-h/seikatsu/documents/r8-bukatsu-suisougaku.pdf"
+        }
+      ]
+    },
+    {
+      "name": "美術部",
+      "kind": "文化",
+      "source_url": "https://www.pen-kanagawa.ed.jp/koryo-h/seikatsu/documents/r8-bukatsu-bijutsu.pdf",
+      "as_of": "2026-09",
+      "results": []
+    },
+    {
+      "name": "文芸部",
+      "kind": "文化",
+      "days_note": "原則週2日（水・金）",
+      "days_per_week": 2,
+      "tier": 1,
+      "tier_basis": "2022〜2025年度、全国高校生短歌大会でベスト8（2023・2024年度）、高校生万葉短歌バトルin高岡で優勝（2022年度）・準優勝（2025年度）など、短歌を中心に全国大会での上位入賞が継続。かがわ総文祭2025・ぎふ総文祭2024等で神奈川県代表として全国大会に複数回出場し、5年連続で県知事表敬訪問を実施。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/koryo-h/seikatsu/documents/r8-bukatsu-bungei.pdf",
+      "as_of": "2026-09",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "かがわ総文祭2025（短歌部門）",
+          "level": "全国",
+          "result": "神奈川県代表出場",
+          "source_url": "https://www.pen-kanagawa.ed.jp/koryo-h/seikatsu/documents/r8-bukatsu-bungei.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第9回高校生万葉短歌バトルin高岡",
+          "level": "全国",
+          "result": "準優勝",
+          "source_url": "https://www.pen-kanagawa.ed.jp/koryo-h/seikatsu/documents/r8-bukatsu-bungei.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第15回牧水・短歌甲子園",
+          "level": "全国",
+          "result": "第3位",
+          "source_url": "https://www.pen-kanagawa.ed.jp/koryo-h/seikatsu/documents/r8-bukatsu-bungei.pdf"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "第19回全国高校生短歌大会（盛岡短歌甲子園2024）",
+          "level": "全国",
+          "result": "ベスト8",
+          "source_url": "https://www.pen-kanagawa.ed.jp/koryo-h/seikatsu/documents/r8-bukatsu-bungei.pdf"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "第14回牧水・短歌甲子園",
+          "level": "全国",
+          "result": "第3位",
+          "source_url": "https://www.pen-kanagawa.ed.jp/koryo-h/seikatsu/documents/r8-bukatsu-bungei.pdf"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "第18回全国高校生短歌大会（盛岡短歌甲子園2023）",
+          "level": "全国",
+          "result": "ベスト8",
+          "source_url": "https://www.pen-kanagawa.ed.jp/koryo-h/seikatsu/documents/r8-bukatsu-bungei.pdf"
+        }
+      ]
+    },
+    {
+      "name": "アンサンブル同好会",
+      "kind": "同好会",
+      "source_url": "https://www.pen-kanagawa.ed.jp/koryo-h/seikatsu/bukatsudou.html",
+      "as_of": "2026-09",
+      "results": []
+    },
+    {
+      "name": "パソコン同好会",
+      "kind": "同好会",
+      "days_note": "平日週1回",
+      "days_per_week": 1,
+      "tier": 4,
+      "tier_basis": "週1回の活動で、大会結果は「特になし」と明記。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/koryo-h/seikatsu/documents/r7-bukatsu-pcdoukoukai.pdf",
+      "as_of": "2026-09",
+      "results": []
+    }
+  ],
+  "designated_universities": [],
+  "events": [
+    {
+      "kind": "指定",
+      "period_label": "令和4年度（2022年度）から",
+      "summary": "神奈川県教育委員会よりSTEAM教育研究推進校の指定を受けた。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/koryo-h/nyugaku/documents/r8_gakkouannai.pdf"
+    },
+    {
+      "kind": "施設",
+      "period_label": "2026年度",
+      "summary": "小体育館の改修工事のため、剣道部など一部の部活動が一時活動休止している。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/koryo-h/seikatsu/documents/r8-bukatsu-kendo.pdf"
+    }
+  ],
+  "unresolved": [
+    "指定校推薦の大学名：学校案内（パンフレット）・進路ページとも公開なし（全6ページを確認済み）。",
+    "推薦入試の応募・受検倍率（exam_ratio/推薦）：神奈川県公立高校入試は共通選抜のみで、東京都のような別立ての推薦選抜がないため対象データなし。",
+    "部活動加入率（club_join_rate）：学校評価報告書（県様式、文章のみで数値なし）・学校案内とも数値の記載なし。",
+    "進路決定率（career_decided_rate）：学校案内に「ほぼ100%の生徒が大学に進学」との記載のみで、正確な割合の記載なし。",
+    "男女別生徒数（students）：学校案内・基本情報ページとも学年別・男女別の実数の公表なし。",
+    "校則・生徒心得（rules_summary）：公式サイトに生徒心得・校則を掲載したページが見当たらなかった（サイトマップで確認）。",
+    "学級増減：神奈川県教育委員会の募集人員発表を確認できなかった。",
+    "弦楽部の2026年度全国大会（秋田大会）出場：年間スケジュールには記載があるが、大会結果欄への反映はまだなく、実施結果を確認できなかった。",
+    "体操部：大会結果の記載がなく、活動日も週間表に記載がないため段階を付けなかった。",
+    "演劇部：年間スケジュールに（中央大会）（県大会）（関東大会）が記載されているが、実際に到達したかどうかの結果が明記されておらず、段階を付けなかった。",
+    "写真部・合唱部・クッキング部・英語部・パソコン同好会・アンサンブル同好会：大会結果が「なし」「特になし」、または活動日・結果とも記載不足のため段階を付けなかった。",
+    "アンサンブル同好会：部活動紹介ページに年間指導計画（PDF）へのリンクがなく、紹介動画以外の情報が確認できなかった。"
+  ],
+  "conflicts": []
+}

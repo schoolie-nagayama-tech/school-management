@@ -1,0 +1,580 @@
+{
+  "prefecture": "東京都",
+  "school_name": "農業",
+  "official_url": "https://www.metro.ed.jp/nogyo-h/",
+  "researched_at": "2026-09-24",
+  "stats": [
+    {
+      "metric": "career_decided_rate",
+      "item": "",
+      "fiscal_year": 2024,
+      "value_num": 100,
+      "source_url": "https://www.metro.ed.jp/nogyo-h/assets/filelink/filelink-pdffile-33771.pdf",
+      "source_label": "東京都立農業高等学校 令和6年度 学校経営報告",
+      "as_of": "2025-03-31",
+      "note": "「今年度の数値目標」に載る進路決定率の実績（卒業年度2024＝2025年3月卒業生）"
+    },
+    {
+      "metric": "satisfaction",
+      "item": "生徒:学校生活",
+      "fiscal_year": 2024,
+      "value_num": 88,
+      "source_url": "https://www.metro.ed.jp/nogyo-h/assets/filelink/filelink-pdffile-33771.pdf",
+      "source_label": "東京都立農業高等学校 令和6年度 学校経営報告",
+      "as_of": "2025-03-31",
+      "note": "学校満足度アンケートの生徒実績"
+    },
+    {
+      "metric": "satisfaction",
+      "item": "保護者:学校生活",
+      "fiscal_year": 2024,
+      "value_num": 97,
+      "source_url": "https://www.metro.ed.jp/nogyo-h/assets/filelink/filelink-pdffile-33771.pdf",
+      "source_label": "東京都立農業高等学校 令和6年度 学校経営報告",
+      "as_of": "2025-03-31",
+      "note": "学校満足度アンケートの保護者実績"
+    },
+    {
+      "metric": "exam_ratio",
+      "item": "推薦",
+      "course_label": "農業科",
+      "fiscal_year": 2025,
+      "value_num": 1.52,
+      "source_url": "https://www.metro.ed.jp/nogyo-h/assets/filelink/filelink-pdffile-33771.pdf",
+      "source_label": "東京都立農業高等学校 令和6年度 学校経営報告",
+      "as_of": "2025-03-31",
+      "note": "応募倍率。農業科（都市園芸・緑地計画・食品科学）3科合算。入学年度2025＝2025年4月入学"
+    },
+    {
+      "metric": "exam_ratio",
+      "item": "推薦",
+      "course_label": "家庭科",
+      "fiscal_year": 2025,
+      "value_num": 3.00,
+      "source_url": "https://www.metro.ed.jp/nogyo-h/assets/filelink/filelink-pdffile-33771.pdf",
+      "source_label": "東京都立農業高等学校 令和6年度 学校経営報告",
+      "as_of": "2025-03-31",
+      "note": "応募倍率。家庭科（服飾・食物）2科合算。入学年度2025＝2025年4月入学"
+    },
+    {
+      "metric": "university_count",
+      "item": "合計",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 38,
+      "source_url": "https://www.metro.ed.jp/nogyo-h/assets/filelink/filelink-pdffile-37928.pdf",
+      "source_label": "東京都立農業高等学校 2025(令和7)年度卒業生の進路状況",
+      "as_of": "2026-03-31",
+      "note": "学校集計表の「大学38名(23%)」（5学科合計、短大4名は含まない）"
+    },
+    {
+      "metric": "university_count",
+      "item": "国公立",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 2,
+      "source_url": "https://www.metro.ed.jp/nogyo-h/assets/filelink/filelink-pdffile-37928.pdf",
+      "source_label": "東京都立農業高等学校 2025(令和7)年度卒業生の進路状況",
+      "as_of": "2026-03-31",
+      "note": "大学別の表から合算（東京農工大学・琉球大学）"
+    },
+    {
+      "metric": "university_count",
+      "item": "日東駒専",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 2,
+      "source_url": "https://www.metro.ed.jp/nogyo-h/assets/filelink/filelink-pdffile-37928.pdf",
+      "source_label": "東京都立農業高等学校 2025(令和7)年度卒業生の進路状況",
+      "as_of": "2026-03-31",
+      "note": "大学別の表から合算（日本大学のみ2名。早慶上理・GMARCH・成成明武は0名）"
+    },
+    {
+      "metric": "university_count",
+      "item": "東京農業大学",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 4,
+      "source_url": "https://www.metro.ed.jp/nogyo-h/assets/filelink/filelink-pdffile-37928.pdf",
+      "source_label": "東京都立農業高等学校 2025(令和7)年度卒業生の進路状況",
+      "as_of": "2026-03-31",
+      "note": "大学別の表から合算（オホーツクキャンパス2名を含む）。進学が多い大学の上位5つの1つ"
+    },
+    {
+      "metric": "university_count",
+      "item": "東京工科大学",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 4,
+      "source_url": "https://www.metro.ed.jp/nogyo-h/assets/filelink/filelink-pdffile-37928.pdf",
+      "source_label": "東京都立農業高等学校 2025(令和7)年度卒業生の進路状況",
+      "as_of": "2026-03-31",
+      "note": "大学別の表から合算（緑地計画科・食品科学科・服飾科・食物科に各1名）。進学が多い大学の上位5つの1つ"
+    },
+    {
+      "metric": "university_count",
+      "item": "文化学園大学",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 3,
+      "source_url": "https://www.metro.ed.jp/nogyo-h/assets/filelink/filelink-pdffile-37928.pdf",
+      "source_label": "東京都立農業高等学校 2025(令和7)年度卒業生の進路状況",
+      "as_of": "2026-03-31",
+      "note": "大学別の表から合算（服飾科）。進学が多い大学の上位5つの1つ"
+    },
+    {
+      "metric": "university_count",
+      "item": "東京家政学院大学",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 3,
+      "source_url": "https://www.metro.ed.jp/nogyo-h/assets/filelink/filelink-pdffile-37928.pdf",
+      "source_label": "東京都立農業高等学校 2025(令和7)年度卒業生の進路状況",
+      "as_of": "2026-03-31",
+      "note": "大学別の表から合算（食物科）。進学が多い大学の上位5つの1つ"
+    },
+    {
+      "metric": "university_count",
+      "item": "日本大学",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 2,
+      "source_url": "https://www.metro.ed.jp/nogyo-h/assets/filelink/filelink-pdffile-37928.pdf",
+      "source_label": "東京都立農業高等学校 2025(令和7)年度卒業生の進路状況",
+      "as_of": "2026-03-31",
+      "note": "大学別の表から合算。進学が多い大学の上位5つの5番目（東京家政大学・日本栄養大学・東京医療保健大学・駿河台大学・嘉悦大学も同数2名で並ぶ）"
+    },
+    {
+      "metric": "admission_route_share",
+      "item": "指定校推薦",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 55.3,
+      "source_url": "https://www.metro.ed.jp/nogyo-h/assets/filelink/filelink-pdffile-37928.pdf",
+      "source_label": "東京都立農業高等学校 2025(令和7)年度卒業生の進路状況",
+      "as_of": "2026-03-31",
+      "note": "大学進学者38名のうちの割合（大学別の表・入試区分の記載から算出。21名）"
+    },
+    {
+      "metric": "admission_route_share",
+      "item": "総合型",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 26.3,
+      "source_url": "https://www.metro.ed.jp/nogyo-h/assets/filelink/filelink-pdffile-37928.pdf",
+      "source_label": "東京都立農業高等学校 2025(令和7)年度卒業生の進路状況",
+      "as_of": "2026-03-31",
+      "note": "大学進学者38名のうちの割合（大学別の表・入試区分の記載から算出。10名）"
+    },
+    {
+      "metric": "admission_route_share",
+      "item": "一般",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 10.5,
+      "source_url": "https://www.metro.ed.jp/nogyo-h/assets/filelink/filelink-pdffile-37928.pdf",
+      "source_label": "東京都立農業高等学校 2025(令和7)年度卒業生の進路状況",
+      "as_of": "2026-03-31",
+      "note": "大学進学者38名のうちの割合（大学別の表・入試区分の記載から算出。4名）"
+    },
+    {
+      "metric": "admission_route_share",
+      "item": "公募推薦",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 7.9,
+      "source_url": "https://www.metro.ed.jp/nogyo-h/assets/filelink/filelink-pdffile-37928.pdf",
+      "source_label": "東京都立農業高等学校 2025(令和7)年度卒業生の進路状況",
+      "as_of": "2026-03-31",
+      "note": "大学進学者38名のうちの割合（大学別の表・入試区分の記載から算出。3名）"
+    },
+    {
+      "metric": "uniform",
+      "item": "",
+      "fiscal_year": 2025,
+      "value_text": "ブレザー・ワイシャツ（白）・ズボンまたはスカート・ネクタイ。夏はネクタイ・ブレザーなしも可、紺のポロシャツも可。通年でベスト、冬はセーターも可（登下校はブレザー着用）。",
+      "source_url": "https://www.metro.ed.jp/nogyo-h/assets/filelink/filelink-pdffile-32937.pdf",
+      "source_label": "東京都立農業高等学校 令和7年度 生徒心得",
+      "as_of": "2025-04-01",
+      "note": ""
+    },
+    {
+      "metric": "rules_summary",
+      "item": "",
+      "fiscal_year": 2025,
+      "value_text": "頭髪の加工（パーマ・カール・染色・脱色・エクステ等）禁止。ピアス等の装飾品・化粧（色付きリップ・口紅・つけまつげ）禁止。スマートフォン・アルバイトについての規定はこの資料に記載なし。",
+      "source_url": "https://www.metro.ed.jp/nogyo-h/assets/filelink/filelink-pdffile-32937.pdf",
+      "source_label": "東京都立農業高等学校 令和7年度 生徒心得",
+      "as_of": "2025-04-01",
+      "note": ""
+    },
+    {
+      "metric": "designation",
+      "item": "専門高校における民間OB等活用事業指定校",
+      "fiscal_year": 2024,
+      "value_text": "東京都教育委員会指定。正確な公文書（調査書・推薦書）の発行や進路指導の充実に活用",
+      "source_url": "https://www.metro.ed.jp/nogyo-h/assets/filelink/filelink-pdffile-33771.pdf",
+      "source_label": "東京都立農業高等学校 令和6年度 学校経営報告",
+      "as_of": "2025-03-31",
+      "note": ""
+    },
+    {
+      "metric": "designation",
+      "item": "専門高校の新たな学びによる授業改善サポート事業指定校",
+      "fiscal_year": 2025,
+      "value_text": "東京都教育委員会指定。神代農場のリソースを活用した商品開発・アントレプレナーシップ教育の推進に活用",
+      "source_url": "https://www.metro.ed.jp/nogyo-h/assets/filelink/filelink-pdffile-33772.pdf",
+      "source_label": "東京都立農業高等学校 令和7年度 学校経営計画",
+      "as_of": "2025-04-09",
+      "note": ""
+    },
+    {
+      "metric": "designation",
+      "item": "文部科学省DXハイスクール事業",
+      "fiscal_year": 2024,
+      "value_text": "課題解決型学習の充実、STEAMやデータサイエンスに基づくアウトプット活動の充実に活用",
+      "source_url": "https://www.metro.ed.jp/nogyo-h/assets/filelink/filelink-pdffile-33771.pdf",
+      "source_label": "東京都立農業高等学校 令和6年度 学校経営報告",
+      "as_of": "2025-03-31",
+      "note": ""
+    }
+  ],
+  "clubs": [
+    {
+      "name": "女子バレーボール部",
+      "kind": "運動",
+      "days_note": "月・火・水・金の放課後、土日はいずれか1日",
+      "days_per_week": 5,
+      "weekend": "土日",
+      "source_url": "https://www.metro.ed.jp/nogyo-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "results": []
+    },
+    {
+      "name": "硬式野球部",
+      "kind": "運動",
+      "days_note": "週5~6日程度（月・火・木・金・土日どちらか。今年度は水曜日が平日OFF）",
+      "days_per_week": 5.5,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2024〜2026年は夏の西東京大会が2回戦または1回戦で敗退、秋の一次予選も1回戦敗退で、都県ベスト8以上の実績なし（一球速報）",
+      "source_url": "https://www.metro.ed.jp/nogyo-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "第106回全国高等学校野球選手権西東京大会",
+          "level": "都県",
+          "result": "2回戦敗退（小平南に0-10）",
+          "happened_on": "2024-07-11",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=11990&year=2024"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第107回全国高等学校野球選手権西東京大会",
+          "level": "都県",
+          "result": "2回戦で勝利（井草・大泉・松蔭大松蔭・杉並工科の合同チームに11-4）も3回戦以降の記録なし",
+          "happened_on": "2025-07-11",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=11990&year=2025"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "令和7年度秋季東京都高等学校野球大会一次予選",
+          "level": "都県",
+          "result": "1回戦敗退（二松学舎大付属に1-11）",
+          "happened_on": "2025-09-14",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=11990&year=2025"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "第108回全国高等学校野球選手権西東京大会",
+          "level": "都県",
+          "result": "1回戦敗退（日大鶴ケ丘に0-18）",
+          "happened_on": "2026-07-10",
+          "source_url": "https://baseball.omyutech.com/teamStats.action?teamId=11990"
+        }
+      ]
+    },
+    {
+      "name": "男子バスケットボール部",
+      "kind": "運動",
+      "days_note": "平日は火・水・木の放課後、土日はいずれか1日（大会期間中は土日両日活動）",
+      "days_per_week": 4,
+      "weekend": "土日",
+      "source_url": "https://www.metro.ed.jp/nogyo-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "results": []
+    },
+    {
+      "name": "女子バスケットボール部",
+      "kind": "運動",
+      "days_note": "平日は火・水・木、土日はいずれか1日（大会前は両日の場合あり）。朝練も実施",
+      "days_per_week": 4,
+      "weekend": "土日",
+      "source_url": "https://www.metro.ed.jp/nogyo-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "results": []
+    },
+    {
+      "name": "ダンス部",
+      "kind": "運動",
+      "days_note": "平日は3日間（月・水・木）、土日はいずれか1日（主に土曜日）",
+      "days_per_week": 4,
+      "weekend": "土日",
+      "source_url": "https://www.metro.ed.jp/nogyo-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "results": []
+    },
+    {
+      "name": "バドミントン部",
+      "kind": "運動",
+      "days_note": "火（練習）・水（隔週、練習）・金（練習）・土（月2回、練習）、土日祝（練習試合・公式戦等）",
+      "days_per_week": 3,
+      "weekend": "土日",
+      "source_url": "https://www.metro.ed.jp/nogyo-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "results": []
+    },
+    {
+      "name": "サッカー部",
+      "kind": "運動",
+      "days_note": "平日は月・火・木・金、土日はいずれか1日（土）",
+      "days_per_week": 5,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "2026年度 高円宮杯U-18サッカーリーグ東京のT1〜T5のいずれにも不在（支部リーグ相当）",
+      "source_url": "https://www.metro.ed.jp/nogyo-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "results": []
+    },
+    {
+      "name": "硬式テニス部",
+      "kind": "運動",
+      "days_note": "朝練：火・木7:30〜、放課後：火・木・金、土曜午前：指導員コーチによるレッスン",
+      "days_per_week": 4,
+      "weekend": "土",
+      "source_url": "https://www.metro.ed.jp/nogyo-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "results": []
+    },
+    {
+      "name": "卓球部",
+      "kind": "運動",
+      "days_note": "平日は月・火・木・金、土日はいずれか1日（土）",
+      "days_per_week": 5,
+      "weekend": "土",
+      "source_url": "https://www.metro.ed.jp/nogyo-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "results": []
+    },
+    {
+      "name": "合気道部",
+      "kind": "運動",
+      "days_note": "平日は水曜日以外活動。月1回程度外部指導者の稽古。土曜日に道場へ行く・審査を受けることもある（毎週ではない）",
+      "days_per_week": 4.5,
+      "weekend": "土",
+      "source_url": "https://www.metro.ed.jp/nogyo-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "results": []
+    },
+    {
+      "name": "トレッキング部",
+      "kind": "運動",
+      "days_note": "平日は週1回（木に部会）、土日はいずれか1日（月例山行実施）",
+      "days_per_week": 2,
+      "weekend": "土日",
+      "source_url": "https://www.metro.ed.jp/nogyo-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "results": []
+    },
+    {
+      "name": "水泳部",
+      "kind": "運動",
+      "days_note": "平日は月・火・金、土日は大会以外活動なし",
+      "days_per_week": 3,
+      "weekend": "なし",
+      "source_url": "https://www.metro.ed.jp/nogyo-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "results": []
+    },
+    {
+      "name": "陸上競技部",
+      "kind": "運動",
+      "days_note": "月・火・木・金・土（大会時は土日祝）",
+      "days_per_week": 5,
+      "weekend": "土",
+      "source_url": "https://www.metro.ed.jp/nogyo-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "results": []
+    },
+    {
+      "name": "食品加工部",
+      "kind": "文化",
+      "days_note": "第2・第4土曜日",
+      "days_per_week": 0.5,
+      "weekend": "土",
+      "source_url": "https://www.metro.ed.jp/nogyo-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "results": []
+    },
+    {
+      "name": "食品化学部",
+      "kind": "文化",
+      "days_note": "平日は木、土日は不定期で活動",
+      "days_per_week": 1.5,
+      "weekend": "土日",
+      "source_url": "https://www.metro.ed.jp/nogyo-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "results": []
+    },
+    {
+      "name": "クッキング部",
+      "kind": "文化",
+      "days_note": "木・金曜日（買い出し）、土曜日の午前（月2回程度）",
+      "days_per_week": 2.5,
+      "weekend": "土",
+      "source_url": "https://www.metro.ed.jp/nogyo-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "results": []
+    },
+    {
+      "name": "児童研究部",
+      "kind": "文化",
+      "days_note": "水を中心に授業実習日を考慮して活動日を設定",
+      "source_url": "https://www.metro.ed.jp/nogyo-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "results": []
+    },
+    {
+      "name": "園芸部",
+      "kind": "文化",
+      "days_note": "月・水・金、土日の活動は不定期",
+      "days_per_week": 3.5,
+      "weekend": "土日",
+      "source_url": "https://www.metro.ed.jp/nogyo-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "results": []
+    },
+    {
+      "name": "果樹部",
+      "kind": "文化",
+      "days_note": "平日は月・火・木・金、土日の活動はなし",
+      "days_per_week": 4,
+      "weekend": "なし",
+      "source_url": "https://www.metro.ed.jp/nogyo-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "results": []
+    },
+    {
+      "name": "神代農場部",
+      "kind": "文化",
+      "days_note": "金・日",
+      "days_per_week": 2,
+      "weekend": "日",
+      "source_url": "https://www.metro.ed.jp/nogyo-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "results": []
+    },
+    {
+      "name": "造園部",
+      "kind": "文化",
+      "days_note": "平日は月・火・木・金、土日はいずれか1日（適宜）",
+      "days_per_week": 5,
+      "weekend": "土日",
+      "source_url": "https://www.metro.ed.jp/nogyo-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "results": []
+    },
+    {
+      "name": "漫画研究部",
+      "kind": "文化",
+      "days_note": "火曜日、土日の活動はなし",
+      "days_per_week": 1,
+      "weekend": "なし",
+      "source_url": "https://www.metro.ed.jp/nogyo-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "results": []
+    },
+    {
+      "name": "サウンド部",
+      "kind": "文化",
+      "days_note": "平日にバンドごとに活動",
+      "source_url": "https://www.metro.ed.jp/nogyo-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "results": []
+    },
+    {
+      "name": "文芸部",
+      "kind": "文化",
+      "days_note": "平日は月・水又は不定期、土日の活動はなし",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "source_url": "https://www.metro.ed.jp/nogyo-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "results": []
+    },
+    {
+      "name": "美術部",
+      "kind": "文化",
+      "days_note": "毎週木曜日",
+      "days_per_week": 1,
+      "source_url": "https://www.metro.ed.jp/nogyo-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "results": []
+    },
+    {
+      "name": "合唱部",
+      "kind": "文化",
+      "source_url": "https://www.metro.ed.jp/nogyo-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "results": []
+    },
+    {
+      "name": "落語研究部",
+      "kind": "文化",
+      "days_note": "水曜日（不定期で、部員が集まれるときに実施）",
+      "days_per_week": 0.5,
+      "source_url": "https://www.metro.ed.jp/nogyo-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "results": []
+    },
+    {
+      "name": "演劇同好会",
+      "kind": "同好会",
+      "days_note": "月・水・金",
+      "days_per_week": 3,
+      "source_url": "https://www.metro.ed.jp/nogyo-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "results": []
+    }
+  ],
+  "designated_universities": [],
+  "events": [
+    {
+      "kind": "改築",
+      "period_label": "令和8年度から",
+      "summary": "改築に向けてグラウンドの使用を制限し仮設校舎の建設を開始。体育祭は近隣の公営運動場を利用。",
+      "source_url": "https://www.metro.ed.jp/nogyo-h/assets/pamphlet/pamphlet-pdffile-4199.pdf"
+    },
+    {
+      "kind": "改築",
+      "period_label": "令和9年夏",
+      "summary": "仮設校舎へ移転（エアコン完備）。",
+      "source_url": "https://www.metro.ed.jp/nogyo-h/assets/pamphlet/pamphlet-pdffile-4199.pdf"
+    },
+    {
+      "kind": "改築",
+      "period_label": "令和12年度から令和14年度夏まで",
+      "summary": "新校舎の建設と既存校舎（南館）の改修を行い、完了後に南館へ再移転する。",
+      "source_url": "https://www.metro.ed.jp/nogyo-h/assets/pamphlet/pamphlet-pdffile-4199.pdf"
+    }
+  ],
+  "unresolved": [
+    "部活動加入率：数値の公表が見当たらない（学校経営計画・報告には「加入率向上」の目標のみ記載）",
+    "学校全体（全学年）の男女生徒数：公式な公表が見当たらない（進路状況PDFは卒業学年のみ、パンフは過去3年間の卒業生の学科群別合計のみ）",
+    "指定校推薦の大学一覧（パンフの「主な指定校推薦」に相当する公式一覧）：公表が見当たらない（進路先一覧PDFに合格者ごとの入試区分の記載はあるが、指定校推薦の大学一覧としての公表ではない）",
+    "園芸部「ベジコン全国制覇」：部活動ページに記載はあるが年度が特定できず、段階の根拠にできなかった",
+    "2026年4月入学（R8年度入試）の応募倍率：学校サイトは都教委サイトへのリンクのみで、数値の記載がない"
+  ],
+  "conflicts": []
+}

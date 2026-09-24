@@ -1,0 +1,448 @@
+{
+  "prefecture": "東京都",
+  "school_name": "町田工科",
+  "official_url": "https://www.metro.ed.jp/machidakoka-h/",
+  "researched_at": "2026-09-24",
+  "stats": [
+    {
+      "metric": "university_count",
+      "item": "合計",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 43,
+      "source_url": "https://www.metro.ed.jp/machidakoka-h/assets/R08学校案内パンフレット.pdf",
+      "source_label": "町田工科高等学校 学校案内パンフレット SCHOOL GUIDE 2027（令和7年度卒業生進路実績）",
+      "as_of": "2026-09",
+      "note": "4年制大学・短期大学の合計。学校の集計（パンフレット掲載の大学別人数を合算しても同じ43名）"
+    },
+    {
+      "metric": "university_count",
+      "item": "東京工芸大学",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 6,
+      "source_url": "https://www.metro.ed.jp/machidakoka-h/assets/R08学校案内パンフレット.pdf",
+      "source_label": "町田工科高等学校 学校案内パンフレット SCHOOL GUIDE 2027（令和7年度卒業生進路実績）",
+      "as_of": "2026-09",
+      "note": ""
+    },
+    {
+      "metric": "university_count",
+      "item": "神奈川工科大学",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 4,
+      "source_url": "https://www.metro.ed.jp/machidakoka-h/assets/R08学校案内パンフレット.pdf",
+      "source_label": "町田工科高等学校 学校案内パンフレット SCHOOL GUIDE 2027（令和7年度卒業生進路実績）",
+      "as_of": "2026-09",
+      "note": ""
+    },
+    {
+      "metric": "university_count",
+      "item": "湘南工科大学",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 4,
+      "source_url": "https://www.metro.ed.jp/machidakoka-h/assets/R08学校案内パンフレット.pdf",
+      "source_label": "町田工科高等学校 学校案内パンフレット SCHOOL GUIDE 2027（令和7年度卒業生進路実績）",
+      "as_of": "2026-09",
+      "note": ""
+    },
+    {
+      "metric": "university_count",
+      "item": "帝京大学",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 3,
+      "source_url": "https://www.metro.ed.jp/machidakoka-h/assets/R08学校案内パンフレット.pdf",
+      "source_label": "町田工科高等学校 学校案内パンフレット SCHOOL GUIDE 2027（令和7年度卒業生進路実績）",
+      "as_of": "2026-09",
+      "note": ""
+    },
+    {
+      "metric": "university_count",
+      "item": "東京工科大学",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 3,
+      "source_url": "https://www.metro.ed.jp/machidakoka-h/assets/R08学校案内パンフレット.pdf",
+      "source_label": "町田工科高等学校 学校案内パンフレット SCHOOL GUIDE 2027（令和7年度卒業生進路実績）",
+      "as_of": "2026-09",
+      "note": ""
+    },
+    {
+      "metric": "university_count",
+      "item": "国公立",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 0,
+      "source_url": "https://www.metro.ed.jp/machidakoka-h/assets/R08学校案内パンフレット.pdf",
+      "source_label": "町田工科高等学校 学校案内パンフレット SCHOOL GUIDE 2027（令和7年度卒業生進路実績）",
+      "as_of": "2026-09",
+      "note": "実績一覧に該当校なし"
+    },
+    {
+      "metric": "university_count",
+      "item": "早慶上理",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 0,
+      "source_url": "https://www.metro.ed.jp/machidakoka-h/assets/R08学校案内パンフレット.pdf",
+      "source_label": "町田工科高等学校 学校案内パンフレット SCHOOL GUIDE 2027（令和7年度卒業生進路実績）",
+      "as_of": "2026-09",
+      "note": "実績一覧に該当校なし"
+    },
+    {
+      "metric": "university_count",
+      "item": "GMARCH",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 0,
+      "source_url": "https://www.metro.ed.jp/machidakoka-h/assets/R08学校案内パンフレット.pdf",
+      "source_label": "町田工科高等学校 学校案内パンフレット SCHOOL GUIDE 2027（令和7年度卒業生進路実績）",
+      "as_of": "2026-09",
+      "note": "実績一覧に該当校なし"
+    },
+    {
+      "metric": "university_count",
+      "item": "成成明武",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 0,
+      "source_url": "https://www.metro.ed.jp/machidakoka-h/assets/R08学校案内パンフレット.pdf",
+      "source_label": "町田工科高等学校 学校案内パンフレット SCHOOL GUIDE 2027（令和7年度卒業生進路実績）",
+      "as_of": "2026-09",
+      "note": "実績一覧に該当校なし"
+    },
+    {
+      "metric": "university_count",
+      "item": "日東駒専",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 0,
+      "source_url": "https://www.metro.ed.jp/machidakoka-h/assets/R08学校案内パンフレット.pdf",
+      "source_label": "町田工科高等学校 学校案内パンフレット SCHOOL GUIDE 2027（令和7年度卒業生進路実績）",
+      "as_of": "2026-09",
+      "note": "実績一覧に該当校なし"
+    },
+    {
+      "metric": "career_decided_rate",
+      "item": "",
+      "basis": "",
+      "fiscal_year": 2025,
+      "value_num": 97.9,
+      "source_url": "https://www.metro.ed.jp/machidakoka-h/assets/R07学校経営報告（町工）確定版.pdf",
+      "source_label": "町田工科高等学校 令和7年度学校経営報告",
+      "as_of": "2026-03",
+      "note": "希望就職率100%・大学希望進学率100%だが、進路決定率としては97.9%（未定者を含む）"
+    },
+    {
+      "metric": "designation",
+      "item": "DXハイスクール",
+      "basis": "",
+      "fiscal_year": 2026,
+      "value_text": "文部科学省 高等学校DX加速化推進事業（DXハイスクール）に指定（令和8年度で指定3年目）",
+      "source_url": "https://www.metro.ed.jp/machidakoka-h/assets/R08学校案内パンフレット.pdf",
+      "source_label": "町田工科高等学校 学校案内パンフレット SCHOOL GUIDE 2027",
+      "as_of": "2026-09",
+      "note": ""
+    },
+    {
+      "metric": "designation",
+      "item": "海外学校間交流推進校",
+      "basis": "",
+      "fiscal_year": 2026,
+      "value_text": "東京都教育委員会の海外学校間交流推進校に指定",
+      "source_url": "https://www.metro.ed.jp/machidakoka-h/assets/R08学校案内パンフレット.pdf",
+      "source_label": "町田工科高等学校 学校案内パンフレット SCHOOL GUIDE 2027",
+      "as_of": "2026-09",
+      "note": ""
+    },
+    {
+      "metric": "designation",
+      "item": "Tokyo P-TECH",
+      "basis": "",
+      "fiscal_year": 2026,
+      "value_text": "IT人材育成プログラム「Tokyo P-TECH」の実施校（令和3年度に日本初の実施校として開始）",
+      "source_url": "https://www.metro.ed.jp/machidakoka-h/assets/R08学校案内パンフレット.pdf",
+      "source_label": "町田工科高等学校 学校案内パンフレット SCHOOL GUIDE 2027",
+      "as_of": "2026-09",
+      "note": ""
+    },
+    {
+      "metric": "uniform",
+      "item": "",
+      "basis": "",
+      "fiscal_year": 2026,
+      "value_text": "紺ブレザーにチェックのスラックス・スカート（男女とも自由選択）。夏は白シャツに指定ベストまたは白・紺のポロシャツ。リボン・ネクタイも自由選択。実習時は別途実習服。",
+      "source_url": "https://www.metro.ed.jp/machidakoka-h/assets/R08学校案内パンフレット.pdf",
+      "source_label": "町田工科高等学校 学校案内パンフレット SCHOOL GUIDE 2027",
+      "as_of": "2026-09",
+      "note": ""
+    }
+  ],
+  "clubs": [
+    {
+      "name": "ワンダーフォーゲル部",
+      "kind": "運動",
+      "source_url": "https://www.metro.ed.jp/machidakoka-h/school_life/activities.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "男子バレーボール部",
+      "kind": "運動",
+      "source_url": "https://www.metro.ed.jp/machidakoka-h/school_life/activities.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "バスケットボール部",
+      "kind": "運動",
+      "source_url": "https://www.metro.ed.jp/machidakoka-h/school_life/activities.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "卓球部",
+      "kind": "運動",
+      "source_url": "https://www.metro.ed.jp/machidakoka-h/school_life/activities.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "硬式テニス部",
+      "kind": "運動",
+      "source_url": "https://www.metro.ed.jp/machidakoka-h/school_life/activities.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "サッカー部",
+      "kind": "運動",
+      "tier": 3,
+      "tier_basis": "2026年度 高円宮杯JFA U-18サッカーリーグ東京のT1〜T5参加チーム一覧に町田工科の登録なし（支部リーグ扱い）",
+      "source_url": "https://www.metro.ed.jp/machidakoka-h/school_life/activities.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "硬式野球部",
+      "kind": "運動",
+      "tier": 3,
+      "tier_basis": "2023〜2026年度の夏（西東京大会）・秋・春の都大会一次予選は、すべて1〜2回戦で敗退（2026年春は勝ち上がって代表決定戦まで進出）。ベスト8等の実績なし（一球速報 チームID12036）",
+      "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=12036",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "第105回全国高等学校野球選手権記念西東京大会",
+          "level": "都県",
+          "result": "2回戦敗退（0-7 杉並工、7回）",
+          "happened_on": "2023-07-12",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=12036&year=2023"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "第106回全国高等学校野球選手権西東京大会",
+          "level": "都県",
+          "result": "1回戦敗退（3-10 青梅総合、7回）",
+          "happened_on": "2024-07-07",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=12036&year=2024"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "令和6年度秋季東京都高等学校野球大会一次予選",
+          "level": "都県",
+          "result": "1回戦敗退（0-31 東亜学園、5回コールド）",
+          "happened_on": "2024-09-14",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=12036&year=2024"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "令和7年度春季東京都高等学校野球大会一次予選",
+          "level": "都県",
+          "result": "1回戦敗退（0-15 石神井、5回コールド）",
+          "happened_on": "2025-03-15",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=12036&year=2025"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第107回全国高等学校野球選手権西東京大会",
+          "level": "都県",
+          "result": "2回戦敗退（2-13 立川国際・東村山・府中、5回コールド）",
+          "happened_on": "2025-07-13",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=12036&year=2025"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "令和7年度秋季東京都高等学校野球大会一次予選",
+          "level": "都県",
+          "result": "2回戦敗退（0-38 国士舘、5回コールド）",
+          "happened_on": "2025-09-20",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=12036&year=2025"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "令和8年度春季東京都高等学校野球大会一次予選",
+          "level": "都県",
+          "result": "1回戦勝利（23-2 六郷工科）",
+          "happened_on": "2026-03-15",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=12036&year=2026"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "令和8年度春季東京都高等学校野球大会一次予選",
+          "level": "都県",
+          "result": "代表決定戦敗退（2-14 東村山西）",
+          "happened_on": "2026-03-20",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=12036&year=2026"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "第108回全国高等学校野球選手権西東京大会",
+          "level": "都県",
+          "result": "1回戦敗退（0-7 中大付、7回）",
+          "happened_on": "2026-07-07",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=12036&year=2026"
+        }
+      ]
+    },
+    {
+      "name": "バドミントン部",
+      "kind": "運動",
+      "source_url": "https://www.metro.ed.jp/machidakoka-h/school_life/activities.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "陸上競技部",
+      "kind": "運動",
+      "source_url": "https://www.metro.ed.jp/machidakoka-h/school_life/activities.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "自転車部",
+      "kind": "運動",
+      "source_url": "https://www.metro.ed.jp/machidakoka-h/school_life/activities.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "ラグビー部",
+      "kind": "運動",
+      "source_url": "https://www.metro.ed.jp/machidakoka-h/school_life/activities.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "茶道部",
+      "kind": "文化",
+      "source_url": "https://www.metro.ed.jp/machidakoka-h/school_life/activities.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "美術・陶芸部",
+      "kind": "文化",
+      "source_url": "https://www.metro.ed.jp/machidakoka-h/school_life/activities.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "コンピューター部",
+      "kind": "文化",
+      "source_url": "https://www.metro.ed.jp/machidakoka-h/school_life/activities.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "写真部",
+      "kind": "文化",
+      "source_url": "https://www.metro.ed.jp/machidakoka-h/school_life/activities.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "天文部",
+      "kind": "文化",
+      "source_url": "https://www.metro.ed.jp/machidakoka-h/school_life/activities.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "アニメーション部",
+      "kind": "文化",
+      "source_url": "https://www.metro.ed.jp/machidakoka-h/school_life/activities.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "演劇部",
+      "kind": "文化",
+      "source_url": "https://www.metro.ed.jp/machidakoka-h/school_life/activities.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "ロボット部",
+      "kind": "文化",
+      "source_url": "https://www.metro.ed.jp/machidakoka-h/school_life/activities.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "軽音楽部",
+      "kind": "文化",
+      "source_url": "https://www.metro.ed.jp/machidakoka-h/school_life/activities.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "マシンクラフト部",
+      "kind": "文化",
+      "source_url": "https://www.metro.ed.jp/machidakoka-h/school_life/activities.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "吹奏楽部",
+      "kind": "文化",
+      "source_url": "https://www.metro.ed.jp/machidakoka-h/school_life/activities.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "鉄道部",
+      "kind": "文化",
+      "source_url": "https://www.metro.ed.jp/machidakoka-h/school_life/activities.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "eスポーツ部",
+      "kind": "文化",
+      "tier": 2,
+      "tier_basis": "東京都教育委員会よりPremiere Club Tier3に指定（学校案内パンフレットSCHOOL GUIDE 2027に明記）",
+      "source_url": "https://www.metro.ed.jp/machidakoka-h/school_life/activities.html",
+      "as_of": "2026-09-24"
+    }
+  ],
+  "designated_universities": [],
+  "events": [
+    {
+      "kind": "学科改編",
+      "period_label": "2021年4月から",
+      "summary": "「アプリケーション系列」と「情報システム系列」を統合し、総合情報科に「情報テクノロジー系列」（2クラス）を新設した。",
+      "source_url": "https://www.metro.ed.jp/machidakoka-h/our_school/history.html"
+    },
+    {
+      "kind": "その他",
+      "period_label": "2023年4月",
+      "summary": "校名を「東京都立町田工業高等学校」から「東京都立町田工科高等学校」に改めた。",
+      "source_url": "https://www.metro.ed.jp/machidakoka-h/our_school/history.html"
+    },
+    {
+      "kind": "指定",
+      "period_label": "2021年度から",
+      "summary": "IT人材育成プログラム「Tokyo P-TECH」を日本初の実施校として開始した（日本工学院八王子専門学校・日本IBM・Cisco・Salesforce等と連携）。",
+      "source_url": "https://www.metro.ed.jp/machidakoka-h/assets/R08学校案内パンフレット.pdf"
+    },
+    {
+      "kind": "指定",
+      "period_label": "2024年度から（令和8年度で3年目）",
+      "summary": "文部科学省の高等学校DX加速化推進事業（DXハイスクール）に指定された。",
+      "source_url": "https://www.metro.ed.jp/machidakoka-h/assets/R08学校案内パンフレット.pdf"
+    }
+  ],
+  "unresolved": [
+    "部活動加入率の実績値：令和7年度学校経営報告に目標（75%以上）の記載はあるが、達成した実績の数値は見つからなかった",
+    "満足度（生徒・保護者）：学校運営方針ページで学校経営報告・計画は確認できたが、学校評価アンケート報告のページ／PDFが見つからなかった",
+    "推薦入試の応募倍率／受検倍率：入試案内「応募状況等」ページ（/machidakoka-h/guide/application.html）に資料が添付されておらず空。学校経営報告には「推薦 1.49→0.97」の実績値があるが、応募倍率か受検倍率かの区別が資料に明記されていない",
+    "生徒数（男女別）：学校案内パンフレット・学校運営方針等の公式資料に男女別人数の記載が見つからなかった",
+    "校則の要約（頭髪・スマホ・アルバイト等）：生徒心得・校則を掲載したページが見つからなかった（制服・校章・校歌ページには制服の写真のみ）",
+    "指定校推薦（大学）の一覧：学校案内パンフレットに大学向けの指定校推薦一覧は無し。日本工学院八王子専門学校とのTokyo P-TECH連携協定による指定校推薦枠の記載はあるが専門学校のためdesignated_universitiesには含めていない",
+    "学級増減：都教委「第一学年生徒の募集人員等について」で本校分の学級数の変遷を確認できなかった",
+    "硬式野球部以外の23部の活動日・大会結果：学校サイトの部活動ブログ（/machidakoka-h/activities/catXXXX/）が全部空で投稿が無く、外部の公的大会結果も時間内に確認できなかったため、サッカー部・eスポーツ部以外は段階を付けていない"
+  ],
+  "conflicts": []
+}

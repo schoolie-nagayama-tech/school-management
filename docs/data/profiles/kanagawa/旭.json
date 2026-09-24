@@ -1,0 +1,530 @@
+{
+  "prefecture": "神奈川県",
+  "school_name": "旭",
+  "official_url": "https://www.pen-kanagawa.ed.jp/asahi-h/",
+  "researched_at": "2026-09-24",
+  "stats": [
+    {
+      "metric": "university_count",
+      "item": "合計",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 206,
+      "source_url": "https://www.pen-kanagawa.ed.jp/asahi-h/shinro/documents/r7_shinro.pdf",
+      "source_label": "旭高校 51期生（令和8年3月卒）進路状況（合格者および内定者延べ人数）",
+      "as_of": "2026-03",
+      "note": "四年制大学のみの計（表の「大学計」行）。短期大学・専門学校・就職は含まない。国公立・早慶上理・GMARCH等の大学群別内訳は、大学別一覧表が細かく正確な再集計に確証が持てなかったため未記載（unresolvedに記載）。"
+    },
+    {
+      "metric": "admission_route_share",
+      "item": "指定校推薦",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 53.9,
+      "source_url": "https://www.pen-kanagawa.ed.jp/asahi-h/shinro/documents/r7_shinro.pdf",
+      "source_label": "旭高校 51期生（令和8年3月卒）進路状況（合格者および内定者延べ人数）",
+      "as_of": "2026-03",
+      "note": "大学計206件のうち指定校推薦111件の割合。小数第2位を四捨五入。"
+    },
+    {
+      "metric": "admission_route_share",
+      "item": "公募推薦",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 1.5,
+      "source_url": "https://www.pen-kanagawa.ed.jp/asahi-h/shinro/documents/r7_shinro.pdf",
+      "source_label": "旭高校 51期生（令和8年3月卒）進路状況（合格者および内定者延べ人数）",
+      "as_of": "2026-03",
+      "note": "大学計206件のうち公募推薦3件の割合。小数第2位を四捨五入。"
+    },
+    {
+      "metric": "admission_route_share",
+      "item": "総合型",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 37.9,
+      "source_url": "https://www.pen-kanagawa.ed.jp/asahi-h/shinro/documents/r7_shinro.pdf",
+      "source_label": "旭高校 51期生（令和8年3月卒）進路状況（合格者および内定者延べ人数）",
+      "as_of": "2026-03",
+      "note": "大学計206件のうち総合型選抜78件の割合。小数第2位を四捨五入。"
+    },
+    {
+      "metric": "admission_route_share",
+      "item": "一般",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 6.8,
+      "source_url": "https://www.pen-kanagawa.ed.jp/asahi-h/shinro/documents/r7_shinro.pdf",
+      "source_label": "旭高校 51期生（令和8年3月卒）進路状況（合格者および内定者延べ人数）",
+      "as_of": "2026-03",
+      "note": "大学計206件のうち一般選抜14件の割合。小数第2位を四捨五入。"
+    },
+    {
+      "metric": "club_join_rate",
+      "fiscal_year": 2025,
+      "value_num": 59,
+      "source_url": "https://www.pen-kanagawa.ed.jp/asahi-h/gaiyou/documents/asahir07hyoukahoukoku.pdf",
+      "source_label": "旭高校 令和7年度学校評価報告書（目標設定・実施結果）",
+      "as_of": "2026-03-31",
+      "note": "学校自己評価「今年度の部活動加入率は59%であった。目標には及ばなかったが、昨年度よりは増加した」より。目標は70%。"
+    },
+    {
+      "metric": "uniform",
+      "fiscal_year": 2023,
+      "value_text": "冬服は男女とも濃紺の上下（女子はスラックス可）。夏服は水色チェック柄のズボン・スカート（女子はネクタイ・リボンを選択可、ズボン可）。夏季（6/1〜9/30）はYシャツ・ブラウス・ポロシャツでの略装可。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/asahi-h/seikatsu/kousoku.html",
+      "source_label": "旭高校 校則（制服）・生徒心得",
+      "as_of": "2023-04-21",
+      "note": ""
+    },
+    {
+      "metric": "rules_summary",
+      "fiscal_year": 2023,
+      "value_text": "頭髪は染髪・パーマ禁止で清潔に。オートバイ・自転車（同乗含む）通学は不可。校内での飲酒・喫煙・火気使用・無許可の物品販売を禁止。アルバイトは保護者の承諾を得て届出。スマートフォンの校内使用に関する明記はなし。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/asahi-h/seikatsu/kousoku.html",
+      "source_label": "旭高校 生徒心得",
+      "as_of": "2023-04-21",
+      "note": ""
+    }
+  ],
+  "clubs": [
+    {
+      "name": "男子サッカー部",
+      "kind": "運動",
+      "tier": 2,
+      "tier_basis": "2026年度 高円宮杯U-18サッカーリーグ神奈川 K3・Group B所属（旭高校Ａ、神奈川県サッカー協会の組み分けページで確認）。学校ページの「昨年度実績：K3残留、二次予選進出」とも整合。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/asahi-h/seikatsu/bukatsu/soccer/soccer.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "高校サッカー選手権 神奈川県大会 2次予選",
+          "level": "都県",
+          "result": "2次予選進出（部の紹介より）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/asahi-h/seikatsu/bukatsu/soccer/soccer.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "関東大会 神奈川県予選",
+          "level": "都県",
+          "result": "3回戦、光明相模原に延長の末1-2で敗退",
+          "source_url": "https://www.pen-kanagawa.ed.jp/asahi-h/seikatsu/bukatsu/soccer/soccer.html"
+        }
+      ]
+    },
+    {
+      "name": "女子サッカー部",
+      "kind": "運動",
+      "tier": 2,
+      "tier_basis": "2025年度実績：県大会ベスト8（学校ページ「昨年度実績」より）。厚木王子高校・二宮高校との合同チーム。都県大会ベスト8は1回のみ確認のため段階2。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/asahi-h/seikatsu/bukatsu/soccer/soccer.html",
+      "weekend": "土日",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "高等学校女子サッカー選手権 神奈川県予選",
+          "level": "都県",
+          "result": "県大会ベスト8（合同チーム＝旭・厚木王子・二宮、部のページ「昨年度実績」）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/asahi-h/seikatsu/bukatsu/soccer/soccer.html"
+        }
+      ]
+    },
+    {
+      "name": "硬式野球部",
+      "kind": "運動",
+      "tier": 3,
+      "tier_basis": "2024・2025年度とも春季県大会で2回戦敗退（2024:東海大相模に3-17、2025:市立橘に0-7）。夏の選手権も初戦〜浅い回戦で敗退、秋は地区予選止まり（学校ページの詳報。一球速報.comの大会別成績ページで両年度とも春季県大会・選手権神奈川大会への出場を確認）。都県大会での上位実績はない。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/asahi-h/seikatsu/bukatsu/baseball/baseball.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "全国高校野球選手権 神奈川大会",
+          "level": "都県",
+          "result": "1回戦敗退（1-8 藤沢清流）",
+          "happened_on": "2025-07-10",
+          "source_url": "https://www.pen-kanagawa.ed.jp/asahi-h/seikatsu/bukatsu/baseball/baseball.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "神奈川県高等学校野球春季県大会",
+          "level": "都県",
+          "result": "2回戦敗退（0-7 市立橘、1回戦は県商工に6-1で勝利）",
+          "happened_on": "2025-04-11",
+          "source_url": "https://www.pen-kanagawa.ed.jp/asahi-h/seikatsu/bukatsu/baseball/baseball.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "神奈川県高等学校野球秋季県大会 地区予選（横浜南・横須賀地区Jブロック）",
+          "level": "地区",
+          "result": "3戦全敗（桜丘に3-13、横浜栄に7-9、横浜創学館に0-25）で県大会に進めず",
+          "source_url": "https://www.pen-kanagawa.ed.jp/asahi-h/seikatsu/bukatsu/baseball/baseball.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "神奈川県高等学校野球春季県大会",
+          "level": "都県",
+          "result": "2回戦敗退（3-17 東海大相模、1回戦は山手学院に3-2で勝利）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/asahi-h/seikatsu/bukatsu/baseball/baseball.html"
+        }
+      ]
+    },
+    {
+      "name": "陸上競技部",
+      "kind": "運動",
+      "tier": 2,
+      "tier_basis": "2025年（令和7年度）、神奈川県選手権で3年生が3000m障害で関東選手権進出・決勝出場（8/23、9分39秒。部のページ）。関東大会出場は直近3年で1回のみ確認のため段階2。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/asahi-h/seikatsu/bukatsu/athletics/athletics.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "関東選手権（3000m障害）",
+          "level": "関東",
+          "result": "決勝進出（9分39秒、男子個人）",
+          "happened_on": "2025-08-23",
+          "source_url": "https://www.pen-kanagawa.ed.jp/asahi-h/seikatsu/bukatsu/athletics/athletics.html"
+        }
+      ]
+    },
+    {
+      "name": "ハンドボール部",
+      "kind": "運動",
+      "tier": 3,
+      "tier_basis": "2025〜2026年度、男子は関東大会県予選で初戦を突破したが2回戦で麻溝台に14-37で敗退、女子（上溝高校との合同チーム）も1回戦で敗退（部のページ）。都県大会上位の実績はない。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/asahi-h/seikatsu/bukatsu/handball/handball.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "関東大会県予選",
+          "level": "都県",
+          "result": "男子2回戦敗退（初戦は公文国際に26-24で勝利、2回戦は麻溝台に14-37で敗退）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/asahi-h/seikatsu/bukatsu/handball/handball.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "夏季大会（合同チーム）",
+          "level": "その他",
+          "result": "1回戦敗退",
+          "source_url": "https://www.pen-kanagawa.ed.jp/asahi-h/seikatsu/bukatsu/handball/handball.html"
+        }
+      ]
+    },
+    {
+      "name": "硬式テニス部",
+      "kind": "運動",
+      "tier": 3,
+      "tier_basis": "2023〜2025年度、神奈川県新人戦団体は本戦に届かず、団体戦は2回戦敗退が中心（部のページ）。都県大会上位の実績はない。「リーグ戦」（6〜8部）は学校対抗の格付けリーグで都県大会にあたらないため判定根拠にしていない。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/asahi-h/seikatsu/bukatsu/tennis/tennis.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "神奈川県団体戦",
+          "level": "都県",
+          "result": "2回戦敗退",
+          "source_url": "https://www.pen-kanagawa.ed.jp/asahi-h/seikatsu/bukatsu/tennis/tennis.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "神奈川県新人戦団体の部",
+          "level": "都県",
+          "result": "本戦に出場できず",
+          "source_url": "https://www.pen-kanagawa.ed.jp/asahi-h/seikatsu/bukatsu/tennis/tennis.html"
+        }
+      ]
+    },
+    {
+      "name": "男子バスケットボール部",
+      "kind": "運動",
+      "tier": 3,
+      "tier_basis": "2025年度、新人大会北支部予選2回戦敗退、インターハイ北支部予選2回戦敗退（vs横浜瀬谷、部のページ）で、いずれも支部予選（地区相当）止まり。都県大会上位の実績はない（3×3 U18県予選でベスト8進出の記録はあるが、通常の5人制大会とは形式が異なるため段階の根拠にしていない）。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/asahi-h/seikatsu/bukatsu/baskerball_boys/basketball_boys.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "インターハイ北支部予選",
+          "level": "地区",
+          "result": "2回戦敗退（52-78 横浜瀬谷、1回戦は横浜旭陵に117-27で勝利）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/asahi-h/seikatsu/bukatsu/baskerball_boys/basketball_boys.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "新人大会北支部予選",
+          "level": "地区",
+          "result": "2回戦敗退（vs横浜瀬谷 47-71、1回戦は神大附属に84-68で勝利）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/asahi-h/seikatsu/bukatsu/baskerball_boys/basketball_boys.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "3×3 U18日本選手権 神奈川県予選",
+          "level": "その他",
+          "result": "決勝トーナメント進出（ベスト8）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/asahi-h/seikatsu/bukatsu/baskerball_boys/basketball_boys.html"
+        }
+      ]
+    },
+    {
+      "name": "女子バスケットボール部",
+      "kind": "運動",
+      "tier": 2,
+      "tier_basis": "2025年度、関東大会県予選（4月）・インターハイ県予選（5月）でいずれも県ベスト16（部のページ）。都県大会ベスト16〜32が複数回のため段階2。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/asahi-h/seikatsu/bukatsu/basketball_girls/basketball_girls.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "インターハイ県予選",
+          "level": "都県",
+          "result": "3回戦敗退（県ベスト16、55-83 相模女子大）",
+          "happened_on": "2025-05-24",
+          "source_url": "https://www.pen-kanagawa.ed.jp/asahi-h/seikatsu/bukatsu/basketball_girls/basketball_girls.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "関東大会県予選",
+          "level": "都県",
+          "result": "2回戦敗退（県ベスト16、55-83 相模女子大）",
+          "happened_on": "2025-04-26",
+          "source_url": "https://www.pen-kanagawa.ed.jp/asahi-h/seikatsu/bukatsu/basketball_girls/basketball_girls.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "新人大会県大会",
+          "level": "都県",
+          "result": "2回戦敗退（県ベスト32、53-109 秦野総合）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/asahi-h/seikatsu/bukatsu/basketball_girls/basketball_girls.html"
+        }
+      ]
+    },
+    {
+      "name": "バレーボール部",
+      "kind": "運動",
+      "tier": 3,
+      "tier_basis": "2025〜2026年度、関東予選は地区予選を勝ち抜き県大会に出場したが初戦で敗退。春高予選は2回戦で県ベスト8校に敗退。市大会はベスト32（部のページ）。都県大会上位の実績はない。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/asahi-h/seikatsu/bukatsu/volleyball/volleyball.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "関東大会県予選",
+          "level": "都県",
+          "result": "県大会出場も初戦敗退",
+          "source_url": "https://www.pen-kanagawa.ed.jp/asahi-h/seikatsu/bukatsu/volleyball/volleyball.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "春高バレー予選",
+          "level": "地区",
+          "result": "2回戦敗退（県ベスト8校と対戦）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/asahi-h/seikatsu/bukatsu/volleyball/volleyball.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "秋季大会（市大会）",
+          "level": "地区",
+          "result": "市ベスト32、ブロック3位",
+          "source_url": "https://www.pen-kanagawa.ed.jp/asahi-h/seikatsu/bukatsu/volleyball/volleyball.html"
+        }
+      ]
+    },
+    {
+      "name": "バドミントン部",
+      "kind": "運動",
+      "days_note": "週6回（2024年7月時点の記載）",
+      "days_per_week": 6,
+      "tier": 2,
+      "tier_basis": "2024年度、関東大会予選県大会で男子学校対抗ベスト12、総体予選県大会で男子学校対抗ベスト16、男子ダブルスもベスト16（地区4位ペア）と、都県大会ベスト16以上が複数回確認できた（部のページ）。2025年度は男子ベスト32・女子ベスト64とやや下回るが、直近3年内の実績として段階2。男女で結果を分けて記録できないため部全体・主に男子の実績で判定。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/asahi-h/seikatsu/bukatsu/badminton/badminton.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "関東大会予選県大会 学校対抗",
+          "level": "都県",
+          "result": "男子ベスト12",
+          "source_url": "https://www.pen-kanagawa.ed.jp/asahi-h/seikatsu/bukatsu/badminton/badminton.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "総体予選県大会 学校対抗",
+          "level": "都県",
+          "result": "男子ベスト16",
+          "source_url": "https://www.pen-kanagawa.ed.jp/asahi-h/seikatsu/bukatsu/badminton/badminton.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "関東大会地区予選〜県大会",
+          "level": "都県",
+          "result": "男子ベスト32、女子ベスト64",
+          "source_url": "https://www.pen-kanagawa.ed.jp/asahi-h/seikatsu/bukatsu/badminton/badminton.html"
+        }
+      ]
+    },
+    {
+      "name": "柔道部",
+      "kind": "運動",
+      "days_note": "火・木",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "tier": 2,
+      "tier_basis": "2024年度、神奈川県公立高等学校柔道新人大会で女子無段の部準優勝、男女有段の部・女子無段の部で3位（部のページ）。公立校限定の大会のため段階を1段低く読み、ベスト8以上の入賞として段階2。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/asahi-h/seikatsu/bukatsu/jyudo/jyudo.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "神奈川県公立高等学校柔道新人大会",
+          "level": "都県",
+          "result": "女子無段の部準優勝、男子有段の部3位、男子無段の部2名が3位、女子有段の部3位（公立校限定大会）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/asahi-h/seikatsu/bukatsu/jyudo/jyudo.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "横浜地区高等学校柔道新人大会",
+          "level": "地区",
+          "result": "1年生男子が男子無段の部で優勝・準優勝",
+          "source_url": "https://www.pen-kanagawa.ed.jp/asahi-h/seikatsu/bukatsu/jyudo/jyudo.html"
+        }
+      ]
+    },
+    {
+      "name": "ライフル射撃部",
+      "kind": "運動",
+      "tier": 2,
+      "tier_basis": "2025年度（令和7年度）、関東高等学校ライフル射撃競技選抜大会に2年生男子が出場（部のページ）。関東大会出場は直近3年で1回のみ確認のため段階2。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/asahi-h/seikatsu/bukatsu/rifle/rifle.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "関東高等学校ライフル射撃競技選抜大会",
+          "level": "関東",
+          "result": "出場（2年生男子、初出場）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/asahi-h/seikatsu/bukatsu/rifle/rifle.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "新人大会兼関東選抜大会 神奈川県予選",
+          "level": "都県",
+          "result": "男子団体4位",
+          "source_url": "https://www.pen-kanagawa.ed.jp/asahi-h/seikatsu/bukatsu/rifle/rifle.html"
+        }
+      ]
+    },
+    {
+      "name": "ダンス部",
+      "kind": "運動",
+      "tier": 3,
+      "tier_basis": "毎年6月に神奈川県高等学校ダンスコンクールに出場しているが（部のページ）、2022〜2025年度いずれも入賞の記録はない。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/asahi-h/seikatsu/bukatsu/dance/dance.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "神奈川県高等学校ダンスコンクール",
+          "level": "都県",
+          "result": "出場（入賞の記載なし）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/asahi-h/seikatsu/bukatsu/dance/dance.html"
+        }
+      ]
+    },
+    {
+      "name": "美術部",
+      "kind": "文化",
+      "tier": 3,
+      "tier_basis": "毎年11〜12月に高校美術展へ出展している（部のページ）。入賞・代表選出の記録はない。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/asahi-h/seikatsu/bukatsu/art/art.html",
+      "as_of": "2026-09-24",
+      "results": []
+    },
+    {
+      "name": "吹奏楽部",
+      "kind": "文化",
+      "tier": 3,
+      "tier_basis": "2025年度アンサンブルコンテストで銅賞（地区大会、部のページ）。都県代表選出や金賞など上位の記録はない。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/asahi-h/seikatsu/bukatsu/brassband/brassband.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "アンサンブルコンテスト",
+          "level": "地区",
+          "result": "銅賞（金打6重奏、なぞのたからばこ）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/asahi-h/seikatsu/bukatsu/brassband/brassband.html"
+        }
+      ]
+    },
+    {
+      "name": "百人一首部",
+      "kind": "文化",
+      "days_note": "火曜日・金曜日",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日は火・金曜日の週2日（部のページ、2026年4月時点）。目立つ大会実績もない。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/asahi-h/seikatsu/bukatsu/hyakuninisshu/hyakuninisshu.html",
+      "as_of": "2026-09-24",
+      "results": []
+    },
+    {
+      "name": "軽音楽部",
+      "kind": "文化",
+      "source_url": "https://www.pen-kanagawa.ed.jp/asahi-h/seikatsu/bukatsu/lightmusic/lightmusic.html",
+      "as_of": "2026-09-24",
+      "results": []
+    },
+    {
+      "name": "華道部",
+      "kind": "文化",
+      "source_url": "https://www.pen-kanagawa.ed.jp/asahi-h/seikatsu/bukatsu/flower/flower.html",
+      "as_of": "2026-09-24",
+      "results": []
+    },
+    {
+      "name": "水泳部",
+      "kind": "運動",
+      "source_url": "https://www.pen-kanagawa.ed.jp/asahi-h/seikatsu/bukatsu/swimming/swimming.html",
+      "as_of": "2026-09-24",
+      "results": []
+    },
+    {
+      "name": "剣道部",
+      "kind": "運動",
+      "source_url": "https://www.pen-kanagawa.ed.jp/asahi-h/seikatsu/bukatsu/kendo/kendo.html",
+      "as_of": "2026-09-24",
+      "results": []
+    },
+    {
+      "name": "パソコン同好会",
+      "kind": "同好会",
+      "source_url": "https://www.pen-kanagawa.ed.jp/asahi-h/seikatsu/bukatsu/pasokondoukoukai/pasokon.html",
+      "as_of": "2026-09-24",
+      "results": []
+    }
+  ],
+  "designated_universities": [],
+  "events": [
+    {
+      "kind": "統合",
+      "period_label": "令和9年度（2027年度）",
+      "summary": "神奈川県立横浜旭陵高等学校と再編・統合し、旭高等学校敷地に新校「横浜南西地域 普通科」を設置する（学校規模960名程度・各学年320名程度・8学級規模程度の予定）。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/asahi-h/nyugaku/documents/202603settikeikaku.pdf",
+      "note": ""
+    }
+  ],
+  "unresolved": [
+    "大学合格実績の大学群別内訳（国公立・早慶上理・GMARCH・成成明武・日東駒専）：51期生進路状況PDF（r7_shinro.pdf 29ページ）の大学別一覧表が細かい文字組みで、正確な再集計に十分な確証が持てなかった。大学計206件・国公立0件（過去3年間集計表と突合して確認）のみ記載し、大学群別の内訳は見送った。要目視での再確認。",
+    "指定校推薦の大学一覧：学校案内2025annai.pdfには「主な合格実績」の一覧はあるが、「指定校」と明記された一覧は見当たらなかった（進路ページ・年間進路計画等も確認したが該当資料なし）。",
+    "推薦入試の応募倍率・受検倍率（exam_ratio）：学校ページ内に該当資料が見当たらなかった。",
+    "水泳部：直近の活動記録がほとんど無く（2025年4月分のみ）、活動日・大会実績とも確認できなかったため段階を付けなかった。",
+    "剣道部：部のページの更新が令和5年度（柔剣道場の耐震工事の話）で止まっており、活動日・大会実績が確認できなかったため段階を付けなかった。",
+    "軽音楽部・華道部・パソコン同好会：部のページに大会・コンクールの記載がなく、活動日も書かれていないため段階を付けなかった。",
+    "満足度（satisfaction）：神奈川県様式の学校評価報告書は文章のみで数値の記載がなく、手引き通り空欄とした。",
+    "学級数の増減：統合に伴う直近の募集人員の変化は、県教育委員会の募集人員発表資料を未確認。"
+  ],
+  "conflicts": []
+}

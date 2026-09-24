@@ -1,0 +1,753 @@
+{
+  "prefecture": "神奈川県",
+  "school_name": "横浜桜陽",
+  "official_url": "https://www.pen-kanagawa.ed.jp/y-oyo-h/",
+  "researched_at": "2026-09-24",
+  "stats": [
+    {
+      "metric": "university_count",
+      "item": "国公立",
+      "basis": "実進学",
+      "fiscal_year": 2024,
+      "value_num": 1,
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-oyo-h/documents/20250807113011.pdf",
+      "source_label": "横浜桜陽高等学校 学校案内パンフレット（2026年度入学者用）",
+      "as_of": "2025-08-07",
+      "note": "「2025年3月卒業生（249名）の進路状況」の四年制大学79名の内訳列挙に釧路公立大学が1校のみ記載。大学別合格者数表（令和5〜7年、shinro/sinrodaigaku.pdf）でも国公立は釧路公立大学のみで他の国公立大学の記載はない。"
+    },
+    {
+      "metric": "university_count",
+      "item": "早慶上理",
+      "basis": "実進学",
+      "fiscal_year": 2024,
+      "value_num": 0,
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-oyo-h/documents/20250807113011.pdf",
+      "source_label": "横浜桜陽高等学校 学校案内パンフレット（2026年度入学者用）",
+      "as_of": "2025-08-07",
+      "note": "学校案内パンフレットの79名内訳列挙、大学別合格者数表（令和5〜7年）のいずれにも早稲田・慶應義塾・上智・東京理科の記載がない。"
+    },
+    {
+      "metric": "university_count",
+      "item": "GMARCH",
+      "basis": "実進学",
+      "fiscal_year": 2024,
+      "value_num": 0,
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-oyo-h/documents/20250807113011.pdf",
+      "source_label": "横浜桜陽高等学校 学校案内パンフレット（2026年度入学者用）",
+      "as_of": "2025-08-07",
+      "note": "同上。学習院・明治・青山学院・立教・中央・法政のいずれも記載がない。"
+    },
+    {
+      "metric": "university_count",
+      "item": "合計",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 73,
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-oyo-h/shinro/documents/sinromatome.pdf",
+      "source_label": "横浜桜陽高等学校 卒業生の進路状況（令和7年度卒業生・第23回卒業生）",
+      "as_of": "2026-03-31",
+      "note": "4年制大学の実進学者数。指定校推薦39＋公募制推薦1＋総合型選抜24＋一般選抜9＝73（進路決定方法による人数の表）。"
+    },
+    {
+      "metric": "admission_route_share",
+      "item": "一般",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 12.3,
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-oyo-h/shinro/documents/sinromatome.pdf",
+      "source_label": "横浜桜陽高等学校 卒業生の進路状況（令和7年度卒業生・第23回卒業生）",
+      "as_of": "2026-03-31",
+      "note": "4年制大学の実進学者73名中9名（一般選抜）。"
+    },
+    {
+      "metric": "admission_route_share",
+      "item": "指定校推薦",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 53.4,
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-oyo-h/shinro/documents/sinromatome.pdf",
+      "source_label": "横浜桜陽高等学校 卒業生の進路状況（令和7年度卒業生・第23回卒業生）",
+      "as_of": "2026-03-31",
+      "note": "実進学73名中39名。"
+    },
+    {
+      "metric": "admission_route_share",
+      "item": "公募推薦",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 1.4,
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-oyo-h/shinro/documents/sinromatome.pdf",
+      "source_label": "横浜桜陽高等学校 卒業生の進路状況（令和7年度卒業生・第23回卒業生）",
+      "as_of": "2026-03-31",
+      "note": "実進学73名中1名（公募制推薦入試）。"
+    },
+    {
+      "metric": "admission_route_share",
+      "item": "総合型",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 32.9,
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-oyo-h/shinro/documents/sinromatome.pdf",
+      "source_label": "横浜桜陽高等学校 卒業生の進路状況（令和7年度卒業生・第23回卒業生）",
+      "as_of": "2026-03-31",
+      "note": "実進学73名中24名（総合型選抜・AO入試）。"
+    },
+    {
+      "metric": "career_decided_rate",
+      "item": "",
+      "basis": "",
+      "fiscal_year": 2025,
+      "value_num": 91.6,
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-oyo-h/shinro/documents/sinromatome.pdf",
+      "source_label": "横浜桜陽高等学校 卒業生の進路状況（令和7年度卒業生・第23回卒業生）",
+      "as_of": "2026-03-31",
+      "note": "卒業生226名のうち、進学（大学73＋短大5＋専門学校等88＝166）と就職（民間32＋公務員等9＝41）の計207名／226名＝91.6%。進学準備12名・アルバイト等7名は含めていない。"
+    },
+    {
+      "metric": "uniform",
+      "item": "",
+      "basis": "",
+      "fiscal_year": 2025,
+      "value_text": "私服登校可（標準服の着用は任意）。卒業生の声：「私服登校・髪染めが可能」「制服やスーツで過ごしている人もいる」",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-oyo-h/documents/20250807113011.pdf",
+      "source_label": "横浜桜陽高等学校 学校案内パンフレット（2026年度入学者用・卒業生からのメッセージ）",
+      "as_of": "2025-08-07",
+      "note": "生徒心得等、制服の規定を明文化した公式PDFは見当たらず、卒業生の証言に基づく。"
+    },
+    {
+      "metric": "rules_summary",
+      "item": "",
+      "basis": "",
+      "fiscal_year": 2025,
+      "value_text": "頭髪の染色や私服登校が認められているなど自由度が高いと卒業生が説明。スマートフォン・アルバイトの規定は公式資料に見当たらない。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-oyo-h/documents/20250807113011.pdf",
+      "source_label": "横浜桜陽高等学校 学校案内パンフレット（2026年度入学者用・卒業生からのメッセージ）",
+      "as_of": "2025-08-07",
+      "note": "生徒心得の公式PDFが公開ページから見つからなかったため、卒業生の証言のみに基づく（unresolved参照）。"
+    }
+  ],
+  "clubs": [
+    {
+      "name": "弓道部",
+      "kind": "運動",
+      "days_note": "火・水・木・金・土",
+      "days_per_week": 5,
+      "weekend": "土",
+      "tier": 2,
+      "tier_basis": "2024年度（令和6年度）、神奈川大会個人予選で女子準優勝となり第43回関東個人選手権大会に出場（2024年9月15日、明治神宮至誠館第二道場）。関東大会出場が1回のため段階2とした。2025年度の神奈川大会団体（全国・関東選抜大会県予選会）での女子決勝進出は好成績だが、順位がベスト8相当と確実には言えないため、段階1への格上げ根拠にはしなかった（部活動個別ページ・学校案内パンフレットとも同一年度の実績を記載し整合）。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-oyo-h/gakkouseikatu/kyudo.html",
+      "as_of": "2026-02-10",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "神奈川大会個人兼関東個人選手権大会県予選会",
+          "level": "都県",
+          "result": "女子個人準優勝→第43回関東個人選手権大会出場",
+          "happened_on": "2024-09-15",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-oyo-h/gakkouseikatu/kyudo.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "神奈川大会団体兼全国・関東選抜大会県予選会",
+          "level": "都県",
+          "result": "女子団体決勝進出",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-oyo-h/gakkouseikatu/kyudo.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第62回神奈川県総合体育大会兼全国総体県予選会",
+          "level": "都県",
+          "result": "個人2回戦進出（男女各1名）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-oyo-h/gakkouseikatu/kyudo.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "神奈川大会個人兼関東個人大会県予選会",
+          "level": "都県",
+          "result": "女子個人3回戦進出（2名）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-oyo-h/gakkouseikatu/kyudo.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第40回戸塚区民大会",
+          "level": "その他",
+          "result": "中学・高校生の部で優勝・準優勝・第3位入賞（大西いつき・牛頭陽菜・喜屋武璃音）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-oyo-h/gakkouseikatu/kyudo.html"
+        }
+      ]
+    },
+    {
+      "name": "バドミントン部",
+      "kind": "運動",
+      "days_note": "月・火・水・木・土（月火木2.5時間、水1〜2時間、土4時間）",
+      "days_per_week": 5,
+      "weekend": "土",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-oyo-h/seitokai/documents/bukatsu2026.pdf",
+      "as_of": "2026-08-03",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "横浜地区高体連冬季大会",
+          "level": "地区",
+          "result": "女子ダブルスブロック3位",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-oyo-h/documents/20250807113011.pdf"
+        }
+      ]
+    },
+    {
+      "name": "男子バスケットボール部",
+      "kind": "運動",
+      "days_note": "火・水（トレーニング）・木・金・日",
+      "days_per_week": 5,
+      "weekend": "日",
+      "tier": 3,
+      "tier_basis": "2023年度（前年度）は地区（南支部）予選1回戦勝利にとどまる。学校案内パンフレットは2024年度に「インターハイ選出」と記載するが、部活動個別ページに同年度の対応する実績記載がなく内容を確認できないため（conflicts参照）、確認できる地区予選の実績を基準に段階3とした。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-oyo-h/gakkouseikatu/basuketball.html",
+      "as_of": "2024-08-01",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "高校総体南支部予選",
+          "level": "地区",
+          "result": "1回戦勝利",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-oyo-h/gakkouseikatu/basuketball.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "インターハイ（全国高校総体）神奈川県予選",
+          "level": "都県",
+          "result": "「インターハイ選出」と学校案内パンフレットに記載（部個別ページに同年度の対応する記載なし。conflicts参照）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-oyo-h/documents/20250807113011.pdf"
+        }
+      ]
+    },
+    {
+      "name": "女子バスケットボール部",
+      "kind": "運動",
+      "days_note": "火・木・金・日",
+      "days_per_week": 4,
+      "weekend": "日",
+      "tier": 3,
+      "tier_basis": "2023年度（前年度）は地区（南支部）予選に出場したのみで勝敗の記載がない。都県大会に届く実績は確認できないが、大会に出場しているため段階3とした。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-oyo-h/gakkouseikatu/jyobasuketball.html",
+      "as_of": "2024-08-01",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "高校総体南支部予選",
+          "level": "地区",
+          "result": "出場",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-oyo-h/gakkouseikatu/jyobasuketball.html"
+        }
+      ]
+    },
+    {
+      "name": "男子バレーボール部",
+      "kind": "運動",
+      "days_note": "月・水・金・土",
+      "days_per_week": 4,
+      "weekend": "土",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-oyo-h/seitokai/documents/bukatsu2026.pdf",
+      "as_of": "2026-08-03",
+      "results": []
+    },
+    {
+      "name": "女子バレーボール部",
+      "kind": "運動",
+      "days_note": "水・金・土（日曜も活動する場合あり）",
+      "days_per_week": 3,
+      "weekend": "土",
+      "tier": 4,
+      "tier_basis": "活動日が週3日（水・金・土、日曜も活動する場合あり）で、前年度・過去とも大会実績が「特になし」（部活動個別ページ）。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-oyo-h/gakkouseikatu/jyobare.html",
+      "as_of": "2024-08-01",
+      "results": []
+    },
+    {
+      "name": "ソフトテニス部",
+      "kind": "運動",
+      "days_note": "火・水・金・土",
+      "days_per_week": 4,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "2024年度インターハイ県予選で個人ベスト32が1回確認できる（学校案内パンフレット）。ベスト16〜32が複数回には届かないため段階3。2026部活動紹介パンフレットが挙げる「県ベスト16、市大会ベスト16、ダンロップ杯リーグ優勝」は年度が書かれておらず根拠にしていない（unresolved参照）。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-oyo-h/documents/20250807113011.pdf",
+      "as_of": "2025-08-07",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "インターハイ（全国高校総体）神奈川県予選",
+          "level": "都県",
+          "result": "個人ベスト32",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-oyo-h/documents/20250807113011.pdf"
+        }
+      ]
+    },
+    {
+      "name": "テニス部",
+      "kind": "運動",
+      "days_note": "火・木・土",
+      "days_per_week": 3,
+      "weekend": "土",
+      "tier": 4,
+      "tier_basis": "活動日が週3日（火・木・土）で、部活動紹介パンフレットに大会名や実績の記載がなく（練習内容の説明のみ）、実績が確認できない。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-oyo-h/seitokai/documents/bukatsu2026.pdf",
+      "as_of": "2026-08-03",
+      "results": []
+    },
+    {
+      "name": "硬式野球部",
+      "kind": "運動",
+      "days_note": "火・水・木・金・土・日",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2023〜2026年の夏（選手権）はいずれも1〜2回戦で敗退（2024年度のみ1回戦に勝利し2回戦で東海大相模に0-14で敗退）。秋季県大会も2023年度2回戦敗退・2024年度1回戦敗退。ベスト16〜32相当の実績は確認できず段階3（一球速報）。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-oyo-h/seitokai/documents/bukatsu2026.pdf",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "第108回全国高等学校野球選手権神奈川大会",
+          "level": "都県",
+          "result": "1回戦敗退（相模原に0-10）",
+          "happened_on": "2026-07-07",
+          "source_url": "https://baseball.omyutech.com/CupHomePageTeamSchedule.action?teamId=12292&cupId=20260013579"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第107回全国高等学校野球選手権神奈川大会",
+          "level": "都県",
+          "result": "1回戦敗退（住吉に1-6）",
+          "happened_on": "2025-07-10",
+          "source_url": "https://baseball.omyutech.com/CupHomePageTeamSchedule.action?teamId=12292&cupId=20250000302"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "令和6年度神奈川県高等学校野球秋季県大会",
+          "level": "都県",
+          "result": "1回戦敗退（金沢総合に2-3）",
+          "happened_on": "2024-09-07",
+          "source_url": "https://baseball.omyutech.com/CupHomePageTeamSchedule.action?teamId=12292&cupId=20240012872"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "第106回全国高等学校野球選手権神奈川大会",
+          "level": "都県",
+          "result": "1勝1敗、2回戦敗退（1回戦は横浜学園に15-1で勝利、2回戦は東海大相模に0-14）",
+          "happened_on": "2024-07-10",
+          "source_url": "https://baseball.omyutech.com/CupHomePageTeamSchedule.action?teamId=12292&cupId=20240009752"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "令和5年度神奈川県高等学校野球秋季県大会",
+          "level": "都県",
+          "result": "2回戦敗退（横浜南陵に6-7）",
+          "happened_on": "2023-09-10",
+          "source_url": "https://baseball.omyutech.com/CupHomePageTeamSchedule.action?teamId=12292&cupId=20230007306"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "第105回全国高等学校野球選手権記念神奈川大会",
+          "level": "都県",
+          "result": "1回戦敗退（平塚江南に1-10）",
+          "happened_on": "2023-07-09",
+          "source_url": "https://baseball.omyutech.com/CupHomePageTeamSchedule.action?teamId=12292&cupId=20230006682"
+        }
+      ]
+    },
+    {
+      "name": "サッカー部",
+      "kind": "運動",
+      "days_note": "火・木（部活動個別ページは「火・木・金」の週3回とし食い違う。conflicts参照）",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "2026年度 高円宮杯JFA U-18サッカーリーグ神奈川 K6グループFに所属（永谷・横浜緑園・横浜桜陽・横浜明朋の合同チーム）。K5・K6所属かつ活動日が週3日以下（週2〜3日）のため段階4（サッカー部のリーグ判定ルール）。",
+      "source_url": "https://www.kanagawa-fa.gr.jp/cms/u18-league/2026/div6/",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "高円宮杯JFA U-18サッカーリーグ神奈川",
+          "level": "都県",
+          "result": "K6グループF所属（永谷・横浜緑園・横浜桜陽・横浜明朋の合同チーム）",
+          "source_url": "https://www.kanagawa-fa.gr.jp/cms/u18-league/2026/div6/"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "横浜地区予選（全国高等学校サッカー選手権大会神奈川県予選）",
+          "level": "地区",
+          "result": "準優勝（合同チームでの参加）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-oyo-h/gakkouseikatu/soccer.html"
+        }
+      ]
+    },
+    {
+      "name": "陸上競技部",
+      "kind": "運動",
+      "days_note": "月・水・金（試合は土日）",
+      "days_per_week": 3,
+      "weekend": "試合のみ",
+      "tier": 4,
+      "tier_basis": "活動日が週3日（月・水・金、試合は土日）で、部活動紹介パンフレットに大会名や順位の記載がない（練習内容の説明のみ）。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-oyo-h/seitokai/documents/bukatsu2026.pdf",
+      "as_of": "2026-08-03",
+      "results": []
+    },
+    {
+      "name": "剣道部",
+      "kind": "運動",
+      "days_note": "火・水・金",
+      "days_per_week": 3,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日が週3日（火・水・金）で、部活動個別ページの前年度・過去の実績はいずれも「特になし」。学校案内パンフレットも令和6年度「全国高等学校総合体育大会神奈川県予選会出場」と出場のみで順位の記載はない。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-oyo-h/gakkouseikatu/kendo.html",
+      "as_of": "2024-08-01",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "全国高等学校総合体育大会神奈川県予選会",
+          "level": "都県",
+          "result": "出場（順位の記載なし）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-oyo-h/documents/20250807113011.pdf"
+        }
+      ]
+    },
+    {
+      "name": "柔道部",
+      "kind": "運動",
+      "days_note": "生徒に合わせます（週1回〜、要相談）",
+      "tier": 4,
+      "tier_basis": "活動日は「生徒に合わせます（週1回〜）」で、実績の記載もない。ただし説明文が剣道部の紹介文と一字一句同一で、部員数も25期0名・24期0名のままのため、パンフレット上のテンプレートが未更新の可能性がある（unresolved参照）。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-oyo-h/seitokai/documents/bukatsu2026.pdf",
+      "as_of": "2026-08-03",
+      "results": []
+    },
+    {
+      "name": "ダンス部",
+      "kind": "運動",
+      "days_note": "月・水・金・土",
+      "days_per_week": 4,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "2024年度、県新人大会テーマ部門で個人9位。都県大会ベスト8以内には届かないため段階3。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-oyo-h/gakkouseikatu/dance.html",
+      "as_of": "2025-04-01",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "第32回神奈川県高等学校ダンス新人大会",
+          "level": "都県",
+          "result": "〔テーマ部門〕個人参加9位",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-oyo-h/gakkouseikatu/dance.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "フリーバイブダンスコンテスト",
+          "level": "その他",
+          "result": "出場（民間主催、順位の記載なし）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-oyo-h/gakkouseikatu/dance.html"
+        }
+      ]
+    },
+    {
+      "name": "ウェイトトレーニング部",
+      "kind": "運動",
+      "days_note": "火・木",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日が週2日（火・木）で、フリーウエイト・マシントレーニングが中心。大会等の実績記載はない。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-oyo-h/seitokai/documents/bukatsu2026.pdf",
+      "as_of": "2026-08-03",
+      "results": []
+    },
+    {
+      "name": "軽音楽部",
+      "kind": "文化",
+      "days_note": "月・水・金",
+      "days_per_week": 3,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日が週3日（月・水・金）で、実績は「校内ライブのみ」（部活動個別ページ）。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-oyo-h/gakkouseikatu/keionbu.html",
+      "as_of": "2024-08-01",
+      "results": []
+    },
+    {
+      "name": "パソコン部",
+      "kind": "文化",
+      "days_note": "火・木",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日が週2日（火・木）で、資格取得やタイピング練習が中心。大会・コンクールの実績記載はない。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-oyo-h/seitokai/documents/bukatsu2026.pdf",
+      "as_of": "2026-08-03",
+      "results": []
+    },
+    {
+      "name": "書道部",
+      "kind": "文化",
+      "days_note": "火・水（部活動個別ページは「月・水・金」の週3回とし食い違う。conflicts参照）",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "tier": 2,
+      "tier_basis": "2023年度（令和5年度）、神奈川県高等学校総合文化祭書道展で個人の特選を受賞（高文連主催）。都県最上位の賞にあたるため段階2。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-oyo-h/gakkouseikatu/syodo.html",
+      "as_of": "2024-08-01",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "神奈川県高等学校総合文化祭 高等学校書道展",
+          "level": "都県",
+          "result": "特選受賞",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-oyo-h/gakkouseikatu/syodo.html"
+        }
+      ]
+    },
+    {
+      "name": "総合型探究同好会",
+      "kind": "同好会",
+      "days_note": "火",
+      "days_per_week": 1,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日が週1日（火）で、ビジネスアイデアのプレゼン等が中心。大会・コンクールの実績記載はない。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-oyo-h/seitokai/documents/bukatsu2026.pdf",
+      "as_of": "2026-08-03",
+      "results": []
+    },
+    {
+      "name": "合唱部",
+      "kind": "文化",
+      "days_note": "月・木",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日が週2日（月・木）で、前年度・過去の実績はいずれも「特になし」（部活動個別ページ）。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-oyo-h/gakkouseikatu/gassyou.html",
+      "as_of": "2024-08-01",
+      "results": []
+    },
+    {
+      "name": "演劇部",
+      "kind": "文化",
+      "days_note": "火・木・金・(土)",
+      "days_per_week": 3.5,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "2023・2024年度とも横浜市（地区）大会の受賞にとどまり、都県大会での成績は確認できない（2018・2019年度の県大会出場は直近3年より古いため根拠にしていない）。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-oyo-h/gakkouseikatu/engeiki.html",
+      "as_of": "2024-08-01",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "横浜市高等学校演劇発表会",
+          "level": "地区",
+          "result": "審査員特別賞",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-oyo-h/gakkouseikatu/engeiki.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "第61回横浜市高等学校演劇発表会地区大会",
+          "level": "地区",
+          "result": "優秀賞",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-oyo-h/documents/20250807113011.pdf"
+        }
+      ]
+    },
+    {
+      "name": "漫画研究部",
+      "kind": "文化",
+      "days_note": "火",
+      "days_per_week": 1,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日が週1日（火）で、文化祭での部誌作成が中心。コンクール等の実績記載はない。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-oyo-h/seitokai/documents/bukatsu2026.pdf",
+      "as_of": "2026-08-03",
+      "results": []
+    },
+    {
+      "name": "文芸創作部",
+      "kind": "文化",
+      "days_note": "水",
+      "days_per_week": 1,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日が週1日（水）で、部誌執筆や講演会が中心。コンクール等の実績記載はない。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-oyo-h/seitokai/documents/bukatsu2026.pdf",
+      "as_of": "2026-08-03",
+      "results": []
+    },
+    {
+      "name": "吹奏楽部",
+      "kind": "文化",
+      "days_note": "月・水・金",
+      "days_per_week": 3,
+      "weekend": "なし",
+      "tier": 3,
+      "tier_basis": "2023年度（「昨年」、部活動紹介2ページ更新2024-04-10時点）に横浜吹奏楽コンクール（地区）で銀賞、高文連連盟賞を受賞。地区大会の受賞にとどまるため段階3。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-oyo-h/gakkouseikatu/suisougaku.html",
+      "as_of": "2024-08-01",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "横浜吹奏楽コンクール",
+          "level": "地区",
+          "result": "銀賞",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-oyo-h/gakkouseikatu/bukatudou2.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "高等学校吹奏楽祭",
+          "level": "都県",
+          "result": "高文連連盟賞受賞",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-oyo-h/gakkouseikatu/bukatudou2.html"
+        }
+      ]
+    },
+    {
+      "name": "美術部",
+      "kind": "文化",
+      "days_note": "月・火・木",
+      "days_per_week": 3,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日が週3日（月・火・木）で、神奈川県高等学校美術展等への出品はあるが受賞の記載はない。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-oyo-h/seitokai/documents/bukatsu2026.pdf",
+      "as_of": "2026-08-03",
+      "results": []
+    },
+    {
+      "name": "茶道部",
+      "kind": "文化",
+      "days_note": "隔週木曜日（月2回程度）",
+      "days_per_week": 0.5,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日が隔週木曜（週0.5日相当）で、活動内容は文化祭参加のみ。コンクール等の実績記載はない。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-oyo-h/gakkouseikatu/kado.html",
+      "as_of": "2024-08-01",
+      "results": []
+    },
+    {
+      "name": "華道部",
+      "kind": "文化",
+      "days_note": "木",
+      "days_per_week": 1,
+      "weekend": "なし",
+      "tier": 3,
+      "tier_basis": "2023年度、流派（小原流）主催のいけばな競技会で団体ベスト18・個人1名入賞。流派・民間主催の大会のため全国決勝出場等がなければ段階2までで、都県代表選出や金賞等の最上位の賞にはあたらないため段階3とした。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-oyo-h/gakkouseikatu/kado.html",
+      "as_of": "2024-08-01",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "神奈川県小原流いけばな競技会",
+          "level": "都県",
+          "result": "団体の部でベスト18、個人1名入賞",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-oyo-h/gakkouseikatu/kado.html"
+        }
+      ]
+    },
+    {
+      "name": "写真部",
+      "kind": "文化",
+      "days_note": "月・金（月1回、土日に撮影会）",
+      "days_per_week": 2,
+      "tier": 3,
+      "tier_basis": "読売新聞社主催の全国コンテストで入選（民間主催）。入選は上位入賞ではなく、全国決勝2回以上の実績もないため段階3とした（回次の表記はconflicts参照）。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-oyo-h/gakkouseikatu/syashin.html",
+      "as_of": "2024-08-01",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "よみうり写真大賞",
+          "level": "全国",
+          "result": "マイベストフォト部門 第一期入選",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-oyo-h/gakkouseikatu/syashin.html"
+        }
+      ]
+    },
+    {
+      "name": "放送部",
+      "kind": "文化",
+      "days_note": "木（昼休み）",
+      "days_per_week": 1,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日が週1日（木、昼休み）で、校内放送や行事運営が中心。コンクール等の実績記載はない。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-oyo-h/seitokai/documents/bukatsu2026.pdf",
+      "as_of": "2026-08-03",
+      "results": []
+    },
+    {
+      "name": "競技かるた部",
+      "kind": "文化",
+      "days_note": "月・水",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日が週2日（月・水）で、現在部員1名（3年生）のため今年度は大会出場予定なし。大会実績の記載もない。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-oyo-h/seitokai/documents/bukatsu2026.pdf",
+      "as_of": "2026-08-03",
+      "results": []
+    },
+    {
+      "name": "テーブルゲーム部",
+      "kind": "文化",
+      "days_note": "木",
+      "days_per_week": 1,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日が週1日（木）で、内容はテーブルゲームで遊ぶことが中心。コンクール等の実績記載はない。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-oyo-h/seitokai/documents/bukatsu2026.pdf",
+      "as_of": "2026-08-03",
+      "results": []
+    },
+    {
+      "name": "青少年赤十字部",
+      "kind": "文化",
+      "days_note": "未定（週1回か2回）",
+      "days_per_week": 1.5,
+      "tier": 4,
+      "tier_basis": "活動日が週1〜2回（未定）で、コンタクトレンズケース回収や募金活動が中心。大会・コンクールの実績記載はない。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-oyo-h/seitokai/documents/bukatsu2026.pdf",
+      "as_of": "2026-08-03",
+      "results": []
+    }
+  ],
+  "designated_universities": [],
+  "events": [
+    {
+      "kind": "その他",
+      "period_label": "2026年2月",
+      "happened_on": "2026-02-18",
+      "summary": "フェリス女学院大学と高大連携協定を締結した（講義聴講・図書館等の施設利用体験・特別講義の実施など）。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-oyo-h/koudai/ferisujyogakuinn.html"
+    }
+  ],
+  "unresolved": [
+    "推薦の倍率（exam_ratio）：神奈川県公立高校入試は共通選抜のみで、東京都のような別立ての推薦選抜がないため対象データなし。",
+    "部活動加入率（club_join_rate）：公式資料に記載が見当たらない。",
+    "男女別在校生数（students）：公式に公表している資料が見当たらない。",
+    "成成明武・日東駒専の直近年度（令和7年＝fiscal2024）の合格者数：大学別合格者数表（令和5〜7年、指定校/公募/総合型/一般×3年分がPDFの同一行に詰まっている）は年度・区分の列位置を確実に判別できず、日本大学・駒澤大学・専修大学・明治学院大学等の単年度の数値は採用しなかった（明治学院大学「文学部1」は3年間で唯一の記載のため成成明武の年度も特定できない）。",
+    "指定校推薦の大学名：学校案内パンフレット・進路状況PDFのいずれにも指定校の大学名一覧は掲載がなく、「指定校推薦39名」という人数のみで内訳が分からない。",
+    "ソフトテニス部の2026部活動紹介パンフレット記載「県ベスト16、市大会ベスト16、ダンロップ杯リーグ優勝」の年度：記載がなく、学校案内パンフレットに載る令和6年度「インターハイ県予選個人ベスト32」以外は特定できなかった。",
+    "バドミントン部の「冬季大会準々決勝進出」（2026部活動紹介パンフレット）：大会名・年度の記載がなく根拠にできなかった。",
+    "柔道部の活動実態：部活動紹介パンフレット内の紹介文・「こんな人を募集しています」が剣道部と一字一句同一で、部員数も25期0名・24期0名のままのため、テンプレートが未更新の可能性がある。個別の公式ページも見当たらない。",
+    "制服・校則の詳細（頭髪・スマートフォン・アルバイト等の規定）：生徒心得等の公式PDFが公開ページから見つからず、卒業生の証言（学校案内パンフレット）による「私服登校可」「頭髪染色可」の言及にとどまる。",
+    "改築・学級増減・学科改編等の学校の変化：2020年以降で確認できたのはフェリス女学院大学との高大連携協定（2026年2月）のみ。校舎改修や学級数変更の公式発表は見当たらなかった。"
+  ],
+  "conflicts": [
+    "男子バスケットボール部の実績：学校案内パンフレット（2026年度入学者用）は「令和6年度 インターハイ選出」と記載するが、部活動個別ページ（basuketball.html、更新2024-08-01）には同年度に対応する実績として「高校総体南支部予選１回戦勝利」のみが記載され、インターハイ選出や県大会上位進出の記載がない。",
+    "写真部の受賞歴：部活動個別ページ（syashin.html）は「よみうり写真大賞マイベストフォト部門2024年第一期入選」とするが、学校案内パンフレットは「マイベストフォト部門第2期入選」とし、回次（第一期／第2期）の表記が食い違う。",
+    "サッカー部の活動日：部活動個別ページ（soccer.html、更新2024-08-21）は「週3回、火・木・金」とするが、2026部活動紹介パンフレット（更新2026-08-03）は「火・木」の週2回とする。",
+    "書道部の活動日：部活動個別ページ（syodo.html）は「月・水・金曜日」とするが、2026部活動紹介パンフレットは「火・水」とする。",
+    "バドミントン部の活動日：2026部活動紹介パンフレットは「月・火・水・木・土」（週5）とするが、学校案内パンフレットは「月・火・木・金」（週4）とする。"
+  ]
+}

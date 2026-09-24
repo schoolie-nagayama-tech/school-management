@@ -86,6 +86,10 @@ function validate(p) {
       `${at}: 合格実績に basis（延べ/現役/実進学）が無い`
     );
     need(!s.sex || ['male', 'female'].includes(s.sex), `${at}: sex が不正`);
+    need(
+      s.grade == null || [1, 2, 3, 4].includes(s.grade),
+      `${at}: grade は数字の1〜4（「1年」のような文字は不可）`
+    );
     need(!s.as_of || DATE.test(s.as_of), `${at}: as_of が日付でない`);
   });
   (p.clubs ?? []).forEach((c, i) => {
@@ -135,6 +139,16 @@ function validate(p) {
 function normalizeDates(p) {
   const w = [];
   const month = /^(\d{4})-(\d{2})$/;
+  // ★空文字の日付は「無し」として扱う。DBの date 型は空文字を弾く（町田総合で止まった）
+  const blank = (o, k) => {
+    if (o[k] === '') delete o[k];
+  };
+  for (const s of p.stats ?? []) blank(s, 'as_of');
+  for (const c of p.clubs ?? []) {
+    blank(c, 'as_of');
+    for (const r of c.results ?? []) blank(r, 'happened_on');
+  }
+  for (const v of p.events ?? []) blank(v, 'happened_on');
   for (const s of p.stats ?? []) if (month.test(s.as_of ?? '')) s.as_of = `${s.as_of}-01`;
   for (const c of p.clubs ?? []) {
     if (month.test(c.as_of ?? '')) c.as_of = `${c.as_of}-01`;

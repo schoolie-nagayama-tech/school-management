@@ -1,0 +1,583 @@
+{
+  "prefecture": "神奈川県",
+  "school_name": "保土ケ谷",
+  "official_url": "https://www.pen-kanagawa.ed.jp/hodogaya-h/",
+  "researched_at": "2026-09-24",
+  "stats": [
+    {
+      "metric": "university_count",
+      "item": "国公立",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 0,
+      "source_url": "https://www.pen-kanagawa.ed.jp/hodogaya-h/shinro/documents/45deta1.pdf",
+      "source_label": "保土ケ谷高等学校 令和8年3月卒業（45期生）進路先一覧＿大学",
+      "as_of": "2026-06-10",
+      "note": "大学別合格状況一覧（延べ人数、大学名あ〜わ順に全件掲載）に国公立大学の合格者は1件もない。過去３年実績表（45deta3.pdf）の大学別集計でも同様。"
+    },
+    {
+      "metric": "university_count",
+      "item": "早慶上理",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 0,
+      "source_url": "https://www.pen-kanagawa.ed.jp/hodogaya-h/shinro/documents/45deta1.pdf",
+      "source_label": "保土ケ谷高等学校 令和8年3月卒業（45期生）進路先一覧＿大学",
+      "as_of": "2026-06-10",
+      "note": "早稲田・慶應・上智・東京理科のいずれも大学別合格状況一覧に記載なし。"
+    },
+    {
+      "metric": "university_count",
+      "item": "GMARCH",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 0,
+      "source_url": "https://www.pen-kanagawa.ed.jp/hodogaya-h/shinro/documents/45deta3.pdf",
+      "source_label": "保土ケ谷高等学校 令和8年3月卒業（45期生）進路先一覧＿過去３年実績",
+      "as_of": "2026-06-10",
+      "note": "学習院・明治・青山学院・立教・中央のいずれも過去３年（43〜45期）で合格実績なし。法政大学のみ43期（2023年3月卒業）に1名の実績があるが44・45期は0。"
+    },
+    {
+      "metric": "university_count",
+      "item": "成成明武",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 1,
+      "source_url": "https://www.pen-kanagawa.ed.jp/hodogaya-h/shinro/documents/45deta1.pdf",
+      "source_label": "保土ケ谷高等学校 令和8年3月卒業（45期生）進路先一覧＿大学",
+      "as_of": "2026-06-10",
+      "note": "成城大学（文芸学部英文学科、一般受験）1名のみ。成蹊・明治学院・武蔵は0。"
+    },
+    {
+      "metric": "university_count",
+      "item": "日東駒専",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 1,
+      "source_url": "https://www.pen-kanagawa.ed.jp/hodogaya-h/shinro/documents/45deta1.pdf",
+      "source_label": "保土ケ谷高等学校 令和8年3月卒業（45期生）進路先一覧＿大学",
+      "as_of": "2026-06-10",
+      "note": "日本大学（スポーツ科学部競技スポーツ学科、公募制）1名のみ。東洋・駒澤・専修は0。"
+    },
+    {
+      "metric": "university_count",
+      "item": "合計",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 105,
+      "source_url": "https://www.pen-kanagawa.ed.jp/hodogaya-h/shinro/documents/45deta1.pdf",
+      "source_label": "保土ケ谷高等学校 令和8年3月卒業（45期生）進路先一覧＿大学",
+      "as_of": "2026-06-10",
+      "note": "大学（4年制）延べ合格者数の計。学校集計（過去３年実績表）の45期計も同じく105で一致。内訳は指定校制60・公募制3・総合型30・一般受験12。実際に大学へ進学した実人数は99名（男71・女28、進路先一覧の集計表）。"
+    },
+    {
+      "metric": "university_count",
+      "item": "関東学院大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 23,
+      "source_url": "https://www.pen-kanagawa.ed.jp/hodogaya-h/shinro/documents/45deta1.pdf",
+      "source_label": "保土ケ谷高等学校 令和8年3月卒業（45期生）進路先一覧＿大学",
+      "as_of": "2026-06-10",
+      "note": "45期で最多の合格大学。過去３年実績表でも43期23・44期24・45期23と毎年20名超で推移。"
+    },
+    {
+      "metric": "university_count",
+      "item": "神奈川大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 14,
+      "source_url": "https://www.pen-kanagawa.ed.jp/hodogaya-h/shinro/documents/45deta1.pdf",
+      "source_label": "保土ケ谷高等学校 令和8年3月卒業（45期生）進路先一覧＿大学",
+      "as_of": "2026-06-10",
+      "note": ""
+    },
+    {
+      "metric": "university_count",
+      "item": "和光大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 9,
+      "source_url": "https://www.pen-kanagawa.ed.jp/hodogaya-h/shinro/documents/45deta1.pdf",
+      "source_label": "保土ケ谷高等学校 令和8年3月卒業（45期生）進路先一覧＿大学",
+      "as_of": "2026-06-10",
+      "note": "過去３年実績表では43期15・44期4・45期9と年度で変動が大きい。"
+    },
+    {
+      "metric": "university_count",
+      "item": "横浜商科大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 8,
+      "source_url": "https://www.pen-kanagawa.ed.jp/hodogaya-h/shinro/documents/45deta1.pdf",
+      "source_label": "保土ケ谷高等学校 令和8年3月卒業（45期生）進路先一覧＿大学",
+      "as_of": "2026-06-10",
+      "note": ""
+    },
+    {
+      "metric": "university_count",
+      "item": "鶴見大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 3,
+      "source_url": "https://www.pen-kanagawa.ed.jp/hodogaya-h/shinro/documents/45deta3.pdf",
+      "source_label": "保土ケ谷高等学校 令和8年3月卒業（45期生）進路先一覧＿過去３年実績",
+      "as_of": "2026-06-10",
+      "note": "過去３年実績表（学校集計）の45期の数値を採用。大学別内訳表（45deta1.pdf）を学部単位で合算すると5（文学部日本文学科3・経済学部経営学科1・文学部日本文化学科1）となり、学校集計の3と食い違う（conflicts参照）。"
+    },
+    {
+      "metric": "designation",
+      "item": "インクルーシブ教育実践推進校",
+      "basis": "",
+      "fiscal_year": 2025,
+      "value_text": "県教育委員会指定。令和8年度でインクルーシブ教育実践推進校3年目を迎えており、令和6年度指定開始とみられる。令和7年度は「他者の視点」「相互理解を深める」をキーワードに、デフリンピック自転車選手による手話講演、全盲弁護士とのオンライン対話、金融教育、性教育、SNS講演会、LGBTQ理解教育などを実施。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/hodogaya-h/inclusive.html",
+      "source_label": "保土ケ谷高等学校 インクルーシブ教育実践推進校について",
+      "as_of": "2026-09",
+      "note": "指定開始年度（令和6年度）はページの「3年目」表記からの推定で、公式に指定初年度と明記した資料は確認できなかった。"
+    },
+    {
+      "metric": "club_join_rate",
+      "item": "",
+      "basis": "",
+      "fiscal_year": 2022,
+      "value_num": 35,
+      "source_url": "https://www.pen-kanagawa.ed.jp/hodogaya-h/gaiyou/documents/r4gakkouhyoukamokuhyoujissihoukoku.pdf",
+      "source_label": "保土ケ谷高等学校 令和4年度学校評価報告書（目標設定・実施結果）",
+      "as_of": "2023-04-07",
+      "note": "校内評価の達成状況欄に「入部率は約35％と例年と変わらない数値であった」と記載。入部率40％以上が目標だが未達。令和5年度報告書は同欄が未記入のため、これより新しい年度の数値は確認できなかった。"
+    },
+    {
+      "metric": "uniform",
+      "item": "",
+      "basis": "",
+      "fiscal_year": 2025,
+      "value_text": "男女ともシングル前2ツ釦の上衣（校章バッジ、男子ネクタイ・女子リボン）。女子はスカート（20本車襞、丈51〜54cm）とズボンを選択可（ズボン時はネクタイ）。ワイシャツ・ブラウスは白無地標準襟型。夏季略装（5〜11月の指定期間）は白無地シャツまたは指定ポロシャツと制服のズボン・スカート（別注サマー用も可）。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/hodogaya-h/gaiyou/documents/r7seito.pdf",
+      "source_label": "保土ケ谷高等学校 生徒心得（§Ⅵ 6.服装規定）",
+      "as_of": "2025-03-31",
+      "note": ""
+    },
+    {
+      "metric": "rules_summary",
+      "item": "",
+      "basis": "",
+      "fiscal_year": 2025,
+      "value_text": "頭髪は原則地毛、染色・パーマ・エクステンション・カラーコンタクト禁止。授業開始前にスマートフォンの電源を切りロッカー等にしまう（定期試験も同様）。アルバイトは「しないことが望ましい」が保護者了承のもと可。運転免許取得は保護者了承のもと可能だが、登下校時の自動車・二輪車の運転・同乗は禁止。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/hodogaya-h/gaiyou/documents/r7seito.pdf",
+      "source_label": "保土ケ谷高等学校 生徒心得（§Ⅵ 生徒心得）",
+      "as_of": "2025-03-31",
+      "note": ""
+    }
+  ],
+  "clubs": [
+    {
+      "name": "サッカー部",
+      "kind": "運動",
+      "days_note": "月オフ、火〜金曜日トレーニング、土日はトレーニングまたは練習試合",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2026年度 高円宮杯JFA U-18サッカーリーグ神奈川はK6所属（神奈川県サッカー協会クラブ別ページで確認）。K5・K6所属は段階3。活動日は週6日のため段階4の対象外。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/hodogaya-h/seikatsu/soccer.html",
+      "as_of": "2026-08"
+    },
+    {
+      "name": "自転車競技部",
+      "kind": "運動",
+      "days_note": "平日は校内でのトレーニングと周辺走行、土日は三浦・湯河原などへの長距離走行や競輪場でのトラック練習",
+      "weekend": "土日",
+      "tier": 1,
+      "tier_basis": "2023年度関東大会でロードレース個人優勝（インターハイ出場権獲得）、学校対抗ロードレース総合優勝。2024年度関東大会でロードレース個人優勝、学校対抗総合2位。2024年度インターハイ（全国）でスクラッチ11位・ロードレース13位、チームパーシュート9位。複数年度にわたり関東・全国大会での優勝・上位実績が2回以上あり段階1。ただし令和8年度入学生を最後に部員の新規募集を停止し、令和10年度の活動をもって閉部予定。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/hodogaya-h/seikatsu/jitensha.html",
+      "as_of": "2026-07",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "全国高等学校総合体育大会自転車競技（インターハイ）",
+          "level": "全国",
+          "result": "宮﨑拓史がスクラッチ11位・ロードレース13位、チームパーシュート9位入賞",
+          "source_url": "https://www.pen-kanagawa.ed.jp/hodogaya-h/seikatsu/jitensha.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "関東高等学校自転車競技大会",
+          "level": "関東",
+          "result": "松木海斗がロードレース優勝、学校対抗ロードレース総合2位",
+          "source_url": "https://www.pen-kanagawa.ed.jp/hodogaya-h/seikatsu/jitensha.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "関東高等学校自転車競技大会",
+          "level": "関東",
+          "result": "宮﨑拓史がロードレース優勝でインターハイ出場権獲得、学校対抗ロードレース総合優勝",
+          "source_url": "https://www.pen-kanagawa.ed.jp/hodogaya-h/seikatsu/jitensha.html"
+        }
+      ]
+    },
+    {
+      "name": "男子バスケットボール部",
+      "kind": "運動",
+      "days_note": "月曜オフ、火〜日曜日活動（土日は練習または練習試合、中学・大学・社会人との練習試合もあり）",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "tier": 2,
+      "tier_basis": "2024-2025シーズン県ベスト16（KBリーグU18 2部A5位、県18位で2部残留）、2025-2026シーズン県ベスト32（KBリーグU18 2部A2位、県13位で2部残留）。都県大会ベスト16〜32相当が2シーズン連続で段階2。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/hodogaya-h/seikatsu/m_baske.html",
+      "as_of": "2026-06",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "神奈川県高校バスケットボール大会（2025-2026シーズン）",
+          "level": "都県",
+          "result": "県ベスト32（KBリーグU18 2部A 2位、県13位で2部残留）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/hodogaya-h/seikatsu/m_baske.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "神奈川県高校バスケットボール大会（2024-2025シーズン）",
+          "level": "都県",
+          "result": "県ベスト16（KBリーグU18 2部A 5位、県18位で2部残留）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/hodogaya-h/seikatsu/m_baske.html"
+        }
+      ]
+    },
+    {
+      "name": "女子バスケットボール部",
+      "kind": "運動",
+      "days_note": "平日：月・水（朝練）・木・金、休日：土（大会期間中は土日とも活動）",
+      "days_per_week": 5,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "2026年度は関東大会南支部予選・総合体育大会南支部予選・横浜地区大会のいずれも1回戦敗退。都県大会ベスト8以上やベスト16〜32相当の実績はなく段階3。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/hodogaya-h/seikatsu/f_baske.html",
+      "as_of": "2026-09",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "関東大会南支部予選",
+          "level": "地区",
+          "result": "1回戦敗退（柏陽に35-74）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/hodogaya-h/seikatsu/f_baske.html"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "全国高校総合体育大会南支部予選",
+          "level": "地区",
+          "result": "1回戦敗退（公文国際に36-41）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/hodogaya-h/seikatsu/f_baske.html"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "横浜地区大会",
+          "level": "地区",
+          "result": "1回戦敗退（公文国際に31-32）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/hodogaya-h/seikatsu/f_baske.html"
+        }
+      ]
+    },
+    {
+      "name": "陸上競技部",
+      "kind": "運動",
+      "tier": 1,
+      "tier_basis": "2021・2022・2023年度と3年連続でインターハイ（全国）出場。2022年度関東大会優勝（男子5000m競歩）。2023年度は北海道インターハイで男子4×100mリレー全国6位入賞、男子5000m競歩全国2位。2024年度インターハイで2名が全国入賞（種目不明）。全国・関東大会出場が直近数年で2回を大きく超えて継続しており段階1。部自身も2025年度の告知で「4年連続全国入賞」を掲げている。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/hodogaya-h/seikatsu/run.html",
+      "as_of": "2026-03-13",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "全国高等学校総合体育大会陸上競技（インターハイ）",
+          "level": "全国",
+          "result": "2名が全国入賞（榎陸斗・及川集雅）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/hodogaya-h/seikatsu/run.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "全国高等学校総合体育大会陸上競技（北海道インターハイ）",
+          "level": "全国",
+          "result": "男子4×100mリレー6位入賞、男子5000m競歩2位",
+          "source_url": "https://www.pen-kanagawa.ed.jp/hodogaya-h/seikatsu/run.html"
+        },
+        {
+          "fiscal_year": 2022,
+          "competition": "関東高等学校陸上競技大会",
+          "level": "関東",
+          "result": "男子5000m競歩優勝、インターハイ出場権獲得",
+          "source_url": "https://www.pen-kanagawa.ed.jp/hodogaya-h/seikatsu/run.html"
+        },
+        {
+          "fiscal_year": 2022,
+          "competition": "神奈川県高校総体陸上競技横浜地区予選",
+          "level": "地区",
+          "result": "過去最多23種目で県大会出場",
+          "source_url": "https://www.pen-kanagawa.ed.jp/hodogaya-h/seikatsu/run.html"
+        }
+      ]
+    },
+    {
+      "name": "硬式野球部",
+      "kind": "運動",
+      "tier": 3,
+      "tier_basis": "2024〜2026年の夏の選手権神奈川大会はいずれも2回戦で敗退（2024年：延長10回で相模田名に3-4、2025年：横浜緑ケ丘に6-12、2026年：藤嶺藤沢に0-16・7回コールド）。一球速報.comの「出場大会」一覧には各年度とも選手権大会のみが登録されており、春季・秋季の本大会出場記録はない（地区予選で敗退とみられる）。都県大会でのベスト16〜32相当の実績はなく段階3。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/hodogaya-h/seikatsu/yakyu.html",
+      "as_of": "2026-06-30",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "第108回全国高等学校野球選手権神奈川大会",
+          "level": "都県",
+          "result": "2回戦敗退（7回コールド、藤嶺藤沢に0-16）",
+          "happened_on": "2026-07-11",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=12260&year=2026"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第107回全国高等学校野球選手権神奈川大会",
+          "level": "都県",
+          "result": "2回戦敗退（横浜緑ケ丘に6-12）",
+          "happened_on": "2025-07-11",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=12260&year=2025"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "第106回全国高等学校野球選手権神奈川大会",
+          "level": "都県",
+          "result": "2回戦敗退（延長10回、相模田名に3-4）",
+          "happened_on": "2024-07-11",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=12260&year=2024"
+        }
+      ]
+    },
+    {
+      "name": "ダンス部",
+      "kind": "運動",
+      "source_url": "https://www.pen-kanagawa.ed.jp/hodogaya-h/seikatsu/dance.html",
+      "as_of": "2024-12-09"
+    },
+    {
+      "name": "男子バレーボール部",
+      "kind": "運動",
+      "days_note": "月・水・金・土日（土日は週によって両日）。現在体育館改修のため近隣のスポーツセンターや小学校で活動",
+      "days_per_week": 5,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "令和7年度横浜市民大会（地区大会）で第3位入賞。都県大会での上位実績は確認できず、地区大会の入賞にとどまるため段階3。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/hodogaya-h/seikatsu/bare.html",
+      "as_of": "2025-11-21",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "横浜市民大会",
+          "level": "地区",
+          "result": "第3位",
+          "source_url": "https://www.pen-kanagawa.ed.jp/hodogaya-h/seikatsu/bare.html"
+        }
+      ]
+    },
+    {
+      "name": "女子バレーボール部",
+      "kind": "運動",
+      "days_note": "平日：月・火（朝練）・木・金、休日：土（大会期間中は土日とも活動）",
+      "days_per_week": 5,
+      "weekend": "土",
+      "source_url": "https://www.pen-kanagawa.ed.jp/hodogaya-h/seikatsu/zyoshibare.html",
+      "as_of": "2026-04-02"
+    },
+    {
+      "name": "剣道部",
+      "kind": "運動",
+      "days_note": "体育館改修工事のため活動時間・場所は都度相談（2025年3月時点）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/hodogaya-h/seikatsu/kendo.html",
+      "as_of": "2025-03-31"
+    },
+    {
+      "name": "バドミントン部",
+      "kind": "運動",
+      "source_url": "https://www.pen-kanagawa.ed.jp/hodogaya-h/seikatsu/bado.html",
+      "as_of": "2024-12-09"
+    },
+    {
+      "name": "卓球部",
+      "kind": "運動",
+      "days_note": "月・水・木（大会や練習試合等があれば土・日）",
+      "days_per_week": 3,
+      "weekend": "試合のみ",
+      "tier": 4,
+      "tier_basis": "活動日は週3日（月水木）。令和5〜8年度の高校総体予選・新人大会は毎年女子シングルスで県大会出場にとどまり、それを上回る実績は確認できない。週3日以下で目立つ大会実績がないため段階4。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/hodogaya-h/seikatsu/takyu.html",
+      "as_of": "2026-08-31",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "高校総体予選",
+          "level": "都県",
+          "result": "女子シングルス県大会出場",
+          "source_url": "https://www.pen-kanagawa.ed.jp/hodogaya-h/seikatsu/takyu.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "新人大会",
+          "level": "都県",
+          "result": "女子シングルス県大会出場",
+          "source_url": "https://www.pen-kanagawa.ed.jp/hodogaya-h/seikatsu/takyu.html"
+        }
+      ]
+    },
+    {
+      "name": "テニス部",
+      "kind": "運動",
+      "days_note": "平日に校内で基礎的な練習（球出し・筋力トレーニング・走り込み等、詳しい曜日は記載なし）",
+      "tier": 3,
+      "tier_basis": "令和8年度横浜地区テニストーナメント大会で男子シングルス1回戦、神奈川県高等学校テニス大会で男子シングルス予選3回戦・男子ダブルス予選1回戦。県大会に出場しているが上位進出の実績はなく段階3。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/hodogaya-h/seikatsu/tennis.html",
+      "as_of": "2026-09-07",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "横浜地区テニストーナメント大会",
+          "level": "地区",
+          "result": "男子シングルス1回戦出場",
+          "source_url": "https://www.pen-kanagawa.ed.jp/hodogaya-h/seikatsu/tennis.html"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "神奈川県高等学校テニス大会",
+          "level": "都県",
+          "result": "男子シングルス予選3回戦出場、男子ダブルス予選1回戦出場",
+          "source_url": "https://www.pen-kanagawa.ed.jp/hodogaya-h/seikatsu/tennis.html"
+        }
+      ]
+    },
+    {
+      "name": "軽音楽部",
+      "kind": "文化",
+      "source_url": "https://www.pen-kanagawa.ed.jp/hodogaya-h/seikatsu/kei_music.html",
+      "as_of": "2024-12-09"
+    },
+    {
+      "name": "吹奏楽部",
+      "kind": "文化",
+      "days_note": "活動休止中（2026年8月現在、部員0名）。以前は毎週木曜日に活動",
+      "source_url": "https://www.pen-kanagawa.ed.jp/hodogaya-h/seikatsu/sui.html",
+      "as_of": "2026-08-31"
+    },
+    {
+      "name": "JRC部（ボランティア部）",
+      "kind": "文化",
+      "days_note": "月・木の週2回、イベントによる土日の活動が月に1〜2回",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "source_url": "https://www.pen-kanagawa.ed.jp/hodogaya-h/seikatsu/jrc.html",
+      "as_of": "2025-04-03"
+    },
+    {
+      "name": "クッキング部",
+      "kind": "文化",
+      "days_note": "5時間で終わる火または金曜日、中間・期末テスト最終日、長期休暇中等",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "source_url": "https://www.pen-kanagawa.ed.jp/hodogaya-h/seikatsu/cook.html",
+      "as_of": "2025-03-28"
+    },
+    {
+      "name": "フラワーアレンジメント部",
+      "kind": "文化",
+      "days_note": "毎週火曜日",
+      "days_per_week": 1,
+      "weekend": "なし",
+      "source_url": "https://www.pen-kanagawa.ed.jp/hodogaya-h/seikatsu/hana.html",
+      "as_of": "2026-02-05"
+    },
+    {
+      "name": "囲碁将棋部",
+      "kind": "文化",
+      "days_note": "毎週火曜日、金曜日放課後",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "tier": 2,
+      "tier_basis": "2025年度 第37回神奈川県高等学校総合文化祭将棋大会で女子個人戦が関東大会出場権を獲得、個人戦B級・C級でともに準優勝、団体戦B級で3位。高文連主催の県総合文化祭での代表選出（関東大会出場）を満たすため段階2。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/hodogaya-h/seikatsu/igo.html",
+      "as_of": "2026-03-24",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "第37回神奈川県高等学校総合文化祭将棋大会",
+          "level": "都県",
+          "result": "女子個人戦で関東大会出場権獲得、個人戦B級準優勝、個人戦C級準優勝、団体戦B級3位",
+          "source_url": "https://www.pen-kanagawa.ed.jp/hodogaya-h/seikatsu/igo.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "第48回全国高校総合文化祭将棋部門神奈川県予選",
+          "level": "都県",
+          "result": "個人戦C級優勝",
+          "source_url": "https://www.pen-kanagawa.ed.jp/hodogaya-h/seikatsu/igo.html"
+        }
+      ]
+    },
+    {
+      "name": "合唱部",
+      "kind": "文化",
+      "days_note": "水曜日・金曜日（放課後17時前後まで）",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "source_url": "https://www.pen-kanagawa.ed.jp/hodogaya-h/seikatsu/gasshou.html",
+      "as_of": "2024-12-09"
+    },
+    {
+      "name": "茶道部",
+      "kind": "文化",
+      "days_note": "毎週月曜日",
+      "days_per_week": 1,
+      "weekend": "なし",
+      "source_url": "https://www.pen-kanagawa.ed.jp/hodogaya-h/seikatsu/sado.html",
+      "as_of": "2026-09-07"
+    },
+    {
+      "name": "美術・アニメ部",
+      "kind": "文化",
+      "days_note": "毎週月・水・木",
+      "days_per_week": 3,
+      "weekend": "なし",
+      "source_url": "https://www.pen-kanagawa.ed.jp/hodogaya-h/seikatsu/art.html",
+      "as_of": "2024-12-09"
+    },
+    {
+      "name": "放送部",
+      "kind": "文化",
+      "source_url": "https://www.pen-kanagawa.ed.jp/hodogaya-h/seikatsu/hoso.html",
+      "as_of": "2025-03-31"
+    }
+  ],
+  "designated_universities": [],
+  "events": [
+    {
+      "kind": "改修",
+      "period_label": "令和8年2月",
+      "summary": "体育館の耐震改修工事が完了した",
+      "source_url": "https://www.pen-kanagawa.ed.jp/hodogaya-h/gaiyou/kaishuu.html"
+    },
+    {
+      "kind": "その他",
+      "period_label": "令和8年度入学生から新規募集停止、令和10年度活動終了予定",
+      "summary": "自転車競技部が令和8年度入学生を最後に新規部員募集を停止し、段階的に活動を縮小、令和10年度の活動をもって閉部予定となった",
+      "source_url": "https://www.pen-kanagawa.ed.jp/hodogaya-h/seikatsu/jitensha.html"
+    }
+  ],
+  "unresolved": [
+    "推薦の倍率：神奈川県公立高校入試は共通選抜のみで推薦単独の選考区分がないため対象外",
+    "部活動加入率：令和4年度学校評価報告書の「入部率は約35％」以降、より新しい年度の数値は公式資料に見当たらない（令和5年度報告書は達成状況欄が未記入、令和6・7年度の学校評価報告書自体が公式サイトに見当たらなかった）",
+    "学校評価の満足度：神奈川県様式の学校評価報告書は文章のみで満足度の数値は無い",
+    "指定校推薦の大学：学校案内パンフレットや進路ページに指定校推薦の大学一覧の公式掲載が見当たらない（学校案内パンフレットPDF自体が公式サイトで確認できなかった）",
+    "在校生の男女別人数：公式に公表している資料が見当たらない",
+    "進路決定率：卒業者数（分母）を示す公式資料が見当たらず、進路先一覧の「その他」26名の内訳（浪人・未定等）も不明のため算出できない",
+    "入試方式別の割合（admission_route_share）：大学進路先一覧に指定校制/公募制/総合型/一般受験の延べ人数の内訳はあるが、実進学ベースでの入試方式別集計ではなく資料に明記もないため対象外とした",
+    "硬式野球部の春季・秋季神奈川県大会：一球速報.comの「出場大会」一覧に各年度とも選手権大会（夏）のみが登録されており、本大会（春季・秋季）出場の記録が見当たらない。地区予選で敗退しているとみられるが、公式な予選結果の出典までは確認できなかった",
+    "放送部の第59回神奈川県高等学校放送アンデパンダン大会（放送劇部門・朗読部門Fともに4位）：実施年度が公式サイトに明記されておらず、年度不明のため大会結果の根拠として採用しなかった",
+    "ダンス部・軽音楽部・バドミントン部・合唱部・美術アニメ部（部自身が「目立った実績はない」と明記）・茶道部・フラワーアレンジメント部・クッキング部・JRC部（ボランティア部）・女子バレーボール部の直近の大会・コンクール結果：公式サイトに具体的な結果の記載が見当たらなかった",
+    "学級増減・学科改編等：都教委の学級数に関する公式発表を探したが、2020年以降の保土ケ谷高校の学級数変化に関する記載は見当たらなかった"
+  ],
+  "conflicts": [
+    "鶴見大学の45期合格者数：過去３年実績表（学校集計、45deta3.pdf）は45期＝3としているが、大学別合格状況一覧（45deta1.pdf）を学部単位で合算すると5（文学部日本文学科3・経済学部経営学科1・文学部日本文化学科1）となり食い違う。プロフィールでは学校集計の3を採用した。"
+  ]
+}
