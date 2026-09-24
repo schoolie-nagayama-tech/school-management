@@ -328,7 +328,9 @@
       "name": "サッカー部",
       "kind": "運動",
       "source_url": "https://www.metro.ed.jp/hino-h/activities/club_6/index.html",
-      "as_of": "2026-09-22"
+      "as_of": "2026-09-22",
+      "tier": 3,
+      "tier_basis": "2026年度 高円宮杯U-18東京 T1〜T5に所属なし（支部リーグ）。T5の参加チームは https://www.tleague-u18.com/team.php?dy=2026&dt=5 ほか dt=1〜4（2026-09-24 Opus確認）"
     },
     {
       "name": "男女硬式テニス部",

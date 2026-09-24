@@ -275,13 +275,25 @@
       "results": []
     },
     {
-      "name": "サッカー部（男女）",
+      "name": "サッカー部（男子）",
+      "kind": "運動",
+      "days_note": "月・水・木・金・土・日",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2026年度 高円宮杯U-18東京 T1〜T5に所属なし（支部リーグ）。T5の参加チームは https://www.tleague-u18.com/team.php?dy=2026&dt=5 ほか dt=1〜4（2026-09-24 Opus確認）",
+      "source_url": "https://www.metro.ed.jp/kiyose-h/activities/cat2101/index.html",
+      "as_of": "2026-09-23",
+      "results": []
+    },
+    {
+      "name": "サッカー部（女子）",
       "kind": "運動",
       "days_note": "月・水・木・金・土・日",
       "days_per_week": 6,
       "weekend": "土日",
       "tier": 2,
-      "tier_basis": "女子は令和6年度インターハイ東京都予選で東京都ベスト16、同年度皇后杯東京都予選高校ラウンドで東京都ベスト12と、ベスト16前後の成績が同一年度に複数ある。男子は西地区支部2回戦出場（年度表記なし）にとどまる。",
+      "tier_basis": "女子：2024年度 インターハイ東京都予選ベスト16・皇后杯東京都予選高校ラウンド ベスト12、2023年度 東京都女子サッカー高校リーグ3部準優勝で2部に昇格（男女で行を分けた。2026-09-24 Opus見直し）",
       "source_url": "https://www.metro.ed.jp/kiyose-h/activities/cat2101/index.html",
       "as_of": "2026-09-23",
       "results": [

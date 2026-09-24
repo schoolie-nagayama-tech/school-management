@@ -344,8 +344,8 @@ for (const file of targets) {
     c._id = id;
   }
 
-  // ★男女の区別の無い指定（Premiere Club の「ソフトテニス（男女）」）の行があり、この調査が
-  //   男子・女子の行に分けたときは、指定を男子・女子の行に移して区別の無い行を消す。
+  // ★男女の区別の無い行（Premiere Club の「ソフトテニス（男女）」、前回の調査の「サッカー部（男女）」）があり、
+  //   この調査が男子・女子の行に分けたときは、指定を男子・女子の行に移して区別の無い行を消す。
   //   残すと同じ部が2つ数えられ、男子・女子の行には指定が出ない（清瀬で実際に起きた）。
   const splitOf = (key) =>
     clubs.filter((c) => {
@@ -353,7 +353,7 @@ for (const file of targets) {
       return n.clubKey === key && n.sex !== '';
     });
   for (const cur of existing) {
-    if (cur.sex !== '' || !cur.designation) continue;
+    if (cur.sex !== '') continue;
     if (
       clubs.some(
         (c) =>
@@ -363,7 +363,7 @@ for (const file of targets) {
       continue;
     const split = splitOf(cur.club_key);
     if (!split.length) continue;
-    for (const c of split) {
+    for (const c of cur.designation ? split : []) {
       const { data: now, error: e1 } = await supa
         .from('high_school_clubs')
         .select('tier, tier_basis')
@@ -386,7 +386,7 @@ for (const file of targets) {
     const { error } = await supa.from('high_school_clubs').delete().eq('id', cur.id);
     if (error) throw error;
     console.log(
-      `    （注）${cur.club_key}：男女の区別の無い指定（${cur.designation}）を男子・女子の行に移した`
+      `    （注）${cur.club_key}：男女の区別の無い行を男子・女子の行にまとめた${cur.designation ? `（指定 ${cur.designation} を移した）` : ''}`
     );
   }
 
