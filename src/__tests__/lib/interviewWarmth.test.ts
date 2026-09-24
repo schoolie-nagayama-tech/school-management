@@ -348,6 +348,35 @@ describe('parseNottaSummary（新しい型・Slack経由の形）', () => {
     ]);
   });
 
+  it('★「生徒：（なし）」「受け止め：（なし）」のように頭の語が付いた（なし）も1件ずつ落とす', () => {
+    // 本番 9/23 の実物の形（指示1つにつき1行書くので、該当しない指示が頭の語付きで残る）
+    const parsed = parseNottaSummary(
+      [
+        '■ 相談事項',
+        '・関数の問題への対応',
+        '・生徒：（なし）',
+        '・反応：(なし)。',
+        '■ 今後の方針',
+        '・受け止め：（なし）',
+        '・次回確認: （なし）',
+      ].join('\n')
+    );
+    expect(parsed!.sections).toEqual([{ heading: '相談事項', bullets: ['関数の問題への対応'] }]);
+    expect(parsed!.omitted).toEqual(['今後の方針']);
+  });
+
+  it('「（なし）」を含む中身のある行は落とさない', () => {
+    const parsed = parseNottaSummary(['■ 相談事項', '・宿題（なし）の日が続いた'].join('\n'));
+    expect(parsed!.sections[0].bullets).toEqual(['宿題（なし）の日が続いた']);
+  });
+
+  it('2026-09-24 の型の「反応：」も記録カードにはそのまま出る', () => {
+    const parsed = parseNottaSummary(
+      ['■ 相談事項', '・推薦を受けるか', '・反応：迷っている'].join('\n')
+    );
+    expect(parsed!.sections[0].bullets).toEqual(['推薦を受けるか', '反応：迷っている']);
+  });
+
   it('印の無い見出しだけの行（印象に残った言葉）も見出しにする', () => {
     const parsed = parseNottaSummary(['印象に残った言葉', '・「頑張ります」（生徒）'].join('\n'));
     expect(parsed!.sections).toEqual([
@@ -409,6 +438,27 @@ describe('parsePreviousBullet / previousItemFallbackKind（新しい型）', () 
     expect(parsePreviousBullet('感情：不安が強い').judgement).toBe(true);
     expect(parsePreviousBullet('受け止め: 前向き').judgement).toBe(true);
   });
+
+  it('★「話者 2：」は誰が動くかにしない。頭の語も本文中の話者番号も外す', () => {
+    // 本番 9/23 の実物（Nottaは話者番号しか知らない）
+    expect(parsePreviousBullet('話者 2：来年から受験を意識して学習に取り組む。')).toEqual({
+      text: '来年から受験を意識して学習に取り組む。',
+      actor: undefined,
+      tag: undefined,
+      judgement: false,
+    });
+    expect(parsePreviousBullet('話者２は東京または近県の大学を希望している。').text).toBe(
+      '東京または近県の大学を希望している。'
+    );
+    expect(parsePreviousBullet('生徒（話者 4）が数学を頑張る').text).toBe('生徒が数学を頑張る');
+    // 頭の語が先にあれば、そちらで誰が動くかを決める
+    expect(parsePreviousBullet('生徒：話者 2は単語帳を進める')).toEqual({
+      text: '単語帳を進める',
+      actor: 'student',
+      tag: undefined,
+      judgement: false,
+    });
+  });
 });
 
 describe('buildPreviousCommitmentLines（新しい型）', () => {
@@ -450,6 +500,38 @@ describe('buildPreviousCommitmentLines（新しい型）', () => {
     ]);
   });
 
+  it('★本番 9/23 の実物（Slack経由・話者番号入り）で台本が壊れない', () => {
+    // 生徒面談。Nottaが生徒の名前を知らず「話者 2」と書いた記録（抜粋・U+200E もそのまま）
+    const LRM = '‎';
+    const REAL = [
+      `前回の確認 • （なし） 塾からの報告 • 話者 2は夏以降、大学見学に行っておらず、学校からの進路指導も特になかった。${LRM}`,
+      `• 英単語帳は1,400語のうち600語まで進んでいる。${LRM} 保護者からの要望 • （なし） 相談事項 • 社会科目で地理と歴史のどちらを選択するか。${LRM}`,
+      `• 話者 2：大学候補については「よくわかんない」と回答しており、具体的な志望校は未定である。${LRM} 今後の方針 • 話者 2：大学・学部・通学経路を含めた進学先の候補を調べる。${LRM}`,
+      `• 話者 2：来年から受験を意識して学習に取り組む。${LRM}`,
+      `• 受け止め：様子見。話者 2は進学先について明確な候補を持っていない。${LRM} 総合メモ • 英語と模試形式の問題への対応が今後の主な課題である。${LRM} 印象に残った言葉 • 「行ってない。」（生徒）${LRM}`,
+      `• 「英語はわかりません。」（生徒）${LRM}`,
+      `• 「よくわかんない。」（生徒）${LRM} `,
+    ].join('\n');
+    const row = interviewRow({ interview_type: 'student_interview', content: REAL });
+
+    const { items, asks } = buildPreviousCommitmentLines([row]);
+    expect(items.map((i) => [i.text, i.fallback, i.actor ?? null])).toEqual([
+      ['大学・学部・通学経路を含めた進学先の候補を調べる。', 'ask', null],
+      ['来年から受験を意識して学習に取り組む。', 'ask', null],
+    ]);
+    expect(asks.join('')).not.toContain('話者');
+
+    expect(extractQuotedWords(row.content, row.interview_type)).toEqual([
+      { quote: '行ってない。', speaker: '生徒' },
+      { quote: '英語はわかりません。', speaker: '生徒' },
+      { quote: 'よくわかんない。', speaker: '生徒' },
+    ]);
+    // 保護者面談として取り込まれていたら、話し手は決めない
+    expect(
+      extractQuotedWords(row.content, 'parent_interview').every((q) => q.speaker === null)
+    ).toBe(true);
+  });
+
   it('★画面とサーバーで同じ本文になる（頭の語を外した文が item）', () => {
     const { items } = buildPreviousCommitmentLines([interviewRow({ content: NEW_FORMAT })]);
     const sent = items.map((i) => (i.actor ? { text: i.text, actor: i.actor } : i.text));
@@ -488,10 +570,30 @@ describe('extractQuotedWords（古い型）', () => {
   });
 
   it('話し手が分からなければ null。前の文の話し手は持ち越さない', () => {
-    const content = ['■ 相談事項', '・生徒は前向き。塾からは「最初にしては良い」と伝えた。'].join(
-      '\n'
-    );
+    const content = ['■ 相談事項', '・生徒は前向き。「最初にしては良い」と話が出た。'].join('\n');
     expect(extractQuotedWords(content)).toEqual([{ quote: '最初にしては良い', speaker: null }]);
+  });
+
+  it('★塾側の言葉は拾わない（塾から・先生・教室長が「」にいちばん近い）', () => {
+    const content = [
+      '■ 相談事項',
+      '・生徒は前向き。塾からは「最初にしては良い」と伝えた。',
+      '・生徒の様子について、教室長が「よく頑張っています」と話した。',
+      '・生徒は塾で「もっと頑張ります」と話した。',
+    ].join('\n');
+    expect(extractQuotedWords(content)).toEqual([{ quote: 'もっと頑張ります', speaker: '生徒' }]);
+  });
+
+  it('★話者番号で書かれた言葉は拾わない（本番では「話者 1」が教室長本人のことが多い）', () => {
+    // 旧型の重要発言メモの実物の形
+    const content = [
+      '■ 重要発言メモ',
+      '・話者 1：「提出物出せよ」',
+      '・話者 2：「英語マスターズみたいな変なのが追加されたんですよ」',
+      '・生徒（話者 4）は「数学を頑張ります」と話した。',
+    ].join('\n');
+    // 「生徒（話者 4）」の括弧書きは添え書きなので外して読む（保護者（話者 5）の実物）
+    expect(extractQuotedWords(content)).toEqual([{ quote: '数学を頑張ります', speaker: '生徒' }]);
   });
 
   it('短すぎる「」・見出しと同じ語・教材名のような発言でない「」・重複は拾わない', () => {
@@ -567,6 +669,98 @@ describe('extractQuotedWords（新しい型「印象に残った言葉」）', (
     ].join('\n');
     expect(extractQuotedWords(content)).toEqual([]);
   });
+
+  it('★見出しが箇条書きとして保存された記録（・印象に残った言葉）も見出しとして読む', () => {
+    // 本番 9/23 の実物。見出し一覧に足す前の整形で取り込まれ、総合メモの1件になっていた
+    const content = [
+      '■ 総合メモ',
+      '・英語と模試形式の問題への対応が今後の主な課題である。',
+      '・印象に残った言葉',
+      '・「行ってない。」（生徒）',
+      '・「よくわかんない。」（生徒）',
+    ].join('\n');
+    expect(parseNottaSummary(content)!.sections).toEqual([
+      { heading: '総合メモ', bullets: ['英語と模試形式の問題への対応が今後の主な課題である。'] },
+      {
+        heading: '印象に残った言葉',
+        bullets: ['「行ってない。」（生徒）', '「よくわかんない。」（生徒）'],
+      },
+    ]);
+    expect(extractQuotedWords(content, 'student_interview')).toEqual([
+      { quote: '行ってない。', speaker: '生徒' },
+      { quote: 'よくわかんない。', speaker: '生徒' },
+    ]);
+  });
+
+  it('「」の後ろが「として」なら発言ではない', () => {
+    const content = [
+      '■ 総合メモ',
+      '・ダンスは「勉強だけにならないための精神的支柱」として肯定的に捉えている。',
+    ].join('\n');
+    expect(extractQuotedWords(content)).toEqual([]);
+  });
+
+  it('★2026-09-24 の型（話し手を書かない）も拾える', () => {
+    const content = ['■ 印象に残った言葉', '・「単語でいい。」', '・「英語はわかりません。」'].join(
+      '\n'
+    );
+    expect(extractQuotedWords(content)).toEqual([
+      { quote: '単語でいい。', speaker: null },
+      { quote: '英語はわかりません。', speaker: null },
+    ]);
+  });
+});
+
+describe('extractQuotedWords（面談種別で話し手を決める・2026-09-24）', () => {
+  // ★Nottaは声を聞き分けられないので、（生徒）（保護者）は当てにならない
+  const content = [
+    '■ 印象に残った言葉',
+    '・「頑張ります」（生徒）',
+    '・「塾に来てから明るくなった」（保護者）',
+    '・「単語でいい。」',
+  ].join('\n');
+
+  it('生徒面談なら生徒。ただし（保護者）と書かれたものは食い違うので決めつけない', () => {
+    expect(extractQuotedWords(content, 'student_interview')).toEqual([
+      { quote: '頑張ります', speaker: '生徒' },
+      { quote: '塾に来てから明るくなった', speaker: null },
+      { quote: '単語でいい。', speaker: '生徒' },
+    ]);
+  });
+
+  it('保護者面談（三者面談のこともある）・電話・その他は、印があっても話し手を決めない', () => {
+    for (const type of ['parent_interview', 'phone', 'other']) {
+      expect(extractQuotedWords(content, type).map((q) => q.speaker)).toEqual([null, null, null]);
+    }
+  });
+
+  it('古い型の本文も同じ。生徒面談で本文が保護者と言っていれば null', () => {
+    const old = [
+      '■ 相談事項',
+      '・生徒は「頑張ります」と発言しています。',
+      '・お母様から「英語の長文を増やしてほしい」とのお話がありました。',
+      '・「全部したら来るかな」と話が出た。',
+    ].join('\n');
+    expect(extractQuotedWords(old, 'student_interview')).toEqual([
+      { quote: '頑張ります', speaker: '生徒' },
+      { quote: '英語の長文を増やしてほしい', speaker: null },
+      // ★話し手の語が無い古い型の「」は塾の言葉のこともあるので、生徒面談でも決めない
+      { quote: '全部したら来るかな', speaker: null },
+    ]);
+  });
+
+  it('（塾）（先生）の印・話者番号の言葉は、種別に関係なく拾わない', () => {
+    const withJuku = [
+      '■ 印象に残った言葉',
+      '・「最後まで一緒にやろう」（塾）',
+      '・「提出物は出そう」（先生）',
+      '・話者 1：「お前がやってないからだよ」',
+      '・「やってみます」',
+    ].join('\n');
+    expect(extractQuotedWords(withJuku, 'student_interview')).toEqual([
+      { quote: 'やってみます', speaker: '生徒' },
+    ]);
+  });
 });
 
 describe('quotedWordTalkLine / quotedWordFactLine', () => {
@@ -593,19 +787,22 @@ describe('quotedWordTalkLine / quotedWordFactLine', () => {
   });
 
   it('★buildTellSections の lastInterview に前回の言葉の行が乗る（AIに引用させるため）', () => {
-    const sections = buildTellSections({
-      assessments: [],
-      interviews: [
-        interviewRow({
-          content: ['■ 相談事項', '・生徒は「頑張ります」と発言しています。'].join('\n'),
-        }),
-      ],
-      textbookData: [],
-      disciplineSessions: [],
-      koushuEnrollments: [],
-    });
-    const last = sections.find((s) => s.key === 'lastInterview');
-    expect(last?.current).toContain('前回の言葉: 「頑張ります」（生徒）');
+    const tell = (interview_type: StudentInterview['interview_type']) =>
+      buildTellSections({
+        assessments: [],
+        interviews: [
+          interviewRow({
+            interview_type,
+            content: ['■ 相談事項', '・生徒は「頑張ります」と発言しています。'].join('\n'),
+          }),
+        ],
+        textbookData: [],
+        disciplineSessions: [],
+        koushuEnrollments: [],
+      }).find((s) => s.key === 'lastInterview')?.current;
+    expect(tell('student_interview')).toContain('前回の言葉: 「頑張ります」（生徒）');
+    // ★保護者面談は三者面談のこともあるので、AIにも話し手を渡さない（面談種別で決める）
+    expect(tell('parent_interview')).toContain('前回の言葉: 「頑張ります」');
   });
 });
 
@@ -643,5 +840,61 @@ describe('面談記録の検索（matchesSearch / splitForHighlight）', () => {
   it('当たらなければ1片のまま', () => {
     expect(splitForHighlight('推薦入試', '英検')).toEqual([{ text: '推薦入試', hit: false }]);
     expect(splitForHighlight('推薦入試', '')).toEqual([{ text: '推薦入試', hit: false }]);
+  });
+});
+
+/* ============================================================
+ * 古い型の実物で見つかった読み違い（2026-09-24）
+ * ========================================================== */
+
+describe('古い型の読み違い（本番の実物・2026-09-24）', () => {
+  it('★話し手は主語（保護者は／お母様から）を採る。いちばん近い語だけで決めない', () => {
+    const content = [
+      '■ 保護者からの要望',
+      '・ただし、保護者（話者 2）は生徒の現状に対して危機感を共有しており、「本当やばいな」と感じている。',
+      '・数学の結果について保護者から厳しい反応があり、生徒は落ち込みつつも「勉強すればいける」と話した。',
+    ].join('\n');
+    expect(extractQuotedWords(content)).toEqual([
+      { quote: '本当やばいな', speaker: '保護者' },
+      { quote: '勉強すればいける', speaker: '生徒' },
+    ]);
+  });
+
+  it('「「…」という外部からの指摘」のような別の人の言葉は拾わない', () => {
+    const content = [
+      '■ 総合メモ',
+      '・生徒はまだ進路が固まっておらず、「接客・まとめる仕事が向いている」という外部からの指摘はある。',
+    ].join('\n');
+    expect(extractQuotedWords(content)).toEqual([]);
+  });
+
+  it('★小見出しだけの行・「保護者の感情面：」「保護者・生徒の受け止め：」は②に拾わない', () => {
+    const content = [
+      '■ 保護者からの要望',
+      '・学習面：数学1科目での受講を希望。',
+      '・保護者の感情面：前向きに受け止めており、安心感が感じられる。',
+      '・ただし、保護者は生徒の現状に危機感を持っている様子が見られる。',
+      '■ 今後の方針',
+      '・合意した対応・変更点：',
+      '・教科書を毎日持ち帰る。',
+      '・次回確認事項：',
+      '・保護者・生徒の受け止め：様子見の状態。',
+    ].join('\n');
+    const { items } = buildPreviousCommitmentLines([interviewRow({ content })]);
+    expect(items.map((i) => i.text)).toEqual([
+      '学習面：数学1科目での受講を希望。',
+      '教科書を毎日持ち帰る。',
+    ]);
+  });
+
+  it('★古い型の【塾】【保護者】【生徒】も誰が動くかとして読む', () => {
+    expect(parsePreviousBullet('【塾】テキストを発注・準備する。')).toEqual({
+      text: 'テキストを発注・準備する。',
+      actor: 'juku',
+      tag: undefined,
+      judgement: false,
+    });
+    expect(parsePreviousBullet('【保護者】カードをウェブで登録する。').actor).toBe('home');
+    expect(parsePreviousBullet('【生徒】初回授業に参加する。').actor).toBe('student');
   });
 });
