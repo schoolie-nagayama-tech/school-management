@@ -46,3 +46,30 @@ describe('updateCourseTextbookOrder', () => {
     expect(chain.eq).toHaveBeenCalledWith('textbook_id', 30);
   });
 });
+
+describe('planApplyProposals（テンプレを生徒にまとめて登録）', () => {
+  // ★以前は upsert でテーマ・状態を上書きし、2つ目のテンプレ登録で公開済みの過去問の提案書が
+  //   下書きに戻っていた。既存は上書きせず、公開済みには足さないことを固定する
+  it('無ければ作る・下書き/提案済は既存に足す・公開済みは飛ばす', async () => {
+    const { planApplyProposals } = await import('@/lib/api/seasonalCourses');
+    const plan = planApplyProposals(
+      [
+        { studentId: 's1', textbookId: 1 },
+        { studentId: 's1', textbookId: 99 },
+        { studentId: 's2', textbookId: 99 },
+        { studentId: 's3', textbookId: 99 },
+      ],
+      [
+        { id: 'p-s1-99', student_id: 's1', textbook_id: 99, status: 'draft' },
+        { id: 'p-s2-99', student_id: 's2', textbook_id: 99, status: 'sent' },
+        { id: 'p-s3-99', student_id: 's3', textbook_id: 99, status: 'approved' },
+      ]
+    );
+    expect(plan.toCreate).toEqual([{ studentId: 's1', textbookId: 1 }]);
+    expect(Array.from(plan.reuse.entries())).toEqual([
+      ['s1:99', 'p-s1-99'],
+      ['s2:99', 'p-s2-99'],
+    ]);
+    expect(plan.skippedPublished).toEqual([{ studentId: 's3', textbookId: 99 }]);
+  });
+});

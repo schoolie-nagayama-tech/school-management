@@ -44,8 +44,11 @@ import {
   calcTotalKoma,
   calcTotalAppliedKoma,
   promoteProposalToCourse,
+  getTermProposals,
+  mergeUnitsIntoProposal,
 } from '@/lib/api/proposals';
 import type { ProposalUnitInput } from '@/lib/api/proposals';
+import { classifyExistingBooks, type ExistingTermProposal } from './proposalMerge';
 import { ConceptBar } from './ConceptBar';
 import {
   getProposalOrderCandidates,
@@ -200,6 +203,11 @@ export default function ProposalEditor() {
   // 9月に新規作成すると冬期になる（URLで指定があればそちらが優先）
   const [season, setSeason] = useState<SeasonType>(qSeason || getPreparingSeason());
   const [year, setYear] = useState(qYear);
+  /**
+   * 新規作成で、この生徒のこの期に既にある提案書。同じテキストの冊は、保存すると新しく作らず
+   * ここに単元を足す（過去問が入ったテンプレを2つ使ったとき、過去問の提案書は1件に集まる）。
+   */
+  const [termProposals, setTermProposals] = useState<ExistingTermProposal[]>([]);
   const [theme, setTheme] = useState('');
   const [notes, setNotes] = useState('');
 
@@ -1051,6 +1059,37 @@ export default function ProposalEditor() {
   }, [selectionInfo.contiguous, selectionInfo.count]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /** 単元ドラフト → 保存用の入力 */
+  useEffect(() => {
+    if (!isNew || !studentId) return;
+    let cancelled = false;
+    getTermProposals(studentId, season, year)
+      .then((rows) => {
+        if (cancelled) return;
+        setTermProposals(
+          rows.map((r) => ({
+            id: r.id,
+            textbookId: r.textbook_id,
+            status: r.status,
+            theme: r.theme,
+          }))
+        );
+      })
+      // 確認に失敗しても作成は止めない（そのときは従来どおり新しく作ろうとし、重なれば保存で失敗が出る）
+      .catch(() => !cancelled && setTermProposals([]));
+    return () => {
+      cancelled = true;
+    };
+  }, [isNew, studentId, season, year]);
+
+  const existingBooks = useMemo(
+    () =>
+      classifyExistingBooks(
+        books.map((b) => b.textbookId),
+        termProposals
+      ),
+    [books, termProposals]
+  );
+
   const toUnitInputs = (units: UnitDraft[], appliedFallback: number | null): ProposalUnitInput[] =>
     units.map((u) => ({
       curriculum_item_id: u.curriculum_item_id,
@@ -1113,6 +1152,21 @@ export default function ProposalEditor() {
       const outcomes: BookSaveOutcome[] = [];
       for (const entry of booksWithUnits) {
         try {
+          const existing = existingBooks.mergeInto.get(entry.book.textbookId);
+          if (existing) {
+            // ★同じ生徒・期・テキストの提案書は1件しか持てない（DBの一意制約）。
+            //   新しく作らず、既にある提案書に単元を足す。テーマ・状態は先に作ったもののまま。
+            const mergedId = await mergeUnitsIntoProposal(
+              existing.id,
+              toUnitInputs(entry.units, appliedFallback)
+            );
+            outcomes.push({
+              textbookId: entry.book.textbookId,
+              name: entry.label,
+              proposalId: mergedId,
+            });
+            continue;
+          }
           const result = await upsertProposal({
             studentId,
             textbookId: entry.book.textbookId,
@@ -1163,10 +1217,17 @@ export default function ProposalEditor() {
   // 保存できない理由（保存ボタン横に表示してユーザーに知らせる）。
   // 新規作成は冊ごとに判定し、原因の冊は書名を添える。
   const saveBlockers: string[] = isNew
-    ? buildProposalSaveBlockers({
-        theme,
-        books: bookSummary.perBook.map((b) => ({ name: b.name, koma: b.koma })),
-      })
+    ? [
+        ...buildProposalSaveBlockers({
+          theme,
+          books: bookSummary.perBook.map((b) => ({ name: b.name, koma: b.koma })),
+        }),
+        // 公開済みの提案書には、ここから単元を足さない（進行表と同期済みでずれるため）
+        ...existingBooks.blocked.map((e) => {
+          const name = books.find((b) => b.textbookId === e.textbookId);
+          return `「${name ? bookLabel(name) : 'このテキスト'}」はこの期の提案書が公開済みです。公開済みの提案書を開いて、そこで単元を足してください`;
+        }),
+      ]
     : (() => {
         const blockers: string[] = [];
         if (!theme.trim()) blockers.push('テーマを入力してください');
@@ -1774,6 +1835,19 @@ export default function ProposalEditor() {
                 )
               }
             />
+            {existingBooks.mergeInto.size > 0 && (
+              <ul className="mt-2 space-y-1">
+                {books
+                  .filter((b) => existingBooks.mergeInto.has(b.textbookId))
+                  .map((b) => (
+                    <li key={b.textbookId} className="text-[11px] leading-relaxed text-info">
+                      「{bookLabel(b)}」はこの期の提案書がもうあります（
+                      {existingBooks.mergeInto.get(b.textbookId)?.theme || '講習テーマ未設定'}
+                      ）。保存すると、新しく作らずにその提案書へこの単元を足します（今ある単元は残ります）
+                    </li>
+                  ))}
+              </ul>
+            )}
           </section>
         )}
 

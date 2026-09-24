@@ -31,7 +31,7 @@ export default function CourseApplyPage() {
   const params = useParams();
   const router = useRouter();
   const courseId = params?.courseId as string;
-  const { toasts, removeToast, success, error } = useToast();
+  const { toasts, removeToast, success, error, warning } = useToast();
 
   const [course, setCourse] = useState<SeasonalCourseWithDetails | null>(null);
   const [students, setStudents] = useState<Student[]>([]);
@@ -139,11 +139,23 @@ export default function CourseApplyPage() {
     if (!courseId || selectedStudentIds.size === 0) return;
     setIsApplying(true);
     try {
-      await applyCoursesToStudents(courseId, Array.from(selectedStudentIds), applyMode);
+      const result = await applyCoursesToStudents(
+        courseId,
+        Array.from(selectedStudentIds),
+        applyMode
+      );
       await fetchApplications();
       setSelectedStudentIds(new Set());
       setIsConfirmOpen(false);
       success(`${selectedStudentIds.size}名に下書き登録しました`);
+      // ★公開済みの提案書には足していない。黙って飛ばすと「登録したのに入っていない」になるので伝える
+      const skippedStudents = new Set(result.skippedPublished.map((s) => s.studentId)).size;
+      if (skippedStudents > 0) {
+        warning(
+          `${skippedStudents}名は同じテキストの提案書が公開済みのため、その分は足していません。公開済みの提案書を開いて足してください`,
+          8000
+        );
+      }
     } catch (err) {
       error(err instanceof Error ? err.message : '適用に失敗しました');
     } finally {

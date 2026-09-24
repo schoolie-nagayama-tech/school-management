@@ -1014,15 +1014,61 @@ async function fetchProposalUnitMaxima(
 // 編集者が提案書編集画面から個別に「公開」することで初めて反映される。
 // 適用履歴(seasonal_course_applications) は「下書き適用済み」の意味で記録するため残す。
 // mode は呼び出し元との互換のため残しているが、下書き作成では履歴の applied_mode 値以外は未使用。
+/** テンプレ登録で、生徒×教材ごとに既にある提案書（同じ季節・年度） */
+export interface ExistingApplyProposal {
+  id: string;
+  student_id: string;
+  textbook_id: number;
+  status: string;
+}
+
+/** テンプレ登録の結果。公開済みで足さなかった生徒×教材を返す（画面で件数を伝える） */
+export interface ApplyCoursesResult {
+  skippedPublished: { studentId: string; textbookId: number }[];
+}
+
+/**
+ * テンプレ登録で、生徒×教材ごとに「新しく作る／既存に足す／飛ばす」を決める（純関数）。
+ *
+ * ★提案書は (生徒, 教材, 季節, 年度) で一意。過去問の入ったテンプレを2つ（英語・数学）登録すると、
+ *   過去問の提案書は1件に集まる。以前は upsert でテーマ・状態まで上書きしていたので、
+ *   2つ目の登録で先に作った提案書のテーマが2つ目の講習名に変わり、提案済・公開も「下書き」に戻っていた。
+ * - 既存が無い → 新しく作る（下書き・テーマ＝講習名）
+ * - 既存が下書き・提案済 → その提案書に単元を足す。テーマ・状態は触らない
+ * - 既存が公開 → 足さない。公開は進行表と同期済みで、単元だけ足すと進行表とずれる
+ *   （提案書の新規作成画面と同じ決まり。proposalMerge.ts の classifyExistingBooks）
+ */
+export function planApplyProposals(
+  pairs: { studentId: string; textbookId: number }[],
+  existing: ExistingApplyProposal[]
+): {
+  toCreate: { studentId: string; textbookId: number }[];
+  reuse: Map<string, string>;
+  skippedPublished: { studentId: string; textbookId: number }[];
+} {
+  const byKey = new Map(existing.map((e) => [`${e.student_id}:${e.textbook_id}`, e]));
+  const toCreate: { studentId: string; textbookId: number }[] = [];
+  const reuse = new Map<string, string>();
+  const skippedPublished: { studentId: string; textbookId: number }[] = [];
+  for (const pair of pairs) {
+    const key = `${pair.studentId}:${pair.textbookId}`;
+    const e = byKey.get(key);
+    if (!e) toCreate.push(pair);
+    else if (e.status === 'approved') skippedPublished.push(pair);
+    else reuse.set(key, e.id);
+  }
+  return { toCreate, reuse, skippedPublished };
+}
+
 export async function applyCoursesToStudents(
   courseId: string,
   studentIds: string[],
   mode: 'overwrite' | 'add'
-): Promise<void> {
+): Promise<ApplyCoursesResult> {
   const course = await getSeasonalCourse(courseId);
   if (!course) throw new Error('コースが見つかりません');
 
-  if (studentIds.length === 0) return;
+  if (studentIds.length === 0) return { skippedPublished: [] };
 
   // 下書き作成では student_textbooks（所持教材）を作らない。
   // 提案書を公開(publishProposal → syncProposalToProgress)したタイミングで初めて
@@ -1061,46 +1107,65 @@ export async function applyCoursesToStudents(
     status: string;
     applied_koma: number;
   };
-  const proposalInserts: ProposalRow[] = [];
-
+  const pairs: { studentId: string; textbookId: number }[] = [];
   for (const studentId of studentIds) {
     for (const ct of course.textbooks) {
       // 0コマの結合メンバーも入っている（buildApplySettingsByTextbook のコメント参照）
       const settings = settingsByTextbook.get(ct.textbook_id) || [];
       const hasCurriculum = !textbooksWithoutCurriculum.has(ct.textbook_id);
-
       if (settings.length === 0 && hasCurriculum) continue;
-
-      proposalInserts.push({
-        student_id: studentId,
-        textbook_id: ct.textbook_id,
-        student_textbook_id: null,
-        school_id: course.school_id,
-        season: course.season,
-        year,
-        theme: course.name,
-        status: 'draft',
-        // 下書き段階では「申込」は未確定。提案済/公開にしたタイミングで koma_count から初期化される。
-        applied_koma: 0,
-      });
+      pairs.push({ studentId, textbookId: ct.textbook_id });
     }
   }
 
+  // 同じ季節・年度に既にある提案書を引く（生徒が多いので分割＋ページング）
+  const textbookIds = Array.from(new Set(pairs.map((p) => p.textbookId)));
+  // 入れるものが無ければ問い合わせない（.in() に空配列を渡すと無意味なクエリになる）
+  const existing =
+    pairs.length === 0
+      ? []
+      : await fetchAllInChunks<ExistingApplyProposal>(studentIds, (chunk, from, to) =>
+          fromProposals()
+            .select('id, student_id, textbook_id, status')
+            .in('student_id', chunk)
+            .in('textbook_id', textbookIds)
+            .eq('season', course.season)
+            .eq('year', year)
+            .order('id', { ascending: true })
+            .range(from, to)
+        );
+  const applyPlan = planApplyProposals(pairs, existing);
+
+  const proposalInserts: ProposalRow[] = applyPlan.toCreate.map((p) => ({
+    student_id: p.studentId,
+    textbook_id: p.textbookId,
+    student_textbook_id: null,
+    school_id: course.school_id,
+    season: course.season,
+    year,
+    theme: course.name,
+    status: 'draft',
+    // 下書き段階では「申込」は未確定。提案済/公開にしたタイミングで koma_count から初期化される。
+    applied_koma: 0,
+  }));
+
+  // 生徒×教材 → 単元を入れる提案書。既存（下書き・提案済）はそのまま使い、テーマ・状態を上書きしない
+  const proposalMap = new Map<string, string>(applyPlan.reuse);
   if (proposalInserts.length > 0) {
-    const { data: proposals, error: pError } = await fromProposals()
-      .upsert(proposalInserts, { onConflict: 'student_id,textbook_id,season,year' })
+    const { data: created, error: pError } = await fromProposals()
+      .insert(proposalInserts)
       .select('id, student_id, textbook_id');
     if (pError) throw pError;
-
-    const proposalMap = new Map<string, string>();
-    for (const p of (proposals || []) as unknown as {
+    for (const p of (created || []) as unknown as {
       id: string;
       student_id: string;
       textbook_id: number;
     }[]) {
       proposalMap.set(`${p.student_id}:${p.textbook_id}`, p.id);
     }
+  }
 
+  if (proposalMap.size > 0) {
     const proposalIds = Array.from(proposalMap.values());
 
     // ★ 消すのは「このテンプレートが持っている単元」だけ。提案書の単元を全部消してはいけない。
@@ -1168,6 +1233,8 @@ export async function applyCoursesToStudents(
       applied_mode: mode,
     }))
   );
+
+  return { skippedPublished: applyPlan.skippedPublished };
 }
 
 // コースの適用履歴を取得

@@ -18,6 +18,7 @@ import {
   saveBulkCourseCurriculum,
 } from './seasonalCourses';
 import { draftsToCourseSettings } from '@/components/koushu-plan/courseSettingAdapter';
+import { mergeIntoExistingUnits } from '@/components/proposals/proposalMerge';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const fromProposals = () => supabase.from('seasonal_proposals' as any);
@@ -384,6 +385,63 @@ export async function upsertProposal(params: {
 
   const full = await getProposal(proposal.id);
   return full!;
+}
+
+/**
+ * 生徒のその期（季節×年度）の提案書を軽く引く（単元は読まない）。
+ * 新規作成の画面で「このテキストはもう提案書がある＝保存するとそこに足す」を判定するのに使う。
+ */
+export async function getTermProposals(
+  studentId: string,
+  season: SeasonType,
+  year: number
+): Promise<
+  { id: string; textbook_id: number; status: SeasonalProposal['status']; theme: string }[]
+> {
+  const { data, error } = await fromProposals()
+    .select('id, textbook_id, status, theme')
+    .eq('student_id', studentId)
+    .eq('season', season)
+    .eq('year', year);
+  if (error) throw new Error(`提案書の確認に失敗しました: ${error.message}`);
+  return (data ?? []) as unknown as {
+    id: string;
+    textbook_id: number;
+    status: SeasonalProposal['status'];
+    theme: string;
+  }[];
+}
+
+/**
+ * 既にある提案書に単元を足し込む（新規作成で同じテキストの提案書が既にあったとき）。
+ * 足し方の決まりは mergeIntoExistingUnits（proposalMerge.ts）。
+ * ★講習テーマ・状態・所持テキストの紐付けは触らない。先に作った提案書の中身なので。
+ */
+export async function mergeUnitsIntoProposal(
+  proposalId: string,
+  incoming: ProposalUnitInput[]
+): Promise<string> {
+  const { data, error } = await fromProposalUnits()
+    .select('*')
+    .eq('proposal_id', proposalId)
+    .order('sort_order', { ascending: true });
+  if (error) throw new Error(`既存の単元の取得に失敗しました: ${error.message}`);
+
+  const existing: ProposalUnitInput[] = ((data ?? []) as unknown as SeasonalProposalUnit[]).map(
+    (u) => ({
+      curriculum_item_id: u.curriculum_item_id,
+      koma_count: u.koma_count,
+      applied_koma: u.applied_koma,
+      reason: u.reason,
+      group_id: u.group_id,
+      applied_group_id: u.applied_group_id,
+      intent_tag: u.intent_tag,
+    })
+  );
+  const combined = mergeIntoExistingUnits(existing, incoming);
+  await saveProposalUnits(proposalId, combined);
+  await updateProposal(proposalId, { applied_koma: calcTotalAppliedKoma(combined) });
+  return proposalId;
 }
 
 // ============================================
