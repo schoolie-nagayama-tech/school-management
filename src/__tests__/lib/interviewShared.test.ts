@@ -580,6 +580,9 @@ describe('formatNaishin', () => {
 });
 
 describe('buildGoalAchievementLines', () => {
+  // 2026年度（中3＝9）。既存の目標はすべて2026年度の試験なので、成績側も grade: 9 で揃える
+  const GOAL_TODAY = new Date(2026, 8, 24);
+
   // 変換表そのものの検証: 目標側(日本語)と成績側(英語キー)の対応が崩れていないか
   it('科目の変換表が5科すべて揃っている', () => {
     expect(GOAL_SUBJECT_TO_ASSESSMENT_SUBJECT).toEqual({
@@ -620,12 +623,13 @@ describe('buildGoalAchievementLines', () => {
     const assessments = [
       {
         category: 'regular_test',
+        grade: 9,
         name_code: 'term1_final',
         scores: [{ subject: 'english', value: 68 }],
       },
     ] as unknown as AssessmentWithScores[];
 
-    const { tell, ask } = buildGoalAchievementLines(goals, assessments);
+    const { tell, ask } = buildGoalAchievementLines(goals, assessments, 9, GOAL_TODAY);
     expect(ask).toEqual([]);
     expect(tell).toEqual(['英語 1学期期末 目標75 → 68（-7）']);
   });
@@ -643,12 +647,13 @@ describe('buildGoalAchievementLines', () => {
     const assessments = [
       {
         category: 'regular_test',
+        grade: 9,
         name_code: 'term2_mid',
         scores: [{ subject: 'math', value: 73 }],
       },
     ] as unknown as AssessmentWithScores[];
 
-    const { tell } = buildGoalAchievementLines(goals, assessments);
+    const { tell } = buildGoalAchievementLines(goals, assessments, 9, GOAL_TODAY);
     expect(tell).toEqual(['数学 2学期中間 目標70 → 73（+3・達成）']);
   });
 
@@ -663,7 +668,7 @@ describe('buildGoalAchievementLines', () => {
       },
     ];
     // 成績側にまだ何も入っていない
-    const { tell, ask } = buildGoalAchievementLines(goals, []);
+    const { tell, ask } = buildGoalAchievementLines(goals, [], 9, GOAL_TODAY);
     expect(tell).toEqual([]);
     expect(ask).toEqual(['英語 1学期期末 目標75点。結果を聞いて入れる']);
   });
@@ -681,12 +686,13 @@ describe('buildGoalAchievementLines', () => {
     const assessments = [
       {
         category: 'regular_test',
+        grade: 9,
         name_code: 'term1_final',
         scores: [{ subject: 'english', value: 68 }],
       },
     ] as unknown as AssessmentWithScores[];
 
-    const { tell, ask } = buildGoalAchievementLines(goals, assessments);
+    const { tell, ask } = buildGoalAchievementLines(goals, assessments, 9, GOAL_TODAY);
     expect(tell).toEqual([]);
     expect(ask).toEqual(['英語 実力テスト 目標75点。結果を聞いて入れる']);
   });
@@ -708,14 +714,14 @@ describe('buildGoalAchievementLines', () => {
         target_score: 80,
       },
     ];
-    const { tell, ask } = buildGoalAchievementLines(goals, []);
+    const { tell, ask } = buildGoalAchievementLines(goals, [], 9, GOAL_TODAY);
     // 古い方（1学期中間）は落ち、新しい方（1学期期末）だけが残る
     expect(tell.length + ask.length).toBe(1);
     expect(ask[0]).toContain('数学');
   });
 
   it('目標が1件も無ければ何も出さない', () => {
-    expect(buildGoalAchievementLines([], [])).toEqual({ tell: [], ask: [] });
+    expect(buildGoalAchievementLines([], [], 9, GOAL_TODAY)).toEqual({ tell: [], ask: [] });
   });
 
   it('target_score が無い行は対象外', () => {
@@ -728,7 +734,7 @@ describe('buildGoalAchievementLines', () => {
         target_score: null,
       },
     ];
-    expect(buildGoalAchievementLines(goals, [])).toEqual({ tell: [], ask: [] });
+    expect(buildGoalAchievementLines(goals, [], 9, GOAL_TODAY)).toEqual({ tell: [], ask: [] });
   });
 
   it('★同じ内容の目標が2件あっても1行にまとめる（聞くこと）', () => {
@@ -742,7 +748,7 @@ describe('buildGoalAchievementLines', () => {
       exam_date: '2026-10-08',
       target_score: 80,
     };
-    const { tell, ask } = buildGoalAchievementLines([same, { ...same }], []);
+    const { tell, ask } = buildGoalAchievementLines([same, { ...same }], [], 9, GOAL_TODAY);
     expect(tell).toEqual([]);
     expect(ask).toEqual(['英語 学校の成績で「5」をとる 目標80点。結果を聞いて入れる']);
   });
@@ -758,12 +764,13 @@ describe('buildGoalAchievementLines', () => {
     const assessments = [
       {
         category: 'regular_test',
+        grade: 9,
         name_code: 'term2_mid',
         scores: [{ subject: 'math', value: 73 }],
       },
     ] as unknown as AssessmentWithScores[];
 
-    const { tell } = buildGoalAchievementLines([same, { ...same }], assessments);
+    const { tell } = buildGoalAchievementLines([same, { ...same }], assessments, 9, GOAL_TODAY);
     expect(tell).toEqual(['数学 2学期中間 目標70 → 73（+3・達成）']);
   });
 
@@ -775,8 +782,86 @@ describe('buildGoalAchievementLines', () => {
       exam_date: '2026-10-08',
       target_score: 80,
     };
-    const { ask } = buildGoalAchievementLines([base, { ...base, target_score: 90 }], []);
+    const { ask } = buildGoalAchievementLines(
+      [base, { ...base, target_score: 90 }],
+      [],
+      9,
+      GOAL_TODAY
+    );
     expect(ask).toHaveLength(2);
+  });
+
+  // 本番の実例（2026-09-23）: 中3の国語「2学期中間 目標90 → 69（-21）」の69は中2のときの点だった。
+  // name_code だけで引くと去年の同じ試験に当たるため、目標の年度の学年で絞る。
+  const kokugoGoal: ExamGoalForAchievement = {
+    subject_key: '国語',
+    exam_type_name: '2学期中間',
+    custom_exam_name: null,
+    exam_date: '2026-10-15',
+    target_score: 90,
+  };
+  const lastYearTerm2Mid = {
+    category: 'regular_test',
+    name_code: 'term2_mid',
+    grade: 8,
+    scores: [{ subject: 'japanese', value: 69 }],
+  };
+
+  it('★去年（前の学年）の同じ試験の点とは突き合わせず、聞くことに回す', () => {
+    const assessments = [lastYearTerm2Mid] as unknown as AssessmentWithScores[];
+    const { tell, ask } = buildGoalAchievementLines([kokugoGoal], assessments, 9, GOAL_TODAY);
+    expect(tell).toEqual([]);
+    expect(ask).toEqual(['国語 2学期中間 目標90点。結果を聞いて入れる']);
+  });
+
+  it('★去年と今年の同じ試験が両方あれば、今年（目標の年度の学年）の点を使う', () => {
+    // 去年の行を先に置く（find が先頭を拾っていた不具合の再現）
+    const assessments = [
+      lastYearTerm2Mid,
+      {
+        category: 'regular_test',
+        name_code: 'term2_mid',
+        grade: 9,
+        scores: [{ subject: 'japanese', value: 84 }],
+      },
+    ] as unknown as AssessmentWithScores[];
+    const { tell, ask } = buildGoalAchievementLines([kokugoGoal], assessments, 9, GOAL_TODAY);
+    expect(ask).toEqual([]);
+    expect(tell).toEqual(['国語 2学期中間 目標90 → 84（-6）']);
+  });
+
+  it('★学年末（1〜3月）の目標は前年度の学年で引く', () => {
+    // 2027年1月に中3（2026年度）の生徒が、2026-02 の学年末の目標を見るとき → 中2の学年末
+    const goal: ExamGoalForAchievement = {
+      subject_key: '数学',
+      exam_type_name: '学年末',
+      custom_exam_name: null,
+      exam_date: '2026-02-20',
+      target_score: 80,
+    };
+    const assessments = [
+      {
+        category: 'regular_test',
+        name_code: 'year_end',
+        grade: 8,
+        scores: [{ subject: 'math', value: 82 }],
+      },
+      {
+        category: 'regular_test',
+        name_code: 'year_end',
+        grade: 7,
+        scores: [{ subject: 'math', value: 60 }],
+      },
+    ] as unknown as AssessmentWithScores[];
+    const { tell } = buildGoalAchievementLines([goal], assessments, 9, new Date(2027, 0, 10));
+    expect(tell).toEqual(['数学 学年末 目標80 → 82（+2・達成）']);
+  });
+
+  it('学年が分からない生徒は突き合わせず、聞くことに回す', () => {
+    const assessments = [{ ...lastYearTerm2Mid, grade: 9 }] as unknown as AssessmentWithScores[];
+    const { tell, ask } = buildGoalAchievementLines([kokugoGoal], assessments, null, GOAL_TODAY);
+    expect(tell).toEqual([]);
+    expect(ask).toEqual(['国語 2学期中間 目標90点。結果を聞いて入れる']);
   });
 });
 

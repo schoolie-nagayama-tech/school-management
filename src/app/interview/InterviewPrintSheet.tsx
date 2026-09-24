@@ -197,7 +197,12 @@ export function InterviewPrintSheet({
   });
   // 目標の達成度・志望校との差・成績記録なしの「聞くこと」も同じ関数で組み直す
   // （InterviewScriptCard と二重実装しない。画面と紙で数字がずれる事故を防ぐ）
-  const goalAchievement = buildGoalAchievementLines(examGoals, assessments);
+  const goalAchievement = buildGoalAchievementLines(
+    examGoals,
+    assessments,
+    student.grade,
+    new Date()
+  );
   const targetSchoolGap = buildTargetSchoolGapLines(targetSchools, assessments);
   // 直近の模試の合格可能性と、登録に無い公立校（画面の④と同じ関数）
   const mockSchoolLines = buildMockSchoolLines(mockSchools, assessments, targetSchools);

@@ -1003,10 +1003,20 @@ export interface GoalAchievementLines {
  *   まったく同じ行が2件できる（実例: 緑園都市校の中3で英語の目標が2行並んだ）。
  *   ★落とすのは「組み上げた文が完全に同じ」ときだけにしてある。科目と試験が同じでも
  *     目標点が違う行は、データの食い違いとして両方見せる（片方を黙って選ぶと気づけない）。
+ * ★結果は「その試験の、目標の年度の学年の」定期テストだけと突き合わせる（2026-09）。
+ *   name_code だけで引くと、中3の2学期中間の目標に去年（中2）の2学期中間の点が付く
+ *   （本番に term2_mid が111件あり、多くが前の学年のもの。実例: 中3の国語で
+ *   「目標90 → 69（-21）」と出たが、69は中2のときの点だった）。
+ *   目標の年度の学年は、今の学年から「今日の年度 − exam_date の年度」を引いて出す
+ *  （4月始まり・koushuFiscalYear。buildTestPrepLines の proposalGrade と同じ考え方）。
+ *   学年が分からない生徒は突き合わせようが無いので、全部「聞くこと」に回す。
+ *   ★去年の点を出すより、聞いて入れてもらう方が安全（違う点で「-21」と言うと面談が壊れる）。
  */
 export function buildGoalAchievementLines(
   examGoals: readonly ExamGoalForAchievement[],
-  assessments: AssessmentWithScores[]
+  assessments: readonly AssessmentWithScores[],
+  studentGrade: number | null,
+  today: Date
 ): GoalAchievementLines {
   const withTarget = examGoals.filter((g) => g.target_score != null);
   if (withTarget.length === 0) return { tell: [], ask: [] };
@@ -1019,6 +1029,7 @@ export function buildGoalAchievementLines(
 
   const tell: string[] = [];
   const ask: string[] = [];
+  const fiscalNow = koushuFiscalYear(today);
 
   for (const goal of targets) {
     const target = goal.target_score as number;
@@ -1027,12 +1038,17 @@ export function buildGoalAchievementLines(
     const nameCode = goal.exam_type_name
       ? GOAL_EXAM_NAME_TO_ASSESSMENT_NAME_CODE[goal.exam_type_name]
       : undefined;
+    const goalGrade = gradeInFiscalYearOf(studentGrade, fiscalNow, goal.exam_date);
 
-    // 変換できない（科目・試験名がどちらの変換表にも無い）ときは、結果を探しようが無いので聞くことに回す
+    // 変換できない（科目・試験名がどちらの変換表にも無い）、または目標の年度の学年が出せない
+    // ときは、結果を探しようが無いので聞くことに回す
     const score =
-      subject && nameCode
+      subject && nameCode && goalGrade != null
         ? (assessments
-            .find((a) => a.category === 'regular_test' && a.name_code === nameCode)
+            .find(
+              (a) =>
+                a.category === 'regular_test' && a.name_code === nameCode && a.grade === goalGrade
+            )
             ?.scores.find((s) => s.subject === subject)?.value ?? null)
         : null;
 
@@ -1047,6 +1063,25 @@ export function buildGoalAchievementLines(
   }
 
   return { tell: Array.from(new Set(tell)), ask: Array.from(new Set(ask)) };
+}
+
+/**
+ * 日付（YYYY-MM-DD）の年度に、その生徒が何年生だったか。
+ *
+ * ★new Date('YYYY-MM-DD') は UTC 0時として読まれるため使わない。年と月だけを文字列から取り、
+ *   ローカルの日付として koushuFiscalYear に渡す（4/1 が 3月扱いになる事故を避ける）。
+ * ★未来の年度（来年度の目標）なら学年は上がる。差をそのまま引くので +1 になる。
+ */
+function gradeInFiscalYearOf(
+  studentGrade: number | null,
+  fiscalNow: number,
+  dateStr: string
+): number | null {
+  if (studentGrade == null) return null;
+  const m = /^(\d{4})-(\d{2})/.exec(dateStr);
+  if (!m) return null;
+  const fiscal = koushuFiscalYear(new Date(Number(m[1]), Number(m[2]) - 1, 1));
+  return studentGrade - (fiscalNow - fiscal);
 }
 
 /* ============================================================
