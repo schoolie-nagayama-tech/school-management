@@ -1,0 +1,873 @@
+{
+  "prefecture": "神奈川県",
+  "school_name": "松陽",
+  "official_url": "https://www.pen-kanagawa.ed.jp/shoyo-h/",
+  "researched_at": "2026-09-24",
+  "stats": [
+    {
+      "metric": "university_count",
+      "item": "国公立",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 15,
+      "source_url": "https://www.pen-kanagawa.ed.jp/shoyo-h/shinro/documents/r7sotugyousinro.pdf",
+      "source_label": "松陽高等学校 令和7年度卒業生等の進路状況（52期 進路状況・過去3年間、3月9日現在）",
+      "as_of": "2026-03-09",
+      "note": "国公立大学の表（大学校・短大・専門・就職を除く4年制国公立のみ）の計。資料に「延べ」の明記はないが、52期の合計（4年制大学のみ643名）が同年卒業者数313名（令和8年3月7日卒業式、学校運営協議会議事録）を大幅に上回るため、合格者数（延べ）と判断した。学校案内パンフレット（令和8年度版、2026-06-18作成）の「合格実績」表とも数値が完全一致。"
+    },
+    {
+      "metric": "university_count",
+      "item": "早慶上理",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 15,
+      "source_url": "https://www.pen-kanagawa.ed.jp/shoyo-h/shinro/documents/r7sotugyousinro.pdf",
+      "source_label": "松陽高等学校 令和7年度卒業生等の進路状況（52期 進路状況・過去3年間、3月9日現在）",
+      "as_of": "2026-03-09",
+      "note": "大学別の表から合算（早稲田7・慶應義塾1・上智3・東京理科4）。基準は国公立と同じく延べ（根拠は国公立の note を参照）。"
+    },
+    {
+      "metric": "university_count",
+      "item": "GMARCH",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 121,
+      "source_url": "https://www.pen-kanagawa.ed.jp/shoyo-h/shinro/documents/r7sotugyousinro.pdf",
+      "source_label": "松陽高等学校 令和7年度卒業生等の進路状況（52期 進路状況・過去3年間、3月9日現在）",
+      "as_of": "2026-03-09",
+      "note": "大学別の表から合算（学習院7・明治22・青山学院19・立教11・中央27・法政35）。2026年3月の学校運営協議会でも「卒業生の進路状況はボリューム・ゾーンがGMARCH」と説明あり、整合。"
+    },
+    {
+      "metric": "university_count",
+      "item": "成成明武",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 59,
+      "source_url": "https://www.pen-kanagawa.ed.jp/shoyo-h/shinro/documents/r7sotugyousinro.pdf",
+      "source_label": "松陽高等学校 令和7年度卒業生等の進路状況（52期 進路状況・過去3年間、3月9日現在）",
+      "as_of": "2026-03-09",
+      "note": "大学別の表から合算（成蹊10・成城4・明治学院40・武蔵5）。"
+    },
+    {
+      "metric": "university_count",
+      "item": "日東駒専",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 108,
+      "source_url": "https://www.pen-kanagawa.ed.jp/shoyo-h/shinro/documents/r7sotugyousinro.pdf",
+      "source_label": "松陽高等学校 令和7年度卒業生等の進路状況（52期 進路状況・過去3年間、3月9日現在）",
+      "as_of": "2026-03-09",
+      "note": "大学別の表から合算（日本38・東洋19・駒澤27・専修24）。"
+    },
+    {
+      "metric": "university_count",
+      "item": "合計",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 643,
+      "source_url": "https://www.pen-kanagawa.ed.jp/shoyo-h/shinro/documents/r7sotugyousinro.pdf",
+      "source_label": "松陽高等学校 令和7年度卒業生等の進路状況（52期 進路状況・過去3年間、3月9日現在）",
+      "as_of": "2026-03-09",
+      "note": "4年制大学（国公立15＋私立628）の計。大学校1・短期大学3・専門学校8・就職2は含まない（含めた場合の全体計は657）。"
+    },
+    {
+      "metric": "university_count",
+      "item": "神奈川大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 61,
+      "source_url": "https://www.pen-kanagawa.ed.jp/shoyo-h/shinro/documents/r7sotugyousinro.pdf",
+      "source_label": "松陽高等学校 令和7年度卒業生等の進路状況（52期 進路状況・過去3年間、3月9日現在）",
+      "as_of": "2026-03-09",
+      "note": "52期で最多の合格大学。"
+    },
+    {
+      "metric": "university_count",
+      "item": "東海大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 45,
+      "source_url": "https://www.pen-kanagawa.ed.jp/shoyo-h/shinro/documents/r7sotugyousinro.pdf",
+      "source_label": "松陽高等学校 令和7年度卒業生等の進路状況（52期 進路状況・過去3年間、3月9日現在）",
+      "as_of": "2026-03-09",
+      "note": ""
+    },
+    {
+      "metric": "university_count",
+      "item": "明治学院大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 40,
+      "source_url": "https://www.pen-kanagawa.ed.jp/shoyo-h/shinro/documents/r7sotugyousinro.pdf",
+      "source_label": "松陽高等学校 令和7年度卒業生等の進路状況（52期 進路状況・過去3年間、3月9日現在）",
+      "as_of": "2026-03-09",
+      "note": ""
+    },
+    {
+      "metric": "university_count",
+      "item": "日本大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 38,
+      "source_url": "https://www.pen-kanagawa.ed.jp/shoyo-h/shinro/documents/r7sotugyousinro.pdf",
+      "source_label": "松陽高等学校 令和7年度卒業生等の進路状況（52期 進路状況・過去3年間、3月9日現在）",
+      "as_of": "2026-03-09",
+      "note": ""
+    },
+    {
+      "metric": "university_count",
+      "item": "法政大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 35,
+      "source_url": "https://www.pen-kanagawa.ed.jp/shoyo-h/shinro/documents/r7sotugyousinro.pdf",
+      "source_label": "松陽高等学校 令和7年度卒業生等の進路状況（52期 進路状況・過去3年間、3月9日現在）",
+      "as_of": "2026-03-09",
+      "note": ""
+    },
+    {
+      "metric": "designation",
+      "item": "教育課程研究開発校（学習評価に係る研究）",
+      "basis": "",
+      "fiscal_year": 2022,
+      "value_text": "県教育委員会指定。学習評価の在り方の研究が授業内容改善や効果的な課題設定につながっている（学校の説明）。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shoyo-h/nyugaku/documents/r8-gakkouannai.pdf",
+      "source_label": "松陽高等学校 令和8年度学校案内パンフレット",
+      "as_of": "2026-06-18",
+      "note": "令和4年度指定開始、令和8年度学校案内（作成2026-06-18）にも継続掲載。特色ページ（tokushoku/index.html）にも同時掲載。"
+    },
+    {
+      "metric": "uniform",
+      "item": "",
+      "basis": "",
+      "fiscal_year": 2022,
+      "value_text": "男子は紺サージの上衣（片前・ケン襟・二釦）にグレーの指定ネクタイ、女子は紺サージの上衣（W前六釦）にスカート（車ヒダ）またはスラックス（任意）。5/1〜10/31は略装可で白無地ポロシャツも可。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shoyo-h/hogosha/documents/2022seitokokoroehpyou.pdf",
+      "source_label": "松陽高等学校 学校生活の心得（5 服装規定）",
+      "as_of": "2022-04-25",
+      "note": "生徒心得PDFは2022年4月作成のまま更新の形跡なし。"
+    },
+    {
+      "metric": "rules_summary",
+      "item": "",
+      "basis": "",
+      "fiscal_year": 2022,
+      "value_text": "頭髪は染色・脱色を禁止。バイク・自動車での登下校や制服での運転を禁止。スマートフォン使用やアルバイトについての規定は生徒心得に記載なし。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shoyo-h/hogosha/documents/2022seitokokoroehpyou.pdf",
+      "source_label": "松陽高等学校 学校生活の心得",
+      "as_of": "2022-04-25",
+      "note": "自転車運転中のスマホ使用禁止の規定はあるが、所持・授業中利用等の一般規定は見当たらない。"
+    }
+  ],
+  "clubs": [
+    {
+      "name": "アメリカンフットボール部",
+      "kind": "運動",
+      "days_note": "月、木、トレーニング",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shoyo-h/seikatsu/club/amefut.html",
+      "as_of": "2025-06-13"
+    },
+    {
+      "name": "剣道部",
+      "kind": "運動",
+      "days_note": "週5日（基本的に土日のうち1日休養日）",
+      "days_per_week": 5,
+      "weekend": "土日",
+      "tier": 2,
+      "tier_basis": "2023年度：関東高等学校剣道大会神奈川県予選会で女子団体ベスト32・男子団体ベスト32、全国高等学校総合体育大会剣道競技県予選会で男子個人ベスト32・男子団体ベスト32、神奈川県高校新人剣道大会で女子個人ベスト16（県9位）。2024年度も関東予選・新人大会で男女団体ベスト32が複数回（部のページ）。県大会でのベスト16〜32が複数回確認できるため段階2とした。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shoyo-h/seikatsu/club/kendo.html",
+      "as_of": "2026-07-09",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "全国高校総体神奈川県予選",
+          "level": "都県",
+          "result": "男子団体・女子団体とも3回戦進出",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shoyo-h/seikatsu/club/kendo.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "関東高等学校剣道大会神奈川県予選会",
+          "level": "都県",
+          "result": "男子団体ベスト32",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shoyo-h/seikatsu/club/kendo.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "全国高等学校総合体育大会剣道競技神奈川県予選会",
+          "level": "都県",
+          "result": "女子個人ベスト32（過去10年で初）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shoyo-h/seikatsu/club/kendo.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "神奈川県高校新人剣道大会",
+          "level": "都県",
+          "result": "女子個人ベスト16（県9位）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shoyo-h/seikatsu/club/kendo.html"
+        }
+      ]
+    },
+    {
+      "name": "硬式テニス部（男子）",
+      "kind": "運動",
+      "days_note": "平日4日（月水木金）、土日は原則いずれかで活動",
+      "days_per_week": 5,
+      "weekend": "土日",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shoyo-h/seikatsu/club/man_koushikitennis.html",
+      "as_of": "2026-07-09"
+    },
+    {
+      "name": "硬式テニス部（女子）",
+      "kind": "運動",
+      "days_note": "平日4日（月火水木）、土日は原則いずれかで活動",
+      "days_per_week": 5,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2024年度神奈川県高校テニス新人大会団体戦ベスト32（1回のみ）、横浜地区テニスリーグ大会6部（下位リーグ）準優勝、2025年度は県大会シングルス出場にとどまり順位の記載なし。ベスト16〜32の複数回実績には届かず段階3。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shoyo-h/seikatsu/club/woman_koushikitennis.html",
+      "as_of": "2025-06-13",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "神奈川県高校テニス新人大会",
+          "level": "都県",
+          "result": "団体戦ベスト32",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shoyo-h/seikatsu/club/woman_koushikitennis.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "神奈川県高校テニス大会",
+          "level": "都県",
+          "result": "シングルス県大会出場",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shoyo-h/seikatsu/club/woman_koushikitennis.html"
+        }
+      ]
+    },
+    {
+      "name": "硬式野球部",
+      "kind": "運動",
+      "days_note": "平日週4日。シーズン中（3〜11月）の休日は練習試合、シーズンオフの休日は練習",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2024年夏（第106回選手権）は神奈川大会4回戦進出（ベスト32、武相に0-7）。2025年夏（第107回）は2回戦敗退（横浜翠嵐に3-5）。2026年夏（第108回）も2回戦敗退（日大に3-12）。2026年の春季県大会・秋季県大会（本大会）もいずれも2回戦敗退（慶應藤沢に4-11、日大藤沢に0-7）。2024・2025年度の春季・秋季は地区予選で敗退し本大会出場なし（学校サイト「活動実績」）。ベスト16〜32相当の実績は2024年夏の1回のみで複数回の条件を満たさないため段階3（一球速報.com・学校サイト）。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shoyo-h/seikatsu/club/baseball.html",
+      "as_of": "2026-08-24",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "令和8年度神奈川県高等学校野球秋季県大会",
+          "level": "都県",
+          "result": "1回戦勝利（鶴見大附に10-0）、2回戦敗退（日大藤沢に0-7）",
+          "happened_on": "2026-09-09",
+          "source_url": "https://baseball.omyutech.com/CupHomePageTeamSchedule.action?teamId=12187&cupId=20260000401"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "第108回全国高等学校野球選手権神奈川大会",
+          "level": "都県",
+          "result": "1回戦勝利（平塚工科に14-4）、2回戦敗退（日大に3-12）",
+          "happened_on": "2026-07-10",
+          "source_url": "https://baseball.omyutech.com/CupHomePageTeamSchedule.action?teamId=12187&cupId=20260013579"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "令和8年度神奈川県高等学校野球春季県大会",
+          "level": "都県",
+          "result": "1回戦勝利（茅ケ崎に4-2）、2回戦敗退（慶應藤沢に4-11）",
+          "happened_on": "2026-04-05",
+          "source_url": "https://baseball.omyutech.com/CupHomePageTeamSchedule.action?teamId=12187&cupId=20260007465"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第107回全国高等学校野球選手権神奈川大会",
+          "level": "都県",
+          "result": "2回戦敗退（横浜翠嵐に3-5、1回戦は勝利）",
+          "happened_on": "2025-07-12",
+          "source_url": "https://baseball.omyutech.com/CupHomePageTeamSchedule.action?teamId=12187&cupId=20250000302"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "第106回全国高等学校野球選手権神奈川大会",
+          "level": "都県",
+          "result": "4回戦敗退（ベスト32、武相に0-7）",
+          "happened_on": "2024-07-16",
+          "source_url": "https://baseball.omyutech.com/CupHomePageTeamSchedule.action?teamId=12187&cupId=20240009752"
+        }
+      ]
+    },
+    {
+      "name": "サッカー部",
+      "kind": "運動",
+      "days_note": "平日4日間（水曜日・木曜日どちらかOFF）、休日は試合・練習・OFF（土日祝のうち1日は休養日）",
+      "days_per_week": 5,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2026年度 高円宮杯JFA U-18サッカーリーグ神奈川のK1〜K6のいずれにも松陽の登録が見当たらない（支部リーグ相当）。活動日は週5日程度で週3日以下ではないため段階3。県予選も2026年度全国高校総体1次予選で横浜緑ケ丘に3-4で敗退、全国高校サッカー選手権予選で平塚工科に0-1で敗退と初戦敗退が続く（学校サイト）。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shoyo-h/seikatsu/club/soccar.html",
+      "as_of": "2026-08-04",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "令和8年度全国高校総合体育大会サッカー競技神奈川県1次予選",
+          "level": "都県",
+          "result": "初戦敗退（横浜緑ケ丘に3-4）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shoyo-h/seikatsu/club/soccar.html"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "令和8年度全国高校サッカー選手権大会神奈川県予選",
+          "level": "都県",
+          "result": "初戦敗退（平塚工科に0-1）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shoyo-h/seikatsu/club/soccar.html"
+        }
+      ]
+    },
+    {
+      "name": "水泳部",
+      "kind": "運動",
+      "days_note": "5〜9月はプールで練習。10〜4月は学校プールが使えないため平日は陸上トレーニング、休日は横浜国際プールを確保できた場合のみ水中練習",
+      "tier": 2,
+      "tier_basis": "2025年度の県総体200m平泳ぎで7位（都県大会ベスト8）、あわせて関東大会に出場（学校案内パンフレット「令和7年度活動実績」）。1回のみの実績だが「ベスト8が1回」の条件を満たすため段階2。部のページ自体の直近実績（2024年度100m・200m平泳ぎとも県で14〜17位）は順位が低いため根拠に用いていない。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shoyo-h/nyugaku/documents/r8-gakkouannai.pdf",
+      "as_of": "2026-06-18",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "神奈川県高等学校総合体育大会水泳競技",
+          "level": "都県",
+          "result": "200m平泳ぎ7位、関東大会出場",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shoyo-h/nyugaku/documents/r8-gakkouannai.pdf"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "第62回神奈川県高等学校総合体育大会",
+          "level": "都県",
+          "result": "女子100m平泳ぎ17位、女子200m平泳ぎ14位",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shoyo-h/seikatsu/club/suiei.html"
+        }
+      ]
+    },
+    {
+      "name": "ソフトテニス部",
+      "kind": "運動",
+      "days_note": "水曜定休。土日は練習または練習試合（いずれか1日は休養日）",
+      "days_per_week": 5,
+      "weekend": "土日",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shoyo-h/seikatsu/club/softtennis.html",
+      "as_of": "2026-07-16"
+    },
+    {
+      "name": "体操部",
+      "kind": "運動",
+      "days_note": "平日月・水・金（体育館）、休日3〜4時間（体育館または県内他校への外部練習）",
+      "days_per_week": 3,
+      "weekend": "土日",
+      "tier": 1,
+      "tier_basis": "女子団体で都県大会ベスト8以上を3回確認：2024年度インターハイ県最終予選8位、2025年度関東大会県予選5位、2025年度インターハイ県最終予選4位（いずれも部のページ）。異なる年度にまたがり複数回のベスト8以上を満たすため段階1（男子は2022年度団体5位が最新の好成績で直近3年内に該当なし、女子の成績で判定）。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shoyo-h/seikatsu/club/taiso.html",
+      "as_of": "2026-07-07",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "インターハイ県最終予選会",
+          "level": "都県",
+          "result": "女子団体総合4位",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shoyo-h/seikatsu/club/taiso.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "関東大会県予選",
+          "level": "都県",
+          "result": "女子団体総合5位",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shoyo-h/seikatsu/club/taiso.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "インターハイ県最終予選会",
+          "level": "都県",
+          "result": "女子団体総合8位",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shoyo-h/seikatsu/club/taiso.html"
+        }
+      ]
+    },
+    {
+      "name": "ダンス部",
+      "kind": "運動",
+      "days_note": "基本的に水・土曜日OFF。火・日曜日は武道場、それ以外は体育館中二階で活動",
+      "days_per_week": 5,
+      "weekend": "日",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shoyo-h/seikatsu/club/dance.html",
+      "as_of": "2026-07-07"
+    },
+    {
+      "name": "バスケットボール部（男子）",
+      "kind": "運動",
+      "days_note": "平日月・水・金（体育館）、火・木（どちらかOFF・どちらかトレーニング）、休日は試合・練習・OFF（1日は休養日）",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "tier": 2,
+      "tier_basis": "2026年度高校総体県予選で北支部代表決定戦を勝ち抜き県大会3回戦で敗退（旭丘に56-57）、最終成績は神奈川県9位で「公立高校の中では神奈川県1位相当」（学校サイト、県立の中で最上位）。2025年度は総体県予選ベスト24・新人県予選ベスト32、2026年度関東大会県予選もベスト32（学校案内パンフレット）。ベスト16〜32相当が複数回に加え県立最上位の実績もあり段階2。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shoyo-h/seikatsu/club/man_basket.html",
+      "as_of": "2026-07-24",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "令和8年度高校総体神奈川県予選",
+          "level": "都県",
+          "result": "県大会3回戦敗退（旭丘に56-57）、最終成績県9位（公立校で1位相当）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shoyo-h/seikatsu/club/man_basket.html"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "関東大会神奈川県予選",
+          "level": "都県",
+          "result": "ベスト32",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shoyo-h/nyugaku/documents/r8-gakkouannai.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "高校総体県予選",
+          "level": "都県",
+          "result": "ベスト24",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shoyo-h/nyugaku/documents/r8-gakkouannai.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "高校新人県予選",
+          "level": "都県",
+          "result": "ベスト32",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shoyo-h/nyugaku/documents/r8-gakkouannai.pdf"
+        }
+      ]
+    },
+    {
+      "name": "バスケットボール部（女子）",
+      "kind": "運動",
+      "days_note": "月・火（トレーニング）・水・金・土・日（木曜日は休養日）",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "tier": 1,
+      "tier_basis": "2025年度：関東大会県予選女子団体4位、高校総体県予選ベスト8、ウィンターカップ県予選ベスト8と都県大会ベスト8以上を3回確認、あわせて令和7年度関東高等学校バスケットボール大会に出場（部のページ）。複数回のベスト8以上と関東大会出場を満たすため段階1。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shoyo-h/seikatsu/club/woman_basket.html",
+      "as_of": "2026-07-24",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "関東高等学校バスケットボール大会",
+          "level": "関東",
+          "result": "出場",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shoyo-h/seikatsu/club/woman_basket.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "関東大会県予選",
+          "level": "都県",
+          "result": "女子団体4位",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shoyo-h/nyugaku/documents/r8-gakkouannai.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "高校総体県予選",
+          "level": "都県",
+          "result": "ベスト8",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shoyo-h/nyugaku/documents/r8-gakkouannai.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "ウィンターカップ県予選",
+          "level": "都県",
+          "result": "ベスト8",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shoyo-h/nyugaku/documents/r8-gakkouannai.pdf"
+        }
+      ]
+    },
+    {
+      "name": "バドミントン部（男子）",
+      "kind": "運動",
+      "days_note": "〔平日〕体育館：月・火・木、トレーニング：金〔休日〕土曜日OFF・日曜日3時間程度の練習・公式戦・練習試合",
+      "days_per_week": 5,
+      "weekend": "日",
+      "tier": 2,
+      "tier_basis": "2023年度に関東大会予選団体戦で県ベスト32、同年高校総体シングルスでも県ベスト32（いずれも部のページ）。2024年度は地区予選止まりで県大会内の順位は不明。県大会ベスト16〜32が複数回のため段階2。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shoyo-h/seikatsu/club/badminton.html",
+      "as_of": "2025-01-29",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "令和6年度冬季横浜市大会",
+          "level": "地区",
+          "result": "団体戦6位",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shoyo-h/seikatsu/club/badminton.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "関東大会予選",
+          "level": "都県",
+          "result": "団体戦第5位（県ベスト32）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shoyo-h/seikatsu/club/badminton.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "高校総体",
+          "level": "都県",
+          "result": "シングルス第5位（県ベスト32）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shoyo-h/seikatsu/club/badminton.html"
+        }
+      ]
+    },
+    {
+      "name": "バドミントン部（女子）",
+      "kind": "運動",
+      "days_note": "〔平日〕体育館：月（隔週）・火・木（火・木は男女合同）〔休日〕土曜練習、日曜OFF（大会・練習試合時を除く）",
+      "days_per_week": 3.5,
+      "weekend": "土",
+      "tier": 1,
+      "tier_basis": "2025年6月インターハイ予選で女子団体2大会連続（2024・2025年度）県ベスト8、2025年4月関東大会予選も女子団体県ベスト8、2023年度新人大会でも団体ベスト8。加えて2024年度は関東大会に出場（県9位）。複数年にわたる県ベスト8以上と関東大会出場の両方を満たし段階1（部のページ）。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shoyo-h/seikatsu/club/woman_badminton.html",
+      "as_of": "2026-06-26",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "インターハイ予選",
+          "level": "都県",
+          "result": "女子団体県ベスト8（2大会連続、2025年6月）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shoyo-h/seikatsu/club/woman_badminton.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "関東大会予選",
+          "level": "都県",
+          "result": "女子団体県ベスト8（2025年4月）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shoyo-h/seikatsu/club/woman_badminton.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "関東大会",
+          "level": "関東",
+          "result": "出場（県9位で出場権獲得）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shoyo-h/seikatsu/club/woman_badminton.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "新人大会（県大会）",
+          "level": "都県",
+          "result": "団体ベスト8",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shoyo-h/seikatsu/club/woman_badminton.html"
+        }
+      ]
+    },
+    {
+      "name": "バレーボール部（男子）",
+      "kind": "運動",
+      "days_note": "〔平日〕火・木曜日は体育館練習、月・水曜日は外練習やトレーニング、金曜日は定休日〔休日〕土曜日は体育館練習／練習試合",
+      "days_per_week": 5,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "2025年度春高予選（神奈川大会）2回戦敗退にとどまる（学校案内パンフレット）。部のページに具体的な大会結果の記載はなし。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shoyo-h/seikatsu/club/man_valley.html",
+      "as_of": "2026-07-03",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "春高バレー神奈川県予選",
+          "level": "都県",
+          "result": "2回戦敗退",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shoyo-h/nyugaku/documents/r8-gakkouannai.pdf"
+        }
+      ]
+    },
+    {
+      "name": "バレーボール部（女子）",
+      "kind": "運動",
+      "days_note": "日曜日・火曜日・木曜日・土曜日の週4日（土日祝の1日は休養日）",
+      "days_per_week": 4,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2024年度インターハイ県予選ベスト32が最も良い実績で、複数回のベスト16〜32には届かない。2025・2026年度は県大会・関東大会予選とも「出場」にとどまり順位の記載なし（部のページ・学校案内パンフレット）。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shoyo-h/seikatsu/club/woman_volley.html",
+      "as_of": "2025-06-13",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "インターハイ神奈川県予選会",
+          "level": "都県",
+          "result": "ベスト32",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shoyo-h/seikatsu/club/woman_volley.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "神奈川県高等学校バレーボール新人大会",
+          "level": "都県",
+          "result": "県大会出場",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shoyo-h/seikatsu/club/woman_volley.html"
+        }
+      ]
+    },
+    {
+      "name": "ハンドボール部",
+      "kind": "運動",
+      "days_note": "基本的に木曜日がOFF。土日は基本午前中でどちらか一方は休養日",
+      "days_per_week": 5,
+      "weekend": "土日",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shoyo-h/seikatsu/club/handball.html",
+      "as_of": "2026-07-03"
+    },
+    {
+      "name": "フェンシング部",
+      "kind": "運動",
+      "days_note": "火・日曜OFF（公式戦時は有）",
+      "days_per_week": 5,
+      "weekend": "土",
+      "tier": 1,
+      "tier_basis": "2025年度・2026年度と2年連続で関東大会（団体女子、県4位で本大会出場）に出場（部のページ）。全国・関東大会出場が2回以上のため段階1。神奈川県の公立でフェンシングができるのは2校のみと部自身が説明。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shoyo-h/seikatsu/club/fencing.html",
+      "as_of": "2026-07-03",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "関東大会",
+          "level": "関東",
+          "result": "団体女子で県4位、本大会出場",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shoyo-h/seikatsu/club/fencing.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "関東大会",
+          "level": "関東",
+          "result": "団体女子で県4位、本大会出場",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shoyo-h/seikatsu/club/fencing.html"
+        }
+      ]
+    },
+    {
+      "name": "ラグビー部",
+      "kind": "運動",
+      "days_note": "月・火・水・金：基礎練習、水・金：グラウンド練習、土または日は合同練習（主に神奈川総合産業グラウンド）",
+      "days_per_week": 5,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2025年度、全国高等学校ラグビーフットボール大会県予選でプールA優勝（合同チーム）、横浜地区高等学校ラグビー7人制大会は合同チームでブロック優勝・準優勝（学校案内パンフレット・部のページで表現が異なる）。予選プール優勝の先の決勝トーナメントでの成績は不明で都県大会ベスト8以上とは確認できず、2026年度は部員0名で活動が実質休止中のため段階3にとどめた。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shoyo-h/seikatsu/club/rugby.html",
+      "as_of": "2026-08-19",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "全国高等学校ラグビーフットボール大会神奈川県予選",
+          "level": "都県",
+          "result": "プールA優勝（合同チーム）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shoyo-h/nyugaku/documents/r8-gakkouannai.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "横浜地区高等学校ラグビー7人制大会",
+          "level": "地区",
+          "result": "準優勝（合同チーム）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shoyo-h/nyugaku/documents/r8-gakkouannai.pdf"
+        }
+      ]
+    },
+    {
+      "name": "陸上競技部",
+      "kind": "運動",
+      "days_note": "平日は月〜金曜日放課後、土曜日は午前中（シーズン中は大会が多く月曜日が休みになることも）",
+      "days_per_week": 6,
+      "weekend": "土",
+      "tier": 2,
+      "tier_basis": "2025年度神奈川県高校新人陸上競技大会で女子7種競技6位（都県大会ベスト8）。1回のみの実績だが「ベスト8が1回」の条件を満たすため段階2（学校案内パンフレット）。部のページ自体が挙げる好成績（令和3年度男子砲丸投げ6位で関東大会等）は直近3年より古く根拠に用いていない。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shoyo-h/nyugaku/documents/r8-gakkouannai.pdf",
+      "as_of": "2026-06-18",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "神奈川県高校新人陸上競技大会",
+          "level": "都県",
+          "result": "女子7種競技6位",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shoyo-h/nyugaku/documents/r8-gakkouannai.pdf"
+        }
+      ]
+    },
+    {
+      "name": "科学部",
+      "kind": "文化",
+      "days_note": "月、水曜日",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shoyo-h/seikatsu/club/kagaku.html",
+      "as_of": "2024-08-01"
+    },
+    {
+      "name": "楽曲制作部",
+      "kind": "文化",
+      "days_note": "月曜日、火曜日、金曜日",
+      "days_per_week": 3,
+      "weekend": "なし",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shoyo-h/seikatsu/club/gakkyoku.html",
+      "as_of": "2025-06-13"
+    },
+    {
+      "name": "軽音部",
+      "kind": "文化",
+      "days_note": "月〜金、土日祝はライブ等の発表が近い場合を除きOFF",
+      "days_per_week": 5,
+      "weekend": "なし",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shoyo-h/seikatsu/club/keion.html",
+      "as_of": "2025-06-13"
+    },
+    {
+      "name": "茶道部",
+      "kind": "文化",
+      "days_note": "毎週月曜日・金曜日（月に4回ほどインストラクターが来訪、その他は自主練習）",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shoyo-h/seikatsu/club/sado.html",
+      "as_of": "2026-07-07"
+    },
+    {
+      "name": "写真部",
+      "kind": "文化",
+      "days_note": "火、木",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shoyo-h/seikatsu/club/photo.html",
+      "as_of": "2026-07-17"
+    },
+    {
+      "name": "書道部",
+      "kind": "文化",
+      "days_note": "月曜日は臨書練習日、火・水・金曜日はパフォーマンス練習日（パフォーマンスが近い場合は土曜日も活動）",
+      "days_per_week": 4,
+      "weekend": "なし",
+      "tier": 2,
+      "tier_basis": "2025・2026年度と2年連続で「全国高等学校書道パフォーマンスグランプリ」関東大会に出場（2025年度は出場20校中6位）。主催はイオンモール・イオンリテール（民間企業）で、関東ブロックどまりで全国決勝への進出は確認できないため民間主催の扱いとし段階2にとどめた。あわせて2025年度「かながわ書道まつり」書道パフォーマンスコンテストでチーム楓が準優勝・チーム瑠璃が第3位（同一校から2チーム入賞は大会初）。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shoyo-h/seikatsu/club/shodo.html",
+      "as_of": "2026-09-07",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "第6回全国高等学校書道パフォーマンスグランプリ 関東大会",
+          "level": "関東",
+          "result": "チーム椿が出場決定",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shoyo-h/seikatsu/club/shodo.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第5回全国高等学校書道パフォーマンスグランプリ 関東大会（出場20校、イオンモール・イオンリテール主催）",
+          "level": "関東",
+          "result": "チーム瑠璃が第6位。神奈川県立高校からは松陽のみ参加",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shoyo-h/seikatsu/club/shodo.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第18回かながわ書道まつり「第15回書道パフォーマンスコンテスト」",
+          "level": "都県",
+          "result": "チーム楓が準優勝、チーム瑠璃が第3位",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shoyo-h/seikatsu/club/shodo.html"
+        }
+      ]
+    },
+    {
+      "name": "吹奏楽部",
+      "kind": "文化",
+      "days_note": "火〜土（時期によって変更あり）",
+      "days_per_week": 5,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "2025年度、横浜吹奏楽コンクールA部門銀賞・横浜アンサンブルコンテスト金賞（いずれも横浜地区大会）、かながわ新人コンクール銀賞（学校案内パンフレット）。地区大会の受賞と県大会での銀賞（代表選出・金賞・最上位ではない）にとどまるため段階3。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shoyo-h/nyugaku/documents/r8-gakkouannai.pdf",
+      "as_of": "2026-06-18",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "横浜吹奏楽コンクールA部門",
+          "level": "地区",
+          "result": "銀賞",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shoyo-h/nyugaku/documents/r8-gakkouannai.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "かながわ新人コンクール",
+          "level": "都県",
+          "result": "銀賞",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shoyo-h/nyugaku/documents/r8-gakkouannai.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "横浜アンサンブルコンテスト",
+          "level": "地区",
+          "result": "金賞",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shoyo-h/nyugaku/documents/r8-gakkouannai.pdf"
+        }
+      ]
+    },
+    {
+      "name": "美術部",
+      "kind": "文化",
+      "days_note": "週に2日（水、金）",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shoyo-h/seikatsu/club/bijutu.html",
+      "as_of": "2026-07-09"
+    },
+    {
+      "name": "E.S.S.",
+      "kind": "同好会",
+      "days_note": "月に3、4回（主に月曜日で不定期）、お昼休み",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shoyo-h/seikatsu/club/ess.html",
+      "as_of": "2025-06-13"
+    },
+    {
+      "name": "イラスト同好会",
+      "kind": "同好会",
+      "days_note": "毎週金曜日、放課後〜18時",
+      "days_per_week": 1,
+      "weekend": "なし",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shoyo-h/seikatsu/club/irast.html",
+      "as_of": "2026-07-07"
+    },
+    {
+      "name": "クッキング同好会",
+      "kind": "同好会",
+      "days_note": "不定期",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shoyo-h/seikatsu/club/cooking.html",
+      "as_of": "2026-07-03"
+    },
+    {
+      "name": "文芸同好会",
+      "kind": "同好会",
+      "days_note": "毎週木曜日、放課後〜18時",
+      "days_per_week": 1,
+      "weekend": "なし",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shoyo-h/seikatsu/club/bungei.html",
+      "as_of": "2025-06-13"
+    }
+  ],
+  "designated_universities": [],
+  "events": [
+    {
+      "kind": "改修",
+      "period_label": "2024年3月",
+      "happened_on": "2024-03-15",
+      "summary": "武道場の改修および耐震補強工事が完成した",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shoyo-h/enkaku.html"
+    }
+  ],
+  "unresolved": [
+    "推薦の倍率：神奈川県公立高校入試は共通選抜のみで推薦単独の選考区分がないため対象外",
+    "部活動加入率：公式資料に「加入率」として公表された数値は見当たらない（部活動状況の一覧はあるが加入率の算出は元資料になし）",
+    "学校評価の満足度：神奈川県様式の学校評価報告書、および学校運営協議会資料の「魅力と特色ある県立高校づくりについてのアンケート」（生徒・保護者満足度）はいずれも公式サイトに未掲載（学校運営協議会議事録に存在は確認できるが数値は非公開）",
+    "指定校推薦の大学：学校案内パンフレット・進路ページのいずれにも公式な指定校推薦の一覧掲載なし",
+    "在校生の男女別人数：公式に公表している資料が見当たらない",
+    "進路決定率：卒業者数313名（学校運営協議会議事録）は判明しているが、進学・就職の内訳（実人数ベース）を示す資料が見当たらず、合格実績（延べ）の数字しかないため算出できない",
+    "改築・学級増減・学科改編・制服変更等の学校の変化：2020年以降で確認できたのは武道場改修（2024年）のみ。学級数・募集定員の増減に関する公式発表は見当たらなかった",
+    "バドミントン部（男子）の2024年度の県大会内順位、バレーボール部（男子・女子）の2025・2026年度の具体的な順位、ラグビー部の2025年度県予選プールA優勝後の決勝トーナメント成績：学校サイト・学校案内パンフレットのいずれにも記載が見当たらなかった",
+    "アメリカンフットボール部・ソフトテニス部・ハンドボール部・美術部・科学部・楽曲制作部・軽音部・茶道部・写真部・E.S.S.・クッキング同好会・文芸同好会の直近の大会・コンクール結果：公式サイトに具体的な結果の記載が見当たらなかった（軽音部・美術部・写真部は活動内容の説明のみで実績の記載なし）"
+  ],
+  "conflicts": [
+    "特色ページ（tokushoku/index.html）は「授業力向上推進重点校」「国立教育政策研究所教育課程研究指定校事業」を現在の特色として教育課程研究開発校と並べて掲載しているが、各詳細ページを見ると前者は平成28〜令和3年度（2016〜2021年度）、後者は平成30・31年度（2018・2019年度）の期間限定の指定でいずれも終了済み。現在も継続しているのは教育課程研究開発校（学習評価に係る研究、令和4年度指定）のみとみられ、特色ページの記載が更新されていない可能性がある。",
+    "ラグビー部の2025年度実績：学校案内パンフレットは「全国高等学校ラグビーフットボール大会県予選プールA優勝」「横浜地区高等学校ラグビー7人制大会準優勝」とするが、部自身のページは「高校総体7人制の部：合同チームで出場しブロック優勝」（準優勝ではなく優勝）と記載しており、大会名・結果の対応関係が資料間で食い違う。"
+  ]
+}

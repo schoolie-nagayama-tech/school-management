@@ -1,0 +1,578 @@
+{
+  "prefecture": "東京都",
+  "school_name": "野津田",
+  "official_url": "https://www.metro.ed.jp/nozuta-h/",
+  "researched_at": "2026-09-24",
+  "stats": [
+    {
+      "metric": "university_count",
+      "item": "合計",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 40,
+      "source_url": "https://www.metro.ed.jp/nozuta-h/assets/filelink/filelink-pdffile-33350.pdf",
+      "source_label": "野津田高校 過去3年間の卒業生の進路決定状況（令和7年度・49期生）",
+      "as_of": "2026-09",
+      "note": "4年制大学への実進学者数（普通科24・福祉科5・体育科11の合計）。大学別・大学群別（国公立・早慶上理・GMARCH等）の人数は非公開のため未取得。"
+    },
+    {
+      "metric": "admission_route_share",
+      "item": "指定校推薦",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 37.5,
+      "source_url": "https://www.metro.ed.jp/nozuta-h/assets/filelink/filelink-pdffile-33350.pdf",
+      "source_label": "野津田高校 過去3年間の卒業生の進路決定状況（令和7年度・49期生）",
+      "as_of": "2026-09",
+      "note": "4年制大学実進学者40名（3学科合計）に占める割合。実数15。"
+    },
+    {
+      "metric": "admission_route_share",
+      "item": "公募推薦",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 5.0,
+      "source_url": "https://www.metro.ed.jp/nozuta-h/assets/filelink/filelink-pdffile-33350.pdf",
+      "source_label": "野津田高校 過去3年間の卒業生の進路決定状況（令和7年度・49期生）",
+      "as_of": "2026-09",
+      "note": "4年制大学実進学者40名に占める割合。実数2。"
+    },
+    {
+      "metric": "admission_route_share",
+      "item": "総合型",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 50.0,
+      "source_url": "https://www.metro.ed.jp/nozuta-h/assets/filelink/filelink-pdffile-33350.pdf",
+      "source_label": "野津田高校 過去3年間の卒業生の進路決定状況（令和7年度・49期生）",
+      "as_of": "2026-09",
+      "note": "4年制大学実進学者40名に占める割合。実数20。"
+    },
+    {
+      "metric": "admission_route_share",
+      "item": "一般",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 7.5,
+      "source_url": "https://www.metro.ed.jp/nozuta-h/assets/filelink/filelink-pdffile-33350.pdf",
+      "source_label": "野津田高校 過去3年間の卒業生の進路決定状況（令和7年度・49期生）",
+      "as_of": "2026-09",
+      "note": "4年制大学実進学者40名に占める割合。実数3。指定校15・公募2・総合型20・一般3で合計40と一致（その他推薦は0）。"
+    },
+    {
+      "metric": "career_decided_rate",
+      "fiscal_year": 2025,
+      "value_num": 92,
+      "source_url": "https://www.metro.ed.jp/nozuta-h/assets/③R8学校経営計画(目標).pdf",
+      "source_label": "野津田高校 令和8年度学校経営計画（数値目標［昨年度実績］）",
+      "as_of": "2026-04-01",
+      "note": "令和7年度実績（目標は95%以上）。"
+    },
+    {
+      "metric": "club_join_rate",
+      "fiscal_year": 2025,
+      "value_num": 56,
+      "source_url": "https://www.metro.ed.jp/nozuta-h/assets/③R8学校経営計画(目標).pdf",
+      "source_label": "野津田高校 令和8年度学校経営計画（数値目標［昨年度実績］）",
+      "as_of": "2026-04-01",
+      "note": "令和7年度実績（目標は60%以上）。"
+    },
+    {
+      "metric": "satisfaction",
+      "item": "生徒・保護者:入学満足度",
+      "fiscal_year": 2025,
+      "value_num": 65,
+      "source_url": "https://www.metro.ed.jp/nozuta-h/assets/③R8学校経営計画(目標).pdf",
+      "source_label": "野津田高校 令和8年度学校経営計画（数値目標［昨年度実績］、学年目標）",
+      "as_of": "2026-04-01",
+      "note": "資料の表記は「生徒や保護者の入学満足度」で生徒・保護者を分けた数値ではない。令和7年度実績（目標は80%以上）。学校運営連絡協議会報告にも生徒・保護者別の満足度の記述はあるが「8割以上」等の概数のみで正確な数値の記載がないため、そちらは未採用。"
+    },
+    {
+      "metric": "exam_ratio",
+      "item": "推薦",
+      "fiscal_year": 2026,
+      "value_num": 1.22,
+      "source_url": "https://www.metro.ed.jp/nozuta-h/assets/③R8学校経営計画(目標).pdf",
+      "source_label": "野津田高校 令和8年度学校経営計画（数値目標［昨年度実績］）",
+      "as_of": "2026-04-01",
+      "note": "応募倍率。令和8年4月入学者選抜（推薦）の実績（目標は1.3倍）。3学科合計の数値で、学科別の内訳は資料に記載なし。学力検査（一般）の倍率は全校まとめ資料で取込済みのためここでは扱わない。"
+    },
+    {
+      "metric": "designation",
+      "item": "スキルアップ推進校",
+      "fiscal_year": 2026,
+      "value_text": "東京都教育委員会のスキルアップ推進校指定。「だから都立高」の学校情報ページでも同じ指定が確認できる。",
+      "source_url": "https://www.metro.ed.jp/nozuta-h/assets/pamphlet/pamphlet-pdffile-2768.pdf",
+      "source_label": "野津田高校 学校案内パンフレット School Guide 2027",
+      "as_of": "2026-09",
+      "note": ""
+    },
+    {
+      "metric": "designation",
+      "item": "「エンジョイスポーツプロジェクト」指定校",
+      "fiscal_year": 2026,
+      "value_text": "東京都の「エンジョイスポーツプロジェクト」指定校。",
+      "source_url": "https://www.metro.ed.jp/nozuta-h/assets/pamphlet/pamphlet-pdffile-2768.pdf",
+      "source_label": "野津田高校 学校案内パンフレット School Guide 2027",
+      "as_of": "2026-09",
+      "note": ""
+    },
+    {
+      "metric": "uniform",
+      "value_text": "標準は指定の校服(ブレザー)。ネクタイ・リボンの着用は平素自由。夏服期間は白・黒・紺・茶・ベージュ無地のポロシャツ可。女子用スラックスあり(スカートと選択可)。",
+      "fiscal_year": 2026,
+      "source_url": "https://www.metro.ed.jp/nozuta-h/assets/ＨＰ用(生徒手帳)　学校生活一般について.pdf",
+      "source_label": "野津田高校 令和8(2026)年度 生徒手帳抜粋「学校生活一般について」(5)服装",
+      "as_of": "2026-04",
+      "note": "制服・校章・校歌ページの要約「夏服はポロシャツOK、女子用のスラックスもあります」とも整合。"
+    },
+    {
+      "metric": "rules_summary",
+      "value_text": "頭髪の染色・脱色・パーマ、化粧、ピアス等禁止。携帯は授業中は電源を切りロッカーに保管、それ以外は他人に迷惑を掛けなければ使用可。アルバイトは原則禁止(要保護者承認)。バイク・自動車通学は不可。",
+      "fiscal_year": 2026,
+      "source_url": "https://www.metro.ed.jp/nozuta-h/assets/ＨＰ用(生徒手帳)　学校生活一般について.pdf",
+      "source_label": "野津田高校 令和8(2026)年度 生徒手帳抜粋「学校生活一般について」",
+      "as_of": "2026-04",
+      "note": ""
+    }
+  ],
+  "clubs": [
+    {
+      "name": "陸上競技部",
+      "kind": "運動",
+      "days_note": "月曜日・火曜日・水曜日・金曜日・土曜日・（日曜日）",
+      "days_per_week": 5.5,
+      "weekend": "土日",
+      "tier": 1,
+      "tier_basis": "2025年度、私立も出場する都大会（東京都高等学校選抜陸上競技大会・東京都高等学校新人陸上競技対抗選手権大会）で男子100m3位、200m6位、走幅跳4位、ハンマー投げ7位と個人種目でベスト8以上を4件記録（学校案内パンフレット）。",
+      "source_url": "https://www.metro.ed.jp/nozuta-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "第46回東京都高等学校選抜陸上競技大会",
+          "level": "都県",
+          "result": "男子走幅跳 第4位",
+          "source_url": "https://www.metro.ed.jp/nozuta-h/assets/pamphlet/pamphlet-pdffile-2768.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第76回東京都高等学校新人陸上競技対抗選手権大会",
+          "level": "都県",
+          "result": "男子100m 第3位、男子200m 第6位、男子ハンマー投げ 第7位",
+          "source_url": "https://www.metro.ed.jp/nozuta-h/assets/pamphlet/pamphlet-pdffile-2768.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第19回U18陸上競技大会",
+          "level": "その他",
+          "result": "男子100m 出場",
+          "source_url": "https://www.metro.ed.jp/nozuta-h/assets/pamphlet/pamphlet-pdffile-2768.pdf"
+        }
+      ]
+    },
+    {
+      "name": "男子サッカー部",
+      "kind": "運動",
+      "days_note": "火曜日・木曜日・金曜日・土曜日・日曜日",
+      "days_per_week": 5,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2026年度 高円宮杯JFA U-18サッカーリーグ東京のT1〜T5参加チーム一覧（tleague-u18.com、2026年9月24日確認）にいずれも該当なし＝支部リーグ所属。手引きの決め方（サッカー部はリーグ所属で判定）により段階3。",
+      "source_url": "https://www.metro.ed.jp/nozuta-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "全国高校サッカー選手権 東京都予選",
+          "level": "都県",
+          "result": "二次予選進出",
+          "source_url": "https://www.metro.ed.jp/nozuta-h/assets/pamphlet/pamphlet-pdffile-2768.pdf"
+        }
+      ]
+    },
+    {
+      "name": "女子サッカー部",
+      "kind": "運動",
+      "source_url": "https://www.metro.ed.jp/nozuta-h/school_life/activities.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "男子バスケットボール部",
+      "kind": "運動",
+      "days_note": "週５日",
+      "days_per_week": 5,
+      "tier": 3,
+      "tier_basis": "2025年度 U-18リーグ参戦T5グループI組で4位、夏季町田市大会優勝（市レベルの大会）にとどまり、都県大会での上位進出の記載なし（学校案内パンフレット）。",
+      "source_url": "https://www.metro.ed.jp/nozuta-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "高円宮杯U-18サッカーリーグ（バスケットボール部内呼称、原文ママ）",
+          "level": "地区",
+          "result": "T5グループI 第4位",
+          "source_url": "https://www.metro.ed.jp/nozuta-h/assets/pamphlet/pamphlet-pdffile-2768.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "夏季町田市大会",
+          "level": "地区",
+          "result": "優勝",
+          "source_url": "https://www.metro.ed.jp/nozuta-h/assets/pamphlet/pamphlet-pdffile-2768.pdf"
+        }
+      ]
+    },
+    {
+      "name": "女子バスケットボール部",
+      "kind": "運動",
+      "days_note": "月曜日・火曜日・水曜日・金曜日・土曜日・日曜日",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2025年度、春季大会（関東大会東京都予選）・総体東京都予選ともに「出場」の記載のみで、勝敗・順位の記載なし（学校案内パンフレット）。",
+      "source_url": "https://www.metro.ed.jp/nozuta-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "春季大会 兼関東高等学校女子バスケットボール大会 東京都予選",
+          "level": "都県",
+          "result": "出場",
+          "source_url": "https://www.metro.ed.jp/nozuta-h/assets/pamphlet/pamphlet-pdffile-2768.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "総体 兼全国大会東京都予選 夏季大会",
+          "level": "都県",
+          "result": "出場",
+          "source_url": "https://www.metro.ed.jp/nozuta-h/assets/pamphlet/pamphlet-pdffile-2768.pdf"
+        }
+      ]
+    },
+    {
+      "name": "女子バレーボール部",
+      "kind": "運動",
+      "days_note": "月曜日、火曜日、水曜日、木曜日、土曜日、日曜日",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2025年度、総体予選は2回戦進出にとどまり、武相大会Dリーグ優勝・公立校大会二部第2位もいずれも下位区分での成績（学校案内パンフレット）。春季リーグ戦第3位は合同チームでの参加。",
+      "source_url": "https://www.metro.ed.jp/nozuta-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "春季リーグ戦",
+          "level": "地区",
+          "result": "リーグ第3位（合同チーム）",
+          "source_url": "https://www.metro.ed.jp/nozuta-h/assets/pamphlet/pamphlet-pdffile-2768.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "総体予選",
+          "level": "都県",
+          "result": "2回戦進出",
+          "source_url": "https://www.metro.ed.jp/nozuta-h/assets/pamphlet/pamphlet-pdffile-2768.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "武相大会",
+          "level": "地区",
+          "result": "Dリーグ優勝",
+          "source_url": "https://www.metro.ed.jp/nozuta-h/assets/pamphlet/pamphlet-pdffile-2768.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "公立校大会",
+          "level": "都県",
+          "result": "二部大会進出 第2位",
+          "source_url": "https://www.metro.ed.jp/nozuta-h/assets/pamphlet/pamphlet-pdffile-2768.pdf"
+        }
+      ]
+    },
+    {
+      "name": "卓球部",
+      "kind": "運動",
+      "days_note": "月曜日、水曜日、金曜日、土曜日（日曜日）",
+      "days_per_week": 3.5,
+      "weekend": "土日",
+      "tier": 2,
+      "tier_basis": "2025年度 第42回東京都国公立高等学校卓球大会でシングルスベスト8（8回戦進出、1名）。都立・国公立限定大会のため一段低く読んでも段階2（学校案内パンフレット）。",
+      "source_url": "https://www.metro.ed.jp/nozuta-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "東京都高等学校春季卓球大会 兼関東高等学校卓球大会東京都予選",
+          "level": "都県",
+          "result": "シングルス 4回戦進出：1名",
+          "source_url": "https://www.metro.ed.jp/nozuta-h/assets/pamphlet/pamphlet-pdffile-2768.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "東京都高等学校総合体育大会 兼全国高等学校卓球大会東京都予選",
+          "level": "都県",
+          "result": "シングルス 5回戦進出：1名、ダブルス 3回戦進出：1組",
+          "source_url": "https://www.metro.ed.jp/nozuta-h/assets/pamphlet/pamphlet-pdffile-2768.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第42回東京都国公立高等学校卓球大会",
+          "level": "その他",
+          "result": "シングルス ベスト8（8回戦進出、1名）、団体戦 3回戦進出",
+          "source_url": "https://www.metro.ed.jp/nozuta-h/assets/pamphlet/pamphlet-pdffile-2768.pdf"
+        }
+      ]
+    },
+    {
+      "name": "硬式テニス部",
+      "kind": "運動",
+      "days_note": "月曜日・水曜日",
+      "days_per_week": 2,
+      "tier": 4,
+      "tier_basis": "活動日が週2日（月・水）で、学校案内パンフレットの活動実績一覧に記載がない。",
+      "source_url": "https://www.metro.ed.jp/nozuta-h/school_life/activities.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "剣道部",
+      "kind": "運動",
+      "source_url": "https://www.metro.ed.jp/nozuta-h/our_school/feature.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "トランポリン部",
+      "kind": "運動",
+      "source_url": "https://www.metro.ed.jp/nozuta-h/our_school/feature.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "フットサル同好会",
+      "kind": "同好会",
+      "source_url": "https://www.metro.ed.jp/nozuta-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "results": []
+    },
+    {
+      "name": "手話部",
+      "kind": "文化",
+      "days_note": "週に3～5回",
+      "source_url": "https://www.metro.ed.jp/nozuta-h/school_life/activities.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "華道部",
+      "kind": "文化",
+      "days_note": "木曜日",
+      "days_per_week": 1,
+      "tier": 4,
+      "tier_basis": "活動日が週1日（木曜）で、学校案内パンフレットの活動実績一覧に記載がない。",
+      "source_url": "https://www.metro.ed.jp/nozuta-h/school_life/activities.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "美術部",
+      "kind": "文化",
+      "days_note": "毎週火曜日～木曜日",
+      "days_per_week": 3,
+      "tier": 2,
+      "tier_basis": "2025年度 東京都高等学校文化祭 美術・工芸部門中央大会に出展。地区大会を勝ち抜いた地区代表としての中央大会出展にあたるため段階2（学校案内パンフレット）。",
+      "source_url": "https://www.metro.ed.jp/nozuta-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "東京都高等学校文化祭 美術・工芸部門中央大会",
+          "level": "都県",
+          "result": "出展",
+          "source_url": "https://www.metro.ed.jp/nozuta-h/assets/pamphlet/pamphlet-pdffile-2768.pdf"
+        }
+      ]
+    },
+    {
+      "name": "茶道部",
+      "kind": "文化",
+      "days_note": "月曜日",
+      "days_per_week": 1,
+      "tier": 4,
+      "tier_basis": "活動日が週1日（月曜）で、学校案内パンフレットの活動実績一覧に記載がない。",
+      "source_url": "https://www.metro.ed.jp/nozuta-h/school_life/activities.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "演劇部",
+      "kind": "文化",
+      "days_note": "基本 木曜日（公演前は増加の予定）",
+      "days_per_week": 1,
+      "tier": 4,
+      "tier_basis": "令和4〜6年度とも「主な実績」は「なし」、活動日は週1日（基本木曜）（演劇部 年間の活動計画）。",
+      "source_url": "https://www.metro.ed.jp/nozuta-h/assets/05_（別紙２）年間の活動計画（演劇部）.pdf",
+      "as_of": "2025-04"
+    },
+    {
+      "name": "軽音楽部",
+      "kind": "文化",
+      "days_note": "月曜日～金曜日（バンドごと）",
+      "days_per_week": 5,
+      "source_url": "https://www.metro.ed.jp/nozuta-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "MUSIC DAYS町田・相模原大会",
+          "level": "その他",
+          "result": "出場",
+          "source_url": "https://www.metro.ed.jp/nozuta-h/assets/pamphlet/pamphlet-pdffile-2768.pdf"
+        }
+      ]
+    },
+    {
+      "name": "マンガ・イラスト部",
+      "kind": "文化",
+      "days_note": "火曜日、水曜日、木曜日",
+      "days_per_week": 3,
+      "tier": 4,
+      "tier_basis": "活動日が週3日（火・水・木）で、学校案内パンフレットの活動実績一覧に記載がない。",
+      "source_url": "https://www.metro.ed.jp/nozuta-h/school_life/activities.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "吹奏楽部",
+      "kind": "文化",
+      "days_note": "月曜日、水曜日、木曜日、土曜日（日曜日）",
+      "days_per_week": 3.5,
+      "weekend": "土日",
+      "tier": 2,
+      "tier_basis": "2025年度 東京都高等学校文化祭音楽部門中央大会に出場。地区代表としての中央大会出場にあたるため段階2（学校案内パンフレット）。",
+      "source_url": "https://www.metro.ed.jp/nozuta-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "第49回東京都高等学校アンサンブルコンテスト",
+          "level": "都県",
+          "result": "出場",
+          "source_url": "https://www.metro.ed.jp/nozuta-h/assets/pamphlet/pamphlet-pdffile-2768.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "東京都高等学校文化祭音楽部門中央大会",
+          "level": "都県",
+          "result": "出場",
+          "source_url": "https://www.metro.ed.jp/nozuta-h/assets/pamphlet/pamphlet-pdffile-2768.pdf"
+        }
+      ]
+    },
+    {
+      "name": "天文部",
+      "kind": "文化",
+      "source_url": "https://www.metro.ed.jp/nozuta-h/our_school/feature.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "バドミントン同好会",
+      "kind": "同好会",
+      "days_note": "火曜日、金曜日",
+      "days_per_week": 2,
+      "tier": 4,
+      "tier_basis": "活動日が週2日（火・金）で、学校案内パンフレットの活動実績一覧に記載がない。",
+      "source_url": "https://www.metro.ed.jp/nozuta-h/school_life/activities.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "ダンス同好会",
+      "kind": "同好会",
+      "days_note": "月曜日、水曜日、金曜日",
+      "days_per_week": 3,
+      "tier": 4,
+      "tier_basis": "活動日が週3日（月・水・金）で、目立つ大会実績の記載がない。",
+      "source_url": "https://www.metro.ed.jp/nozuta-h/school_life/activities.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "英語同好会",
+      "kind": "同好会",
+      "days_note": "火曜日",
+      "days_per_week": 1,
+      "tier": 4,
+      "tier_basis": "活動日が週1日（火曜）で、目立つ実績の記載がない。",
+      "source_url": "https://www.metro.ed.jp/nozuta-h/school_life/activities.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "園芸同好会",
+      "kind": "同好会",
+      "days_note": "春と夏　月１回",
+      "tier": 4,
+      "tier_basis": "活動が春・夏の月1回のみで、目立つ実績の記載がない。",
+      "source_url": "https://www.metro.ed.jp/nozuta-h/school_life/activities.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "歴史研究同好会",
+      "kind": "同好会",
+      "days_note": "文化祭、不定期",
+      "tier": 4,
+      "tier_basis": "活動が文化祭時・不定期で、目立つ実績の記載がない。",
+      "source_url": "https://www.metro.ed.jp/nozuta-h/school_life/activities.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "軟式野球同好会",
+      "kind": "同好会",
+      "days_note": "月曜日・金曜日",
+      "days_per_week": 2,
+      "tier": 4,
+      "tier_basis": "活動日が週2日（月・金）で、目立つ実績の記載がない。",
+      "source_url": "https://www.metro.ed.jp/nozuta-h/school_life/activities.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "かるた同好会",
+      "kind": "同好会",
+      "days_note": "火曜日・金曜日",
+      "days_per_week": 2,
+      "tier": 4,
+      "tier_basis": "活動日が週2日（火・金）で、目立つ実績の記載がない。",
+      "source_url": "https://www.metro.ed.jp/nozuta-h/school_life/activities.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "ユニバーサルスポーツ同好会",
+      "kind": "同好会",
+      "days_note": "月曜日、木曜日",
+      "days_per_week": 2,
+      "tier": 4,
+      "tier_basis": "活動日が週2日（月・木）で、目立つ実績の記載がない。",
+      "source_url": "https://www.metro.ed.jp/nozuta-h/school_life/activities.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "ハンドボール同好会",
+      "kind": "同好会",
+      "source_url": "https://www.metro.ed.jp/nozuta-h/school_life/activities.html",
+      "as_of": "2026-09-24"
+    }
+  ],
+  "designated_universities": [],
+  "events": [
+    {
+      "kind": "学級増減",
+      "period_label": "令和2年4月から",
+      "summary": "第1学年の定員が5学級になった。",
+      "source_url": "https://www.metro.ed.jp/nozuta-h/our_school/history.html"
+    }
+  ],
+  "unresolved": [
+    "大学別・大学群別（国公立・早慶上理・GMARCH・成成明武・日東駒専等）の合格者数：非公開（進路状況ページ「主な進路先」は大学名のみで人数の記載なし、学校経営計画にも大学群の数値目標なし）",
+    "指定校推薦の大学名：非公開（進路状況ページ・パンフレットに「指定校」と明記した大学一覧の記載なし）",
+    "男女別生徒数：非公開（学校案内パンフレット・学校経営計画に記載なし）",
+    "生徒:学校生活等の満足度（正確な数値）：学校運営連絡協議会実施報告書に「8割以上の生徒」「9割の生徒、8割の保護者」等の概数表記のみで、正確な%の記載がないため不採用",
+    "女子サッカー部・剣道部・トランポリン部・フットサル同好会・天文部の活動日・大会実績：部活動ページに個別の紹介カードがなく、活動日・実績とも非公開"
+  ],
+  "conflicts": [
+    "女子サッカー部の在籍：部活動ページ（school_life/activities.html）の運動部一覧には「女子サッカー部」があるが、特色ページ（our_school/feature.html）の体育系部活動一覧には「男子サッカー部」のみで女子の記載がない。",
+    "フットサル部/フットサル同好会：特色ページ（feature.html）では体育系部活動として「フットサル部」、部活動ページ（activities.html）では同好会として「フットサル同好会」と、名称・区分が食い違う。"
+  ]
+}

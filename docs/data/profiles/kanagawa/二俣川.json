@@ -1,0 +1,473 @@
+{
+  "prefecture": "神奈川県",
+  "school_name": "二俣川",
+  "official_url": "https://www.pen-kanagawa.ed.jp/futamatagawa-h/",
+  "researched_at": "2026-09-24",
+  "stats": [
+    {
+      "metric": "university_count",
+      "item": "国公立",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 2,
+      "source_url": "https://www.pen-kanagawa.ed.jp/futamatagawa-h/shinro/documents/60kangoka_1.pdf",
+      "source_label": "二俣川高等学校 60回生進路状況報告＜看護科＞",
+      "as_of": "2026-04-23",
+      "note": "大学別の表から合算（神奈川県立保健福祉大学1＋川崎市立看護大学1、いずれも看護科）。福祉科の大学に該当なし。"
+    },
+    {
+      "metric": "university_count",
+      "item": "早慶上理",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 0,
+      "source_url": "https://www.pen-kanagawa.ed.jp/futamatagawa-h/shinro/documents/60hukusika.pdf",
+      "source_label": "二俣川高等学校 60回生進路状況報告＜学校種別等集計＞",
+      "as_of": "2026-04-23",
+      "note": "看護科・福祉科の大学別の表（合わせて22名）に該当大学なし。"
+    },
+    {
+      "metric": "university_count",
+      "item": "GMARCH",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 0,
+      "source_url": "https://www.pen-kanagawa.ed.jp/futamatagawa-h/shinro/documents/60hukusika.pdf",
+      "source_label": "二俣川高等学校 60回生進路状況報告＜学校種別等集計＞",
+      "as_of": "2026-04-23",
+      "note": "看護科・福祉科の大学別の表（合わせて22名）に該当大学なし。"
+    },
+    {
+      "metric": "university_count",
+      "item": "成成明武",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 0,
+      "source_url": "https://www.pen-kanagawa.ed.jp/futamatagawa-h/shinro/documents/60hukusika.pdf",
+      "source_label": "二俣川高等学校 60回生進路状況報告＜学校種別等集計＞",
+      "as_of": "2026-04-23",
+      "note": "看護科・福祉科の大学別の表（合わせて22名）に該当大学なし。"
+    },
+    {
+      "metric": "university_count",
+      "item": "日東駒専",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 0,
+      "source_url": "https://www.pen-kanagawa.ed.jp/futamatagawa-h/shinro/documents/60hukusika.pdf",
+      "source_label": "二俣川高等学校 60回生進路状況報告＜学校種別等集計＞",
+      "as_of": "2026-04-23",
+      "note": "看護科・福祉科の大学別の表（合わせて22名）に該当大学なし。"
+    },
+    {
+      "metric": "university_count",
+      "item": "合計",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 22,
+      "source_url": "https://www.pen-kanagawa.ed.jp/futamatagawa-h/shinro/documents/60hukusika.pdf",
+      "source_label": "二俣川高等学校 60回生進路状況報告＜学校種別等集計＞",
+      "as_of": "2026-04-23",
+      "note": "学校集計「60回生 学校種別等集計」の大学計（看護科17＋福祉科5）。短大1・専門69・就職3・未定1は含まない（4年制大学のみ）。"
+    },
+    {
+      "metric": "university_count",
+      "item": "横浜創英大学",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 2,
+      "source_url": "https://www.pen-kanagawa.ed.jp/futamatagawa-h/shinro/documents/60kangoka_1.pdf",
+      "source_label": "二俣川高等学校 60回生進路状況報告＜看護科＞",
+      "as_of": "2026-04-23",
+      "note": "大学別の表（看護科）から。他2校（順天堂大学・東京純心大学）と並び最多の2名。"
+    },
+    {
+      "metric": "university_count",
+      "item": "順天堂大学",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 2,
+      "source_url": "https://www.pen-kanagawa.ed.jp/futamatagawa-h/shinro/documents/60kangoka_1.pdf",
+      "source_label": "二俣川高等学校 60回生進路状況報告＜看護科＞",
+      "as_of": "2026-04-23",
+      "note": "大学別の表（看護科）から。他2校（横浜創英大学・東京純心大学）と並び最多の2名。"
+    },
+    {
+      "metric": "university_count",
+      "item": "東京純心大学",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 2,
+      "source_url": "https://www.pen-kanagawa.ed.jp/futamatagawa-h/shinro/documents/60kangoka_1.pdf",
+      "source_label": "二俣川高等学校 60回生進路状況報告＜看護科＞",
+      "as_of": "2026-04-23",
+      "note": "大学別の表（看護科）から。他2校（横浜創英大学・順天堂大学）と並び最多の2名。それ以外の大学はすべて1名で並ぶ。"
+    },
+    {
+      "metric": "career_decided_rate",
+      "item": "",
+      "basis": "",
+      "fiscal_year": 2025,
+      "value_num": 99,
+      "source_url": "https://www.pen-kanagawa.ed.jp/futamatagawa-h/shinro/documents/60hukusika.pdf",
+      "source_label": "二俣川高等学校 60回生進路状況報告＜学校種別等集計＞",
+      "as_of": "2026-04-23",
+      "note": "看護科・福祉科合算で算出：進学92（大学22＋短大1＋専門69）＋就職3＝95、全体96（未定1を含む）。95/96=98.96%→99.0%。学校案内パンフレットの「進学率95%」は就職を含まない進学のみの割合で定義が異なる（conflicts参照）。"
+    },
+    {
+      "metric": "club_join_rate",
+      "item": "",
+      "basis": "",
+      "fiscal_year": 2025,
+      "value_num": 55,
+      "source_url": "https://www.pen-kanagawa.ed.jp/futamatagawa-h/gaiyou/documents/r7gakkouhyoukahoukokusyo.pdf",
+      "source_label": "二俣川高等学校 令和7年度学校評価報告書（目標設定・実施結果）",
+      "as_of": "2026-04-13",
+      "note": "「生徒指導・支援」の改善方策等欄に「今年度の部活動の加入率は55％である。加入率の向上が課題である」と記載。"
+    },
+    {
+      "metric": "uniform",
+      "item": "",
+      "basis": "",
+      "fiscal_year": 2025,
+      "value_text": "ブレザー。冬服はネクタイまたはリボン、スカートまたはスラックスを選べる。夏服はワイシャツのみ（移行期間5・10月）。令和7年度入学生から新制服。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/futamatagawa-h/seikatsu/documents/hukusokitei1.pdf",
+      "source_label": "二俣川高等学校 令和7年度入学生 服装規定について",
+      "as_of": "2025-08-18",
+      "note": "令和5・6年度入学生は旧規定（ネクタイまたは指定ベスト、学校指定ポロシャツ可）で別途運用中。"
+    },
+    {
+      "metric": "rules_summary",
+      "item": "",
+      "basis": "",
+      "fiscal_year": 2025,
+      "value_text": "頭髪はパーマ・染髪・脱色・エクステ・ウィッグ禁止。化粧・マニキュア・アクセサリー禁止。アルバイトは原則禁止（要届出）。自転車通学はヘルメット着用必須。スマホの校内使用規定の記載なし。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/futamatagawa-h/seikatsu/documents/seitokokoroe.pdf",
+      "source_label": "二俣川高等学校 生徒心得",
+      "as_of": "2025-08-14",
+      "note": "県条例により、青少年だけでの深夜（午後11時〜翌日午前4時）外出も禁止と明記。"
+    }
+  ],
+  "clubs": [
+    {
+      "name": "ソフトテニス部",
+      "kind": "運動",
+      "days_note": "火・水・金・土",
+      "days_per_week": 4,
+      "weekend": "土",
+      "source_url": "https://www.pen-kanagawa.ed.jp/futamatagawa-h/seikatsu/club.html",
+      "as_of": "2026-08-25",
+      "results": []
+    },
+    {
+      "name": "女子バレーボール部",
+      "kind": "運動",
+      "days_note": "月・木・金・土",
+      "days_per_week": 4,
+      "weekend": "土",
+      "source_url": "https://www.pen-kanagawa.ed.jp/futamatagawa-h/seikatsu/club.html",
+      "as_of": "2026-08-25",
+      "results": []
+    },
+    {
+      "name": "バスケットボール部（女子）",
+      "kind": "運動",
+      "days_note": "火・水・木・土・(日)",
+      "days_per_week": 4.5,
+      "weekend": "土日",
+      "source_url": "https://www.pen-kanagawa.ed.jp/futamatagawa-h/seikatsu/documents/zyobasu.pdf",
+      "as_of": "2026-08-25",
+      "results": []
+    },
+    {
+      "name": "バスケットボール部（男子）",
+      "kind": "運動",
+      "days_note": "木",
+      "days_per_week": 1,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日は週1日（木）。部活動ページに「今年の目標は対外試合をすることです」とあり、対外試合の実績がまだない。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/futamatagawa-h/seikatsu/documents/danbasu.pdf",
+      "as_of": "2026-08-25",
+      "results": []
+    },
+    {
+      "name": "ダンス部",
+      "kind": "運動",
+      "days_note": "月・木",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日は週2日（月・木）。部活動ページに「大会や発表会に参加します」とあるのみで、具体的な成績の記載がない。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/futamatagawa-h/seikatsu/documents/dansu.pdf",
+      "as_of": "2026-08-25",
+      "results": []
+    },
+    {
+      "name": "バドミントン部",
+      "kind": "運動",
+      "days_note": "火・水・金・土",
+      "days_per_week": 4,
+      "weekend": "土",
+      "source_url": "https://www.pen-kanagawa.ed.jp/futamatagawa-h/seikatsu/documents/badominton.pdf",
+      "as_of": "2026-08-25",
+      "results": []
+    },
+    {
+      "name": "陸上競技部",
+      "kind": "運動",
+      "days_note": "月・火・水・金・土",
+      "days_per_week": 5,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "部活動ページに2026年度高校総体横浜地区予選の男子円盤投げ出場が確認できる（上位進出の記載はない）。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/futamatagawa-h/seikatsu/documents/rikuzyou.pdf",
+      "as_of": "2026-08-25",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "神奈川県高等学校総合体育大会 横浜地区予選",
+          "level": "地区",
+          "result": "男子円盤投げに出場（上位進出の記載なし）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/futamatagawa-h/seikatsu/documents/rikuzyou.pdf"
+        }
+      ]
+    },
+    {
+      "name": "卓球部",
+      "kind": "運動",
+      "days_note": "水・金",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日は週2日（水・金）。部活動ページに「楽しくのんびり活動中」とあり、大会実績の記載がない。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/futamatagawa-h/seikatsu/documents/takkyuu.pdf",
+      "as_of": "2026-08-25",
+      "results": []
+    },
+    {
+      "name": "チアダンス部",
+      "kind": "運動",
+      "days_note": "火・水・木",
+      "days_per_week": 3,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "部活動一覧に活動日（週3日）の記載のみで、個別ページ・大会実績を示す資料が見つからなかった。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/futamatagawa-h/seikatsu/club.html",
+      "as_of": "2026-08-25",
+      "results": []
+    },
+    {
+      "name": "ハイキング部",
+      "kind": "運動",
+      "days_note": "不定期",
+      "source_url": "https://www.pen-kanagawa.ed.jp/futamatagawa-h/seikatsu/club.html",
+      "as_of": "2026-08-25",
+      "results": []
+    },
+    {
+      "name": "サッカー同好会",
+      "kind": "同好会",
+      "days_note": "週1程度",
+      "days_per_week": 1,
+      "source_url": "https://www.pen-kanagawa.ed.jp/futamatagawa-h/seikatsu/documents/sakka-doukoukai20260825.pdf",
+      "as_of": "2026-08-25",
+      "results": []
+    },
+    {
+      "name": "男子バレーボール同好会",
+      "kind": "同好会",
+      "days_note": "週1程度",
+      "days_per_week": 1,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日は週1程度。部活動一覧に活動日の記載のみで、大会実績の記載がない。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/futamatagawa-h/seikatsu/club.html",
+      "as_of": "2026-08-25",
+      "results": []
+    },
+    {
+      "name": "茶華道部",
+      "kind": "文化",
+      "days_note": "木（茶道）・第三水（華道）",
+      "weekend": "なし",
+      "source_url": "https://www.pen-kanagawa.ed.jp/futamatagawa-h/seikatsu/documents/sakadou.pdf",
+      "as_of": "2026-08-25",
+      "results": []
+    },
+    {
+      "name": "文芸部",
+      "kind": "文化",
+      "days_note": "金曜日のみ",
+      "days_per_week": 1,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日は週1日（金曜のみ）。自由な創作活動が中心で、大会・コンクールの実績記載がない。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/futamatagawa-h/seikatsu/documents/bungei.pdf",
+      "as_of": "2026-08-25",
+      "results": []
+    },
+    {
+      "name": "写真部",
+      "kind": "文化",
+      "days_note": "不定期",
+      "source_url": "https://www.pen-kanagawa.ed.jp/futamatagawa-h/seikatsu/documents/syasin.pdf",
+      "as_of": "2026-08-25",
+      "results": []
+    },
+    {
+      "name": "コーラス部",
+      "kind": "文化",
+      "days_note": "月・火・木",
+      "days_per_week": 3,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日は週3日（月・火・木）。校内行事や老人ホーム訪問が中心で、コンクール出場の記載がない。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/futamatagawa-h/seikatsu/documents/ko-rasu.pdf",
+      "as_of": "2026-08-25",
+      "results": []
+    },
+    {
+      "name": "家庭科部",
+      "kind": "文化",
+      "days_note": "水（月1回）",
+      "weekend": "なし",
+      "source_url": "https://www.pen-kanagawa.ed.jp/futamatagawa-h/seikatsu/documents/kateika.pdf",
+      "as_of": "2026-08-25",
+      "results": []
+    },
+    {
+      "name": "JRC",
+      "kind": "文化",
+      "days_note": "月・水",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "source_url": "https://www.pen-kanagawa.ed.jp/futamatagawa-h/seikatsu/club.html",
+      "as_of": "2026-08-25",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "かながわ部活アクティブ賞",
+          "level": "その他",
+          "result": "受賞",
+          "source_url": "https://www.pen-kanagawa.ed.jp/futamatagawa-h/nyugaku/documents/2026panhuretto.pdf"
+        }
+      ]
+    },
+    {
+      "name": "筝曲部",
+      "kind": "文化",
+      "days_note": "月・火・水",
+      "days_per_week": 3,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日は週3日（月・火・水）。部活動ページに大会・コンクールの実績記載がない。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/futamatagawa-h/seikatsu/documents/soukyoku.pdf",
+      "as_of": "2026-08-25",
+      "results": []
+    },
+    {
+      "name": "吹奏楽部",
+      "kind": "文化",
+      "days_note": "水・金・(火)",
+      "days_per_week": 2.5,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日は週2.5日（水・金・(火)）。学校説明会や文化祭での演奏が中心で、コンクール出場の記載がない。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/futamatagawa-h/seikatsu/documents/suisougaku.pdf",
+      "as_of": "2026-08-25",
+      "results": []
+    },
+    {
+      "name": "軽音楽部",
+      "kind": "文化",
+      "days_note": "月・火・水・木・金",
+      "days_per_week": 5,
+      "weekend": "なし",
+      "source_url": "https://www.pen-kanagawa.ed.jp/futamatagawa-h/seikatsu/club.html",
+      "as_of": "2026-08-25",
+      "results": []
+    },
+    {
+      "name": "手話部",
+      "kind": "文化",
+      "days_note": "月・火・水",
+      "days_per_week": 3,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日は週3日（月・火・水）。イベントでの手話通訳やボランティアが中心で、大会実績の記載がない。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/futamatagawa-h/seikatsu/documents/syuwa.pdf",
+      "as_of": "2026-08-25",
+      "results": []
+    },
+    {
+      "name": "演劇部",
+      "kind": "文化",
+      "days_note": "火・木",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日は週2日（火・木）。文化祭や発表会に向けた稽古が中心で、外部の大会・コンクールの記載がない。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/futamatagawa-h/seikatsu/documents/enngeki.pdf",
+      "as_of": "2026-08-25",
+      "results": []
+    },
+    {
+      "name": "点字同好会",
+      "kind": "同好会",
+      "days_note": "火または木",
+      "days_per_week": 1,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "部活動一覧に活動日（週1日）の記載のみで、大会実績の記載がない。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/futamatagawa-h/seikatsu/club.html",
+      "as_of": "2026-08-25",
+      "results": []
+    }
+  ],
+  "designated_universities": [],
+  "events": [
+    {
+      "kind": "学科改編",
+      "period_label": "2025年4月から",
+      "summary": "「二俣川看護福祉高等学校」から「二俣川高等学校」に改称。看護科の募集を停止し、福祉科を2クラスから1クラスに縮小、新たに普通科3クラスを設置。",
+      "source_url": "https://www.pref.kanagawa.jp/docs/u5t/cnt/f6558/2024/20250425futamatagawa.html"
+    },
+    {
+      "kind": "学科改編",
+      "period_label": "2027年度（令和9年度）から",
+      "summary": "学年進行により全学年が普通科・福祉科の体制になる（現行の看護科の在校生が卒業するまでの経過措置が終わる）。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/futamatagawa-h/nyugaku/documents/2026panhuretto.pdf"
+    },
+    {
+      "kind": "制服",
+      "period_label": "2025年4月から",
+      "summary": "ブレザーの新制服・新体育着に変更（創立60周年、ブラウンを基調としたデザイン）。冬服はネクタイまたはリボンを選べる形になった。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/futamatagawa-h/seikatsu/seifuku.html"
+    },
+    {
+      "kind": "その他",
+      "period_label": "2025年度（令和7年度）",
+      "summary": "日本社会事業大学と高大連携協定を締結。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/futamatagawa-h/gaiyou/documents/r7gakkouhyoukahoukokusyo.pdf"
+    }
+  ],
+  "unresolved": [
+    "ソフトテニス部・女子バレーボール部：部活動ページに活動日のみの掲載で、個別ページや大会実績の資料が見つからず、段階を判定できなかった。",
+    "バスケットボール部（女子）：活動日（火・水・木・土・(日)）は確認できるが、大会結果の記載が部活動ページになく、段階を判定できなかった。",
+    "バドミントン部：部活動ページに「地区予選突破を目指して」とあるのみ（目標であり実績ではない）で、直近の大会結果を確認できなかった。",
+    "軽音楽部：活動日（週5日）は分かるが、個別ページがなく大会・ライブ等の実績を確認できなかった。",
+    "サッカー同好会：他校との合同チーム結成・公式戦出場は「予定」（部活動ページ、2026年8月時点）で、今年度の高円宮杯U-18リーグでの登録チーム名・所属を確認できなかった。",
+    "指定校推薦の大学一覧：学校案内パンフレット・進路ページとも「指定校推薦」の見出しでの公開を確認できなかった（進学実績の学校一覧のみ公開）。",
+    "入試方式別の内訳（admission_route_share）：60回生進路状況報告に一般・推薦等の内訳の記載がなかった。",
+    "推薦入試の応募・受検倍率（exam_ratio/推薦）：神奈川県公立高校入試は共通選抜のみで、東京都のような別立ての推薦選抜がないため対象データなし。",
+    "ハイキング部：段階を付けず（2026-09-24 Opus見直し: 段階4は週3日以下かつ実績なし。活動日が不明または週4日以上）",
+    "茶華道部：段階を付けず（2026-09-24 Opus見直し: 段階4は週3日以下かつ実績なし。活動日が不明または週4日以上）",
+    "写真部：段階を付けず（2026-09-24 Opus見直し: 段階4は週3日以下かつ実績なし。活動日が不明または週4日以上）",
+    "家庭科部：段階を付けず（2026-09-24 Opus見直し: 段階4は週3日以下かつ実績なし。活動日が不明または週4日以上）",
+    "JRC：段階を付けず（2026-09-24 Opus見直し: 県の活動表彰は大会の成績ではない）。元の見立て：令和7年度「かながわ部活アクティブ賞」を受賞（学校案内パンフレット2026）。県による公的な表彰。"
+  ],
+  "conflicts": [
+    "学校案内パンフレット（2026年版）は「進学率95%（令和7年度卒業生）」と記載するが、60回生進路状況報告（看護科＋福祉科合算）の学校種別等集計から算出すると、進学者92名（大学22＋短大1＋専門69）／全体96名＝95.8%（四捨五入で96%）。パンフレットの算出方法（対象年度や母数）が確認できず、差の原因は不明。"
+  ]
+}

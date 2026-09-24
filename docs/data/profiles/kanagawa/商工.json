@@ -1,0 +1,653 @@
+{
+  "prefecture": "神奈川県",
+  "school_name": "商工",
+  "official_url": "https://www.pen-kanagawa.ed.jp/shoko-h/",
+  "researched_at": "2026-09-24",
+  "stats": [
+    {
+      "metric": "career_decided_rate",
+      "item": "",
+      "basis": "",
+      "fiscal_year": 2025,
+      "value_num": 97.6,
+      "source_url": "https://www.pen-kanagawa.ed.jp/shoko-h/nyugaku/documents/2026shokopamph.pdf",
+      "source_label": "神奈川県立商工高等学校 SHOKO High School Guide Book（令和9年度入学者用学校案内パンフレット）2025年度卒業生205名の進路内訳",
+      "as_of": "2026-07-02",
+      "note": "卒業生205名のうち就職120名+進学80名=200名／205名から算出（97.56%）。残る「その他」5名の内訳は資料に記載なし。専門学科高校で就職・専門学校進学が多く、学校が自ら「進路決定率」として公表した数値ではない。"
+    },
+    {
+      "metric": "club_join_rate",
+      "item": "",
+      "basis": "",
+      "fiscal_year": 2023,
+      "value_num": 45,
+      "source_url": "https://www.pen-kanagawa.ed.jp/shoko-h/gaiyou/documents/r5schoolreportresult0709.pdf",
+      "source_label": "神奈川県立商工高等学校 令和5年度学校評価報告書（実施結果）",
+      "as_of": "2024-03-31",
+      "note": "視点2「生徒指導・支援」の総合評価（3月31日実施）に「部活動加入率が45%であったため50%を超えるよう学校づくりをすすめる」と記載。学校が自ら算出した令和5年度の加入率。"
+    },
+    {
+      "metric": "uniform",
+      "item": "",
+      "basis": "",
+      "fiscal_year": 2021,
+      "value_text": "男子は詰め襟学生服、女子は学校指定のスカートまたはスラックス＋上着＋リボン。夏季（6〜9月）は白系シャツまたは指定ポロシャツも可（男女とも）。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shoko-h/hogosha/seitoseikatunosiori.html",
+      "source_label": "神奈川県立商工高等学校 生徒生活のしおり",
+      "as_of": "2021-05-18",
+      "note": "2026年7月発行のパンフレット表紙・制服紹介ページの写真（詰め襟の男子・ブレザー＋チェックスカートの女子）とも一致。"
+    },
+    {
+      "metric": "rules_summary",
+      "item": "",
+      "basis": "",
+      "fiscal_year": 2021,
+      "value_text": "頭髪は長髪・染色・パーマ・エクステ・ウィッグ禁止。スマホは校内持込可だが授業中の使用は禁止。アルバイトは原則禁止（要保護者同意）。下校は17時、部活動は19時完全下校。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shoko-h/hogosha/seitoseikatunosiori.html",
+      "source_label": "神奈川県立商工高等学校 生徒生活のしおり",
+      "as_of": "2021-05-18",
+      "note": ""
+    }
+  ],
+  "clubs": [
+    {
+      "name": "硬式野球部",
+      "kind": "運動",
+      "days_note": "月・水・木・金・土（午前）・日（午前）",
+      "days_per_week": 5,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "直近3年（2024〜2026年度）の夏（選手権）・春とも1〜2回戦で敗退。都県大会上位の記録はない（一球速報）。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shoko-h/seikatsu/bukatudou_doukoukai/regulationbaseball_club.html",
+      "as_of": "2024-11-14",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "第106回全国高等学校野球選手権神奈川大会",
+          "level": "都県",
+          "result": "2回戦敗退（1-4 湘南工大付）。一球速報に1回戦の記録がなく、シード出場の可能性がある。",
+          "happened_on": "2024-07-10",
+          "source_url": "https://baseball.omyutech.com/CupHomePageTeamSchedule.action?teamId=12181&cupId=20240009752"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "令和7年度神奈川県高等学校野球春季県大会",
+          "level": "都県",
+          "result": "1勝1敗、2回戦敗退（0-10 相洋。1回戦は8-1で新羽に勝利）",
+          "happened_on": "2025-04-06",
+          "source_url": "https://baseball.omyutech.com/CupHomePageTeamSchedule.action?teamId=12181&cupId=20250024190"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第107回全国高等学校野球選手権神奈川大会",
+          "level": "都県",
+          "result": "1勝1敗、2回戦敗退（0-4 相洋。1回戦は5-3で麻生に勝利）",
+          "happened_on": "2025-07-13",
+          "source_url": "https://baseball.omyutech.com/CupHomePageTeamSchedule.action?teamId=12181&cupId=20250000302"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "令和8年度神奈川県高等学校野球春季県大会",
+          "level": "都県",
+          "result": "初戦（1回戦）敗退（1-6 旭）",
+          "happened_on": "2026-04-05",
+          "source_url": "https://baseball.omyutech.com/CupHomePageTeamSchedule.action?teamId=12181&cupId=20260007465"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "第108回全国高等学校野球選手権神奈川大会",
+          "level": "都県",
+          "result": "初戦（1回戦）敗退（2-4 旭丘）",
+          "happened_on": "2026-07-07",
+          "source_url": "https://baseball.omyutech.com/CupHomePageTeamSchedule.action?teamId=12181&cupId=20260013579"
+        }
+      ]
+    },
+    {
+      "name": "軟式野球部",
+      "kind": "運動",
+      "days_note": "火・水・金・土・日（シーズンオフは日曜をオフ）",
+      "days_per_week": 5,
+      "weekend": "土日",
+      "tier": 2,
+      "tier_basis": "2023年度秋季県大会でベスト8（合同チーム：商工2年生2名＋横浜清風＋光明相模原＋自修館）。都県ベスト8が1回のため段階2。合同チームである点に留意。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shoko-h/seikatsu/bukatudou_doukoukai/rubberbaseball_club.html",
+      "as_of": "2025-01-31",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "神奈川県高等学校軟式野球秋季大会",
+          "level": "都県",
+          "result": "リーグ戦1位通過を経てベスト8（合同チーム）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shoko-h/seikatsu/bukatudou_doukoukai/rubberbaseball_club.html"
+        }
+      ]
+    },
+    {
+      "name": "サッカー部",
+      "kind": "運動",
+      "tier": 3,
+      "tier_basis": "2026年度 高円宮杯U-18サッカーリーグ神奈川 K5 Group H所属（5位、3勝0分2敗）。K5・K6は段階3。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shoko-h/seikatsu/bukatudou_doukoukai/soccer_club.html",
+      "as_of": "2025-06-11",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "高円宮杯U-18サッカーリーグ神奈川 K5",
+          "level": "都県",
+          "result": "Group H 5位（3勝0分2敗）",
+          "source_url": "https://www.kanagawa-fa.gr.jp/cms/u18-league/2026/div5/"
+        }
+      ]
+    },
+    {
+      "name": "ソフトテニス部",
+      "kind": "運動",
+      "days_note": "月・水・木・金・土",
+      "days_per_week": 5,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "2023〜2024年度の実績はいずれも横浜地区大会・地区予選（関東大会・全国総体の地区予選を含む）どまりで、都県大会上位の記録はない。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shoko-h/seikatsu/bukatudou_doukoukai/softtennis_club.html",
+      "as_of": "2025-03-06",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "横浜地区高等学校ソフトテニス地区大会",
+          "level": "地区",
+          "result": "Aブロック準優勝＆ベスト4",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shoko-h/seikatsu/bukatudou_doukoukai/softtennis_club.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "横浜地区高等学校ソフトテニス大会",
+          "level": "地区",
+          "result": "ベスト8",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shoko-h/seikatsu/bukatudou_doukoukai/softtennis_club.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "関東高等学校ソフトテニス大会地区予選",
+          "level": "地区",
+          "result": "ベスト4",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shoko-h/seikatsu/bukatudou_doukoukai/softtennis_club.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "全国高校総合体育大会ソフトテニス競技地区予選",
+          "level": "地区",
+          "result": "ベスト4",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shoko-h/seikatsu/bukatudou_doukoukai/softtennis_club.html"
+        }
+      ]
+    },
+    {
+      "name": "男子バスケットボール部",
+      "kind": "運動",
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2023年度インターハイ神奈川県南支部予選で1回戦勝利、2回戦でシード校に敗退。支部予選（地区相当）どまりで都県大会上位の記録はない。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shoko-h/seikatsu/bukatudou_doukoukai/basketball_club.html",
+      "as_of": "2025-07-23",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "全国高校総体（インターハイ）神奈川県南支部予選",
+          "level": "地区",
+          "result": "1回戦勝利（70-36 横浜国際）、2回戦敗退（57-85 横須賀＝シード校）",
+          "happened_on": "2023-06-05",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shoko-h/seikatsu/bukatudou_doukoukai/basketball_club/20230605interhigh.html"
+        }
+      ]
+    },
+    {
+      "name": "女子バスケットボール部",
+      "kind": "運動",
+      "days_note": "月・水・金・(土)・日",
+      "days_per_week": 4.5,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2023年度インターハイ神奈川県南支部予選で2回戦に勝利し10年ぶりにブロック決勝進出（対横浜清風は敗退）。支部予選（地区相当）どまりで都県大会上位の記録はない。現在は部員が少なく他校との合同練習・合同チームでの大会参加が中心。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shoko-h/seikatsu/bukatudou_doukoukai/w_basketball_club.html",
+      "as_of": "2025-06-17",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "全国高校総体（インターハイ）神奈川県南支部予選",
+          "level": "地区",
+          "result": "2回戦勝利（45-39 金井）、ブロック決勝敗退（11-108 横浜清風＝第1シード）",
+          "happened_on": "2023-06-05",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shoko-h/seikatsu/bukatudou_doukoukai/basketball_club/20230605interhigh.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "ROSE CUP【U15-18 GIRL'S 3x3 GAMES】",
+          "level": "その他",
+          "result": "関東学院高等学校と合同チームで参加（順位記載なし）",
+          "happened_on": "2024-08-06",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shoko-h/seikatsu/bukatudou_doukoukai/w_basketball_club/20240806_rouse_cup.html"
+        }
+      ]
+    },
+    {
+      "name": "男子バレーボール部",
+      "kind": "運動",
+      "days_note": "平日：月・火・水・金の4日、休日：土または日のどちらか",
+      "days_per_week": 5,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2024年度、都県予選（春高予選・インターハイ予選）はいずれも1〜2回戦で敗退。関東大会横浜地区予選・横浜市大会も地区レベルどまりで、都県大会上位の記録はない。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shoko-h/seikatsu/bukatudou_doukoukai/vorry.html",
+      "as_of": "2025-07-03",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "横浜市大会",
+          "level": "地区",
+          "result": "2回戦敗退",
+          "happened_on": "2024-04-14",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shoko-h/seikatsu/bukatudou_doukoukai/volleyballclub/volleyball0422.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "関東大会横浜地区予選会",
+          "level": "地区",
+          "result": "初戦敗退後、敗者復活で1勝したが県大会出場はならず",
+          "happened_on": "2024-04-28",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shoko-h/seikatsu/bukatudou_doukoukai/volleyballclub/r6volleyball_screeningforkantotournament0501.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "全国高校総体（インターハイ）神奈川県予選",
+          "level": "都県",
+          "result": "第一試合不戦勝（白山棄権）、第二試合敗退（大磯）で敗退",
+          "happened_on": "2024-06-08",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shoko-h/seikatsu/bukatudou_doukoukai/volleyballclub/2024interhigh0705.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "全日本バレーボール高等学校選手権大会神奈川県予選会（春高予選）",
+          "level": "都県",
+          "result": "1回戦敗退（0-2 柏陽）",
+          "happened_on": "2024-11-03",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shoko-h/seikatsu/bukatudou_doukoukai/volleyballclub/2024volleyharukou1113.html"
+        }
+      ]
+    },
+    {
+      "name": "女子バレーボール部",
+      "kind": "運動",
+      "days_note": "平日は火・水・金、日曜は横浜緑園高校と合同練習・遠征",
+      "days_per_week": 4,
+      "weekend": "日",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shoko-h/seikatsu/bukatudou_doukoukai/w_volleyball_club.html",
+      "as_of": "2024-06-07",
+      "results": []
+    },
+    {
+      "name": "卓球部",
+      "kind": "運動",
+      "days_note": "月・水・金・(土)（過去の活動日。現在は部員0名で活動休止中）",
+      "days_per_week": 3.5,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "現在は部員0名で活動休止中。直近の活動記録は令和4〜5年度（2022〜2023）で、都県大会は2回戦（高校総体予選）どまり、地区大会は3回戦・ブロック準優勝程度。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shoko-h/seikatsu/bukatudou_doukoukai/tabletennis_club.html",
+      "as_of": "2024-05-21",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "高校総体予選　神奈川県大会",
+          "level": "都県",
+          "result": "男子シングルス2回戦出場",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shoko-h/seikatsu/bukatudou_doukoukai/tabletennis_club.html"
+        },
+        {
+          "fiscal_year": 2022,
+          "competition": "神奈川県高等学校卓球新人大会（県大会）",
+          "level": "都県",
+          "result": "男子シングルス出場（2回戦）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shoko-h/seikatsu/bukatudou_doukoukai/tabletennis_club.html"
+        }
+      ]
+    },
+    {
+      "name": "バドミントン部",
+      "kind": "運動",
+      "days_note": "月・火・木・金・土",
+      "days_per_week": 5,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "2025年度インターハイ予選で女子ダブルスが3回戦で敗退。都県大会上位の記録はない。2024年度の「工業高校団体戦」（近隣工業高校のみの交流戦）で5校中2位は公的な都県大会ではないため判定に用いていない。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shoko-h/seikatsu/bukatudou_doukoukai/badminton_club.html",
+      "as_of": "2025-07-08",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "全国高校総体（インターハイ）神奈川県予選",
+          "level": "都県",
+          "result": "女子ダブルスが2回戦を勝ち、3回戦で敗退",
+          "happened_on": "2025-05-03",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shoko-h/seikatsu/bukatudou_doukoukai/badminton_club/2024interhigh0705.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "神奈川県内工業高校団体戦・交流戦",
+          "level": "その他",
+          "result": "参加5校中、団体戦全体成績2位",
+          "happened_on": "2024-03-24",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shoko-h/seikatsu/bukatudou_doukoukai/badminton_club/2024kogyodantaibadminton0327.html"
+        }
+      ]
+    },
+    {
+      "name": "ダンス部",
+      "kind": "運動",
+      "days_note": "週3日程度　火・木・月or土（月と土は隔週）",
+      "days_per_week": 3,
+      "weekend": "土",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shoko-h/seikatsu/bukatudou_doukoukai/dance_club.html",
+      "as_of": "2025-06-16",
+      "results": []
+    },
+    {
+      "name": "陸上競技部",
+      "kind": "運動",
+      "days_note": "週3日",
+      "days_per_week": 3,
+      "tier": 4,
+      "tier_basis": "週3日の練習で、2024年度は横浜地区大会・県新人戦地区予選に出場したが、順位等の記載はなく目立つ実績もない。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shoko-h/seikatsu/bukatudou_doukoukai/trackandfield_club.html",
+      "as_of": "2024-11-06",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "横浜地区高体連陸上競技選手権／県高等学校新人戦横浜地区予選会／横浜地区高等学校新人戦",
+          "level": "地区",
+          "result": "出場（自己記録更新。順位等の記載なし）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shoko-h/seikatsu/bukatudou_doukoukai/2024trackandfield1101.html"
+        }
+      ]
+    },
+    {
+      "name": "剣道部",
+      "kind": "運動",
+      "days_note": "火・木",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "週2日の活動で、大会実績の記載はない。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shoko-h/seikatsu/bukatudou_doukoukai/kendo_club.html",
+      "as_of": "2024-05-10",
+      "results": []
+    },
+    {
+      "name": "柔道部",
+      "kind": "運動",
+      "days_note": "部員0名で活動休止中",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shoko-h/seikatsu/bukatudou_doukoukai/judo_club.html",
+      "as_of": "2025-06-17",
+      "results": []
+    },
+    {
+      "name": "硬式テニス部",
+      "kind": "運動",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shoko-h/seikatsu/bukatudou_doukoukai.html",
+      "as_of": "2025-09-03",
+      "results": []
+    },
+    {
+      "name": "英語部",
+      "kind": "文化",
+      "days_note": "月曜日（放課後）・水曜日（昼休み）",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shoko-h/seikatsu/bukatudou_doukoukai/english_club.html",
+      "as_of": "2024-05-21",
+      "results": []
+    },
+    {
+      "name": "合唱部",
+      "kind": "文化",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shoko-h/seikatsu/bukatudou_doukoukai/chorus_club.html",
+      "as_of": "2024-12-03",
+      "results": []
+    },
+    {
+      "name": "茶道部",
+      "kind": "文化",
+      "days_note": "毎週月曜日15時〜17時",
+      "days_per_week": 1,
+      "weekend": "なし",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shoko-h/seikatsu/bukatudou_doukoukai/teaceremony_club.html",
+      "as_of": "2025-06-17",
+      "results": []
+    },
+    {
+      "name": "美術部",
+      "kind": "文化",
+      "days_note": "毎週水曜日、金曜日（不定期）",
+      "days_per_week": 1.5,
+      "weekend": "なし",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shoko-h/seikatsu/bukatudou_doukoukai/art_club.html",
+      "as_of": "2025-06-17",
+      "results": []
+    },
+    {
+      "name": "写真部",
+      "kind": "文化",
+      "days_note": "毎週月曜日と木曜日",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shoko-h/seikatsu/bukatudou_doukoukai/photo_club.html",
+      "as_of": "2024-12-04",
+      "results": []
+    },
+    {
+      "name": "吹奏楽部",
+      "kind": "文化",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shoko-h/seikatsu/bukatudou_doukoukai/brassband_club.html",
+      "as_of": "2024-06-07",
+      "results": []
+    },
+    {
+      "name": "演劇部",
+      "kind": "文化",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shoko-h/seikatsu/bukatudou_doukoukai/theater_club.html",
+      "as_of": "2025-06-17",
+      "results": []
+    },
+    {
+      "name": "書道部",
+      "kind": "文化",
+      "days_note": "毎週木曜日",
+      "days_per_week": 1,
+      "weekend": "なし",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shoko-h/seikatsu/bukatudou_doukoukai/calligraphy_club.html",
+      "as_of": "2024-07-03",
+      "results": []
+    },
+    {
+      "name": "軽音楽部",
+      "kind": "文化",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shoko-h/seikatsu/bukatudou_doukoukai/lightmusic_club.html",
+      "as_of": "2025-02-10",
+      "results": []
+    },
+    {
+      "name": "漫画研究部",
+      "kind": "文化",
+      "days_note": "部員0名で活動休止中",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shoko-h/seikatsu/bukatudou_doukoukai/manga_club.html",
+      "as_of": "2024-06-07",
+      "results": []
+    },
+    {
+      "name": "ビジネス研究部",
+      "kind": "文化",
+      "days_note": "火・木曜日の放課後",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "tier": 2,
+      "tier_basis": "2024年度神奈川県高等学校生徒商業研究発表大会で優秀賞を受賞し、関東ブロック高等学校生徒商業研究発表大会（関東大会）出場権を獲得（公的主催・都県代表相当）。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shoko-h/seikatsu/bukatudou_doukoukai/business_study_club.html",
+      "as_of": "2024-12-10",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "神奈川県高等学校生徒商業研究発表大会",
+          "level": "都県",
+          "result": "優秀賞、関東ブロック高等学校生徒商業研究発表大会（関東大会）出場権獲得",
+          "happened_on": "2024-08-09",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shoko-h/seikatsu/bukatudou_doukoukai/bijinesu_club20240815.html"
+        }
+      ]
+    },
+    {
+      "name": "放送部",
+      "kind": "文化",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shoko-h/seikatsu/bukatudou_doukoukai/broadcasting_club.html",
+      "as_of": "2024-07-03",
+      "results": []
+    },
+    {
+      "name": "理化学部",
+      "kind": "文化",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shoko-h/seikatsu/bukatudou_doukoukai/science_club.html",
+      "as_of": "2025-01-31",
+      "results": []
+    },
+    {
+      "name": "パソコン部",
+      "kind": "文化",
+      "days_note": "毎週水曜日　金曜日",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shoko-h/seikatsu/bukatudou_doukoukai/personalcomputer_club.html",
+      "as_of": "2024-12-04",
+      "results": []
+    },
+    {
+      "name": "技術研究部",
+      "kind": "文化",
+      "tier": 1,
+      "tier_basis": "2023・2024年度に民間主催のロボット競技会「パイプロボコン世界大会」に連続出場し、2023年度は3位入賞。民間主催の大会は手引き上、全国決勝級が2回以上で段階1となる条件を満たす。あわせて2024年度は神奈川県青少年創意くふう展覧会で最高位の賞、かながわ部活ドリーム大賞「かながわ部活文化賞」を受賞。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shoko-h/seikatsu/bukatudou_doukoukai/technicalresearch_club.html",
+      "as_of": "2025-02-25",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "パイプロボコン世界大会（民間主催）",
+          "level": "全国",
+          "result": "3位入賞（2大会連続出場）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shoko-h/seikatsu/bukatudou_doukoukai/technicalresearch_club.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "メカモグラ第2回世界大会（民間主催）",
+          "level": "全国",
+          "result": "決勝トーナメント出場権獲得",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shoko-h/seikatsu/bukatudou_doukoukai/technicalresearch_club.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "第83回神奈川県青少年創意くふう展覧会",
+          "level": "都県",
+          "result": "最高位の賞",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shoko-h/seikatsu/bukatudou_doukoukai/technicalresearch_club.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "かながわ部活ドリーム大賞",
+          "level": "都県",
+          "result": "かながわ部活文化賞受賞",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shoko-h/seikatsu/bukatudou_doukoukai/technicalresearch_club.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "パイプロボコン世界大会（民間主催）",
+          "level": "全国",
+          "result": "ベスト16（神奈川県地区大会を経て世界大会出場権を獲得）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shoko-h/seikatsu/bukatudou_doukoukai/technicalresearch_club.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "第19回全国高等学校ARDF競技大会",
+          "level": "全国",
+          "result": "出場",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shoko-h/seikatsu/bukatudou_doukoukai/technicalresearch_club.html"
+        }
+      ]
+    },
+    {
+      "name": "空手同好会",
+      "kind": "同好会",
+      "days_note": "毎週水・金の放課後",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "2024年度発足の新しい同好会。週2日の活動で、大会実績の記載はない。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shoko-h/seikatsu/bukatudou_doukoukai/karateclub/karate-clubstart.html",
+      "as_of": "2024-10-27",
+      "results": []
+    },
+    {
+      "name": "ソフトボール同好会",
+      "kind": "同好会",
+      "days_note": "部員0名で活動休止中",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shoko-h/seikatsu/bukatudou_doukoukai/softball_club.html",
+      "as_of": "2021-06-18",
+      "results": []
+    },
+    {
+      "name": "文芸同好会",
+      "kind": "同好会",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shoko-h/seikatsu/bukatudou_doukoukai/literature_club.html",
+      "as_of": "2024-04-11",
+      "results": []
+    },
+    {
+      "name": "自転車競技同好会",
+      "kind": "同好会",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shoko-h/seikatsu/bukatudou_doukoukai/cycling_club.html",
+      "as_of": "2024-09-02",
+      "results": []
+    },
+    {
+      "name": "将棋同好会",
+      "kind": "同好会",
+      "days_note": "週1回月曜日",
+      "days_per_week": 1,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "週1日の活動。公式戦への参加はあるが、結果の記載はない。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shoko-h/seikatsu/bukatudou_doukoukai/shogi_group.html",
+      "as_of": "2024-07-31",
+      "results": []
+    },
+    {
+      "name": "ボランティア同好会",
+      "kind": "同好会",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shoko-h/seikatsu/bukatudou_doukoukai/volunteer/top.html",
+      "as_of": "2025-06-16",
+      "results": []
+    }
+  ],
+  "designated_universities": [],
+  "events": [],
+  "unresolved": [
+    "大学別・大学群別（GMARCH等）の合格・進学者数：進路先一覧PDF（2023年度卒業生）は大学名・専門学校名の列挙のみで人数の記載がなく、学校集計の群別合計も公開されていない。",
+    "入試方式別（一般・指定校推薦・総合型等）の進学者数：資料に記載なし。",
+    "推薦の応募・受検倍率（exam_ratio/推薦）：神奈川県公立高校入試は共通選抜のみで推薦単独の選考区分がないため対象データなし。なお令和8年度入試では総合技術科・総合ビジネス科とも二次募集を実施した（学校説明会ページ）。",
+    "男女別生徒数（students）：学校案内・学校概要とも男女別の実数の公表が見つからなかった。",
+    "指定校推薦の大学名：進路ページ・パンフレットとも「指定校」と明記した一覧は公開されていない（進路先一覧PDFは合格・進学先大学名の列挙のみ）。",
+    "2020年以降の学校の変化（改築・改修・制服変更・学級増減等）：お知らせ一覧・沿革のいずれにも該当する発表が見つからなかった。",
+    "硬式野球部の秋季県大会：一球速報の「出場大会」一覧（2020〜2026年度）に秋季県大会の記載がなく、エントリーの有無を確認できなかった。",
+    "硬式テニス部：部活動・同好会一覧に名前はあるが専用ページがなく、活動日・実績とも確認できなかった。",
+    "女子バレーボール部：活動日は判明したが、大会での結果の記載がなく段階を判定できなかった。"
+  ],
+  "conflicts": [
+    "パンフレット（2026年7月発行）の「部活動」図は文化部に「クッキング」を挙げるが、公式の部活動・同好会一覧ページ（2025年9月3日更新）には該当する部がない。同ページは英語部・吹奏楽部・漫画研究部もパンフレットの図に記載がなく、ボランティアは公式ページでは同好会だがパンフレットでは文化部に分類している。部の一覧は情報がより網羅的な公式の部活動・同好会一覧ページ（36件）を正とした。",
+    "部活動・同好会一覧ページは「ソフトボール同好会」と表記するが、そのクラブ自身のページの見出し（h1）は「ソフトボール部」。名称は一覧ページの分類（同好会）に揃えた。"
+  ]
+}

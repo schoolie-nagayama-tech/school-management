@@ -1,0 +1,814 @@
+{
+  "prefecture": "東京都",
+  "school_name": "若葉総合",
+  "official_url": "https://www.metro.ed.jp/wakabasogo-h/",
+  "researched_at": "2026-09-24",
+  "stats": [
+    {
+      "metric": "university_count",
+      "item": "国公立",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 3,
+      "source_url": "https://www.metro.ed.jp/wakabasogo-h/assets/pamphlet/pamphlet-pdffile-2569.pdf",
+      "source_label": "若葉総合高校 学校案内（令和9年度）大学合格者数一覧（令和7年度19期生）",
+      "as_of": "2026-09",
+      "note": "電気通信大学1・東京学芸大学1・名桜大学（公立大学）1の合算。表題は「大学合格者数一覧」だが、合計88名は同じページの「進路先内訳」の大学88名（実進学）と一致するため実進学ベースとして扱った。"
+    },
+    {
+      "metric": "university_count",
+      "item": "早慶上理",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 0,
+      "source_url": "https://www.metro.ed.jp/wakabasogo-h/assets/pamphlet/pamphlet-pdffile-2569.pdf",
+      "source_label": "若葉総合高校 学校案内（令和9年度）大学合格者数一覧（令和7年度19期生）",
+      "as_of": "2026-09",
+      "note": "大学合格者数一覧（全44校）に早稲田・慶應・上智・東京理科大学の記載なし。"
+    },
+    {
+      "metric": "university_count",
+      "item": "GMARCH",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 0,
+      "source_url": "https://www.metro.ed.jp/wakabasogo-h/assets/pamphlet/pamphlet-pdffile-2569.pdf",
+      "source_label": "若葉総合高校 学校案内（令和9年度）大学合格者数一覧（令和7年度19期生）",
+      "as_of": "2026-09",
+      "note": "学習院・明治・青山学院・立教・中央・法政大学の記載なし。"
+    },
+    {
+      "metric": "university_count",
+      "item": "成成明武",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 0,
+      "source_url": "https://www.metro.ed.jp/wakabasogo-h/assets/pamphlet/pamphlet-pdffile-2569.pdf",
+      "source_label": "若葉総合高校 学校案内（令和9年度）大学合格者数一覧（令和7年度19期生）",
+      "as_of": "2026-09",
+      "note": "成蹊・成城・明治学院・武蔵大学の記載なし。武蔵野大学・武蔵野美術大学は別大学のため含めていない。"
+    },
+    {
+      "metric": "university_count",
+      "item": "日東駒専",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 2,
+      "source_url": "https://www.metro.ed.jp/wakabasogo-h/assets/pamphlet/pamphlet-pdffile-2569.pdf",
+      "source_label": "若葉総合高校 学校案内（令和9年度）大学合格者数一覧（令和7年度19期生）",
+      "as_of": "2026-09",
+      "note": "日本大学1・専修大学1の合算。東洋大学・駒澤大学は0。駒沢女子大学（3名）は別大学のため含めていない。"
+    },
+    {
+      "metric": "university_count",
+      "item": "合計",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 88,
+      "source_url": "https://www.metro.ed.jp/wakabasogo-h/assets/pamphlet/pamphlet-pdffile-2569.pdf",
+      "source_label": "若葉総合高校 学校案内（令和9年度）大学合格者数一覧（令和7年度19期生）",
+      "as_of": "2026-09",
+      "note": "大学合格者数一覧の表内合計。表中の全大学の人数を実際に合算しても88で一致（44校・延べではなく1人1校で計上）。"
+    },
+    {
+      "metric": "university_count",
+      "item": "桜美林大学",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 10,
+      "source_url": "https://www.metro.ed.jp/wakabasogo-h/assets/pamphlet/pamphlet-pdffile-2569.pdf",
+      "source_label": "若葉総合高校 学校案内（令和9年度）大学合格者数一覧（令和7年度19期生）",
+      "as_of": "2026-09",
+      "note": "大学合格者数一覧の中で最多。"
+    },
+    {
+      "metric": "university_count",
+      "item": "明星大学",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 9,
+      "source_url": "https://www.metro.ed.jp/wakabasogo-h/assets/pamphlet/pamphlet-pdffile-2569.pdf",
+      "source_label": "若葉総合高校 学校案内（令和9年度）大学合格者数一覧（令和7年度19期生）",
+      "as_of": "2026-09",
+      "note": ""
+    },
+    {
+      "metric": "university_count",
+      "item": "帝京大学",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 6,
+      "source_url": "https://www.metro.ed.jp/wakabasogo-h/assets/pamphlet/pamphlet-pdffile-2569.pdf",
+      "source_label": "若葉総合高校 学校案内（令和9年度）大学合格者数一覧（令和7年度19期生）",
+      "as_of": "2026-09",
+      "note": ""
+    },
+    {
+      "metric": "university_count",
+      "item": "高千穂大学",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 4,
+      "source_url": "https://www.metro.ed.jp/wakabasogo-h/assets/pamphlet/pamphlet-pdffile-2569.pdf",
+      "source_label": "若葉総合高校 学校案内（令和9年度）大学合格者数一覧（令和7年度19期生）",
+      "as_of": "2026-09",
+      "note": ""
+    },
+    {
+      "metric": "university_count",
+      "item": "東京医療学院大学",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 4,
+      "source_url": "https://www.metro.ed.jp/wakabasogo-h/assets/pamphlet/pamphlet-pdffile-2569.pdf",
+      "source_label": "若葉総合高校 学校案内（令和9年度）大学合格者数一覧（令和7年度19期生）",
+      "as_of": "2026-09",
+      "note": ""
+    },
+    {
+      "metric": "admission_route_share",
+      "item": "指定校推薦",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 36.36,
+      "source_url": "https://www.metro.ed.jp/wakabasogo-h/assets/pamphlet/pamphlet-pdffile-2569.pdf",
+      "source_label": "若葉総合高校 学校案内（令和9年度）大学合格者受験方式内訳（令和7年度19期生）",
+      "as_of": "2026-09",
+      "note": "「大学合格者受験方式内訳」の指定校推薦32名を大学合格者数合計88名で割って算出（元資料は人数のみで%表記なし）。"
+    },
+    {
+      "metric": "admission_route_share",
+      "item": "公募推薦",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 3.41,
+      "source_url": "https://www.metro.ed.jp/wakabasogo-h/assets/pamphlet/pamphlet-pdffile-2569.pdf",
+      "source_label": "若葉総合高校 学校案内（令和9年度）大学合格者受験方式内訳（令和7年度19期生）",
+      "as_of": "2026-09",
+      "note": "元資料の「公募制推薦」3名を88名で割って算出。"
+    },
+    {
+      "metric": "admission_route_share",
+      "item": "総合型",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 43.18,
+      "source_url": "https://www.metro.ed.jp/wakabasogo-h/assets/pamphlet/pamphlet-pdffile-2569.pdf",
+      "source_label": "若葉総合高校 学校案内（令和9年度）大学合格者受験方式内訳（令和7年度19期生）",
+      "as_of": "2026-09",
+      "note": "元資料の「総合型選抜」38名を88名で割って算出。"
+    },
+    {
+      "metric": "admission_route_share",
+      "item": "一般",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 17.05,
+      "source_url": "https://www.metro.ed.jp/wakabasogo-h/assets/pamphlet/pamphlet-pdffile-2569.pdf",
+      "source_label": "若葉総合高校 学校案内（令和9年度）大学合格者受験方式内訳（令和7年度19期生）",
+      "as_of": "2026-09",
+      "note": "元資料の「一般入試」12名と「共通テスト利用入試」3名の合計15名を88名で割って算出。共通テスト利用は一般選抜の一種として合算した。"
+    },
+    {
+      "metric": "career_decided_rate",
+      "item": "",
+      "fiscal_year": 2025,
+      "value_num": 93,
+      "source_url": "https://www.metro.ed.jp/wakabasogo-h/assets/令和７年度　学校経営報告.pdf",
+      "source_label": "若葉総合高校 令和7年度学校経営報告 数値目標・数値結果表",
+      "as_of": "2026-03",
+      "note": "進学・浪人を含む進路決定率。"
+    },
+    {
+      "metric": "club_join_rate",
+      "item": "",
+      "fiscal_year": 2025,
+      "value_num": 75.8,
+      "source_url": "https://www.metro.ed.jp/wakabasogo-h/assets/令和７年度　学校経営報告.pdf",
+      "source_label": "若葉総合高校 令和7年度学校経営報告 数値目標・数値結果表",
+      "as_of": "2026-03",
+      "note": "目標「75%以上」に対する実績値。"
+    },
+    {
+      "metric": "satisfaction",
+      "item": "生徒:学校生活",
+      "fiscal_year": 2025,
+      "value_num": 81,
+      "source_url": "https://www.metro.ed.jp/wakabasogo-h/assets/令和７年度　学校経営報告.pdf",
+      "source_label": "若葉総合高校 令和7年度学校経営報告 数値目標・数値結果表",
+      "as_of": "2026-03",
+      "note": ""
+    },
+    {
+      "metric": "satisfaction",
+      "item": "保護者:学校生活",
+      "fiscal_year": 2025,
+      "value_num": 92,
+      "source_url": "https://www.metro.ed.jp/wakabasogo-h/assets/令和７年度　学校経営報告.pdf",
+      "source_label": "若葉総合高校 令和7年度学校経営報告 数値目標・数値結果表",
+      "as_of": "2026-03",
+      "note": ""
+    },
+    {
+      "metric": "satisfaction",
+      "item": "保護者:教育目標の実現",
+      "fiscal_year": 2025,
+      "value_num": 84,
+      "source_url": "https://www.metro.ed.jp/wakabasogo-h/assets/令和７年度　学校経営報告.pdf",
+      "source_label": "若葉総合高校 令和7年度学校経営報告 数値目標・数値結果表",
+      "as_of": "2026-03",
+      "note": ""
+    },
+    {
+      "metric": "satisfaction",
+      "item": "生徒:授業",
+      "fiscal_year": 2025,
+      "value_num": 82,
+      "source_url": "https://www.metro.ed.jp/wakabasogo-h/assets/令和７年度　学校経営報告.pdf",
+      "source_label": "若葉総合高校 令和7年度学校経営報告 数値目標・数値結果表",
+      "as_of": "2026-03",
+      "note": "教科指導の項目「生徒の授業満足度」。"
+    },
+    {
+      "metric": "exam_ratio",
+      "item": "推薦",
+      "fiscal_year": 2026,
+      "value_num": 1.61,
+      "source_url": "https://www.kyoiku.metro.tokyo.lg.jp/documents/d/kyoiku/2026-01-20-182213-875",
+      "source_label": "東京都教育委員会 令和8年度東京都立高等学校入学者選抜応募状況（推薦応募）19［総合学科］",
+      "as_of": "2026-01-20",
+      "note": "応募倍率（応募人員116名÷募集人員72名）。学校の令和7年度学校経営報告の「推薦倍率1.61倍」とも一致。"
+    },
+    {
+      "metric": "uniform",
+      "item": "",
+      "fiscal_year": 2026,
+      "value_text": "冬服(4〜5月・10〜3月)は男女ともブレザーに指定のネクタイ/リボン、スカートかスラックスを選べる。夏服(6〜9月)は白か紺のポロシャツで、ブレザー・ネクタイ/リボンの着用は任意。寒い時期はブレザーの下に白・黒・濃紺・グレー・茶・ベージュの無地Vネックのベスト等を着用できる。",
+      "source_url": "https://www.metro.ed.jp/wakabasogo-h/l_pdf/2026_生活について（校則公示）.pdf",
+      "source_label": "若葉総合高校 生活について（校則公示）2026",
+      "as_of": "2026-01",
+      "note": ""
+    },
+    {
+      "metric": "rules_summary",
+      "item": "",
+      "fiscal_year": 2026,
+      "value_text": "頭髪はパーマ・染色を禁止。スマホは授業中・集会中・考査中は使用禁止（電源を切りカバンへ）、それ以外は時と場合を考えて使用可。アルバイトは原則禁止（やむを得ない事情がある場合のみ承認することがある）。",
+      "source_url": "https://www.metro.ed.jp/wakabasogo-h/l_pdf/2026_生活について（校則公示）.pdf",
+      "source_label": "若葉総合高校 生活について（校則公示）2026",
+      "as_of": "2026-01",
+      "note": ""
+    },
+    {
+      "metric": "designation",
+      "item": "海外学校間交流推進校",
+      "fiscal_year": 2026,
+      "value_text": "英語力の強化・国際交流・海外派遣等の取組を通してグローバル人材の育成を図る東京都の指定校",
+      "source_url": "https://www.metro.ed.jp/wakabasogo-h/assets/pamphlet/pamphlet-pdffile-2569.pdf",
+      "source_label": "若葉総合高校 学校案内（令和9年度）表紙「令和8年度 海外学校間交流推進校」",
+      "as_of": "2026-09",
+      "note": "令和7年度学校経営報告・令和8年度学校経営計画にも同施策の記載あり。指定の開始年度は資料からは特定できず。"
+    }
+  ],
+  "clubs": [
+    {
+      "name": "陸上競技部",
+      "kind": "運動",
+      "days_note": "平日は月・火・水・金（臨時で木）。土日は頻繁にあり（合同練習・大会・競技会）。",
+      "weekend": "土日",
+      "tier": 2,
+      "tier_basis": "2023年度 東京都高等学校新人陸上競技大会で男子三段跳び第8位（都大会本大会でのベスト8）。部活動ページより。実績記載は2023年度が最新で、それ以降の更新は確認できない。",
+      "source_url": "https://www.metro.ed.jp/wakabasogo-h/activities/cat2440/index.html",
+      "as_of": "2026-09",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "東京都高等学校新人陸上競技大会",
+          "level": "都県",
+          "result": "男子三段跳び 第8位",
+          "source_url": "https://www.metro.ed.jp/wakabasogo-h/activities/cat2440/index.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "総体予選会",
+          "level": "地区",
+          "result": "男子走り幅跳び第8位・男子三段跳び第4位・女子砲丸投げ第4位でいずれも都大会進出（都大会本大会での順位は資料になし）",
+          "source_url": "https://www.metro.ed.jp/wakabasogo-h/activities/cat2440/index.html"
+        }
+      ]
+    },
+    {
+      "name": "男子サッカー部",
+      "kind": "運動",
+      "days_note": "平日は月・水・金。土日は月2回程度、ホームまたはアウェイでの練習／紅白戦。",
+      "days_per_week": 3,
+      "weekend": "土日",
+      "tier": 4,
+      "tier_basis": "2026年度 高円宮杯U-18サッカーリーグ東京 T1〜T5の参加チームに若葉総合の記載なし（https://www.tleague-u18.com/team.php?dy=2026&dt=1〜5 を2026-09-24に確認）。支部リーグ所属とみなし、活動日が週3日のため段階4。",
+      "source_url": "https://www.metro.ed.jp/wakabasogo-h/activities/cat2439/index.html",
+      "as_of": "2026-09"
+    },
+    {
+      "name": "女子サッカー部",
+      "kind": "運動",
+      "days_note": "平日は火・水・木・金。土日は頻繁にあり。",
+      "weekend": "土日",
+      "tier": 2,
+      "tier_basis": "2024年度皇后杯東京都予選で東京都ベスト8（単独チーム）。2024・2025年度の東京都高校総体でともに東京都ベスト16、2025年度は選手権大会東京都予選でも東京都ベスト16。部活動ページの「実績」より。2025年度新人体育大会のベスト8は合同チーム参加のため単独実績として数えていない。",
+      "source_url": "https://www.metro.ed.jp/wakabasogo-h/activities/cat2438/index.html",
+      "as_of": "2026-09",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "皇后杯東京都予選",
+          "level": "都県",
+          "result": "参加なし",
+          "source_url": "https://www.metro.ed.jp/wakabasogo-h/activities/cat2438/index.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第26回東京都高等学校総合体育大会",
+          "level": "都県",
+          "result": "東京都ベスト16（合同チームで参加）",
+          "source_url": "https://www.metro.ed.jp/wakabasogo-h/activities/cat2438/index.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第34回全国高校サッカー選手権大会東京都予選",
+          "level": "都県",
+          "result": "東京都ベスト16（合同チームで参加）",
+          "source_url": "https://www.metro.ed.jp/wakabasogo-h/activities/cat2438/index.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第26回東京都高等学校新人体育大会",
+          "level": "都県",
+          "result": "東京都ベスト8（合同チームで参加）",
+          "source_url": "https://www.metro.ed.jp/wakabasogo-h/activities/cat2438/index.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "皇后杯東京都予選",
+          "level": "都県",
+          "result": "東京都ベスト8",
+          "source_url": "https://www.metro.ed.jp/wakabasogo-h/activities/cat2438/index.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "第25回東京都高等学校総合体育大会",
+          "level": "都県",
+          "result": "東京都ベスト16",
+          "source_url": "https://www.metro.ed.jp/wakabasogo-h/activities/cat2438/index.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "第33回全国高校サッカー選手権大会東京都予選",
+          "level": "都県",
+          "result": "2回戦進出",
+          "source_url": "https://www.metro.ed.jp/wakabasogo-h/activities/cat2438/index.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "第25回東京都高等学校新人体育大会",
+          "level": "都県",
+          "result": "1回戦敗退（合同チームで参加）",
+          "source_url": "https://www.metro.ed.jp/wakabasogo-h/activities/cat2438/index.html"
+        }
+      ]
+    },
+    {
+      "name": "硬式テニス部（男女）",
+      "kind": "運動",
+      "days_note": "平日は月・火・木・金。土は練習・練習試合、日は大会がある場合のみ。",
+      "days_per_week": 5.5,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "令和6〜8年度、東京都高校テニス選手権大会・東京都立高等学校対抗テニス大会に継続出場。都立校限定の対抗テニス大会でベスト32が最高（令和6〜8年度・男女とも複数回）で、都立限定大会はベスト8以上でないと段階2にならない規定のため届かず。私立を含む選手権大会でも東京都ベスト56（令和8年度5月・団体戦女子）が最高で、ベスト8・16・32の記録はない。部活動ページより。",
+      "source_url": "https://www.metro.ed.jp/wakabasogo-h/activities/cat2437/index.html",
+      "as_of": "2026-09",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "東京都高等学校テニス選手権大会（団体戦）",
+          "level": "都県",
+          "result": "男子2回戦進出、女子4回戦進出（東京都ベスト56）",
+          "source_url": "https://www.metro.ed.jp/wakabasogo-h/activities/cat2437/index.html"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "東京都立高等学校対抗テニス大会（団体戦）",
+          "level": "都県",
+          "result": "男子3回戦進出・女子3回戦進出（ともに東京都立ベスト32、都立校限定の大会）",
+          "source_url": "https://www.metro.ed.jp/wakabasogo-h/activities/cat2437/index.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "東京都立高等学校対抗テニス大会（個人戦）",
+          "level": "都県",
+          "result": "男子シングルス3回戦・ダブルス5回戦進出、女子シングルス4回戦・ダブルス5回戦進出（ともに東京都立ベスト32、都立校限定の大会）",
+          "source_url": "https://www.metro.ed.jp/wakabasogo-h/activities/cat2437/index.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "東京都立高等学校対抗テニス大会（団体戦）",
+          "level": "都県",
+          "result": "男子3回戦進出（東京都立ベスト32、都立校限定の大会）",
+          "source_url": "https://www.metro.ed.jp/wakabasogo-h/activities/cat2437/index.html"
+        }
+      ]
+    },
+    {
+      "name": "ソフトボール部（男女）",
+      "kind": "運動",
+      "days_note": "平日は月・火・水・金。土日の活動は有（練習・練習試合など、詳細は資料になし）。",
+      "weekend": "土日",
+      "source_url": "https://www.metro.ed.jp/wakabasogo-h/activities/cat2436/index.html",
+      "as_of": "2026-09"
+    },
+    {
+      "name": "男子バスケットボール部",
+      "kind": "運動",
+      "days_note": "平日は火・水・金。土日はどちらかに必ずあり（練習試合・大会など）。",
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "直近の実績は2022年度新人戦支部大会3回戦にとどまり、都県大会本大会でのベスト8等は確認できない。2018〜2021年度には都立限定大会での優勝や新人戦本大会での東京都ベスト32の記録があるが、直近3年からは外れるため段階の根拠にしていない。部活動ページより。",
+      "source_url": "https://www.metro.ed.jp/wakabasogo-h/activities/cat2435/index.html",
+      "as_of": "2026-09",
+      "results": [
+        {
+          "fiscal_year": 2022,
+          "competition": "新人戦支部大会",
+          "level": "地区",
+          "result": "3回戦",
+          "source_url": "https://www.metro.ed.jp/wakabasogo-h/activities/cat2435/index.html"
+        },
+        {
+          "fiscal_year": 2021,
+          "competition": "新人戦本大会",
+          "level": "都県",
+          "result": "2回戦（東京都ベスト32）",
+          "source_url": "https://www.metro.ed.jp/wakabasogo-h/activities/cat2435/index.html"
+        }
+      ]
+    },
+    {
+      "name": "女子バスケットボール部",
+      "kind": "運動",
+      "days_note": "平日は火・水・金。土日は頻繁にあり。",
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2023年度町田市総合大会3位、2022年度夏季大会Vブロック優勝。いずれも市大会・地区ブロックの成績で、都県大会本大会でのベスト8等は確認できない。部活動ページより。",
+      "source_url": "https://www.metro.ed.jp/wakabasogo-h/activities/cat2434/index.html",
+      "as_of": "2026-09",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "町田市総合大会",
+          "level": "その他",
+          "result": "3位",
+          "source_url": "https://www.metro.ed.jp/wakabasogo-h/activities/cat2434/index.html"
+        },
+        {
+          "fiscal_year": 2022,
+          "competition": "夏季大会Vブロック",
+          "level": "地区",
+          "result": "優勝",
+          "source_url": "https://www.metro.ed.jp/wakabasogo-h/activities/cat2434/index.html"
+        }
+      ]
+    },
+    {
+      "name": "女子バレーボール部",
+      "kind": "運動",
+      "days_note": "平日は月・水・木。土日はどちらか（試合前などは練習・練習試合もあり）。",
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2022年度、新人戦予選・春季大会予選のリーグ戦で優勝、公立学校大会でリーグ戦1位、3支部大会でベスト16。いずれも予選・支部単位の成績で、都県大会本大会でのベスト8等は確認できない。部活動ページより。",
+      "source_url": "https://www.metro.ed.jp/wakabasogo-h/activities/cat2433/index.html",
+      "as_of": "2026-09",
+      "results": [
+        {
+          "fiscal_year": 2022,
+          "competition": "新人戦予選",
+          "level": "地区",
+          "result": "リーグ戦優勝",
+          "source_url": "https://www.metro.ed.jp/wakabasogo-h/activities/cat2433/index.html"
+        },
+        {
+          "fiscal_year": 2022,
+          "competition": "3支部大会",
+          "level": "地区",
+          "result": "ベスト16",
+          "source_url": "https://www.metro.ed.jp/wakabasogo-h/activities/cat2433/index.html"
+        }
+      ]
+    },
+    {
+      "name": "バドミントン部",
+      "kind": "運動",
+      "days_note": "平日は月・水・木・金。土は頻繁にあり、日は大会のみ。",
+      "weekend": "土日",
+      "source_url": "https://www.metro.ed.jp/wakabasogo-h/activities/cat2432/index.html",
+      "as_of": "2026-09"
+    },
+    {
+      "name": "剣道部",
+      "kind": "運動",
+      "days_note": "平日は月・火・木・金。土日は練習試合・大会など。",
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2025年度、4支部大会女子個人でベスト8。都大会は男子個人が出場（順位の記載なし）。支部大会（地区）の成績のため都県大会でのベスト8には届かず段階3。部活動ページより。",
+      "source_url": "https://www.metro.ed.jp/wakabasogo-h/activities/cat2431/index.html",
+      "as_of": "2026-09",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "4支部大会",
+          "level": "地区",
+          "result": "女子個人 ベスト8",
+          "source_url": "https://www.metro.ed.jp/wakabasogo-h/activities/cat2431/index.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "都大会",
+          "level": "都県",
+          "result": "男子個人 出場",
+          "source_url": "https://www.metro.ed.jp/wakabasogo-h/activities/cat2431/index.html"
+        }
+      ]
+    },
+    {
+      "name": "チアダンス部",
+      "kind": "運動",
+      "days_note": "平日は月・水・金。土日は頻繁にあり。",
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2026年度、都総体エキシビジョン部門で審査員特別賞。2022年度は民間主催の全国大会（JCDA・USA）に出場（順位の記載なし）。エキシビジョン部門は採点を争う本競技ではないため上位進出の実績とまでは言えず段階3とした。部活動ページより。",
+      "source_url": "https://www.metro.ed.jp/wakabasogo-h/activities/cat2430/index.html",
+      "as_of": "2026-09",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "都総体エキシビジョン部門",
+          "level": "都県",
+          "result": "審査員特別賞",
+          "source_url": "https://www.metro.ed.jp/wakabasogo-h/activities/cat2430/index.html"
+        },
+        {
+          "fiscal_year": 2022,
+          "competition": "JCDA（民間主催の全国大会）",
+          "level": "その他",
+          "result": "出場",
+          "source_url": "https://www.metro.ed.jp/wakabasogo-h/activities/cat2430/index.html"
+        },
+        {
+          "fiscal_year": 2022,
+          "competition": "USA（民間主催の全国大会）",
+          "level": "その他",
+          "result": "出場",
+          "source_url": "https://www.metro.ed.jp/wakabasogo-h/activities/cat2430/index.html"
+        }
+      ]
+    },
+    {
+      "name": "水泳部",
+      "kind": "運動",
+      "days_note": "平日は月・木・金。土日は夏休み中・大会前・大会の場合に活動。",
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2023年度は春季大会・東京都高等学校選手権大会に出場、2022年度も各大会に出場（いずれも順位の記載なし）。出場実績はあるが上位進出の記録は確認できない。部活動ページより。",
+      "source_url": "https://www.metro.ed.jp/wakabasogo-h/activities/cat2429/index.html",
+      "as_of": "2026-09",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "東京都高等学校選手権大会",
+          "level": "都県",
+          "result": "出場",
+          "source_url": "https://www.metro.ed.jp/wakabasogo-h/activities/cat2429/index.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "春季大会",
+          "level": "その他",
+          "result": "出場",
+          "source_url": "https://www.metro.ed.jp/wakabasogo-h/activities/cat2429/index.html"
+        }
+      ]
+    },
+    {
+      "name": "卓球同好会",
+      "kind": "同好会",
+      "days_note": "平日は火・水。土は毎週、日は大会がある時のみ。",
+      "days_per_week": 3.5,
+      "weekend": "土日",
+      "source_url": "https://www.metro.ed.jp/wakabasogo-h/activities/cat2412/index.html",
+      "as_of": "2026-09"
+    },
+    {
+      "name": "吹奏楽部",
+      "kind": "文化",
+      "days_note": "火・木。土日は基本的になし。",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "source_url": "https://www.metro.ed.jp/wakabasogo-h/activities/cat2428/index.html",
+      "as_of": "2026-09"
+    },
+    {
+      "name": "合唱部",
+      "kind": "文化",
+      "days_note": "火・木・昼休み。土日は基本的になし。",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "source_url": "https://www.metro.ed.jp/wakabasogo-h/activities/cat2427/index.html",
+      "as_of": "2026-09"
+    },
+    {
+      "name": "演劇部",
+      "kind": "文化",
+      "days_note": "月・火・水・金（大会前は木曜日も活動）。土日は基本的になし（大会前のみ）。",
+      "days_per_week": 4.5,
+      "weekend": "なし",
+      "source_url": "https://www.metro.ed.jp/wakabasogo-h/activities/cat2426/index.html",
+      "as_of": "2026-09"
+    },
+    {
+      "name": "美術部",
+      "kind": "文化",
+      "days_note": "火・金。土日は基本的になし（展示会のみ）。",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "source_url": "https://www.metro.ed.jp/wakabasogo-h/activities/cat2425/index.html",
+      "as_of": "2026-09",
+      "results": [
+        {
+          "fiscal_year": 2020,
+          "competition": "第45回全国高等学校総合文化祭",
+          "level": "全国",
+          "result": "美術・工芸部門 東京都教育委員会賞（東京都代表として選出）",
+          "happened_on": "2020-12-24",
+          "source_url": "https://www.metro.ed.jp/wakabasogo-h/activities/cat2425/index.html"
+        },
+        {
+          "fiscal_year": 2022,
+          "competition": "中央展",
+          "level": "その他",
+          "result": "教育委員会賞",
+          "source_url": "https://www.metro.ed.jp/wakabasogo-h/activities/cat2425/index.html"
+        },
+        {
+          "fiscal_year": 2022,
+          "competition": "全日本学生美術展",
+          "level": "その他",
+          "result": "佳作",
+          "source_url": "https://www.metro.ed.jp/wakabasogo-h/activities/cat2425/index.html"
+        }
+      ]
+    },
+    {
+      "name": "映画制作部",
+      "kind": "文化",
+      "days_note": "火・木・金。土日は基本的になし（大会前に作業が終わっていない場合のみ）。",
+      "days_per_week": 3,
+      "weekend": "なし",
+      "source_url": "https://www.metro.ed.jp/wakabasogo-h/activities/cat2424/index.html",
+      "as_of": "2026-09"
+    },
+    {
+      "name": "天文部",
+      "kind": "文化",
+      "days_note": "火・木・金。土日は基本的になし（文化祭前や天体観測時のみ）。",
+      "days_per_week": 3,
+      "weekend": "なし",
+      "source_url": "https://www.metro.ed.jp/wakabasogo-h/activities/cat2423/index.html",
+      "as_of": "2026-09"
+    },
+    {
+      "name": "イラスト・小説同好会",
+      "kind": "同好会",
+      "days_note": "水・木。土日は基本的になし。",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "source_url": "https://www.metro.ed.jp/wakabasogo-h/activities/cat2422/index.html",
+      "as_of": "2026-09"
+    },
+    {
+      "name": "軽音楽部",
+      "kind": "文化",
+      "days_note": "火・水・金。土日は基本なし（文化祭などライブが近い時のみ）。",
+      "days_per_week": 3,
+      "weekend": "なし",
+      "source_url": "https://www.metro.ed.jp/wakabasogo-h/activities/cat2420/index.html",
+      "as_of": "2026-09"
+    },
+    {
+      "name": "パソコン同好会",
+      "kind": "同好会",
+      "days_note": "月・火・水・木・金（月・木は講習、それ以外は部員が自由に活動日を設定）。土日は基本的になし（文化祭前はあり）。",
+      "days_per_week": 5,
+      "weekend": "なし",
+      "source_url": "https://www.metro.ed.jp/wakabasogo-h/activities/cat2419/index.html",
+      "as_of": "2026-09"
+    },
+    {
+      "name": "和（なごみ）同好会",
+      "kind": "同好会",
+      "days_note": "月。土日はなし。",
+      "days_per_week": 1,
+      "weekend": "なし",
+      "source_url": "https://www.metro.ed.jp/wakabasogo-h/activities/cat2417/index.html",
+      "as_of": "2026-09"
+    },
+    {
+      "name": "弦楽同好会",
+      "kind": "同好会",
+      "days_note": "平日は講師の先生と要相談。土日は基本なし。",
+      "weekend": "なし",
+      "source_url": "https://www.metro.ed.jp/wakabasogo-h/activities/cat2416/index.html",
+      "as_of": "2026-09"
+    },
+    {
+      "name": "ピアノ研究会",
+      "kind": "文化",
+      "days_note": "月・水・金（月・金は任意）。土日はなし。",
+      "days_per_week": 3,
+      "weekend": "なし",
+      "source_url": "https://www.metro.ed.jp/wakabasogo-h/activities/cat2414/index.html",
+      "as_of": "2026-09"
+    },
+    {
+      "name": "ESS",
+      "kind": "文化",
+      "source_url": "https://www.metro.ed.jp/wakabasogo-h/activities/cat2441/index.html",
+      "as_of": "2026-09",
+      "results": []
+    },
+    {
+      "name": "家庭科研究会",
+      "kind": "文化",
+      "days_note": "週1回（令和7年度は木曜日）。",
+      "days_per_week": 1,
+      "source_url": "https://www.metro.ed.jp/wakabasogo-h/activities/club_2/index.html",
+      "as_of": "2026-09"
+    },
+    {
+      "name": "バリアフリー研究同好会",
+      "kind": "同好会",
+      "source_url": "https://www.metro.ed.jp/wakabasogo-h/school_life/activities.html",
+      "as_of": "2026-09"
+    },
+    {
+      "name": "ダブルダッチ同好会",
+      "kind": "同好会",
+      "source_url": "https://www.metro.ed.jp/wakabasogo-h/school_life/activities.html",
+      "as_of": "2026-09"
+    },
+    {
+      "name": "カルタ研究会",
+      "kind": "文化",
+      "source_url": "https://www.metro.ed.jp/wakabasogo-h/school_life/activities.html",
+      "as_of": "2026-09"
+    },
+    {
+      "name": "園芸研究会",
+      "kind": "文化",
+      "source_url": "https://www.metro.ed.jp/wakabasogo-h/school_life/activities.html",
+      "as_of": "2026-09"
+    }
+  ],
+  "designated_universities": [],
+  "events": [
+    {
+      "kind": "学科改編",
+      "period_label": "令和6年度(2024年4月)から",
+      "summary": "総合学科の履修系列を4系列（人間探究・芸術文化・情報交流・未来創造）に改編した",
+      "source_url": "https://www.metro.ed.jp/wakabasogo-h/assets/令和8年度　学校経営計画.pdf"
+    },
+    {
+      "kind": "改修",
+      "period_label": "令和7年度(2025年度)",
+      "summary": "体育館の屋根を修理した",
+      "source_url": "https://www.metro.ed.jp/wakabasogo-h/assets/令和７年度　学校経営報告.pdf"
+    },
+    {
+      "kind": "施設",
+      "period_label": "令和7年度(2025年度)",
+      "summary": "通学路に防犯カメラを設置した",
+      "source_url": "https://www.metro.ed.jp/wakabasogo-h/assets/令和７年度　学校経営報告.pdf"
+    },
+    {
+      "kind": "その他",
+      "period_label": "2024年12月",
+      "summary": "新しい部活動として家庭科研究会が発足した",
+      "source_url": "https://www.metro.ed.jp/wakabasogo-h/activities/club_2/index.html"
+    }
+  ],
+  "unresolved": [
+    "指定校推薦の大学名一覧：パンフレット・学校サイトに大学別の一覧の公開なし（受験方式内訳で指定校推薦32名という人数のみ判明）。進路指導のページ・パンフレット全体を確認。",
+    "男女別の生徒数：東京都の公式資料に男女別人数の公表なし（学年別の合計人数のみ「若葉の一年」ページに掲載）。",
+    "Tokyo Premiere Club の指定部活：docs/data/tokyo-premiere-club-2026.csv に若葉総合の記載なし（指定部活なしと判断）。",
+    "硬式野球部・その他一部の運動部（ソフトボール部・バドミントン部）の大会実績：部活動ページに【実績】欄の記載なし。",
+    "美術部：段階を付けず（2026-09-24 Opus見直し: 根拠が2020年度で直近3年に入らない）。元の見立て：2020年度、第45回全国高等学校総合文化祭美術・工芸部門で東京都教育委員会賞を受賞（東京都代表として選出されての受賞）。都道府県代表選出は段階2の基準を満たす。全国大会出場は1回のため段階1には届かない。2022年度は中央展で教育委員会賞、全日本学生美術展で佳作。部活動ページより。"
+  ],
+  "conflicts": []
+}

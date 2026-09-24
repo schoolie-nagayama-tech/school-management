@@ -1,0 +1,826 @@
+{
+  "prefecture": "東京都",
+  "school_name": "保谷",
+  "official_url": "https://www.metro.ed.jp/hoya-h/",
+  "researched_at": "2026-09-24",
+  "stats": [
+    {
+      "metric": "university_count",
+      "item": "合計",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 514,
+      "source_url": "https://www.metro.ed.jp/hoya-h/assets/filelink/filelink-pdffile-34451.pdf",
+      "source_label": "保谷高校 令和7年度 学校経営報告",
+      "as_of": "2026-09-24",
+      "note": "「4年制大学現役合格者数」として学校が集計した数値"
+    },
+    {
+      "metric": "university_count",
+      "item": "国公立",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 5,
+      "source_url": "https://www.metro.ed.jp/hoya-h/assets/filelink/filelink-pdffile-34451.pdf",
+      "source_label": "保谷高校 令和7年度 学校経営報告",
+      "as_of": "2026-09-24",
+      "note": ""
+    },
+    {
+      "metric": "university_count",
+      "item": "早慶上理",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 1,
+      "source_url": "https://www.metro.ed.jp/hoya-h/assets/filelink/filelink-pdffile-34451.pdf",
+      "source_label": "保谷高校 令和7年度 学校経営報告",
+      "as_of": "2026-09-24",
+      "note": "資料の項目名は「私立大学現役合格者数(早慶上智理科)」"
+    },
+    {
+      "metric": "university_count",
+      "item": "GMARCH",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 23,
+      "source_url": "https://www.metro.ed.jp/hoya-h/assets/filelink/filelink-pdffile-34451.pdf",
+      "source_label": "保谷高校 令和7年度 学校経営報告",
+      "as_of": "2026-09-24",
+      "note": ""
+    },
+    {
+      "metric": "university_count",
+      "item": "成成獨国武明学",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 43,
+      "source_url": "https://www.metro.ed.jp/hoya-h/assets/filelink/filelink-pdffile-34451.pdf",
+      "source_label": "保谷高校 令和7年度 学校経営報告",
+      "as_of": "2026-09-24",
+      "note": "学校独自の括り（成蹊・成城・獨協・國學院・武蔵・明治学院）。手引きが定義する「成成明武」（成蹊・成城・明治学院・武蔵）とは対象大学が異なるため、成成明武としては転記していない。"
+    },
+    {
+      "metric": "university_count",
+      "item": "日東駒専",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 80,
+      "source_url": "https://www.metro.ed.jp/hoya-h/assets/filelink/filelink-pdffile-34451.pdf",
+      "source_label": "保谷高校 令和7年度 学校経営報告",
+      "as_of": "2026-09-24",
+      "note": ""
+    },
+    {
+      "metric": "career_decided_rate",
+      "fiscal_year": 2025,
+      "value_num": 94,
+      "source_url": "https://www.metro.ed.jp/hoya-h/assets/filelink/filelink-pdffile-34451.pdf",
+      "source_label": "保谷高校 令和7年度 学校経営報告",
+      "as_of": "2026-09-24",
+      "note": "「現役進路決定率」R7実績。目標95.0%（R6実績93.6%・R5実績88.0%・R4実績94.8%）"
+    },
+    {
+      "metric": "club_join_rate",
+      "fiscal_year": 2025,
+      "value_num": 96.9,
+      "source_url": "https://www.metro.ed.jp/hoya-h/assets/filelink/filelink-pdffile-34451.pdf",
+      "source_label": "保谷高校 令和7年度 学校経営報告",
+      "as_of": "2026-09-24",
+      "note": "R7実績。目標90.0%（R6実績90.0%・R5実績95.0%・R4実績92.0%）"
+    },
+    {
+      "metric": "satisfaction",
+      "item": "生徒:学校生活",
+      "fiscal_year": 2025,
+      "value_num": 70.2,
+      "source_url": "https://www.metro.ed.jp/hoya-h/assets/filelink/filelink-pdffile-34451.pdf",
+      "source_label": "保谷高校 令和7年度 学校経営報告",
+      "as_of": "2026-09-24",
+      "note": "学校満足度（生徒）。アンケート設問「自分を高めてくれる学校か」。R7実績。目標70.0%"
+    },
+    {
+      "metric": "satisfaction",
+      "item": "保護者:学校生活",
+      "fiscal_year": 2025,
+      "value_num": 85.3,
+      "source_url": "https://www.metro.ed.jp/hoya-h/assets/filelink/filelink-pdffile-34451.pdf",
+      "source_label": "保谷高校 令和7年度 学校経営報告",
+      "as_of": "2026-09-24",
+      "note": "学校満足度（保護者）。アンケート設問「子どもは保谷高校に通って成長したか」。R7実績。目標90.0%"
+    },
+    {
+      "metric": "satisfaction",
+      "item": "生徒:授業",
+      "fiscal_year": 2025,
+      "value_num": 70.2,
+      "source_url": "https://www.metro.ed.jp/hoya-h/assets/filelink/filelink-pdffile-34451.pdf",
+      "source_label": "保谷高校 令和7年度 学校経営報告",
+      "as_of": "2026-09-24",
+      "note": "授業満足度（学校評価アンケート）。R7実績。目標70.0%"
+    },
+    {
+      "metric": "exam_ratio",
+      "item": "推薦",
+      "fiscal_year": 2026,
+      "value_num": 2.28,
+      "source_url": "https://www.metro.ed.jp/hoya-h/assets/filelink/filelink-pdffile-34451.pdf",
+      "source_label": "保谷高校 令和7年度 学校経営報告",
+      "as_of": "2026-09-24",
+      "note": "応募倍率（実績）。令和8年度入学者選抜（推薦）の最終応募倍率。目標3.30倍に対し実績2.28倍。前期（一般）は実績1.47倍（目標1.50倍）。"
+    },
+    {
+      "metric": "uniform",
+      "fiscal_year": 2026,
+      "value_text": "ブレザー(グレー系)。スラックス・スカートは選択制、その他にネクタイまたはリボン(グレー)。夏服はワイシャツ(半袖/長袖)またはポロシャツ(白/濃紺)。平成26年度に現行デザインへ更新。",
+      "source_url": "https://www.metro.ed.jp/hoya-h/assets/filelink/filelink-pdffile-37058.pdf",
+      "source_label": "保谷高校 生徒心得",
+      "as_of": "2026-09-24",
+      "note": "制服の写真・沿革は学校生活「制服・校章・校歌」ページ（https://www.metro.ed.jp/hoya-h/school_life/symbols.html）も参照"
+    },
+    {
+      "metric": "rules_summary",
+      "fiscal_year": 2026,
+      "value_text": "化粧・装飾品・頭髪の加工や奇抜な髪形を禁止。スマートフォンは登校後電源を切りロッカー保管(昼休み除く)。アルバイトは原則禁止。自転車通学はヘルメット等必須の許可制。バイク・自動車通学は禁止。",
+      "source_url": "https://www.metro.ed.jp/hoya-h/assets/filelink/filelink-pdffile-37058.pdf",
+      "source_label": "保谷高校 生徒心得",
+      "as_of": "2026-09-24",
+      "note": ""
+    },
+    {
+      "metric": "designation",
+      "item": "進学指導研究校",
+      "fiscal_year": 2025,
+      "value_text": "進学指導研究校の拠点校として他校と連携し、模試分析会の公開など進学指導体制の充実を推進",
+      "source_url": "https://www.metro.ed.jp/hoya-h/assets/filelink/filelink-pdffile-34451.pdf",
+      "source_label": "保谷高校 令和7年度 学校経営報告",
+      "as_of": "2026-09-24",
+      "note": "令和8年度学校経営計画では名称が「進路指導等の充実事業推進校」に変わっている（conflictsも参照）"
+    },
+    {
+      "metric": "designation",
+      "item": "進路指導等の充実事業推進校",
+      "fiscal_year": 2026,
+      "value_text": "令和8年度にあらたに指定された東京都の進路指導等の充実事業の推進校",
+      "source_url": "https://www.metro.ed.jp/hoya-h/assets/filelink/filelink-pdffile-37154.pdf",
+      "source_label": "保谷高校 令和8年度 学校経営計画",
+      "as_of": "2026-09-24",
+      "note": "令和7年度学校経営報告では「進学指導研究校（拠点校）」と記載（conflictsも参照）"
+    },
+    {
+      "metric": "designation",
+      "item": "Tokyo GE-NET EE",
+      "fiscal_year": 2026,
+      "value_text": "オンライン英会話・語学検定試験の活用等を進めるグローバル人材育成の東京都指定",
+      "source_url": "https://www.metro.ed.jp/hoya-h/assets/filelink/filelink-pdffile-37154.pdf",
+      "source_label": "保谷高校 令和8年度 学校経営計画",
+      "as_of": "2026-09-24",
+      "note": ""
+    },
+    {
+      "metric": "designation",
+      "item": "海外学校間交流推進校",
+      "fiscal_year": 2026,
+      "value_text": "海外修学旅行・留学生との交流・海外派遣事業等を推進する東京都指定",
+      "source_url": "https://www.metro.ed.jp/hoya-h/assets/filelink/filelink-pdffile-37154.pdf",
+      "source_label": "保谷高校 令和8年度 学校経営計画",
+      "as_of": "2026-09-24",
+      "note": ""
+    }
+  ],
+  "clubs": [
+    {
+      "name": "サッカー部",
+      "kind": "運動",
+      "tier": 3,
+      "tier_basis": "2026年度 高円宮杯U-18東京リーグでT1〜T4のいずれにも所属なし、T5参加チーム一覧に保谷高等学校の記載を確認（2026-09-24確認、https://www.tleague-u18.com/team.php?dy=2026&dt=5）。",
+      "source_url": "https://www.metro.ed.jp/hoya-h/activities/cat1796/index.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "全国高校サッカー選手権大会東京都二次予選",
+          "level": "都県",
+          "result": "二次予選出場",
+          "source_url": "https://www.metro.ed.jp/hoya-h/activities/cat1796/index.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "地区トップリーグ",
+          "level": "地区",
+          "result": "グループ2位",
+          "source_url": "https://www.metro.ed.jp/hoya-h/activities/cat1796/index.html"
+        }
+      ]
+    },
+    {
+      "name": "硬式野球部",
+      "kind": "運動",
+      "days_note": "週6日、土日は練習試合中心",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2024年夏（西東京大会）はベスト32まで勝ち上がるも早大学院に0-10で敗退。2025年・2026年夏はいずれも二回戦で敗退。春季・秋季大会も一次予選や本大会での早期敗退が続く（学校公式部活動ページの試合結果より。一球速報.comはJS動的取得のため静的には確認できず）。",
+      "source_url": "https://www.metro.ed.jp/hoya-h/activities/cat1806/index.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "第108回全国高等学校野球選手権大会西東京大会",
+          "level": "都県",
+          "result": "二回戦敗退（田無に8-12）",
+          "source_url": "https://www.metro.ed.jp/hoya-h/activities/cat1806/index.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第107回全国高等学校野球選手権大会西東京大会",
+          "level": "都県",
+          "result": "二回戦敗退（玉川学園に4-7）",
+          "source_url": "https://www.metro.ed.jp/hoya-h/activities/cat1806/index.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "第106回全国高等学校野球選手権大会西東京大会",
+          "level": "都県",
+          "result": "ベスト32（早大学院に0-10で敗退。都武蔵野北・都神代には勝利）",
+          "source_url": "https://www.metro.ed.jp/hoya-h/activities/cat1806/index.html"
+        }
+      ]
+    },
+    {
+      "name": "女子バレーボール部",
+      "kind": "運動",
+      "days_note": "月・木(体育館)、水(外・トレーニング)、金(体育館または外)、土・日(練習試合)、火曜は休養日",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2025〜2026年度も春季大会・インターハイ予選とも初戦を2連勝した後3回戦前後で敗退する形が続き、ベスト16等の上位進出の記載はない。",
+      "source_url": "https://www.metro.ed.jp/hoya-h/activities/cat1799/index.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "インターハイ予選",
+          "level": "都県",
+          "result": "1日目2勝（和光・城西大付属）、2日目敗退（自由ヶ丘学園）",
+          "source_url": "https://www.metro.ed.jp/hoya-h/activities/cat1799/index.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "公立大会",
+          "level": "都県",
+          "result": "1日目2勝（杉並・武蔵野北）、2日目1勝1敗（清瀬に勝利、石神井に敗退）",
+          "source_url": "https://www.metro.ed.jp/hoya-h/activities/cat1799/index.html"
+        }
+      ]
+    },
+    {
+      "name": "女子バスケットボール部",
+      "kind": "運動",
+      "days_note": "火・金(体育館、隔週で水も)、月・隔週水(トレーニング)、土日は練習試合中心",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "新人戦・インターハイ予選など都大会に毎年出場し複数回戦（3〜5回戦）まで進んでいるが、最終順位の記載がない。目標は「都ベスト16」で、達成の記載はない（目標は実績としない）。",
+      "source_url": "https://www.metro.ed.jp/hoya-h/activities/cat1809/index.html",
+      "as_of": "2026-09-24",
+      "results": []
+    },
+    {
+      "name": "ソフトボール部",
+      "kind": "運動",
+      "tier": 1,
+      "tier_basis": "2023年度、関東大会予選・インターハイ東京都予選のいずれもベスト8（都県レベルの全校対象大会でベスト8以上を同一年度に2回達成）。同年度の公立選手権大会は準優勝（公立限定大会のため参考扱い）。",
+      "source_url": "https://www.metro.ed.jp/hoya-h/activities/cat1808/index.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "関東大会予選",
+          "level": "都県",
+          "result": "ベスト8",
+          "source_url": "https://www.metro.ed.jp/hoya-h/activities/cat1808/index.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "インターハイ東京都予選",
+          "level": "都県",
+          "result": "ベスト8",
+          "source_url": "https://www.metro.ed.jp/hoya-h/activities/cat1808/index.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "東京都公立高等学校女子ソフトボール選手権大会",
+          "level": "都県",
+          "result": "準優勝（公立校限定大会）",
+          "source_url": "https://www.metro.ed.jp/hoya-h/activities/cat1808/index.html"
+        }
+      ]
+    },
+    {
+      "name": "男子バスケットボール部",
+      "kind": "運動",
+      "source_url": "https://www.metro.ed.jp/hoya-h/activities/cat1800/index.html",
+      "as_of": "2026-09-24",
+      "results": []
+    },
+    {
+      "name": "バドミントン部",
+      "kind": "運動",
+      "days_note": "月・水・木・金・土の週5日",
+      "days_per_week": 5,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "2024年度、インターハイ予選男子団体で西東京ベスト16（1回のみ）。女子団体は関東予選・インターハイ予選とも2〜3回戦止まりで、ベスト16〜32が複数回には届かない。",
+      "source_url": "https://www.metro.ed.jp/hoya-h/activities/cat1794/index.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "インターハイ予選（男子団体）",
+          "level": "都県",
+          "result": "西東京ベスト16",
+          "source_url": "https://www.metro.ed.jp/hoya-h/activities/cat1794/index.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "関東予選（女子団体）",
+          "level": "都県",
+          "result": "2回戦進出",
+          "source_url": "https://www.metro.ed.jp/hoya-h/activities/cat1794/index.html"
+        }
+      ]
+    },
+    {
+      "name": "ハンドボール部",
+      "kind": "運動",
+      "weekend": "土日",
+      "tier": 1,
+      "tier_basis": "男女合同の1部のため強い方（女子）で判定。2026年度、女子が春季大会・インターハイ予選のいずれも東京都ベスト8（都県レベルの全校対象大会で同一年度に2回達成）。男子は公立校大会限定でベスト8にとどまる。",
+      "source_url": "https://www.metro.ed.jp/hoya-h/activities/cat1797/index.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "春季大会（関東大会予選）",
+          "level": "都県",
+          "result": "東京都ベスト8（女子）",
+          "source_url": "https://www.metro.ed.jp/hoya-h/activities/cat1797/index.html"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "インターハイ予選",
+          "level": "都県",
+          "result": "東京都ベスト8（女子）",
+          "source_url": "https://www.metro.ed.jp/hoya-h/activities/cat1797/index.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "東京都公立校大会",
+          "level": "都県",
+          "result": "ベスト8（男子。公立校限定大会）",
+          "source_url": "https://www.metro.ed.jp/hoya-h/activities/cat1797/index.html"
+        }
+      ]
+    },
+    {
+      "name": "男子硬式テニス部",
+      "kind": "運動",
+      "days_per_week": 5,
+      "tier": 3,
+      "tier_basis": "2022年度、都立高校新人テニス選手権大会予選で初戦敗退にとどまる。2021年度は都立高校テニス選手権大会（個人戦）シングルスで3回戦進出（いずれも都立限定大会のため1段階低く判定）。",
+      "source_url": "https://www.metro.ed.jp/hoya-h/activities/cat1802/index.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2022,
+          "competition": "東京都立高等学校新人テニス選手権大会予選",
+          "level": "都県",
+          "result": "初戦敗退（都立限定大会）",
+          "source_url": "https://www.metro.ed.jp/hoya-h/activities/cat1802/index.html"
+        }
+      ]
+    },
+    {
+      "name": "女子硬式テニス部",
+      "kind": "運動",
+      "days_note": "火・日以外の週5日。日曜日は練習試合や合同練習を行うことがある",
+      "days_per_week": 5,
+      "tier": 3,
+      "tier_basis": "2022年度、都高校テニス選手権大会・新人選手権大会とも、シングルス／ダブルスで3〜4回戦進出。都立限定でない都大会だが、ベスト8等の上位進出の記載はない。",
+      "source_url": "https://www.metro.ed.jp/hoya-h/activities/cat1801/index.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2022,
+          "competition": "東京都高等学校テニス選手権大会",
+          "level": "都県",
+          "result": "シングルス・ダブルスとも3回戦進出",
+          "source_url": "https://www.metro.ed.jp/hoya-h/activities/cat1801/index.html"
+        },
+        {
+          "fiscal_year": 2022,
+          "competition": "東京都高等学校テニス新人選手権大会",
+          "level": "都県",
+          "result": "シングルス3回戦、ダブルス4回戦進出",
+          "source_url": "https://www.metro.ed.jp/hoya-h/activities/cat1801/index.html"
+        }
+      ]
+    },
+    {
+      "name": "水泳部",
+      "kind": "運動",
+      "days_note": "ONシーズン(5〜10月)は週5日プールで練習、OFFシーズン(11〜4月)は週4日陸上トレーニング",
+      "days_per_week": 5,
+      "tier": 1,
+      "tier_basis": "2024年度、全国JOCジュニアオリンピックカップ夏季水泳競技大会で女子200m平泳ぎ7位入賞。2025年度はインターハイ（全国大会）に出場。直近3年で全国大会に2回参加（入賞・出場）。",
+      "source_url": "https://www.metro.ed.jp/hoya-h/activities/cat1798/index.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "インターハイ（全国高等学校総合体育大会水泳競技大会）",
+          "level": "全国",
+          "result": "出場",
+          "happened_on": "2025-08-21",
+          "source_url": "https://www.metro.ed.jp/hoya-h/activities/cat1798/index.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "全国JOCジュニアオリンピックカップ夏季水泳競技大会",
+          "level": "全国",
+          "result": "女子200m平泳ぎ 7位",
+          "source_url": "https://www.metro.ed.jp/hoya-h/activities/cat1798/index.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "東京都高等学校選手権水泳競技大会（関東予選）",
+          "level": "関東",
+          "result": "女子200m平泳ぎ 13位、女子100m平泳ぎ 15位",
+          "source_url": "https://www.metro.ed.jp/hoya-h/activities/cat1798/index.html"
+        }
+      ]
+    },
+    {
+      "name": "卓球部",
+      "kind": "運動",
+      "days_note": "水・木の週2日",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動は週2日。直近の大会成績も国公立大会2〜3回戦、都大会2回戦などにとどまり、目立った実績の記載がない。",
+      "source_url": "https://www.metro.ed.jp/hoya-h/activities/cat1803/index.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "国公立高等学校卓球大会",
+          "level": "都県",
+          "result": "2回戦進出（公立限定大会）",
+          "source_url": "https://www.metro.ed.jp/hoya-h/activities/cat1803/index.html"
+        }
+      ]
+    },
+    {
+      "name": "剣道部",
+      "kind": "運動",
+      "days_note": "月・水・木・金・土の週5日",
+      "days_per_week": 5,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "2021年度・2024年度の全国高校剣道大会個人戦東京都予選で、いずれも女子個人ベスト32入賞。都県大会でベスト16〜32相当の成績が複数回。（2026-09-24 Opus見直し: 直近3年に入るのは2024年度の個人ベスト32の1回だけなので段階3）",
+      "source_url": "https://www.metro.ed.jp/hoya-h/activities/cat1795/index.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "全国高等学校剣道大会個人戦東京都予選",
+          "level": "都県",
+          "result": "ベスト32入賞（女子）",
+          "source_url": "https://www.metro.ed.jp/hoya-h/activities/cat1795/index.html"
+        },
+        {
+          "fiscal_year": 2021,
+          "competition": "全国高等学校剣道大会個人戦東京都予選",
+          "level": "都県",
+          "result": "個人ベスト32入賞（女子）",
+          "source_url": "https://www.metro.ed.jp/hoya-h/activities/cat1795/index.html"
+        }
+      ]
+    },
+    {
+      "name": "ダンス部",
+      "kind": "運動",
+      "days_note": "月・火・金の週3日",
+      "days_per_week": 3,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動は週3日。大会・コンクールへの参加はなく、校内発表会（新入生歓迎会・文化祭・クリスマスライブ・ヤングフェスティバル）が中心。",
+      "source_url": "https://www.metro.ed.jp/hoya-h/activities/cat1805/index.html",
+      "as_of": "2026-09-24",
+      "results": []
+    },
+    {
+      "name": "ソフトテニス部",
+      "kind": "運動",
+      "days_note": "月・火・水・木・土または日(土日は半日練習)",
+      "days_per_week": 5,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2022年度、関東大会個人・団体予選に出場したが結果は「出場」にとどまり、新人大会個人戦は2回戦進出まで。予選への出場のみでは根拠にせず、大会に出ているが上位進出の記載がない水準と判定。",
+      "source_url": "https://www.metro.ed.jp/hoya-h/activities/cat1807/index.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2022,
+          "competition": "新人大会個人戦",
+          "level": "都県",
+          "result": "2回戦進出",
+          "source_url": "https://www.metro.ed.jp/hoya-h/activities/cat1807/index.html"
+        }
+      ]
+    },
+    {
+      "name": "陸上部",
+      "kind": "運動",
+      "tier": 3,
+      "tier_basis": "毎年、都高体連陸上競技第5・6支部予選会等に出場しているが、入賞・上位進出の記載はなく「出場」にとどまる。",
+      "source_url": "https://www.metro.ed.jp/hoya-h/activities/cat1804/index.html",
+      "as_of": "2026-09-24",
+      "results": []
+    },
+    {
+      "name": "吹奏楽部",
+      "kind": "文化",
+      "days_note": "平日は月・火・水・金(18時まで)、休日は土曜・長期休業中",
+      "days_per_week": 5,
+      "weekend": "土",
+      "tier": 2,
+      "tier_basis": "2026年度、東京都高等学校吹奏楽コンクールB組で金賞（都県コンクールの上位級での金賞）。2025年度はB組銀賞。",
+      "source_url": "https://www.metro.ed.jp/hoya-h/activities/cat1790/index.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "東京都高等学校吹奏楽コンクール B組",
+          "level": "都県",
+          "result": "金賞",
+          "source_url": "https://www.metro.ed.jp/hoya-h/activities/cat1790/index.html"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "東京都高等学校吹奏楽コンクール C組",
+          "level": "都県",
+          "result": "銅賞",
+          "source_url": "https://www.metro.ed.jp/hoya-h/activities/cat1790/index.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "東京都高等学校吹奏楽コンクール B組",
+          "level": "都県",
+          "result": "銀賞",
+          "source_url": "https://www.metro.ed.jp/hoya-h/activities/cat1790/index.html"
+        }
+      ]
+    },
+    {
+      "name": "現代音楽部",
+      "kind": "文化",
+      "source_url": "https://www.metro.ed.jp/hoya-h/activities/cat1788/index.html",
+      "as_of": "2026-09-24",
+      "results": []
+    },
+    {
+      "name": "演劇部",
+      "kind": "文化",
+      "days_note": "月・水・金の週3日",
+      "days_per_week": 3,
+      "weekend": "なし",
+      "tier": 2,
+      "tier_basis": "2025年度、東京都高等学校文化祭演劇部門多摩北地区大会（A日程）で中央大会推薦校に選出され、中央発表会で優秀賞を受賞（都県レベルの代表選出・上位の賞）。2021〜2024年度は地区大会奨励賞（2〜5年連続）にとどまる。",
+      "source_url": "https://www.metro.ed.jp/hoya-h/activities/cat1791/index.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "東京都高等学校文化祭演劇部門多摩北地区大会(A日程)",
+          "level": "都県",
+          "result": "中央大会推薦校に選出",
+          "source_url": "https://www.metro.ed.jp/hoya-h/activities/cat1791/index.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "東京都高等学校文化祭演劇部門中央発表会",
+          "level": "都県",
+          "result": "優秀賞",
+          "happened_on": "2025-11-17",
+          "source_url": "https://www.metro.ed.jp/hoya-h/activities/cat1791/index.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "東京都高等学校文化祭演劇部門多摩北地区大会(A日程)",
+          "level": "地区",
+          "result": "奨励賞（5年連続）",
+          "source_url": "https://www.metro.ed.jp/hoya-h/activities/cat1791/index.html"
+        }
+      ]
+    },
+    {
+      "name": "茶道部",
+      "kind": "文化",
+      "days_note": "月曜日のみ",
+      "days_per_week": 1,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動は週1日。文化祭出店が中心で、コンクール等への参加実績の記載はない。",
+      "source_url": "https://www.metro.ed.jp/hoya-h/activities/cat1792/index.html",
+      "as_of": "2026-09-24",
+      "results": []
+    },
+    {
+      "name": "美術部",
+      "kind": "文化",
+      "days_note": "月・水・金の週3日",
+      "days_per_week": 3,
+      "weekend": "なし",
+      "source_url": "https://www.metro.ed.jp/hoya-h/activities/cat1789/index.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2020,
+          "competition": "東京都高等学校文化祭連盟主催中央展",
+          "level": "都県",
+          "result": "東京都教育委員会賞受賞（油絵「無題」）",
+          "source_url": "https://www.metro.ed.jp/hoya-h/activities/cat1789/index.html"
+        }
+      ]
+    },
+    {
+      "name": "科学部",
+      "kind": "文化",
+      "tier": 3,
+      "tier_basis": "2022年度、科学の甲子園（都大会）で40校中12位。全国大会出場や上位入賞の記載はない。",
+      "source_url": "https://www.metro.ed.jp/hoya-h/activities/cat1786/index.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2022,
+          "competition": "科学の甲子園（東京都大会）",
+          "level": "都県",
+          "result": "40校中12位",
+          "source_url": "https://www.metro.ed.jp/hoya-h/activities/cat1786/index.html"
+        }
+      ]
+    },
+    {
+      "name": "執筆部",
+      "kind": "文化",
+      "days_note": "水・金の週2回",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "source_url": "https://www.metro.ed.jp/hoya-h/activities/cat1787/index.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "東京都高文連文芸部門地区大会・中央大会",
+          "level": "都県",
+          "result": "出場",
+          "source_url": "https://www.metro.ed.jp/hoya-h/activities/cat1787/index.html"
+        },
+        {
+          "fiscal_year": 2022,
+          "competition": "東京都高文連文芸部門中央大会",
+          "level": "都県",
+          "result": "小説の部 優秀賞、詩の部 佳作",
+          "source_url": "https://www.metro.ed.jp/hoya-h/activities/cat1787/index.html"
+        },
+        {
+          "fiscal_year": 2021,
+          "competition": "東京都高等学校文化連盟文芸部門 短歌の部",
+          "level": "関東",
+          "result": "佳作入賞、関東大会出場",
+          "source_url": "https://www.metro.ed.jp/hoya-h/activities/cat1787/index.html"
+        }
+      ]
+    },
+    {
+      "name": "料理部",
+      "kind": "文化",
+      "days_note": "週1回",
+      "days_per_week": 1,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動は週1回。文化祭でのクッキー販売が中心で、コンクール等への参加実績の記載はない。",
+      "source_url": "https://www.metro.ed.jp/hoya-h/activities/cat1785/index.html",
+      "as_of": "2026-09-24",
+      "results": []
+    },
+    {
+      "name": "ボランティア部",
+      "kind": "文化",
+      "source_url": "https://www.metro.ed.jp/hoya-h/activities/cat1810/index.html",
+      "as_of": "2026-09-24",
+      "results": []
+    },
+    {
+      "name": "歴史研究部",
+      "kind": "文化",
+      "tier": 3,
+      "tier_basis": "毎年、全国高校生歴史研究フォーラムに参加しているが、2021年度は参加賞にとどまる（予選のない参加のみは実績の根拠にしない）。地区・都県レベルの上位入賞の記載もない。",
+      "source_url": "https://www.metro.ed.jp/hoya-h/activities/cat1783/index.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2021,
+          "competition": "第14回全国高校生歴史研究フォーラム（歴史甲子園）",
+          "level": "全国",
+          "result": "参加賞",
+          "source_url": "https://www.metro.ed.jp/hoya-h/activities/cat1783/index.html"
+        }
+      ]
+    },
+    {
+      "name": "写真同好会",
+      "kind": "同好会",
+      "days_note": "月曜日のみ",
+      "days_per_week": 1,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動は週1日。文化祭展示が中心で、コンクール等への参加実績の記載はない。",
+      "source_url": "https://www.metro.ed.jp/hoya-h/activities/cat1784/index.html",
+      "as_of": "2026-09-24",
+      "results": []
+    },
+    {
+      "name": "パソコン部",
+      "kind": "同好会",
+      "source_url": "https://www.metro.ed.jp/hoya-h/activities/club/index.html",
+      "as_of": "2026-09-24",
+      "results": []
+    },
+    {
+      "name": "書道同好会",
+      "kind": "同好会",
+      "source_url": "https://www.metro.ed.jp/hoya-h/activities/cat1786_1/index.html",
+      "as_of": "2026-09-24",
+      "results": []
+    },
+    {
+      "name": "学力推進同好会",
+      "kind": "同好会",
+      "source_url": "https://www.metro.ed.jp/hoya-h/activities/cat1787_1/index.html",
+      "as_of": "2026-09-24",
+      "results": []
+    }
+  ],
+  "designated_universities": [],
+  "events": [
+    {
+      "kind": "制服",
+      "period_label": "令和7年度(2025年度)から",
+      "summary": "熱中症対策としてポロシャツ・ハーフパンツを通常服に導入。都立学校でも先行事例となる決定と学校自ら位置づけている。",
+      "source_url": "https://www.metro.ed.jp/hoya-h/assets/filelink/filelink-pdffile-34451.pdf"
+    },
+    {
+      "kind": "その他",
+      "period_label": "令和7年度(2025年度)入試から",
+      "summary": "女子バレーボール部の文化・スポーツ等特別推薦枠が1名から2名に増加した。",
+      "source_url": "https://www.metro.ed.jp/hoya-h/activities/cat1799/index.html"
+    },
+    {
+      "kind": "その他",
+      "period_label": "令和9年度(2027年度)入試から予定",
+      "summary": "ハンドボール部が文化・スポーツ等特別推薦の募集を新たに開始する予定。",
+      "source_url": "https://www.metro.ed.jp/hoya-h/activities/cat1797/index.html"
+    },
+    {
+      "kind": "その他",
+      "period_label": "令和8年度(2026年度)から",
+      "summary": "男子バスケットボール部の文化・スポーツ等特別推薦枠を拡大した。",
+      "source_url": "https://www.metro.ed.jp/hoya-h/assets/filelink/filelink-pdffile-37154.pdf"
+    },
+    {
+      "kind": "その他",
+      "period_label": "令和8年度(2026年度)から",
+      "summary": "学校組織を3分掌(教務・生活・進路)から5分掌(国際探究部・総務部を新設)に再編する。",
+      "source_url": "https://www.metro.ed.jp/hoya-h/assets/filelink/filelink-pdffile-37154.pdf"
+    }
+  ],
+  "unresolved": [
+    "男女別生徒数：学校経営報告・パンフレットいずれにも公式な男女人数の記載なし",
+    "指定校推薦の大学一覧：学校案内パンフレット(pamphlet-pdffile-4102.pdf)、だから都立高 School Guide(school_guide.pdf)ともPDFの見出し・表部分の文字/画像が正しく表示されず(該当欄が白紙の枠のみ)、内容を確認できなかった",
+    "学校案内パンフレットに大学別合格実績表(24年・25年・26年の3か年、大学名ごとの人数)は存在するが、延べ/現役/実進学の別が記載されておらず、値を転記しなかった（学校経営報告の現役合格者数のみ採用）",
+    "career_decided_rate以外の進路の内訳（進路状況ページの「大学・短期大学進学85.2%/専門学校進学6.3%/民間企業・官公庁就職0.6%/その他進学準備等7.9%」）は、手引きの admission_route_share（入試方式別の実進学割合）とは異なる区分のため転記していない",
+    "学校評価アンケートの保護者側の詳細項目（授業満足度等）：学校経営報告には学校満足度（保護者）のみ記載で、他の保護者向け設問の数値は確認できず",
+    "学級増減：令和7年度・令和8年度の都教委「都立高等学校等の第一学年生徒の募集人員等について」を個別に確認できておらず、直近の学級増減の有無は未確認",
+    "硬式野球部の一球速報.com記録：team ID 12031を確認したが、日程・結果ページがJavaScriptによる動的取得のため静的には試合結果を取得できず、学校公式部活動ページの記載を代わりに用いた",
+    "男子バスケットボール部・現代音楽部・ボランティア部・パソコン部・書道同好会・学力推進同好会：部活動ページに活動日または大会成績の記載がなく、tier判定の根拠なし",
+    "陸上部・歴史研究部・科学部・ソフトボール部・ハンドボール部・男子硬式テニス部：部活動ページに曜日単位の活動日の記載がない",
+    "美術部：段階を付けず（2026-09-24 Opus見直し: 根拠が直近3年＝2023年度以降に入らない）。元の見立て：2020年度、東京都高等学校文化祭連盟主催中央展で東京都教育委員会賞を受賞（個人・都県レベルの上位の賞）。直近の2022年度は中央展・創源展に出品したが入賞の記載はない。",
+    "執筆部：段階を付けず（2026-09-24 Opus見直し: 根拠が直近3年＝2023年度以降に入らない）。元の見立て：2022年度、東京都高文連文芸部門中央大会で小説の部優秀賞を受賞（都県レベルの上位の賞）。2021年度は短歌の部佳作に加え関東大会に出場（1回）。"
+  ],
+  "conflicts": [
+    "部活動一覧：現行の「学校生活＞部活動・生徒会」ページに表示されている30団体（運動部16・文化部10・同好会4）と、同じHTMLソース内にコメントアウトされたまま残る旧リスト（運動部17種目に柔道部を含む、文化部は「料理同好会」「歴史研究会」表記）とで内容が異なる。旧リストは非表示のため現行の30団体を採用した。学校案内「特色」ページ（feature.html）にも運動部17種目（柔道含む）・文化部12種目（「国際交流」を含み「ボランティア部」の表記なし）という、現行の部活動ページとも旧リストとも一部食い違う一覧がある。",
+    "進学指導関連の指定名称：令和7年度学校経営報告は「進学指導研究校（拠点校）」と記載する一方、令和8年度学校経営計画は「あらたに指定された進路指導等の充実事業推進校」と記載しており、名称・指定内容が資料間で一致しない。同一制度の改称か別制度かは資料からは判別できない。"
+  ]
+}

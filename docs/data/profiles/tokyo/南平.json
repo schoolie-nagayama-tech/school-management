@@ -1,0 +1,974 @@
+{
+  "prefecture": "東京都",
+  "school_name": "南平",
+  "official_url": "https://www.metro.ed.jp/minamidaira-h/",
+  "researched_at": "2026-09-24",
+  "stats": [
+    {
+      "metric": "university_count",
+      "item": "国公立",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 16,
+      "source_url": "https://www.metro.ed.jp/minamidaira-h/assets/pamphlet/pamphlet-pdffile-1757.pdf",
+      "source_label": "学校案内パンフレット「南平 2027」国公立大学・大学校・私立大学合格者数(国公立大学の表・2026年3月卒業分)",
+      "as_of": "2026-09",
+      "note": "58期生(2026年3月卒業)。令和7年度学校経営報告の重点目標実績「国公立大学合格者数16名」（令和7年度実績）と一致。"
+    },
+    {
+      "metric": "university_count",
+      "item": "早慶上理",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 26,
+      "source_url": "https://www.metro.ed.jp/minamidaira-h/assets/pamphlet/pamphlet-pdffile-1757.pdf",
+      "source_label": "学校案内パンフレット「南平 2027」私立大学合格者数の表から合算(早稲田11・慶應3・上智11・東京理科1)",
+      "as_of": "2026-09",
+      "note": "令和7年度学校経営報告の重点目標実績「難関私立大学合格者数26名」（令和7年度実績）と一致。学校経営報告の「難関私立大学」は早慶上理に相当すると判断。"
+    },
+    {
+      "metric": "university_count",
+      "item": "GMARCH",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 136,
+      "source_url": "https://www.metro.ed.jp/minamidaira-h/assets/pamphlet/pamphlet-pdffile-1757.pdf",
+      "source_label": "学校案内パンフレット「南平 2027」私立大学合格者数の表から合算(学習院5・明治30・青山学院13・立教10・中央44・法政34)",
+      "as_of": "2026-09",
+      "note": "令和7年度学校経営報告の重点目標実績は「GMARCH合格者数134名」（令和7年度実績）で2名の差がある(conflicts参照)。"
+    },
+    {
+      "metric": "university_count",
+      "item": "成成明武",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 54,
+      "source_url": "https://www.metro.ed.jp/minamidaira-h/assets/pamphlet/pamphlet-pdffile-1757.pdf",
+      "source_label": "学校案内パンフレット「南平 2027」私立大学合格者数の表から合算(成蹊25・成城18・明治学院5・武蔵6)",
+      "as_of": "2026-09",
+      "note": ""
+    },
+    {
+      "metric": "university_count",
+      "item": "日東駒専",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 150,
+      "source_url": "https://www.metro.ed.jp/minamidaira-h/assets/pamphlet/pamphlet-pdffile-1757.pdf",
+      "source_label": "学校案内パンフレット「南平 2027」私立大学合格者数の表から合算(日本54・東洋38・駒澤17・専修41)",
+      "as_of": "2026-09",
+      "note": ""
+    },
+    {
+      "metric": "university_count",
+      "item": "合計",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 755,
+      "source_url": "https://www.metro.ed.jp/minamidaira-h/assets/pamphlet/pamphlet-pdffile-1757.pdf",
+      "source_label": "学校案内パンフレット「南平 2027」国公立大学・大学校・私立大学合格者数(国公立総計16+私立総計739)",
+      "as_of": "2026-09",
+      "note": "四年制大学の国公立・私立合計。大学校(国立看護大学校等)・専門職大学・短期大学・専門学校は含まない。"
+    },
+    {
+      "metric": "university_count",
+      "item": "明星大学",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 58,
+      "source_url": "https://www.metro.ed.jp/minamidaira-h/assets/pamphlet/pamphlet-pdffile-1757.pdf",
+      "source_label": "学校案内パンフレット「南平 2027」私立大学合格者数の表",
+      "as_of": "2026-09",
+      "note": "四年制大学合格者数の中で最多(2026年3月)。"
+    },
+    {
+      "metric": "university_count",
+      "item": "東京経済大学",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 32,
+      "source_url": "https://www.metro.ed.jp/minamidaira-h/assets/pamphlet/pamphlet-pdffile-1757.pdf",
+      "source_label": "学校案内パンフレット「南平 2027」私立大学合格者数の表",
+      "as_of": "2026-09",
+      "note": ""
+    },
+    {
+      "metric": "university_count",
+      "item": "帝京大学",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 23,
+      "source_url": "https://www.metro.ed.jp/minamidaira-h/assets/pamphlet/pamphlet-pdffile-1757.pdf",
+      "source_label": "学校案内パンフレット「南平 2027」私立大学合格者数の表",
+      "as_of": "2026-09",
+      "note": ""
+    },
+    {
+      "metric": "university_count",
+      "item": "東京農業大学",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 22,
+      "source_url": "https://www.metro.ed.jp/minamidaira-h/assets/pamphlet/pamphlet-pdffile-1757.pdf",
+      "source_label": "学校案内パンフレット「南平 2027」私立大学合格者数の表",
+      "as_of": "2026-09",
+      "note": ""
+    },
+    {
+      "metric": "university_count",
+      "item": "杏林大学",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 19,
+      "source_url": "https://www.metro.ed.jp/minamidaira-h/assets/pamphlet/pamphlet-pdffile-1757.pdf",
+      "source_label": "学校案内パンフレット「南平 2027」私立大学合格者数の表",
+      "as_of": "2026-09",
+      "note": ""
+    },
+    {
+      "metric": "career_decided_rate",
+      "fiscal_year": 2025,
+      "value_num": 88.6,
+      "source_url": "https://www.metro.ed.jp/minamidaira-h/assets/pamphlet/pamphlet-pdffile-1757.pdf",
+      "source_label": "学校案内パンフレット「南平 2027」2026年卒業生の進路円グラフ",
+      "as_of": "2026-09",
+      "note": "2026年3月卒業生307名のうち、大学87.0%(267名)・専門学校1.3%(4名)・短大0.3%(1名)の合計(進路未定11.4%を除く)。"
+    },
+    {
+      "metric": "club_join_rate",
+      "fiscal_year": 2025,
+      "value_num": 88.7,
+      "source_url": "https://www.metro.ed.jp/minamidaira-h/assets/filelink/filelink-pdffile-35294.pdf",
+      "source_label": "令和7年度 東京都立南平高等学校学校経営報告 重点目標と方策(数値目標)",
+      "as_of": "2026-03-25",
+      "note": "令和7年度実績。令和6年度実績は84.6%。令和8年度目標85%。"
+    },
+    {
+      "metric": "satisfaction",
+      "item": "生徒:授業",
+      "fiscal_year": 2025,
+      "value_num": 89.9,
+      "source_url": "https://www.metro.ed.jp/minamidaira-h/assets/filelink/filelink-pdffile-35294.pdf",
+      "source_label": "令和7年度 東京都立南平高等学校学校経営報告 重点目標と方策(数値目標)",
+      "as_of": "2026-03-25",
+      "note": "「学校評価アンケートにおける生徒の授業満足度」令和7年度実績。目標90%。令和6年度実績88.5%。"
+    },
+    {
+      "metric": "satisfaction",
+      "item": "生徒:行事",
+      "fiscal_year": 2025,
+      "value_num": 93.7,
+      "source_url": "https://www.metro.ed.jp/minamidaira-h/assets/filelink/filelink-pdffile-35294.pdf",
+      "source_label": "令和7年度 東京都立南平高等学校学校経営報告 重点目標と方策(数値目標)",
+      "as_of": "2026-03-25",
+      "note": "「学校評価アンケートにおける生徒の行事満足度」令和7年度実績。目標90%。令和6年度実績91.8%。"
+    },
+    {
+      "metric": "satisfaction",
+      "item": "生徒:学習と部活動の両立",
+      "fiscal_year": 2025,
+      "value_num": 87.0,
+      "source_url": "https://www.metro.ed.jp/minamidaira-h/assets/filelink/filelink-pdffile-35294.pdf",
+      "source_label": "令和7年度 東京都立南平高等学校学校経営報告 重点目標と方策(数値目標)",
+      "as_of": "2026-03-25",
+      "note": "「学校評価アンケートにおける生徒の学習と部活動の両立に対する肯定割合」令和7年度実績。目標85%。令和6年度実績84.6%。"
+    },
+    {
+      "metric": "exam_ratio",
+      "item": "推薦",
+      "fiscal_year": 2026,
+      "value_num": 1.59,
+      "source_url": "https://www.kyoiku.metro.tokyo.lg.jp/documents/d/kyoiku/20260121_suisen_futsu",
+      "source_label": "東京都教育委員会 令和8年度東京都立高等学校入学者選抜応募状況(推薦に基づく選抜・普通科)",
+      "as_of": "2026-01-21",
+      "note": "応募倍率。募集64名・応募102名。学校公式サイトには応募状況の数値の掲載がなく、都教育委員会公表資料を使用。過去年度分は同様の資料を確認できず(unresolved参照)。"
+    },
+    {
+      "metric": "designation",
+      "item": "進学指導等の充実事業推進校",
+      "fiscal_year": 2026,
+      "value_text": "東京都教育委員会指定",
+      "source_url": "https://www.metro.ed.jp/minamidaira-h/assets/pamphlet/pamphlet-pdffile-1757.pdf",
+      "source_label": "学校案内パンフレット「南平 2027」近年の指定・主な取り組み",
+      "as_of": "2026-09",
+      "note": "令和8年度学校経営計画にも「進学指導等の充実事業推進校」として学習環境整備に取り組む旨の記載あり。"
+    },
+    {
+      "metric": "designation",
+      "item": "東京薬科大学との高大連携",
+      "fiscal_year": 2026,
+      "value_text": "高大連携協定(令和5年2月締結)",
+      "source_url": "https://www.metro.ed.jp/minamidaira-h/assets/pamphlet/pamphlet-pdffile-1757.pdf",
+      "source_label": "学校案内パンフレット「南平 2027」近年の指定・主な取り組み",
+      "as_of": "2026-09",
+      "note": "薬学部・生命科学部のキャンパス訪問、研究室訪問、模擬講義等。"
+    },
+    {
+      "metric": "designation",
+      "item": "海外学校間交流推進校",
+      "fiscal_year": 2026,
+      "value_text": "東京都教育委員会指定(令和5年4月指定)",
+      "source_url": "https://www.metro.ed.jp/minamidaira-h/assets/pamphlet/pamphlet-pdffile-1757.pdf",
+      "source_label": "学校案内パンフレット「南平 2027」近年の指定・主な取り組み",
+      "as_of": "2026-09",
+      "note": "指定開始時期は学校沿革ページ(令和5(2023)年4月)による。"
+    },
+    {
+      "metric": "designation",
+      "item": "Tokyo-IBLハイスクール（TIPS-Type3）",
+      "fiscal_year": 2026,
+      "value_text": "東京都教育委員会指定。地域の指定校との課題探究や校外施設での探究スタディツアー等",
+      "source_url": "https://www.metro.ed.jp/minamidaira-h/assets/pamphlet/pamphlet-pdffile-1757.pdf",
+      "source_label": "学校案内パンフレット「南平 2027」近年の指定・主な取り組み",
+      "as_of": "2026-09",
+      "note": ""
+    },
+    {
+      "metric": "designation",
+      "item": "デジタルを活用したこれからの学びのパイロット校",
+      "fiscal_year": 2026,
+      "value_text": "東京都教育委員会指定",
+      "source_url": "https://www.metro.ed.jp/minamidaira-h/assets/pamphlet/pamphlet-pdffile-1757.pdf",
+      "source_label": "学校案内パンフレット「南平 2027」近年の指定・主な取り組み",
+      "as_of": "2026-09",
+      "note": ""
+    },
+    {
+      "metric": "designation",
+      "item": "エンジョイスポーツプロジェクト",
+      "fiscal_year": 2026,
+      "value_text": "東京都教育委員会指定。専門家によるトレーニング講座・メンタルトレーニング等",
+      "source_url": "https://www.metro.ed.jp/minamidaira-h/assets/pamphlet/pamphlet-pdffile-1757.pdf",
+      "source_label": "学校案内パンフレット「南平 2027」近年の指定・主な取り組み",
+      "as_of": "2026-09",
+      "note": "学校沿革ページでは「令和5(2023)年4月指定(～令和6年度)」と期限付きの記載だが、令和8年度学校経営計画にも活用の記載があり継続中とみられる(conflicts参照)。"
+    },
+    {
+      "metric": "uniform",
+      "fiscal_year": 2026,
+      "value_text": "ブレザー。男子はズボン・ネクタイ、女子はスカート(紺)またはズボン・ネクタイまたはリボン(共に指定)。夏服はネクタイ・リボン省略可、白無地ワイシャツ(半袖可)または白・紺無地ポロシャツ可。",
+      "source_url": "https://www.metro.ed.jp/minamidaira-h/assets/filelink/filelink-pdffile-34629.pdf",
+      "source_label": "生徒心得2026「2.服装」および学校案内パンフレット「南平 2027」制服紹介",
+      "as_of": "2026-09",
+      "note": ""
+    },
+    {
+      "metric": "rules_summary",
+      "fiscal_year": 2026,
+      "value_text": "頭髪はパーマ・着色等の加工不可。指輪・ネックレス・ピアス等の装飾品や化粧は禁止。アルバイトは原則禁止。バイク・自動車通学も原則禁止。",
+      "source_url": "https://www.metro.ed.jp/minamidaira-h/assets/filelink/filelink-pdffile-34629.pdf",
+      "source_label": "生徒心得2026",
+      "as_of": "2026-09",
+      "note": "スマートフォンに関する個別規定の記載は生徒心得中に見当たらず。"
+    }
+  ],
+  "clubs": [
+    {
+      "name": "サッカー部",
+      "kind": "運動",
+      "days_note": "月・水・木・金・土・(日)",
+      "days_per_week": 5.5,
+      "weekend": "土日",
+      "source_url": "https://www.metro.ed.jp/minamidaira-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "tier": 3,
+      "tier_basis": "2026年度 高円宮杯U-18東京リーグ T1〜T5に所属なし(支部リーグ)。T1〜T5参加チームはhttps://www.tleague-u18.com/team.php?dy=2026&dt=1〜dt=5で確認(2026-09-24調査)。活動日が週3日を超えるため段階4ではなく段階3。"
+    },
+    {
+      "name": "ハンドボール部（男子）",
+      "kind": "運動",
+      "days_note": "月・火・水・金・土・(日)",
+      "days_per_week": 5.5,
+      "weekend": "土日",
+      "source_url": "https://www.metro.ed.jp/minamidaira-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "tier": 2,
+      "tier_basis": "2024年度 国公立大会第3位(都立・公立限定大会のためベスト8相当で段階2扱い)・秋季大会都ベスト16。2025年度 関東大会予選都ベスト16・インターハイ予選都ベスト16(都県ベスト16が複数回)。2022年度都ベスト8×2(関東大会予選・インターハイ予選)は直近3年より前のため参考にとどめた。",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "国公立大会",
+          "level": "都県",
+          "result": "第3位",
+          "source_url": "https://www.metro.ed.jp/minamidaira-h/school_life/activities.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "秋季大会",
+          "level": "都県",
+          "result": "都ベスト16",
+          "source_url": "https://www.metro.ed.jp/minamidaira-h/school_life/activities.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "関東大会予選",
+          "level": "都県",
+          "result": "都ベスト16",
+          "source_url": "https://www.metro.ed.jp/minamidaira-h/school_life/activities.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "インターハイ予選",
+          "level": "都県",
+          "result": "都ベスト16",
+          "source_url": "https://www.metro.ed.jp/minamidaira-h/school_life/activities.html"
+        }
+      ]
+    },
+    {
+      "name": "ハンドボール部（女子）",
+      "kind": "運動",
+      "days_note": "月・火・水・金・土・(日)",
+      "days_per_week": 5.5,
+      "weekend": "土日",
+      "source_url": "https://www.metro.ed.jp/minamidaira-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "tier": 2,
+      "tier_basis": "2023年度 関東大会予選都ベスト8(都県ベスト8、私立も出る大会で1回)・国公立大会第3位(公立限定大会)・秋季大会都ベスト16。2024年度 関東大会予選・インターハイ予選・秋季大会いずれも都ベスト16。2025年度インターハイ予選都ベスト16。都県ベスト16が複数回、ベスト8も1回あり段階2。私立も出る大会でのベスト8以上が直近3年で1回のみのため段階1には届かない。学校案内パンフレットは2024・2025年度を「都ベスト8」と記載しており学校の部活動ページ(都ベスト16)と食い違う(conflicts参照)。",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "関東大会予選",
+          "level": "都県",
+          "result": "都ベスト8",
+          "source_url": "https://www.metro.ed.jp/minamidaira-h/school_life/activities.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "国公立大会",
+          "level": "都県",
+          "result": "第3位",
+          "source_url": "https://www.metro.ed.jp/minamidaira-h/school_life/activities.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "秋季大会",
+          "level": "都県",
+          "result": "都ベスト16",
+          "source_url": "https://www.metro.ed.jp/minamidaira-h/school_life/activities.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "関東大会予選",
+          "level": "都県",
+          "result": "都ベスト16",
+          "source_url": "https://www.metro.ed.jp/minamidaira-h/school_life/activities.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "インターハイ予選",
+          "level": "都県",
+          "result": "都ベスト16",
+          "source_url": "https://www.metro.ed.jp/minamidaira-h/school_life/activities.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "秋季大会",
+          "level": "都県",
+          "result": "都ベスト16",
+          "source_url": "https://www.metro.ed.jp/minamidaira-h/school_life/activities.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "インターハイ予選",
+          "level": "都県",
+          "result": "都ベスト16",
+          "source_url": "https://www.metro.ed.jp/minamidaira-h/school_life/activities.html"
+        }
+      ]
+    },
+    {
+      "name": "陸上競技部",
+      "kind": "運動",
+      "days_note": "月・火・水・金・土（大会時は日も終日参加）",
+      "days_per_week": 5,
+      "weekend": "土",
+      "source_url": "https://www.metro.ed.jp/minamidaira-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "note": "関東大会・関東選抜新人・東京都大会に参加と記載があるが、順位や出場の可否を示す具体的な成績の記載がなく段階を付けなかった(unresolved参照)。"
+    },
+    {
+      "name": "硬式野球部",
+      "kind": "運動",
+      "days_note": "火・水・木・金・土・日",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "source_url": "https://www.metro.ed.jp/minamidaira-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "tier": 3,
+      "tier_basis": "一球速報.com(teamId=12045)で2024〜2026年度の夏・秋・春を確認。夏(西東京大会)は2024年度2回戦敗退・2025年度3回戦敗退・2026年度1回戦敗退。秋は2024年度2回戦敗退・2025年度2回戦敗退(いずれもコールド)。春の一次予選は2025年度代表決定戦で敗退・2026年度1回戦敗退。都県ベスト16等の上位進出はなし。",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "秋季東京都高等学校野球大会 一次予選",
+          "level": "都県",
+          "result": "1回戦勝利(7-4)、2回戦敗退(0-10、コールド)",
+          "happened_on": "2024-09-21",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=12045&year=2024"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "第106回全国高等学校野球選手権西東京大会",
+          "level": "都県",
+          "result": "2回戦敗退(1-4)",
+          "happened_on": "2024-07-13",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=12045&year=2024"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "春季東京都高等学校野球大会 一次予選",
+          "level": "都県",
+          "result": "1回戦勝利(21-0、コールド)、代表決定戦で敗退(3-10、コールド)",
+          "happened_on": "2025-03-23",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=12045&year=2025"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第107回全国高等学校野球選手権西東京大会",
+          "level": "都県",
+          "result": "2勝して3回戦敗退(0-8、対早大学院)",
+          "happened_on": "2025-07-17",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=12045&year=2025"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "秋季東京都高等学校野球大会 一次予選",
+          "level": "都県",
+          "result": "1回戦勝利(12-2)、2回戦敗退(0-10、コールド)",
+          "happened_on": "2025-09-20",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=12045&year=2025"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "春季東京都高等学校野球大会 一次予選",
+          "level": "都県",
+          "result": "1回戦敗退(10-12)",
+          "happened_on": "2026-03-14",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=12045&year=2026"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "第108回全国高等学校野球選手権西東京大会",
+          "level": "都県",
+          "result": "1回戦敗退(9-10)",
+          "happened_on": "2026-07-08",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=12045&year=2026"
+        }
+      ]
+    },
+    {
+      "name": "ソフトボール部",
+      "kind": "運動",
+      "days_note": "月・水・木・金・土・(日)",
+      "days_per_week": 5.5,
+      "weekend": "土日",
+      "source_url": "https://www.metro.ed.jp/minamidaira-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "tier": 2,
+      "tier_basis": "2024年度 公立新人大会準優勝(都立・公立限定大会のためベスト8以上として段階2相当)。2025年度 高体連春季大会ベスト16も参考。関東公立大会出場(2024年度)は具体的順位の記載なし。学校の部活動ページは「都ベスト8・都立ベスト4」を目標に掲げるのみで確定した順位の記載はなく、学校案内パンフレットの実績を採用。",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "公立新人大会",
+          "level": "都県",
+          "result": "準優勝",
+          "source_url": "https://www.metro.ed.jp/minamidaira-h/assets/pamphlet/pamphlet-pdffile-1757.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "高体連春季大会",
+          "level": "都県",
+          "result": "都ベスト16",
+          "source_url": "https://www.metro.ed.jp/minamidaira-h/assets/pamphlet/pamphlet-pdffile-1757.pdf"
+        }
+      ]
+    },
+    {
+      "name": "男子硬式テニス部",
+      "kind": "運動",
+      "days_note": "火・水・木・金・(土or日)",
+      "days_per_week": 5,
+      "weekend": "土日",
+      "source_url": "https://www.metro.ed.jp/minamidaira-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "tier": 3,
+      "tier_basis": "2025年度 東京都立高等学校テニス選手権大会(ダブルス)ベスト32・都立対抗テニス大会ベスト16は都立限定大会のため1段低く読むとベスト8未満で段階3相当。東京都高等学校新人テニス選手権大会(シングルス)は本選1回戦敗退。",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "東京都立高等学校テニス選手権大会（ダブルス）",
+          "level": "都県",
+          "result": "ベスト32",
+          "source_url": "https://www.metro.ed.jp/minamidaira-h/assets/pamphlet/pamphlet-pdffile-1757.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "都立対抗テニス大会",
+          "level": "都県",
+          "result": "ベスト16",
+          "source_url": "https://www.metro.ed.jp/minamidaira-h/assets/pamphlet/pamphlet-pdffile-1757.pdf"
+        }
+      ]
+    },
+    {
+      "name": "女子硬式テニス部",
+      "kind": "運動",
+      "days_note": "月・水・木・金・土・(日)",
+      "days_per_week": 5.5,
+      "weekend": "土日",
+      "source_url": "https://www.metro.ed.jp/minamidaira-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "note": "東京都高等学校テニス選手権大会・新人テニス選手権大会・都立対抗テニス大会等に参加と記載があるが、順位の記載がなく段階を付けなかった(unresolved参照)。"
+    },
+    {
+      "name": "ソフトテニス部",
+      "kind": "運動",
+      "days_note": "月・水・金・(土or日)",
+      "days_per_week": 4,
+      "weekend": "土日",
+      "source_url": "https://www.metro.ed.jp/minamidaira-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "tier": 3,
+      "tier_basis": "関東団体選手権予選都ベスト16(1回のみで複数回に届かず)、総体予選兼東京選手権個人都ベスト64。年度の記載なし。",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "関東団体選手権予選",
+          "level": "都県",
+          "result": "都ベスト16",
+          "source_url": "https://www.metro.ed.jp/minamidaira-h/assets/pamphlet/pamphlet-pdffile-1757.pdf"
+        }
+      ]
+    },
+    {
+      "name": "男子バレーボール部",
+      "kind": "運動",
+      "days_note": "火・水・木・金・(土or日)",
+      "days_per_week": 4.5,
+      "weekend": "土日",
+      "source_url": "https://www.metro.ed.jp/minamidaira-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "tier": 3,
+      "tier_basis": "R6年度インターハイ予選都ベスト32、R5・R6年度関東大会予選都ベスト40(予選段階の順位)。夏季・冬季公立高大会(都立・公立限定)はベスト16で、1段低く読むとベスト8未満のため段階3相当。",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "インターハイ予選",
+          "level": "都県",
+          "result": "都ベスト32",
+          "source_url": "https://www.metro.ed.jp/minamidaira-h/assets/pamphlet/pamphlet-pdffile-1757.pdf"
+        }
+      ]
+    },
+    {
+      "name": "女子バレーボール部",
+      "kind": "運動",
+      "days_note": "火・水・木・金・(土or日)",
+      "days_per_week": 4.5,
+      "weekend": "土日",
+      "source_url": "https://www.metro.ed.jp/minamidaira-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "tier": 3,
+      "tier_basis": "2025年IH予選東京都ベスト80、2026年春季大会東京都ベスト64。都ベスト32を目標に活動中だが直近の成績はこれを下回る。",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "インターハイ予選",
+          "level": "都県",
+          "result": "都ベスト80",
+          "source_url": "https://www.metro.ed.jp/minamidaira-h/assets/pamphlet/pamphlet-pdffile-1757.pdf"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "春季大会",
+          "level": "都県",
+          "result": "都ベスト64",
+          "source_url": "https://www.metro.ed.jp/minamidaira-h/assets/pamphlet/pamphlet-pdffile-1757.pdf"
+        }
+      ]
+    },
+    {
+      "name": "男子バスケットボール部",
+      "kind": "運動",
+      "days_note": "月・水・木・金・(土or日)",
+      "days_per_week": 4.5,
+      "weekend": "土日",
+      "source_url": "https://www.metro.ed.jp/minamidaira-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "tier": 2,
+      "tier_basis": "2025年度 関東大会予選都ベスト32・新人戦都ベスト32、2026年度インターハイ予選都ベスト32(都県大会でベスト16〜32が直近3年で複数回)。2021・2022年度の都ベスト16は3年より前のため参考にとどめた。",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "関東大会予選",
+          "level": "都県",
+          "result": "都ベスト32",
+          "source_url": "https://www.metro.ed.jp/minamidaira-h/school_life/activities.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "新人戦",
+          "level": "都県",
+          "result": "都ベスト32",
+          "source_url": "https://www.metro.ed.jp/minamidaira-h/school_life/activities.html"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "インターハイ予選",
+          "level": "都県",
+          "result": "都ベスト32",
+          "source_url": "https://www.metro.ed.jp/minamidaira-h/school_life/activities.html"
+        }
+      ]
+    },
+    {
+      "name": "女子バスケットボール部",
+      "kind": "運動",
+      "days_note": "火・水・木・金(練習)、土・日(公式戦等)",
+      "days_per_week": 5,
+      "weekend": "土日",
+      "source_url": "https://www.metro.ed.jp/minamidaira-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "tier": 2,
+      "tier_basis": "2023年度 総体東京都予選大会ベスト16・新人大会東京都ベスト16(都県大会でベスト16が複数回)。2024年度 7学区大会準優勝は地区大会のため参考にとどめる。学校の部活動ページにある「現在東京都ベスト56シード」はシードであり順位ではないため実績として使用せず。",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "総体東京都予選大会",
+          "level": "都県",
+          "result": "都ベスト16",
+          "source_url": "https://www.metro.ed.jp/minamidaira-h/assets/pamphlet/pamphlet-pdffile-1757.pdf"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "新人大会",
+          "level": "都県",
+          "result": "都ベスト16",
+          "source_url": "https://www.metro.ed.jp/minamidaira-h/assets/pamphlet/pamphlet-pdffile-1757.pdf"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "新人大会 7学区大会",
+          "level": "地区",
+          "result": "準優勝",
+          "source_url": "https://www.metro.ed.jp/minamidaira-h/assets/pamphlet/pamphlet-pdffile-1757.pdf"
+        }
+      ]
+    },
+    {
+      "name": "バドミントン部",
+      "kind": "運動",
+      "days_note": "平日週3日、土日は練習or大会",
+      "days_per_week": 5,
+      "weekend": "土日",
+      "source_url": "https://www.metro.ed.jp/minamidaira-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "tier": 2,
+      "tier_basis": "2024年度国公立大会ベスト4(男)・2025年度国公立大会ベスト8(男)は公立限定大会のためベスト8以上で段階2相当。2024・2025年度東京都春季高校バドミントン大会兼関東大会予選会ベスト16(男)も参考。2025年度関東公立大会出場(男女)は具体的順位の記載なし。男女で行を分けられないため、成績の強い男子の実績で判定した。",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "国公立大会（男子団体）",
+          "level": "都県",
+          "result": "ベスト4",
+          "source_url": "https://www.metro.ed.jp/minamidaira-h/assets/pamphlet/pamphlet-pdffile-1757.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "国公立大会（男子団体）",
+          "level": "都県",
+          "result": "ベスト8",
+          "source_url": "https://www.metro.ed.jp/minamidaira-h/assets/pamphlet/pamphlet-pdffile-1757.pdf"
+        }
+      ]
+    },
+    {
+      "name": "水泳部",
+      "kind": "運動",
+      "source_url": "https://www.metro.ed.jp/minamidaira-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "tier": 2,
+      "tier_basis": "2025年夏「西東京国公立大会」男女総合で参加38校中第2位(歴代最高成績)。公立限定大会のため私立も出る大会の成績でなく段階1にはできず、段階2にとどめる。",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "西東京国公立大会",
+          "level": "地区",
+          "result": "男女総合2位/38校(歴代最高成績)",
+          "source_url": "https://www.metro.ed.jp/minamidaira-h/assets/pamphlet/pamphlet-pdffile-1757.pdf"
+        }
+      ]
+    },
+    {
+      "name": "ダンス部",
+      "kind": "運動",
+      "days_note": "月・火・木・金・(土)",
+      "days_per_week": 4.5,
+      "weekend": "土",
+      "source_url": "https://www.metro.ed.jp/minamidaira-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "note": "新歓公演・外部イベント出演・文化祭公演・日本大通りストリートダンスバトル出演・クリスマス公演等を行うが、順位や成績の記載がなく段階を付けなかった(unresolved参照)。"
+    },
+    {
+      "name": "卓球部",
+      "kind": "運動",
+      "days_note": "月・水・木・金・土・日（火はオフ）",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "source_url": "https://www.metro.ed.jp/minamidaira-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "tier": 1,
+      "tier_basis": "女子:2024年度新人大会団体東京都7位・2025年度新人大会団体東京都8位(都県団体戦でベスト8以内相当が直近3年で2回)。男子:春季大会団体ベスト32(年度記載なし)。学校の部活動ページに大会成績の記載はなく学校案内パンフレットの数値を採用。男女で行を分けられないため、成績の強い女子の実績で判定した。",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "新人大会（女子団体）",
+          "level": "都県",
+          "result": "東京都7位",
+          "source_url": "https://www.metro.ed.jp/minamidaira-h/assets/pamphlet/pamphlet-pdffile-1757.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "新人大会（女子団体）",
+          "level": "都県",
+          "result": "東京都8位",
+          "source_url": "https://www.metro.ed.jp/minamidaira-h/assets/pamphlet/pamphlet-pdffile-1757.pdf"
+        }
+      ]
+    },
+    {
+      "name": "吹奏楽部",
+      "kind": "文化",
+      "days_note": "週5日",
+      "days_per_week": 5,
+      "source_url": "https://www.metro.ed.jp/minamidaira-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "tier": 2,
+      "tier_basis": "2025年度(令和7年度) 第49回東京都高等学校アンサンブルコンテスト(2026年2月開催)でサキソフォン四重奏が金賞(都県コンクールの最上位賞クラス)。同コンテスト打楽器五重奏は銀賞。第65回東京都高等学校吹奏楽コンクール(2025年度)はB組出場。",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "第49回東京都高等学校アンサンブルコンテスト（サキソフォン四重奏）",
+          "level": "都県",
+          "result": "金賞",
+          "happened_on": "2026-02-08",
+          "source_url": "https://www.metro.ed.jp/minamidaira-h/assets/pamphlet/pamphlet-pdffile-1757.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第49回東京都高等学校アンサンブルコンテスト（打楽器五重奏）",
+          "level": "都県",
+          "result": "銀賞",
+          "happened_on": "2026-02-08",
+          "source_url": "https://www.metro.ed.jp/minamidaira-h/assets/pamphlet/pamphlet-pdffile-1757.pdf"
+        }
+      ]
+    },
+    {
+      "name": "室内楽部",
+      "kind": "文化",
+      "days_note": "月・水・木・金（大会・発表会前の火or土）",
+      "days_per_week": 4,
+      "source_url": "https://www.metro.ed.jp/minamidaira-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "note": "文化祭公演・第6地区大会・定期演奏会を行うが、順位や賞の記載がなく段階を付けなかった。"
+    },
+    {
+      "name": "ジャグリング部",
+      "kind": "文化",
+      "days_note": "月・水・木・金",
+      "days_per_week": 4,
+      "weekend": "なし",
+      "source_url": "https://www.metro.ed.jp/minamidaira-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "note": "新歓公演・地域夏祭り公演・文化祭公演・福祉施設公演等を行うが、コンクール等の成績はなく段階を付けなかった。"
+    },
+    {
+      "name": "美術部",
+      "kind": "文化",
+      "days_note": "月・木",
+      "days_per_week": 2,
+      "source_url": "https://www.metro.ed.jp/minamidaira-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "note": "葵陵祭(文化祭)での展示、部誌「はねうま」の発行が中心で、外部コンクール等への参加記載は見当たらず段階を付けなかった(unresolved参照)。"
+    },
+    {
+      "name": "演劇部",
+      "kind": "文化",
+      "days_note": "月・水・金・(公演前は他曜日も活動)",
+      "days_per_week": 3,
+      "source_url": "https://www.metro.ed.jp/minamidaira-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "note": "「2年連続都大会進出を目指して」活動中と記載があるが、これは目標であり実績ではないため段階を付けなかった(unresolved参照)。年間4本の作品を創作し外部公演・校内公演を行う。"
+    },
+    {
+      "name": "茶道部",
+      "kind": "文化",
+      "days_note": "月・水・金",
+      "days_per_week": 3,
+      "source_url": "https://www.metro.ed.jp/minamidaira-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "note": "文化祭でのお茶席、表千家許状(お印)取得が中心で、順位を競う大会には参加しないため段階を付けなかった。"
+    },
+    {
+      "name": "写真・映像部",
+      "kind": "文化",
+      "days_note": "月・木",
+      "days_per_week": 2,
+      "source_url": "https://www.metro.ed.jp/minamidaira-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "tier": 2,
+      "tier_basis": "令和6年度「無電柱化の日」フォトコンテスト(国・都等の行政系公募コンテスト、高文連主催ではない)で都知事賞を受賞。民間・行政主催のコンテストのため、全国決勝2回以上でなければ段階2までという基準に沿い段階2にとどめた。",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "「無電柱化の日」フォトコンテスト",
+          "level": "その他",
+          "result": "都知事賞",
+          "source_url": "https://www.metro.ed.jp/minamidaira-h/school_life/activities.html"
+        }
+      ]
+    },
+    {
+      "name": "合唱部",
+      "kind": "文化",
+      "days_note": "火・金",
+      "days_per_week": 2,
+      "source_url": "https://www.metro.ed.jp/minamidaira-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "tier": 2,
+      "tier_basis": "2025年度 東京都高等学校文化祭 音楽部門第6地区大会(ひの煉瓦ホール)に参加後、同音楽部門中央大会(東京文化会館大ホール)にも参加。地区大会から中央大会へ進んでいることから地区代表への選出に相当すると判断し段階2とした。順位や賞の明記はない。",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "東京都高等学校文化祭 音楽部門 第6地区大会",
+          "level": "地区",
+          "result": "参加（2025年11月）",
+          "source_url": "https://www.metro.ed.jp/minamidaira-h/assets/pamphlet/pamphlet-pdffile-1757.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "東京都高等学校文化祭 音楽部門 中央大会",
+          "level": "都県",
+          "result": "参加",
+          "source_url": "https://www.metro.ed.jp/minamidaira-h/assets/pamphlet/pamphlet-pdffile-1757.pdf"
+        }
+      ]
+    },
+    {
+      "name": "家庭科部",
+      "kind": "文化",
+      "days_note": "週2日",
+      "days_per_week": 2,
+      "source_url": "https://www.metro.ed.jp/minamidaira-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "note": "文化祭でのクッキー販売等が中心で、外部コンクール等への参加記載はなし。"
+    },
+    {
+      "name": "自然科学部",
+      "kind": "文化",
+      "days_note": "毎週水・金曜日",
+      "days_per_week": 2,
+      "source_url": "https://www.metro.ed.jp/minamidaira-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "tier": 3,
+      "tier_basis": "2025年度 TAMAサイエンスフェスティバルinTOYAKU(多摩地区の発表会)で敢闘賞。地区レベルの発表会で奨励賞相当のため段階3とした。",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "TAMAサイエンスフェスティバル inTOYAKU",
+          "level": "地区",
+          "result": "敢闘賞",
+          "source_url": "https://www.metro.ed.jp/minamidaira-h/assets/pamphlet/pamphlet-pdffile-1757.pdf"
+        }
+      ]
+    },
+    {
+      "name": "将棋・チェス部",
+      "kind": "文化",
+      "days_note": "火曜日・木曜日",
+      "days_per_week": 2,
+      "source_url": "https://www.metro.ed.jp/minamidaira-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "note": "将棋・チェスの対局が中心で、外部大会への参加記載はなし。"
+    }
+  ],
+  "designated_universities": [
+    { "university": "青山学院大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/minamidaira-h/assets/pamphlet/pamphlet-pdffile-1757.pdf", "note": "学校案内パンフレット「南平 2027」主な指定校推薦大学（ほかに「他」とある）" },
+    { "university": "麻布大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/minamidaira-h/assets/pamphlet/pamphlet-pdffile-1757.pdf", "note": "学校案内パンフレット「南平 2027」主な指定校推薦大学（ほかに「他」とある）" },
+    { "university": "北里大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/minamidaira-h/assets/pamphlet/pamphlet-pdffile-1757.pdf", "note": "学校案内パンフレット「南平 2027」主な指定校推薦大学（ほかに「他」とある）" },
+    { "university": "芝浦工業大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/minamidaira-h/assets/pamphlet/pamphlet-pdffile-1757.pdf", "note": "学校案内パンフレット「南平 2027」主な指定校推薦大学（ほかに「他」とある）" },
+    { "university": "成蹊大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/minamidaira-h/assets/pamphlet/pamphlet-pdffile-1757.pdf", "note": "学校案内パンフレット「南平 2027」主な指定校推薦大学（ほかに「他」とある）" },
+    { "university": "成城大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/minamidaira-h/assets/pamphlet/pamphlet-pdffile-1757.pdf", "note": "学校案内パンフレット「南平 2027」主な指定校推薦大学（ほかに「他」とある）" },
+    { "university": "専修大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/minamidaira-h/assets/pamphlet/pamphlet-pdffile-1757.pdf", "note": "学校案内パンフレット「南平 2027」主な指定校推薦大学（ほかに「他」とある）" },
+    { "university": "創価大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/minamidaira-h/assets/pamphlet/pamphlet-pdffile-1757.pdf", "note": "学校案内パンフレット「南平 2027」主な指定校推薦大学（ほかに「他」とある）" },
+    { "university": "中央大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/minamidaira-h/assets/pamphlet/pamphlet-pdffile-1757.pdf", "note": "学校案内パンフレット「南平 2027」主な指定校推薦大学（ほかに「他」とある）" },
+    { "university": "東京女子大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/minamidaira-h/assets/pamphlet/pamphlet-pdffile-1757.pdf", "note": "学校案内パンフレット「南平 2027」主な指定校推薦大学（ほかに「他」とある）" },
+    { "university": "東京農業大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/minamidaira-h/assets/pamphlet/pamphlet-pdffile-1757.pdf", "note": "学校案内パンフレット「南平 2027」主な指定校推薦大学（ほかに「他」とある）" },
+    { "university": "東京薬科大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/minamidaira-h/assets/pamphlet/pamphlet-pdffile-1757.pdf", "note": "学校案内パンフレット「南平 2027」主な指定校推薦大学（ほかに「他」とある）" },
+    { "university": "東京理科大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/minamidaira-h/assets/pamphlet/pamphlet-pdffile-1757.pdf", "note": "学校案内パンフレット「南平 2027」主な指定校推薦大学（ほかに「他」とある）" },
+    { "university": "津田塾大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/minamidaira-h/assets/pamphlet/pamphlet-pdffile-1757.pdf", "note": "学校案内パンフレット「南平 2027」主な指定校推薦大学（ほかに「他」とある）" },
+    { "university": "東洋大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/minamidaira-h/assets/pamphlet/pamphlet-pdffile-1757.pdf", "note": "学校案内パンフレット「南平 2027」主な指定校推薦大学（ほかに「他」とある）" },
+    { "university": "日本獣医生命科学大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/minamidaira-h/assets/pamphlet/pamphlet-pdffile-1757.pdf", "note": "学校案内パンフレット「南平 2027」主な指定校推薦大学（ほかに「他」とある）" },
+    { "university": "日本赤十字看護大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/minamidaira-h/assets/pamphlet/pamphlet-pdffile-1757.pdf", "note": "学校案内パンフレット「南平 2027」主な指定校推薦大学（ほかに「他」とある）" },
+    { "university": "日本大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/minamidaira-h/assets/pamphlet/pamphlet-pdffile-1757.pdf", "note": "学校案内パンフレット「南平 2027」主な指定校推薦大学（ほかに「他」とある）" },
+    { "university": "日本女子大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/minamidaira-h/assets/pamphlet/pamphlet-pdffile-1757.pdf", "note": "学校案内パンフレット「南平 2027」主な指定校推薦大学（ほかに「他」とある）" },
+    { "university": "法政大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/minamidaira-h/assets/pamphlet/pamphlet-pdffile-1757.pdf", "note": "学校案内パンフレット「南平 2027」主な指定校推薦大学（ほかに「他」とある）" },
+    { "university": "明治大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/minamidaira-h/assets/pamphlet/pamphlet-pdffile-1757.pdf", "note": "学校案内パンフレット「南平 2027」主な指定校推薦大学（ほかに「他」とある）" },
+    { "university": "明治学院大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/minamidaira-h/assets/pamphlet/pamphlet-pdffile-1757.pdf", "note": "学校案内パンフレット「南平 2027」主な指定校推薦大学（ほかに「他」とある）" },
+    { "university": "立教大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/minamidaira-h/assets/pamphlet/pamphlet-pdffile-1757.pdf", "note": "学校案内パンフレット「南平 2027」主な指定校推薦大学（ほかに「他」とある）" }
+  ],
+  "events": [
+    {
+      "kind": "その他",
+      "period_label": "令和5(2023)年2月",
+      "summary": "東京薬科大学と高大連携協定を締結",
+      "source_url": "https://www.metro.ed.jp/minamidaira-h/assets/pamphlet/pamphlet-pdffile-1757.pdf"
+    },
+    {
+      "kind": "指定",
+      "period_label": "令和5(2023)年4月",
+      "summary": "「海外学校間交流推進校」に指定",
+      "source_url": "https://www.metro.ed.jp/minamidaira-h/our_school/history.html"
+    },
+    {
+      "kind": "指定",
+      "period_label": "令和5(2023)年4月から令和6年度まで",
+      "summary": "「SIP（Scientific Inquiry Program）拠点校」「進学指導研究校（第3期）」「エンジョイスポーツプロジェクト」に指定（学校沿革ページの記載では令和6年度まで）",
+      "source_url": "https://www.metro.ed.jp/minamidaira-h/our_school/history.html"
+    },
+    {
+      "kind": "その他",
+      "period_label": "令和7年度から",
+      "summary": "熱中症対策として体育祭を5月実施に変更",
+      "source_url": "https://www.metro.ed.jp/minamidaira-h/assets/filelink/filelink-pdffile-35294.pdf"
+    },
+    {
+      "kind": "その他",
+      "period_label": "2025年12月",
+      "summary": "都立高校生等の海外派遣研修に参加し、生徒4名が1週間エジプトで研修を実施",
+      "source_url": "https://www.metro.ed.jp/minamidaira-h/assets/filelink/filelink-pdffile-35294.pdf"
+    },
+    {
+      "kind": "その他",
+      "period_label": "令和9年度（2027年度）予定",
+      "summary": "本校独自のマレーシア海外派遣研修を計画",
+      "source_url": "https://www.metro.ed.jp/minamidaira-h/assets/pamphlet/pamphlet-pdffile-1757.pdf"
+    }
+  ],
+  "unresolved": [
+    "男女別の在籍生徒数：公式資料に記載なし。パンフレットの出身中学校一覧はあるが人数の男女内訳は非公開。",
+    "入学者の入試方式別割合（一般/指定校推薦/公募推薦/総合型）：進路状況資料は進学先の学校種別の割合のみで、入試方式別の割合の記載は見当たらない。",
+    "推薦の応募倍率について、令和6・7年度分の学校サイト掲載PDFが見当たらず、東京都教育委員会の公表資料でも過去年度分の該当ページを特定できなかったため、令和8年度分のみ収録した。",
+    "陸上競技部・女子硬式テニス部・ダンス部・演劇部：活動日はあるが、大会名の記載のみで順位や出場の可否を示す具体的な成績が確認できず段階を付けなかった。",
+    "美術部・室内楽部・ジャグリング部・茶道部・家庭科部・将棋チェス部：外部コンクール等への参加や順位の記載が見当たらず段階を付けなかった。",
+    "Tokyo GE-NET EE・学力向上進学重点校エントリー校等の指定：学校案内パンフレットの「近年の指定・主な取り組み」一覧に記載がなく、該当指定は確認できなかった。",
+    "学級数の増減：都教育委員会「第一学年生徒の募集人員等について」等の一次資料までは確認できず、直近の学級増減の有無は未確認。"
+  ],
+  "conflicts": [
+    "硬式野球部の実績：学校案内パンフレットは「ここ数年間の実績」として「春季大会 本大会出場、選手権大会 西東京大会3回戦進出」と記載する。一球速報で確認できる直近3年（2024〜2026年度）の春季は一次予選での敗退にとどまり、本大会出場は2023年度（令和5年度）春季東京都大会本大会1回戦敗退（3-11、対王子総合）が該当するとみられる。夏の3回戦進出は2025年度の実績（0-8、対早大学院）と一致する。",
+    "女子ハンドボール部の大会成績：学校案内パンフレットは2024年度「インターハイ予選都ベスト8・秋季大会都ベスト8」、2025年度「インターハイ予選都ベスト8・秋季大会都ベスト8」と記載するが、学校の部活動ページ（学校サイト）は同じ大会をいずれも「都ベスト16」と記載しており、順位の食い違いがある。段階判定は学校の部活動ページ（年度別に整理されている）を優先した。",
+    "四年制大学合格実績のうちGMARCH：学校案内パンフレットの大学別表から合算すると136名（2026年3月卒業）だが、令和7年度学校経営報告の重点目標実績は「GMARCH合格者数134名」（令和7年度実績）で2名の差がある。国公立（16名）・難関私立大学＝早慶上理相当（26名）はいずれも一致している。",
+    "エンジョイスポーツプロジェクトの指定期間：学校沿革ページは「令和5年4月指定～令和6年度」と期限を明記するが、令和8年度学校経営計画・学校案内パンフレットともに現在も取り組みとして掲載されており、指定が更新・継続されている可能性がある。"
+  ]
+}

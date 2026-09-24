@@ -1,0 +1,721 @@
+{
+  "prefecture": "東京都",
+  "school_name": "久留米西",
+  "official_url": "https://www.metro.ed.jp/kurumenishi-h/",
+  "researched_at": "2026-09-24",
+  "stats": [
+    {
+      "metric": "university_count",
+      "item": "国公立",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 1,
+      "source_url": "https://www.metro.ed.jp/kurumenishi-h/l_pdf/R8_過去3年間の大学・短大合格者.pdf",
+      "source_label": "久留米西高校 過去3年間の大学・短大合格者数（令和8年4月現在）",
+      "as_of": "2026-09-24",
+      "note": "筑波大学1名（現役、男子）。大学別の表から合算。他に国公立大学の合格は表に無い。"
+    },
+    {
+      "metric": "university_count",
+      "item": "早慶上理",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 0,
+      "source_url": "https://www.metro.ed.jp/kurumenishi-h/l_pdf/R8_過去3年間の大学・短大合格者.pdf",
+      "source_label": "久留米西高校 過去3年間の大学・短大合格者数（令和8年4月現在）",
+      "as_of": "2026-09-24",
+      "note": "大学別の表（令和8年3月・50期生）に早稲田・慶應・上智・東京理科の合格者の記載なし。"
+    },
+    {
+      "metric": "university_count",
+      "item": "GMARCH",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 0,
+      "source_url": "https://www.metro.ed.jp/kurumenishi-h/l_pdf/R8_過去3年間の大学・短大合格者.pdf",
+      "source_label": "久留米西高校 過去3年間の大学・短大合格者数（令和8年4月現在）",
+      "as_of": "2026-09-24",
+      "note": "大学別の表（令和8年3月・50期生）に学習院・明治・青山学院・立教・中央・法政の合格者の記載なし。"
+    },
+    {
+      "metric": "university_count",
+      "item": "成成明武",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 0,
+      "source_url": "https://www.metro.ed.jp/kurumenishi-h/l_pdf/R8_過去3年間の大学・短大合格者.pdf",
+      "source_label": "久留米西高校 過去3年間の大学・短大合格者数（令和8年4月現在）",
+      "as_of": "2026-09-24",
+      "note": "大学別の表（令和8年3月・50期生）に成蹊・成城・明治学院・武蔵の合格者の記載なし。"
+    },
+    {
+      "metric": "university_count",
+      "item": "日東駒専",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 7,
+      "source_url": "https://www.metro.ed.jp/kurumenishi-h/l_pdf/R8_過去3年間の大学・短大合格者.pdf",
+      "source_label": "久留米西高校 過去3年間の大学・短大合格者数（令和8年4月現在）",
+      "as_of": "2026-09-24",
+      "note": "大学別の表（令和8年3月・50期生）から合算。日本大学1・東洋大学5・駒澤大学0・専修大学1。"
+    },
+    {
+      "metric": "university_count",
+      "item": "合計",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 142,
+      "source_url": "https://www.metro.ed.jp/kurumenishi-h/l_pdf/R8_過去3年間の大学・短大合格者.pdf",
+      "source_label": "久留米西高校 過去3年間の大学・短大合格者数（令和8年4月現在）",
+      "as_of": "2026-09-24",
+      "note": "表の「合計」行（男84・女58）。大学のみの延べ合計で、短期大学（3名）は含まない。"
+    },
+    {
+      "metric": "university_count",
+      "item": "亜細亜大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 16,
+      "source_url": "https://www.metro.ed.jp/kurumenishi-h/l_pdf/R8_過去3年間の大学・短大合格者.pdf",
+      "source_label": "久留米西高校 過去3年間の大学・短大合格者数（令和8年4月現在）",
+      "as_of": "2026-09-24",
+      "note": "令和8年3月（50期生）で最多。合格・進学が多い大学の上位5つの1番目。"
+    },
+    {
+      "metric": "university_count",
+      "item": "東京国際大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 11,
+      "source_url": "https://www.metro.ed.jp/kurumenishi-h/l_pdf/R8_過去3年間の大学・短大合格者.pdf",
+      "source_label": "久留米西高校 過去3年間の大学・短大合格者数（令和8年4月現在）",
+      "as_of": "2026-09-24",
+      "note": "合格・進学が多い大学の上位5つの2番目。"
+    },
+    {
+      "metric": "university_count",
+      "item": "目白大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 10,
+      "source_url": "https://www.metro.ed.jp/kurumenishi-h/l_pdf/R8_過去3年間の大学・短大合格者.pdf",
+      "source_label": "久留米西高校 過去3年間の大学・短大合格者数（令和8年4月現在）",
+      "as_of": "2026-09-24",
+      "note": "合格・進学が多い大学の上位5つの3番目。"
+    },
+    {
+      "metric": "university_count",
+      "item": "駿河台大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 9,
+      "source_url": "https://www.metro.ed.jp/kurumenishi-h/l_pdf/R8_過去3年間の大学・短大合格者.pdf",
+      "source_label": "久留米西高校 過去3年間の大学・短大合格者数（令和8年4月現在）",
+      "as_of": "2026-09-24",
+      "note": "合格・進学が多い大学の上位5つの4番目。"
+    },
+    {
+      "metric": "university_count",
+      "item": "明星大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 8,
+      "source_url": "https://www.metro.ed.jp/kurumenishi-h/l_pdf/R8_過去3年間の大学・短大合格者.pdf",
+      "source_label": "久留米西高校 過去3年間の大学・短大合格者数（令和8年4月現在）",
+      "as_of": "2026-09-24",
+      "note": "合格・進学が多い大学の上位5つの5番目。"
+    },
+    {
+      "metric": "career_decided_rate",
+      "fiscal_year": 2025,
+      "value_num": 98.1,
+      "source_url": "https://www.metro.ed.jp/kurumenishi-h/assets/filelink/filelink-pdffile-34751.pdf",
+      "source_label": "久留米西高校 令和7年度 学校経営報告",
+      "as_of": "2026-09-24",
+      "note": "経営報告の数値目標表「進路未決定者」R7年度実績1.9％から算出（100－1.9）。第50期生（令和8年3月卒）の進路状況PDFの浪人2名・未定その他2名（計4名／216名＝1.85％）ともおおむね一致。"
+    },
+    {
+      "metric": "club_join_rate",
+      "fiscal_year": 2025,
+      "value_num": 62,
+      "source_url": "https://www.metro.ed.jp/kurumenishi-h/assets/filelink/filelink-pdffile-34751.pdf",
+      "source_label": "久留米西高校 令和7年度 学校経営報告",
+      "as_of": "2026-09-24",
+      "note": "R7年度実績。目標70％以上（R6年度実績65％・R5年度実績71％・R4年度実績77％）。"
+    },
+    {
+      "metric": "satisfaction",
+      "item": "生徒:進路指導",
+      "fiscal_year": 2025,
+      "value_num": 89,
+      "source_url": "https://www.metro.ed.jp/kurumenishi-h/assets/filelink/filelink-pdffile-34751.pdf",
+      "source_label": "久留米西高校 令和7年度 学校経営報告",
+      "as_of": "2026-09-24",
+      "note": "「進路指導に対する生徒の満足度」R7年度実績。目標90％以上。"
+    },
+    {
+      "metric": "satisfaction",
+      "item": "生徒:授業",
+      "fiscal_year": 2025,
+      "value_num": 88,
+      "source_url": "https://www.metro.ed.jp/kurumenishi-h/assets/filelink/filelink-pdffile-34751.pdf",
+      "source_label": "久留米西高校 令和7年度 学校経営報告",
+      "as_of": "2026-09-24",
+      "note": "「授業に対する生徒の満足度」R7年度実績。目標90％以上。"
+    },
+    {
+      "metric": "satisfaction",
+      "item": "生徒:入学",
+      "fiscal_year": 2025,
+      "value_num": 85,
+      "source_url": "https://www.metro.ed.jp/kurumenishi-h/assets/filelink/filelink-pdffile-34751.pdf",
+      "source_label": "久留米西高校 令和7年度 学校経営報告",
+      "as_of": "2026-09-24",
+      "note": "「入学して良かったと思う生徒の割合」R7年度実績。目標85％以上。"
+    },
+    {
+      "metric": "exam_ratio",
+      "item": "推薦",
+      "fiscal_year": 2026,
+      "value_num": 1.63,
+      "source_url": "https://www.metro.ed.jp/kurumenishi-h/assets/filelink/filelink-pdffile-34751.pdf",
+      "source_label": "久留米西高校 令和7年度 学校経営報告",
+      "as_of": "2026-09-24",
+      "note": "応募倍率。令和8年4月入学者選抜（推薦）の最終応募倍率。一般入試の倍率は全校まとめ資料で取込済みのためここでは扱わない。"
+    },
+    {
+      "metric": "uniform",
+      "fiscal_year": 2026,
+      "value_text": "男子は紺ブレザーにストライプネクタイ・長ズボン。女子は紺ブレザーにネクタイ・チェック柄の紺プリーツスカート。夏服はブレザーを脱ぎシャツ・ブラウスにネクタイ／リボン。冬服のみ女子はスラックスも選択可能。",
+      "source_url": "https://www.metro.ed.jp/kurumenishi-h/school_life/symbols.html",
+      "source_label": "久留米西高校 制服・校章・校歌ページ",
+      "as_of": "2026-09-24",
+      "note": ""
+    },
+    {
+      "metric": "rules_summary",
+      "fiscal_year": 2026,
+      "value_text": "頭髪の染色・脱色・加工、化粧、ピアス等の装飾品は禁止。自転車通学は届出制でヘルメット着用必須、バイク・自動車での通学と送迎は禁止。スマートフォンの校内利用・アルバイトの可否は生徒心得に記載なし。",
+      "source_url": "https://www.metro.ed.jp/kurumenishi-h/school_life/student_rules.html",
+      "source_label": "久留米西高校 生徒心得",
+      "as_of": "2026-09-24",
+      "note": ""
+    },
+    {
+      "metric": "designation",
+      "item": "スキルアップ推進校",
+      "fiscal_year": 2026,
+      "value_text": "令和7年度に東京都教育委員会より指定。東京グローバルゲートウェイ（TGG）での1年生全員向け英語研修や英語検定対策のグローバルスキル講座等を実施する指定校。",
+      "source_url": "https://www.metro.ed.jp/kurumenishi-h/assets/pamphlet/pamphlet-pdffile-2574.pdf",
+      "source_label": "久留米西高校 学校案内2027（パンフレット）",
+      "as_of": "2026-09-24",
+      "note": ""
+    }
+  ],
+  "clubs": [
+    {
+      "name": "女子バスケットボール部",
+      "kind": "運動",
+      "tier": 3,
+      "tier_basis": "2024年度、総合体育大会（インターハイ予選）で3回戦を突破、新人大会で2回戦を突破。いずれもベスト8には届いていない。",
+      "source_url": "https://www.metro.ed.jp/kurumenishi-h/activities/club_1/index.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "東京都高等学校総合体育大会（インターハイ予選）",
+          "level": "都県",
+          "result": "3回戦を突破",
+          "happened_on": "2024-05-31",
+          "source_url": "https://www.metro.ed.jp/kurumenishi-h/activities/club_1/index.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "新人大会",
+          "level": "都県",
+          "result": "2回戦を突破",
+          "happened_on": "2024-11-20",
+          "source_url": "https://www.metro.ed.jp/kurumenishi-h/activities/club_1/index.html"
+        }
+      ]
+    },
+    {
+      "name": "写真部",
+      "kind": "文化",
+      "tier": 2,
+      "tier_basis": "全国高等学校総合文化祭に2021・2022・2023年度と3年連続で出場（部員2名ずつ）。2022年度は関東大会にも3名出場し東京都年間学校ランキング3位。直近の公表実績は2023年度が最新で、以降（2024〜2026年度）は地区大会等への参加は続くが順位の記載がない。（2026-09-24 Opus見直し: 直近3年＝2023〜2025年度に入る全国出場は2023年度の1回なので段階2）",
+      "source_url": "https://www.metro.ed.jp/kurumenishi-h/activities/club_25/index.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "全国高等学校総合文化祭（2023かごしま総文）写真部門",
+          "level": "全国",
+          "result": "2名出場",
+          "source_url": "https://www.metro.ed.jp/kurumenishi-h/activities/club_25/index.html"
+        },
+        {
+          "fiscal_year": 2022,
+          "competition": "全国高等学校総合文化祭（2022とうきょう総文）写真部門",
+          "level": "全国",
+          "result": "2名出場",
+          "source_url": "https://www.metro.ed.jp/kurumenishi-h/activities/club_25/index.html"
+        },
+        {
+          "fiscal_year": 2022,
+          "competition": "関東大会（山梨大会）写真部門",
+          "level": "関東",
+          "result": "3名出場。東京都年間学校ランキング3位",
+          "source_url": "https://www.metro.ed.jp/kurumenishi-h/activities/club_25/index.html"
+        },
+        {
+          "fiscal_year": 2021,
+          "competition": "全国高等学校総合文化祭（2021わかやま総文）写真部門",
+          "level": "全国",
+          "result": "2名出場",
+          "source_url": "https://www.metro.ed.jp/kurumenishi-h/activities/club_25/index.html"
+        }
+      ]
+    },
+    {
+      "name": "硬式野球部",
+      "kind": "運動",
+      "days_note": "土日は練習試合、平日は学校のグラウンドで練習",
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "直近3年の夏（西東京大会）は初戦〜2回戦で敗退（2024年度2回戦・2025年度2回戦・2026年度初戦）。春季本大会も2024年度・2026年度とも1回戦でコールド負け。秋季・春季の一次予選のみの年は判定に使わない（手引きの決まりどおり、本大会に進んだ年のみ集計）。一球速報.comで確認。",
+      "source_url": "https://www.metro.ed.jp/kurumenishi-h/activities/club_12/index.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "第108回全国高等学校野球選手権西東京大会",
+          "level": "都県",
+          "result": "1回戦敗退（桜町に9-12）",
+          "happened_on": "2026-07-10",
+          "source_url": "https://baseball.omyutech.com/CupHomePageTeamSchedule.action?teamId=11829&cupId=20260013577"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "令和8年度春季東京都高等学校野球大会（本大会）",
+          "level": "都県",
+          "result": "1回戦敗退（創価に0-12、5回コールド）",
+          "happened_on": "2026-04-01",
+          "source_url": "https://baseball.omyutech.com/CupHomePageTeamSchedule.action?teamId=11829&cupId=20260004720"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第107回全国高等学校野球選手権西東京大会",
+          "level": "都県",
+          "result": "初戦を突破し2回戦敗退（小平南に3-5）",
+          "happened_on": "2025-07-13",
+          "source_url": "https://baseball.omyutech.com/CupHomePageTeamSchedule.action?teamId=11829&cupId=20250000301"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "第106回全国高等学校野球選手権西東京大会",
+          "level": "都県",
+          "result": "初戦を突破し2回戦敗退（総合工科に1-6）",
+          "happened_on": "2024-07-10",
+          "source_url": "https://baseball.omyutech.com/CupHomePageTeamSchedule.action?teamId=11829&cupId=20240009751"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "令和6年度春季東京都高等学校野球大会（本大会）",
+          "level": "都県",
+          "result": "1回戦敗退（城北に1-11、6回コールド）",
+          "happened_on": "2024-04-02",
+          "source_url": "https://baseball.omyutech.com/CupHomePageTeamSchedule.action?teamId=11829&cupId=20240008686"
+        }
+      ]
+    },
+    {
+      "name": "男子硬式テニス部",
+      "kind": "運動",
+      "days_note": "平日は月・火・木、土日はどちらか1日（大会がある時は両方活動する場合もあり）",
+      "days_per_week": 4,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "令和6年度・令和7年度とも都立対抗テニス選手権大会（都立限定）で団体ベスト16・ベスト32、個人戦もベスト32。都立（公立）だけの大会の成績は1段低く読む決まりのため、ベスト8に届いていない現状では段階2にはならない。",
+      "source_url": "https://www.metro.ed.jp/kurumenishi-h/activities/club_4/index.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "第69回都立対抗テニス選手権大会（男子・団体）",
+          "level": "都県",
+          "result": "ベスト32",
+          "source_url": "https://www.metro.ed.jp/kurumenishi-h/activities/club_4/index.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第31回東京都立高等学校テニス選手権大会（個人戦、出場365名）",
+          "level": "都県",
+          "result": "ベスト32（東條景太）",
+          "source_url": "https://www.metro.ed.jp/kurumenishi-h/activities/club_4/index.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "第68回都立対抗テニス選手権大会（男子・団体）",
+          "level": "都県",
+          "result": "ベスト16",
+          "source_url": "https://www.metro.ed.jp/kurumenishi-h/activities/club_4/index.html"
+        }
+      ]
+    },
+    {
+      "name": "サッカー部",
+      "kind": "運動",
+      "days_note": "火・水・木・金・土・(日)",
+      "days_per_week": 5.5,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2026年度、高円宮杯U-18リーグ東京のT1〜T5のいずれにも所属が確認できず（支部リーグ相当。部活動ページでは「8地区リーグ2部」と表記）。https://www.tleague-u18.com/team.php?dy=2026&dt=1〜5 で確認（2026-09-24）。活動日は週5.5日のため段階4の対象外。",
+      "source_url": "https://www.metro.ed.jp/kurumenishi-h/activities/club_13/index.html",
+      "as_of": "2026-09-24",
+      "results": []
+    },
+    {
+      "name": "ダンス部",
+      "kind": "運動",
+      "source_url": "https://www.metro.ed.jp/kurumenishi-h/activities/club_16/index.html",
+      "as_of": "2026-09-24",
+      "results": []
+    },
+    {
+      "name": "剣道部",
+      "kind": "運動",
+      "days_note": "月・火・水・金・土・(日)",
+      "days_per_week": 5.5,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2025年度・2026年度ともインターハイ予選の東京都予選（団体）に出場したが、いずれも1回戦で敗退。目標の都大会ベスト8には届いていない。",
+      "source_url": "https://www.metro.ed.jp/kurumenishi-h/activities/club_10/index.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "令和8年度インターハイ予選 東京都予選（団体）",
+          "level": "都県",
+          "result": "1回戦敗退（青陵高校に1-3）",
+          "happened_on": "2026-06-29",
+          "source_url": "https://www.metro.ed.jp/kurumenishi-h/activities/club_10/index.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "インターハイ予選 東京都予選（団体）",
+          "level": "都県",
+          "result": "1回戦敗退",
+          "happened_on": "2025-06-22",
+          "source_url": "https://www.metro.ed.jp/kurumenishi-h/activities/club_10/index.html"
+        }
+      ]
+    },
+    {
+      "name": "女子フットサル部",
+      "kind": "運動",
+      "days_note": "月・火・木・金・土・(日)",
+      "days_per_week": 5.5,
+      "weekend": "土日",
+      "tier": 1,
+      "tier_basis": "2024年度に全国大会（フットサルフェスタ2024全国大会in神戸）に出場。加えて東京都女子ユースフットサルリーグで2024年度・2026年度と複数回優勝しており、全国・都県上位の実績が2回以上ある。",
+      "source_url": "https://www.metro.ed.jp/kurumenishi-h/activities/club_14/index.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "東京都女子ユースフットサルリーグ",
+          "level": "都県",
+          "result": "優勝。全日本選手権予選への出場が決定",
+          "happened_on": "2026-06-16",
+          "source_url": "https://www.metro.ed.jp/kurumenishi-h/activities/club_14/index.html"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "第7回高校生女子フットサルチャンピオンシップ",
+          "level": "その他",
+          "result": "優勝",
+          "happened_on": "2026-06-08",
+          "source_url": "https://www.metro.ed.jp/kurumenishi-h/activities/club_14/index.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "全国大会（フットサルフェスタ2024全国大会in神戸）",
+          "level": "全国",
+          "result": "出場",
+          "happened_on": "2024-12-24",
+          "source_url": "https://www.metro.ed.jp/kurumenishi-h/activities/club_14/index.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "都リーグ",
+          "level": "都県",
+          "result": "リーグ戦優勝",
+          "happened_on": "2024-01-31",
+          "source_url": "https://www.metro.ed.jp/kurumenishi-h/activities/club_14/index.html"
+        }
+      ]
+    },
+    {
+      "name": "女子バレーボール部",
+      "kind": "運動",
+      "days_note": "平日4日（火曜オフ）、土日はどちらか1日",
+      "days_per_week": 5,
+      "weekend": "土日",
+      "source_url": "https://www.metro.ed.jp/kurumenishi-h/activities/club_3/index.html",
+      "as_of": "2026-09-24",
+      "results": []
+    },
+    {
+      "name": "男子バレーボール部",
+      "kind": "運動",
+      "days_note": "平日4日、土日はどちらか1日",
+      "days_per_week": 5,
+      "weekend": "土日",
+      "source_url": "https://www.metro.ed.jp/kurumenishi-h/activities/club_2/index.html",
+      "as_of": "2026-09-24",
+      "results": []
+    },
+    {
+      "name": "演劇部",
+      "kind": "文化",
+      "days_note": "月・水・金",
+      "days_per_week": 3,
+      "weekend": "なし",
+      "tier": 3,
+      "tier_basis": "2025年9月、東京都高等学校演劇コンクール多摩北地区大会で奨励賞。地区大会の賞にとどまり、都大会代表選出等の最上位の実績は確認できない。",
+      "source_url": "https://www.metro.ed.jp/kurumenishi-h/activities/club_18/index.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "東京都高等学校演劇コンクール多摩北地区大会",
+          "level": "地区",
+          "result": "奨励賞（『30分前の3分間』）",
+          "happened_on": "2025-09",
+          "source_url": "https://www.metro.ed.jp/kurumenishi-h/activities/club_18/index.html"
+        }
+      ]
+    },
+    {
+      "name": "箏曲部",
+      "kind": "文化",
+      "source_url": "https://www.metro.ed.jp/kurumenishi-h/activities/club_24/index.html",
+      "as_of": "2026-09-24",
+      "results": []
+    },
+    {
+      "name": "男子バスケットボール部",
+      "kind": "運動",
+      "days_note": "月・火・木・金・土・(日)",
+      "days_per_week": 5.5,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "令和7年度公式戦結果は、春季大会1回戦敗退（都立篠崎に48-76）、総合体育大会1回戦敗退（都立王子総合に50-57）、新人戦は1回戦を突破（都立田無に67-34）したが2回戦で敗退（都立高島に51-76）。いずれもベスト8には届いていない。",
+      "source_url": "https://www.metro.ed.jp/kurumenishi-h/activities/club/index.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "春季大会",
+          "level": "都県",
+          "result": "1回戦敗退（都立篠崎高校に48-76）",
+          "source_url": "https://www.metro.ed.jp/kurumenishi-h/activities/club/index.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "総合体育大会（インターハイ予選）",
+          "level": "都県",
+          "result": "1回戦敗退（都立王子総合高校に50-57）",
+          "source_url": "https://www.metro.ed.jp/kurumenishi-h/activities/club/index.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "新人戦大会",
+          "level": "都県",
+          "result": "1回戦は都立田無高校に67-34で勝利、2回戦は都立高島高校に51-76で敗退",
+          "source_url": "https://www.metro.ed.jp/kurumenishi-h/activities/club/index.html"
+        }
+      ]
+    },
+    {
+      "name": "男子ソフトテニス部",
+      "kind": "運動",
+      "days_note": "週4日（大会や練習試合があると5日になることも）",
+      "days_per_week": 4,
+      "weekend": "土日",
+      "source_url": "https://www.metro.ed.jp/kurumenishi-h/activities/club_6/index.html",
+      "as_of": "2026-09-24",
+      "results": []
+    },
+    {
+      "name": "女子ソフトテニス部",
+      "kind": "運動",
+      "days_note": "週4日（大会や練習試合があると5日になることも）",
+      "days_per_week": 4,
+      "weekend": "土日",
+      "source_url": "https://www.metro.ed.jp/kurumenishi-h/activities/club_7/index.html",
+      "as_of": "2026-09-24",
+      "results": []
+    },
+    {
+      "name": "バドミントン部",
+      "kind": "運動",
+      "days_note": "体育館練習日は月・水・土（男女合同）、屋外トレーニングは女子が木曜、男子が金曜",
+      "days_per_week": 4,
+      "weekend": "土",
+      "source_url": "https://www.metro.ed.jp/kurumenishi-h/activities/club_8/index.html",
+      "as_of": "2026-09-24",
+      "results": []
+    },
+    {
+      "name": "女子硬式テニス部",
+      "kind": "運動",
+      "tier": 3,
+      "tier_basis": "2025年度、都立対抗テニス大会で2回戦進出。都立（公立）だけの大会の成績は1段低く読む決まりのため、ベスト8に届いていない現状では段階2にはならない。",
+      "source_url": "https://www.metro.ed.jp/kurumenishi-h/activities/club_5/index.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "都立対抗テニス大会",
+          "level": "都県",
+          "result": "2回戦進出",
+          "happened_on": "2025-07-22",
+          "source_url": "https://www.metro.ed.jp/kurumenishi-h/activities/club_5/index.html"
+        }
+      ]
+    },
+    {
+      "name": "陸上競技部",
+      "kind": "運動",
+      "days_note": "月・水・金・土",
+      "days_per_week": 4,
+      "weekend": "土",
+      "source_url": "https://www.metro.ed.jp/kurumenishi-h/activities/club_11/index.html",
+      "as_of": "2026-09-24",
+      "results": []
+    },
+    {
+      "name": "ギター部",
+      "kind": "文化",
+      "days_note": "火曜〜金曜の放課後",
+      "days_per_week": 4,
+      "weekend": "なし",
+      "source_url": "https://www.metro.ed.jp/kurumenishi-h/activities/club_19/index.html",
+      "as_of": "2026-09-24",
+      "results": []
+    },
+    {
+      "name": "卓球部",
+      "kind": "運動",
+      "days_note": "火・木・土",
+      "days_per_week": 3,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "2025年度、全日本卓球選手権大会（ジュニアの部）東京都代表決定戦は3〜4回戦で敗退、東京都国公立高等学校卓球大会（都立限定）男子シングルス団体は2回戦敗退、東京都総合体育大会シングルスも1〜2回戦で敗退。いずれもベスト8には届いていない。",
+      "source_url": "https://www.metro.ed.jp/kurumenishi-h/activities/club_15/index.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "令和7年度全日本卓球選手権大会（ジュニアの部）東京都代表決定戦",
+          "level": "都県",
+          "result": "男子シングルス、複数選手が1〜4回戦で敗退（最高4回戦）",
+          "happened_on": "2025-09-14",
+          "source_url": "https://www.metro.ed.jp/kurumenishi-h/activities/club_15/index.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第42回東京都国公立高等学校卓球大会 男子シングルス団体",
+          "level": "都県",
+          "result": "2回戦敗退（1回戦は東大和に勝利、2回戦は日野台に敗退）",
+          "happened_on": "2025-08-20",
+          "source_url": "https://www.metro.ed.jp/kurumenishi-h/activities/club_15/index.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "東京都総合体育大会 シングルス",
+          "level": "都県",
+          "result": "男女とも1〜2回戦で敗退",
+          "happened_on": "2025-06-01",
+          "source_url": "https://www.metro.ed.jp/kurumenishi-h/activities/club_15/index.html"
+        }
+      ]
+    },
+    {
+      "name": "美術イラスト部",
+      "kind": "文化",
+      "source_url": "https://www.metro.ed.jp/kurumenishi-h/activities/club_26/index.html",
+      "as_of": "2026-09-24",
+      "results": []
+    },
+    {
+      "name": "茶道部",
+      "kind": "文化",
+      "source_url": "https://www.metro.ed.jp/kurumenishi-h/activities/club_23/index.html",
+      "as_of": "2026-09-24",
+      "results": []
+    },
+    {
+      "name": "ハイキング・生物部",
+      "kind": "運動",
+      "source_url": "https://www.metro.ed.jp/kurumenishi-h/activities/club_17/index.html",
+      "as_of": "2026-09-24",
+      "results": []
+    },
+    {
+      "name": "クッキング部",
+      "kind": "文化",
+      "source_url": "https://www.metro.ed.jp/kurumenishi-h/activities/club_27/index.html",
+      "as_of": "2026-09-24",
+      "results": []
+    },
+    {
+      "name": "パソコン部",
+      "kind": "文化",
+      "days_note": "月・火・木の週3日",
+      "days_per_week": 3,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動は週3日で、文化祭向けの制作やスキルアップが中心。コンクール等への参加実績の記載はない。",
+      "source_url": "https://www.metro.ed.jp/kurumenishi-h/activities/club_20/index.html",
+      "as_of": "2026-09-24",
+      "results": []
+    },
+    {
+      "name": "吹奏楽部",
+      "kind": "文化",
+      "source_url": "https://www.metro.ed.jp/kurumenishi-h/activities/club_21/index.html",
+      "as_of": "2026-09-24",
+      "results": []
+    }
+  ],
+  "designated_universities": [],
+  "events": [
+    {
+      "kind": "改修",
+      "period_label": "2024年7月〜12月",
+      "summary": "創立51年目にあたり、校舎外壁・内壁の塗り替え、屋上防水、体育館バレーボール支柱基礎修繕、剣道場・柔道場・トレーニングルームへの空調設置など大規模な施設改修工事を実施。",
+      "source_url": "https://www.metro.ed.jp/kurumenishi-h/news/2024/07/newsentry_132.html"
+    },
+    {
+      "kind": "指定",
+      "period_label": "令和7年度（2025年度）から",
+      "summary": "東京都教育委員会よりスキルアップ推進校に指定され、東京グローバルゲートウェイ（TGG）での1年生全員向け英語研修や英語検定対策のグローバルスキル講座等を開始。",
+      "source_url": "https://www.metro.ed.jp/kurumenishi-h/assets/pamphlet/pamphlet-pdffile-2574.pdf"
+    }
+  ],
+  "unresolved": [
+    "男女別生徒数：学校経営報告・学校経営計画・パンフレットのいずれにも記載なし",
+    "指定校推薦の大学一覧：学校案内パンフレットに50期生の進学状況（合格大学一覧）はあるが、「主な指定校推薦」のような指定校だけの一覧は無い（在校生インタビューで個別に指定校選考に触れている大学はあるが、公式な一覧ではないため未採用）",
+    "admission_route_share（一般選抜・指定校推薦・公募推薦・総合型選抜の実進学割合）：資料に記載なし",
+    "保護者側の学校評価アンケート満足度数値：学校経営報告には生徒側の数値のみ記載。学校運営連絡協議会報告PDFは会議録中心で、満足度の数値は確認できず",
+    "学級増減：都教委「令和8年度東京都立高等学校等の第一学年生徒の募集人員等について」を未確認のため、直近の学級増減の有無は未確認",
+    "箏曲部・美術イラスト部・ハイキング生物部・吹奏楽部・ダンス部・女子バレーボール部・男子バレーボール部・男子ソフトテニス部・女子ソフトテニス部・バドミントン部・陸上競技部・女子バスケットボール部（活動日）・女子硬式テニス部（活動日）：部活動ページに具体的な大会結果（順位・戦績）や活動日の記載が乏しく、段階または活動日を判定できなかった",
+    "茶道部・クッキング部：部活動ページに校章以外の本文の記載が無い（活動日・活動内容とも不明）",
+    "陸上競技部：支部予選会・多摩地区選手権大会の個人記録（タイム）は公開されているが、順位や都大会進出の可否の記載が無く、段階の判定材料が無い",
+    "ダンス部：ダンススタジアム（日本高校ダンス部選手権）やDCC全国高等学校ダンス部選手権（動画審査）に毎年参加しているが、順位・結果の記載が無く、段階の判定材料が無い"
+  ],
+  "conflicts": []
+}

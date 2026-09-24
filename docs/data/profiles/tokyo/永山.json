@@ -1,0 +1,901 @@
+{
+  "prefecture": "東京都",
+  "school_name": "永山",
+  "official_url": "https://www.metro.ed.jp/nagayama-h/",
+  "researched_at": "2026-09-24",
+  "stats": [
+    {
+      "metric": "career_decided_rate",
+      "fiscal_year": 2025,
+      "value_num": 90,
+      "source_url": "https://www.metro.ed.jp/nagayama-h/assets/経営報告（07）.pdf",
+      "source_label": "令和7年度学校経営報告 進路指導 成果と課題",
+      "as_of": "2026-03-31",
+      "note": "令和7年度実績（前年度94%）。"
+    },
+    {
+      "metric": "club_join_rate",
+      "fiscal_year": 2025,
+      "value_num": 58,
+      "source_url": "https://www.metro.ed.jp/nagayama-h/assets/経営報告（07）.pdf",
+      "source_label": "令和7年度学校経営報告 特別活動等 成果と課題",
+      "as_of": "2026-03-31",
+      "note": "令和7年度実績（前年度56%）。令和8年度学校経営計画にも同じ「前年度58%」の記載あり。"
+    },
+    {
+      "metric": "satisfaction",
+      "item": "生徒:授業（わかりやすい）",
+      "fiscal_year": 2025,
+      "value_num": 67,
+      "source_url": "https://www.metro.ed.jp/nagayama-h/assets/filelink/filelink-pdffile-34648.pdf",
+      "source_label": "令和7年度学校運営連絡協議会実施報告書 学校評価結果の分析・考察（学習指導）",
+      "as_of": "2026-02",
+      "note": "「授業は分かりやすい」の肯定率。学校経営報告の「授業満足度67%」とも一致。"
+    },
+    {
+      "metric": "satisfaction",
+      "item": "生徒:学習の目的意識",
+      "fiscal_year": 2025,
+      "value_num": 60,
+      "source_url": "https://www.metro.ed.jp/nagayama-h/assets/filelink/filelink-pdffile-34648.pdf",
+      "source_label": "令和7年度学校運営連絡協議会実施報告書 学校評価結果の分析・考察（学習指導）",
+      "as_of": "2026-02",
+      "note": "「自分なりの課題や目的をもって日々の授業に臨んでいる」の肯定率。学校経営報告の「授業の目的意識60%」とも一致。"
+    },
+    {
+      "metric": "satisfaction",
+      "item": "生徒:学校生活のきまりを守る",
+      "fiscal_year": 2025,
+      "value_num": 44,
+      "source_url": "https://www.metro.ed.jp/nagayama-h/assets/経営報告（07）.pdf",
+      "source_label": "令和7年度学校経営報告 生活指導・健康づくり 成果と課題",
+      "as_of": "2026-03-31",
+      "note": "前年比8%減。学校運営連絡協議会実施報告書も「50%を割っている」と記載し整合。"
+    },
+    {
+      "metric": "satisfaction",
+      "item": "生徒:生徒主体の学校行事",
+      "fiscal_year": 2025,
+      "value_num": 71,
+      "source_url": "https://www.metro.ed.jp/nagayama-h/assets/経営報告（07）.pdf",
+      "source_label": "令和7年度学校経営報告 生活指導・健康づくり 成果と課題",
+      "as_of": "2026-03-31",
+      "note": "前年比3ポイント減。"
+    },
+    {
+      "metric": "satisfaction",
+      "item": "生徒:学校行事（満足度）",
+      "fiscal_year": 2025,
+      "value_num": 67,
+      "source_url": "https://www.metro.ed.jp/nagayama-h/assets/経営報告（07）.pdf",
+      "source_label": "令和7年度学校経営報告 特別活動等 成果と課題（学校行事満足度肯定回答率）",
+      "as_of": "2026-03-31",
+      "note": "前年比7%減。上記「生徒主体の学校行事71%」とは別項目（アンケートの設問が異なる）。"
+    },
+    {
+      "metric": "satisfaction",
+      "item": "保護者:入学させて良かった",
+      "fiscal_year": 2025,
+      "value_num": 93,
+      "source_url": "https://www.metro.ed.jp/nagayama-h/assets/filelink/filelink-pdffile-34648.pdf",
+      "source_label": "令和7年度学校運営連絡協議会実施報告書 評価結果の分析・考察（学校運営）",
+      "as_of": "2026-02",
+      "note": "前年より14ポイント増。"
+    },
+    {
+      "metric": "exam_ratio",
+      "item": "推薦",
+      "fiscal_year": 2026,
+      "value_num": 1.5,
+      "source_url": "https://www.kyoiku.metro.tokyo.lg.jp/documents/d/kyoiku/20260121_suisen_futsu",
+      "source_label": "東京都教育委員会 令和8年度東京都立高等学校入学者選抜応募状況（推薦応募）普通科",
+      "as_of": "2026-01-21",
+      "note": "応募倍率。募集64名・応募96名。過去年度分は今回未確認（unresolved参照）。"
+    },
+    {
+      "metric": "students",
+      "sex": "male",
+      "fiscal_year": 2026,
+      "value_num": 186,
+      "source_url": "https://www.metro.ed.jp/nagayama-h/our_school/history.html",
+      "source_label": "沿革ページ 第55回入学式",
+      "as_of": "2026-04-07",
+      "note": "令和8年度入学者（新入生8学級）の人数。全校在籍者の男女内訳ではない（unresolved参照）。"
+    },
+    {
+      "metric": "students",
+      "sex": "female",
+      "fiscal_year": 2026,
+      "value_num": 124,
+      "source_url": "https://www.metro.ed.jp/nagayama-h/our_school/history.html",
+      "source_label": "沿革ページ 第55回入学式",
+      "as_of": "2026-04-07",
+      "note": "令和8年度入学者（新入生8学級）の人数。全校在籍者の男女内訳ではない（unresolved参照）。"
+    },
+    {
+      "metric": "uniform",
+      "fiscal_year": 2026,
+      "value_text": "ブレザー(男女ともズボン又はスカート選択可、白ワイシャツ+学校指定ネクタイ)。10〜5月はブレザー着用、6〜9月はブレザーなしで可(ワンポイント白ポロシャツも可)。防寒時は指定ベスト・セーター可。加工は一切禁止(発覚時は再購入)。",
+      "source_url": "https://www.metro.ed.jp/nagayama-h/school_life/symbols.html",
+      "source_label": "東京都立永山高等学校「制服・校章・校歌」服装規定",
+      "as_of": "2026-09",
+      "note": ""
+    },
+    {
+      "metric": "rules_summary",
+      "fiscal_year": 2026,
+      "value_text": "頭髪加工(染色・パーマ・エクステ等)禁止。装飾品・化粧・カラコン・ネイル等禁止。アルバイトは原則禁止(やむを得ない場合は保護者了解の上、担任へ報告)。歩きスマホ・自転車運転中のスマホ使用は禁止。",
+      "source_url": "https://www.metro.ed.jp/nagayama-h/assets/filelink/filelink-pdffile-25826.pdf",
+      "source_label": "学校生活の心得（生活指導部、令和8年4月6日付）",
+      "as_of": "2026-04-06",
+      "note": "スマホの所持自体を禁じる規定は資料中に見当たらない（歩行中・自転車運転中の使用禁止のみ）。"
+    },
+    {
+      "metric": "designation",
+      "item": "進学指導研究校",
+      "fiscal_year": 2026,
+      "value_text": "東京都教育委員会指定",
+      "source_url": "https://www.metro.ed.jp/nagayama-h/assets/経営計画（08）20260422.pdf",
+      "source_label": "令和8年度学校経営計画 表紙（学校案内「スクールガイド2027」表紙にも同一記載）",
+      "as_of": "2026-04-22",
+      "note": ""
+    },
+    {
+      "metric": "designation",
+      "item": "総合型選抜対策に係る進学指導業務支援指定校",
+      "fiscal_year": 2026,
+      "value_text": "東京都教育委員会指定",
+      "source_url": "https://www.metro.ed.jp/nagayama-h/assets/経営計画（08）20260422.pdf",
+      "source_label": "令和8年度学校経営計画 表紙",
+      "as_of": "2026-04-22",
+      "note": ""
+    },
+    {
+      "metric": "designation",
+      "item": "探究的な学び推進校",
+      "fiscal_year": 2026,
+      "value_text": "東京都教育委員会指定",
+      "source_url": "https://www.metro.ed.jp/nagayama-h/assets/経営計画（08）20260422.pdf",
+      "source_label": "令和8年度学校経営計画 表紙",
+      "as_of": "2026-04-22",
+      "note": ""
+    },
+    {
+      "metric": "designation",
+      "item": "国際ロータリーと連携したインターンシップ推進校",
+      "fiscal_year": 2026,
+      "value_text": "東京都教育委員会指定",
+      "source_url": "https://www.metro.ed.jp/nagayama-h/assets/経営計画（08）20260422.pdf",
+      "source_label": "令和8年度学校経営計画 表紙",
+      "as_of": "2026-04-22",
+      "note": ""
+    },
+    {
+      "metric": "designation",
+      "item": "教育データ利活用実証研究校",
+      "fiscal_year": 2026,
+      "value_text": "東京都教育委員会指定",
+      "source_url": "https://www.metro.ed.jp/nagayama-h/assets/経営計画（08）20260422.pdf",
+      "source_label": "令和8年度学校経営計画 表紙",
+      "as_of": "2026-04-22",
+      "note": ""
+    },
+    {
+      "metric": "designation",
+      "item": "学力向上推進校",
+      "fiscal_year": 2026,
+      "value_text": "東京都教育委員会指定",
+      "source_url": "https://www.metro.ed.jp/nagayama-h/assets/経営計画（08）20260422.pdf",
+      "source_label": "令和8年度学校経営計画 表紙",
+      "as_of": "2026-04-22",
+      "note": "沿革ページでは令和2〜6年度に同一とみられる指定を「学力向上研究校」と表記（conflicts参照）。"
+    },
+    {
+      "metric": "designation",
+      "item": "東京大学教養学部インターネット配信講座協定校",
+      "fiscal_year": 2026,
+      "value_text": "東京大学との協定",
+      "source_url": "https://www.metro.ed.jp/nagayama-h/assets/経営計画（08）20260422.pdf",
+      "source_label": "令和8年度学校経営計画 表紙",
+      "as_of": "2026-04-22",
+      "note": ""
+    },
+    {
+      "metric": "designation",
+      "item": "都立学校における部活動改革パイロット校",
+      "fiscal_year": 2025,
+      "value_text": "東京都教育委員会指定（令和5年度〜）",
+      "source_url": "https://www.metro.ed.jp/nagayama-h/assets/filelink/filelink-pdffile-34648.pdf",
+      "source_label": "令和7年度学校運営連絡協議会実施報告書「部活動改革パイロット校として」／沿革ページ令和5年4月1日",
+      "as_of": "2026-02",
+      "note": "令和8年度学校経営計画の表紙一覧には記載がなく、継続指定かは未確認。"
+    },
+    {
+      "metric": "designation",
+      "item": "永山高校強化指定部活動",
+      "fiscal_year": 2026,
+      "value_text": "学校独自の強化指定制度（東京都のPremiere Clubとは別。7部：硬式野球・女子バレーボール・女子ソフトボール・陸上競技・男子バスケットボール・女子バスケットボール・バドミントン）",
+      "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf",
+      "source_label": "学校案内「スクールガイド2027」p.10 部活動（強化指定部活動）",
+      "as_of": "2026-09",
+      "note": "Premiere Club（東京都教育委員会指定）の指定は無し（tokyo-premiere-club-2026.csvに永山の記載なし）。"
+    }
+  ],
+  "clubs": [
+    {
+      "name": "硬式野球部",
+      "kind": "運動",
+      "days_note": "月・水・木・金",
+      "days_per_week": 4,
+      "tier": 3,
+      "tier_basis": "2023〜2025年の夏・秋・春はいずれも初戦（1〜2回戦）で敗退、2025年秋一次予選のみ1勝（2回戦で6回コールド負け）。学校案内も『出場』のみで進出度合いの記載なし。永山高校強化指定部活動の一つ。",
+      "source_url": "https://www.metro.ed.jp/nagayama-h/activities/club/index.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "第105回全国高等学校野球選手権記念大会 西東京大会",
+          "level": "都県",
+          "result": "初戦敗退（都立桜町高校に4-7）",
+          "happened_on": "2023-07-10",
+          "source_url": "https://www.metro.ed.jp/nagayama-h/activities/2023/07/clubentry_23.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "令和6年度秋季東京都高等学校野球大会 一次予選",
+          "level": "都県",
+          "result": "初戦敗退",
+          "source_url": "https://baseball.omyutech.com/CupHomePageTeams.action?cupId=20240012548"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "第106回全国高等学校野球選手権西東京大会",
+          "level": "都県",
+          "result": "初戦敗退",
+          "source_url": "https://baseball.omyutech.com/CupHomePageTeams.action?cupId=20240009751"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "令和7年度春季東京都高等学校野球大会 一次予選",
+          "level": "都県",
+          "result": "初戦敗退",
+          "source_url": "https://baseball.omyutech.com/CupHomePageTeams.action?cupId=20250021170"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第107回全国高等学校野球選手権西東京大会",
+          "level": "都県",
+          "result": "初戦敗退（多摩工科高校に敗戦）",
+          "happened_on": "2025-07-10",
+          "source_url": "https://baseball.omyutech.com/CupHomePageTeams.action?cupId=20250000301"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "令和7年度秋季東京都高等学校野球大会 一次予選",
+          "level": "都県",
+          "result": "1勝後2回戦敗退（1回戦ICUに18-12勝、2回戦葛飾野高校に0-10・6回コールド負け）",
+          "source_url": "https://www.metro.ed.jp/nagayama-h/activities/2025/10/clubentry_64.html"
+        }
+      ]
+    },
+    {
+      "name": "サッカー部",
+      "kind": "運動",
+      "days_note": "火・水・木・金",
+      "days_per_week": 4,
+      "tier": 3,
+      "tier_basis": "2026年度 高円宮杯U-18東京 T1〜T5に所属なし（支部リーグ）。T1〜T5の参加チーム一覧はhttps://www.tleague-u18.com/team.php?dy=2026&dt=1〜5で確認（2026-09-24確認、いずれにも「永山」の記載なし）。",
+      "source_url": "https://www.metro.ed.jp/nagayama-h/activities/club_1/index.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "陸上競技部",
+      "kind": "運動",
+      "days_note": "月・火・水・金・土",
+      "days_per_week": 5,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "令和5年度 都高校総体支部予選 男子走幅跳 第7位（都大会出場）、令和6年度 同 第3位（都大会出場）。個人種目で支部予選上位から都大会に出場する水準で、都大会自体でのベスト8等の成績は確認できず。永山高校強化指定部活動の一つ。",
+      "source_url": "https://www.metro.ed.jp/nagayama-h/activities/club_2/index.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "都高校総体支部予選",
+          "level": "地区",
+          "result": "男子走幅跳 第7位（都大会出場）",
+          "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "都高校総体支部予選",
+          "level": "地区",
+          "result": "男子走幅跳 第3位（都大会出場）",
+          "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf"
+        }
+      ]
+    },
+    {
+      "name": "男女硬式テニス部",
+      "kind": "運動",
+      "days_note": "月・火・木・金・土（日曜に大会が行われることがある）",
+      "days_per_week": 5,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "令和7年度 東京都立高等学校テニス選手権大会（個人）男子3回戦進出・女子3回戦。年間を通じ2〜4回戦進出が中心でベスト8等には届かず。",
+      "source_url": "https://www.metro.ed.jp/nagayama-h/activities/club_3/index.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "東京都立高等学校テニス選手権大会（個人）",
+          "level": "都県",
+          "result": "男子3回戦進出、女子3回戦",
+          "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf"
+        }
+      ]
+    },
+    {
+      "name": "ハンドボール部",
+      "kind": "運動",
+      "days_note": "月・火・水・金",
+      "days_per_week": 4,
+      "tier": 2,
+      "tier_basis": "学校案内は令和5年度東京都高等学校ハンドボール秋季大会を「東京都ベスト16」と記載。同じ大会について部活動ブログ（2023/11/06）は見出しで「ベスト8進出」と報告しており食い違う（conflicts参照）。いずれにしても都大会上位の成績のため段階2とした。永山高校強化指定部活動の一つ。",
+      "source_url": "https://www.metro.ed.jp/nagayama-h/activities/club_4/index.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "東京都高等学校ハンドボール秋季大会",
+          "level": "都県",
+          "result": "東京都ベスト16",
+          "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf"
+        }
+      ]
+    },
+    {
+      "name": "女子ソフトボール部",
+      "kind": "運動",
+      "days_note": "月・火・木・金",
+      "days_per_week": 4,
+      "tier": 3,
+      "tier_basis": "2025年度春季大会兼第75回関東大会都予選で都立瑞穂農芸高等学校との合同チームにより都ベスト16（1回のみ、複数回のベスト16/32ではないため段階2の基準に届かず）。公立選手権大会は決勝トーナメント出場どまり。永山高校強化指定部活動の一つ。",
+      "source_url": "https://www.metro.ed.jp/nagayama-h/activities/club_5/index.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "春季大会 兼 第75回関東大会都予選",
+          "level": "都県",
+          "result": "都ベスト16（都立瑞穂農芸高等学校との合同チーム）",
+          "source_url": "https://www.metro.ed.jp/nagayama-h/activities/2026/03/clubentry_106.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "東京都公立選手権大会",
+          "level": "都県",
+          "result": "決勝トーナメント出場",
+          "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf"
+        }
+      ]
+    },
+    {
+      "name": "男子バスケットボール部",
+      "kind": "運動",
+      "days_note": "月・火・木・金・土",
+      "days_per_week": 5,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "令和3・4年度はインターハイ都予選・関東予選で5回戦進出・東京都ベスト32だが直近3年より前。直近（令和7年度）は関東予選・総体予選とも3回戦進出、102地区大会第3位にとどまる。永山高校強化指定部活動の一つ（目標は東京都ベスト16）。",
+      "source_url": "https://www.metro.ed.jp/nagayama-h/activities/club_6/index.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "関東予選（春季大会）",
+          "level": "都県",
+          "result": "3回戦進出",
+          "source_url": "https://www.metro.ed.jp/nagayama-h/activities/2026/03/clubentry_102.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "総体予選（夏季大会）",
+          "level": "都県",
+          "result": "3回戦進出",
+          "source_url": "https://www.metro.ed.jp/nagayama-h/activities/2026/03/clubentry_102.html"
+        }
+      ]
+    },
+    {
+      "name": "女子バスケットボール部",
+      "kind": "運動",
+      "days_note": "火・水・木・金",
+      "days_per_week": 4,
+      "tier": 3,
+      "tier_basis": "令和7年度 春季大会1回戦、総体予選2回戦進出、新人大会2回戦進出。永山高校強化指定部活動の一つ（目標は東京都ベスト32）。",
+      "source_url": "https://www.metro.ed.jp/nagayama-h/activities/club_7/index.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "東京都高等学校女子バスケットボール部 総体予選",
+          "level": "都県",
+          "result": "2回戦進出",
+          "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf"
+        }
+      ]
+    },
+    {
+      "name": "男子バレーボール部",
+      "kind": "運動",
+      "days_note": "火・水・木・（土日）",
+      "days_per_week": 3.5,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "全国高等学校総合大会東京都予選兼団体予選会2回戦進出、夏季都立高大会予選は予選リーグ1勝どまり。",
+      "source_url": "https://www.metro.ed.jp/nagayama-h/activities/club_8/index.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "全国高等学校総合大会 東京都予選兼団体予選会",
+          "level": "都県",
+          "result": "2回戦進出",
+          "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf"
+        }
+      ]
+    },
+    {
+      "name": "女子バレーボール部",
+      "kind": "運動",
+      "days_note": "月・水・木・金・土・日（試合等で土日両日活動の場合は別日に休養日を設ける）",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "令和6年度春季大会兼関東大会予選で予選リーグ1位となったが、令和4・6年度の夏季大会はいずれも東京都ベスト64どまりでベスト8/16には届かず。永山高校強化指定部活動の一つ（目標は都ベスト64）。",
+      "source_url": "https://www.metro.ed.jp/nagayama-h/activities/club_9/index.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "春季大会 兼 関東大会予選",
+          "level": "都県",
+          "result": "予選リーグ1位",
+          "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "夏季大会",
+          "level": "都県",
+          "result": "東京都ベスト64",
+          "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf"
+        }
+      ]
+    },
+    {
+      "name": "バドミントン部",
+      "kind": "運動",
+      "days_note": "月・水・金",
+      "days_per_week": 3,
+      "tier": 2,
+      "tier_basis": "2025年度 関東公立高等学校バドミントン大会東京予選で男子団体ベスト8（公立限定大会のため通常より1段低く読むが、ベスト8以上のため段階2）。2024年度 東京都国公立高等学校バドミントン選手権大会でも決勝トーナメント進出。",
+      "source_url": "https://www.metro.ed.jp/nagayama-h/activities/club_10/index.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "東京都国公立高等学校バドミントン選手権大会",
+          "level": "都県",
+          "result": "決勝トーナメント進出",
+          "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "関東公立高等学校バドミントン大会 東京予選",
+          "level": "関東",
+          "result": "男子団体ベスト8",
+          "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf"
+        }
+      ]
+    },
+    {
+      "name": "卓球部",
+      "kind": "運動",
+      "days_note": "月・金",
+      "days_per_week": 2,
+      "tier": 3,
+      "tier_basis": "令和7年度は春季大会・都総体予選・多摩地区大会・新人大会・国公立大会とも男女シングルス「出場」のみで、勝ち上がりの記載はない。",
+      "source_url": "https://www.metro.ed.jp/nagayama-h/activities/club_11/index.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "ダンス部",
+      "kind": "運動",
+      "days_note": "火・水・木",
+      "days_per_week": 3,
+      "tier": 4,
+      "tier_basis": "週3日活動。永高祭公演・大学祭参加・地域イベント出演が中心で、勝敗を競う大会への参加実績は確認できない。",
+      "source_url": "https://www.metro.ed.jp/nagayama-h/activities/club_12/index.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "剣道部",
+      "kind": "運動",
+      "days_note": "月・火・木・金",
+      "days_per_week": 4,
+      "tier": 3,
+      "tier_basis": "東京都高体連剣道専門部第4支部大会（支部レベル）に出場、女子個人戦ベスト64。都大会そのものでの成績は確認できず。",
+      "source_url": "https://www.metro.ed.jp/nagayama-h/activities/club_13/index.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "東京都高体連剣道専門部第4支部大会",
+          "level": "地区",
+          "result": "個人の部 出場、女子個人戦ベスト64",
+          "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf"
+        }
+      ]
+    },
+    {
+      "name": "水泳部",
+      "kind": "運動",
+      "days_note": "季節により変動（5月〜：プール、10月〜：柔道場・筋力トレーニング）",
+      "tier": 3,
+      "tier_basis": "令和7年度西東京国公立高等学校水泳競技会（公立限定大会）女子200m個人メドレー第7位。都高等学校春季・新人水泳競技大会は「出場」のみ。",
+      "source_url": "https://www.metro.ed.jp/nagayama-h/activities/club_14/index.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "西東京国公立高等学校水泳競技会",
+          "level": "地区",
+          "result": "女子200m個人メドレー第7位",
+          "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf"
+        }
+      ]
+    },
+    {
+      "name": "吹奏楽部",
+      "kind": "文化",
+      "days_note": "月，火，木，金，土",
+      "days_per_week": 5,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "第62回東京都高等学校吹奏楽コンクールC組銀賞、アンサンブルコンテスト木管三重奏・金打八重奏とも銀賞。都大会レベルのコンクールには出品するが、いずれも銀賞（最上位の金賞ではない）。",
+      "source_url": "https://www.metro.ed.jp/nagayama-h/activities/club_15/index.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "東京都高等学校吹奏楽コンクール（第62回）C組",
+          "level": "都県",
+          "result": "銀賞",
+          "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf"
+        }
+      ]
+    },
+    {
+      "name": "軽音部",
+      "kind": "文化",
+      "days_note": "月〜金",
+      "days_per_week": 5,
+      "source_url": "https://www.metro.ed.jp/nagayama-h/activities/club_16/index.html",
+      "as_of": "2026-09-24",
+      "note": "校内ライブ（永高祭・他校合同Live）が活動の中心で、コンクール等競技的な大会への参加は確認できず、段階を付けなかった。"
+    },
+    {
+      "name": "美術部",
+      "kind": "文化",
+      "days_note": "月・木",
+      "days_per_week": 2,
+      "tier": 2,
+      "tier_basis": "東京都高等学校文化連盟中央展（第36回、令和7年度）に出品。中央展は地区代表として選抜された作品が出品される都の中央大会であるため段階2とした。",
+      "source_url": "https://www.metro.ed.jp/nagayama-h/activities/club_17/index.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "東京都高等学校文化祭美術・工芸部門中央展（第36回）",
+          "level": "都県",
+          "result": "出品",
+          "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf"
+        }
+      ]
+    },
+    {
+      "name": "イラスト部",
+      "kind": "文化",
+      "days_note": "月・金",
+      "days_per_week": 2,
+      "tier": 4,
+      "tier_basis": "週2日活動。文化祭の部誌展示や美術部・写真部・書道部との合同展示のみで、コンクール等への参加実績はない。",
+      "source_url": "https://www.metro.ed.jp/nagayama-h/activities/club_18/index.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "写真部",
+      "kind": "文化",
+      "days_note": "金",
+      "days_per_week": 1,
+      "tier": 3,
+      "tier_basis": "全国高等学校写真選手権大会「写真甲子園」東京ブロック準決勝進出（2023年度）。民間（実行委員会）主催の大会で、全国決勝には届いていないため段階2までは付けなかった。",
+      "source_url": "https://www.metro.ed.jp/nagayama-h/activities/club_19/index.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "全国高等学校写真選手権大会「写真甲子園」（実行委員会主催）",
+          "level": "その他",
+          "result": "東京ブロック準決勝進出",
+          "happened_on": "2023-10-30",
+          "source_url": "https://www.metro.ed.jp/nagayama-h/activities/2023/10/clubentry_39.html"
+        }
+      ]
+    },
+    {
+      "name": "茶道部",
+      "kind": "文化",
+      "days_note": "月",
+      "days_per_week": 1,
+      "tier": 4,
+      "tier_basis": "週1日活動。全国高等学校総合文化祭茶道部門・東京大茶会・高文連茶道部門中央大会「冬の茶会」いずれも「参加」のみで、順位を競う実績はない。",
+      "source_url": "https://www.metro.ed.jp/nagayama-h/activities/club_20/index.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "書道部",
+      "kind": "文化",
+      "days_note": "火・木",
+      "days_per_week": 2,
+      "tier": 4,
+      "tier_basis": "週2日活動。\"江戸\"書道展・高校生国際美術展・国際高校生選抜書展・東京都文化連盟書道部門いずれも「出品」のみで受賞の記載はない。",
+      "source_url": "https://www.metro.ed.jp/nagayama-h/activities/club_21/index.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "演劇部",
+      "kind": "文化",
+      "days_note": "火・木・金",
+      "days_per_week": 3,
+      "tier": 3,
+      "tier_basis": "東京都高等学校文化連盟演劇部門多摩南地区春季演劇発表会（地区大会）に出場。上位進出・受賞の記載はない。",
+      "source_url": "https://www.metro.ed.jp/nagayama-h/activities/club_22/index.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "映画部",
+      "kind": "文化",
+      "days_note": "火・木・金",
+      "days_per_week": 3,
+      "tier": 4,
+      "tier_basis": "週3日活動。第44回映像フェスティバル90秒映像コンテストに出展のみで、受賞の記載はない。",
+      "source_url": "https://www.metro.ed.jp/nagayama-h/activities/club_23/index.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "園芸部",
+      "kind": "文化",
+      "days_note": "月・金",
+      "days_per_week": 2,
+      "tier": 4,
+      "tier_basis": "週2日活動。花壇の手入れや文化祭での飾り付けが中心で、コンクール等競技的な大会への参加は確認できない。",
+      "source_url": "https://www.metro.ed.jp/nagayama-h/activities/club_24/index.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "クッキング部",
+      "kind": "文化",
+      "days_note": "不定期に活動中",
+      "source_url": "https://www.metro.ed.jp/nagayama-h/activities/club_25/index.html",
+      "as_of": "2026-09-24",
+      "note": "福島復興支援ひまわりプロジェクトや全国高等学校家庭クラブ連盟研究発表大会（山形大会）への参加はあるが、順位を競う大会ではなく、活動日も不定期のため段階を付けなかった。"
+    },
+    {
+      "name": "合唱部",
+      "kind": "文化",
+      "days_note": "火",
+      "days_per_week": 1,
+      "tier": 4,
+      "tier_basis": "週1日活動（部員3人）。学校案内の実績一覧にも記載がなく、大会実績は確認できない。",
+      "source_url": "https://www.metro.ed.jp/nagayama-h/activities/club_26/index.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "国際交流部",
+      "kind": "文化",
+      "days_note": "月・水・金",
+      "days_per_week": 3,
+      "tier": 4,
+      "tier_basis": "週3日活動。学校案内の実績一覧にも記載がなく、競技的な大会への参加は確認できない。",
+      "source_url": "https://www.metro.ed.jp/nagayama-h/activities/club_27/index.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "和太鼓同好会",
+      "kind": "同好会",
+      "days_note": "月・水・金・土（午前）",
+      "days_per_week": 3.5,
+      "weekend": "土",
+      "tier": 2,
+      "tier_basis": "第48回東京都高等学校文化祭 第34回郷土芸能部門中央大会で銅賞・審査員賞4枚。中央大会は代表選出のうえで行われる都の大会であり、受賞もあるため段階2とした。",
+      "source_url": "https://www.metro.ed.jp/nagayama-h/activities/club_28/index.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "東京都高等学校文化祭 郷土芸能部門中央大会（第34回）",
+          "level": "都県",
+          "result": "銅賞、審査員賞4枚",
+          "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf"
+        }
+      ]
+    }
+  ],
+  "designated_universities": [
+    { "university": "麻布大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "学校案内「スクールガイド2027」p.7「主な指定校推薦大学・短大・就職分野」（大学350名以上指定あり）" },
+    { "university": "亜細亜大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
+    { "university": "跡見学園女子大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
+    { "university": "浦和大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
+    { "university": "桜美林大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
+    { "university": "大妻女子大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
+    { "university": "嘉悦大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
+    { "university": "神奈川大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
+    { "university": "神奈川工科大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
+    { "university": "川村学園女子大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
+    { "university": "関東学院大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
+    { "university": "共栄大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
+    { "university": "杏林大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
+    { "university": "国士舘大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
+    { "university": "駒沢女子大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
+    { "university": "相模女子大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
+    { "university": "実践女子大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
+    { "university": "十文字学園女子大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
+    { "university": "淑徳大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
+    { "university": "松蔭大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
+    { "university": "城西国際大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
+    { "university": "城西大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
+    { "university": "尚美学園大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
+    { "university": "昭和音楽大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
+    { "university": "白梅学園大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
+    { "university": "白百合女子大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
+    { "university": "駿河台大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
+    { "university": "杉野服飾大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
+    { "university": "聖学院大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
+    { "university": "清泉女子大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
+    { "university": "聖徳大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
+    { "university": "西武文理大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
+    { "university": "洗足学園音楽大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
+    { "university": "大東文化大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
+    { "university": "高千穂大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
+    { "university": "拓殖大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
+    { "university": "多摩大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
+    { "university": "帝京大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
+    { "university": "帝京科学大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
+    { "university": "帝京平成大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
+    { "university": "田園調布学園大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
+    { "university": "桐蔭横浜大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
+    { "university": "東京医療学院大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
+    { "university": "東京医療保健大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
+    { "university": "東京家政学院大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
+    { "university": "東京家政大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
+    { "university": "東京工科大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
+    { "university": "東京工芸大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
+    { "university": "東京純心大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
+    { "university": "東京女子体育大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
+    { "university": "東京富士大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
+    { "university": "東京保健医療専門職大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
+    { "university": "東都大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
+    { "university": "東洋学園大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
+    { "university": "東洋英和女学院大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
+    { "university": "日本獣医生命科学大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
+    { "university": "日本女子体育大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
+    { "university": "日本文化大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
+    { "university": "日本薬科大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
+    { "university": "文化学園大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
+    { "university": "文京学院大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
+    { "university": "武蔵野音楽大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
+    { "university": "明星大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
+    { "university": "目白大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
+    { "university": "ものつくり大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
+    { "university": "ヤマザキ動物看護大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
+    { "university": "横浜美術大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
+    { "university": "立正大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
+    { "university": "和光大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
+    { "university": "和泉短期大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "学校案内「スクールガイド2027」p.7「主な指定校推薦大学・短大・就職分野」（短大100名以上指定あり）" },
+    { "university": "大妻女子大学短期大学部", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
+    { "university": "共立女子短期大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
+    { "university": "駒沢女子短期大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
+    { "university": "実践女子短期大学部", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
+    { "university": "湘北短期大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
+    { "university": "昭和音楽大学短期大学部", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
+    { "university": "女子栄養大学短期大学部", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
+    { "university": "白梅学園短期大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上（共学と付記）" },
+    { "university": "洗足こども短期大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
+    { "university": "鶴見大学短期大学部", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
+    { "university": "帝京短期大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
+    { "university": "帝京大学短期大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
+    { "university": "戸板女子短期大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
+    { "university": "東京交通短期大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
+    { "university": "東京女子体育短期大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
+    { "university": "新渡戸文化短期大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
+    { "university": "目白大学短期大学部", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
+    { "university": "山野美容芸術短期大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" }
+  ],
+  "events": [
+    {
+      "kind": "学級増減",
+      "period_label": "2020年4月から",
+      "happened_on": "2020-04-01",
+      "summary": "第1学年が7学級となった",
+      "source_url": "https://www.metro.ed.jp/nagayama-h/our_school/history.html"
+    },
+    {
+      "kind": "改築",
+      "period_label": "2021年8月",
+      "happened_on": "2021-08-23",
+      "summary": "新校舎に移転",
+      "source_url": "https://www.metro.ed.jp/nagayama-h/our_school/history.html"
+    },
+    {
+      "kind": "学級増減",
+      "period_label": "2022年4月から",
+      "happened_on": "2022-04-01",
+      "summary": "第1学年が8学級に戻り、以後8学級で推移している",
+      "source_url": "https://www.metro.ed.jp/nagayama-h/our_school/history.html"
+    },
+    {
+      "kind": "指定",
+      "period_label": "2022年5月〜2024年3月",
+      "summary": "東京都教育委員会「TOKYOデジタルリーディングハイスクール推進校」に指定された（期間終了）",
+      "source_url": "https://www.metro.ed.jp/nagayama-h/our_school/history.html"
+    },
+    {
+      "kind": "その他",
+      "period_label": "2022年10月29日",
+      "happened_on": "2022-10-29",
+      "summary": "創立50周年記念式典を実施",
+      "source_url": "https://www.metro.ed.jp/nagayama-h/our_school/history.html"
+    },
+    {
+      "kind": "施設",
+      "period_label": "2023年3月",
+      "happened_on": "2023-03-30",
+      "summary": "外構工事が完了し、ハンドボールコート・テニスコートが完成",
+      "source_url": "https://www.metro.ed.jp/nagayama-h/our_school/history.html"
+    },
+    {
+      "kind": "指定",
+      "period_label": "2023年4月から",
+      "happened_on": "2023-04-01",
+      "summary": "東京都教育委員会「都立学校における部活動改革パイロット校」に指定された",
+      "source_url": "https://www.metro.ed.jp/nagayama-h/our_school/history.html"
+    },
+    {
+      "kind": "指定",
+      "period_label": "2024年4月から",
+      "happened_on": "2024-04-01",
+      "summary": "東京都教育委員会「教育データ利活用実証研究校」に指定された",
+      "source_url": "https://www.metro.ed.jp/nagayama-h/our_school/history.html"
+    },
+    {
+      "kind": "指定",
+      "period_label": "2025年4月から",
+      "happened_on": "2025-04-01",
+      "summary": "進学指導研究校・総合型選抜対策に係る進学指導業務支援校・探究的な学び推進校・国際ロータリーと連携したインターンシップ推進校・コンサルタントを活用した業務改革支援校など複数の指定を受けた",
+      "source_url": "https://www.metro.ed.jp/nagayama-h/our_school/history.html"
+    }
+  ],
+  "unresolved": [
+    "大学群別（GMARCH・早慶上理・成成明武・日東駒専・国公立）の集計値：学校案内「スクールガイド2027」p.6-7の「大学合格者」表（2026年・2025年・2024年、大学別の生数値表）には延べ/現役/実進学のいずれかの明記がなく、推測でbasisを付けず今回は載せなかった。2026年列を大学名で機械的に合算すると合計146名（国公立0・早慶上理0・成成明武0・GMARCH0・日東駒専1〈駒澤大学のみ〉）で、上位は帝京大学38・明星大学27・多摩大学10・亜細亜大学6・神奈川工科大学/拓殖大学/和光大学が各5。学校経営報告の「私立大学（大東亜帝国）合格者数40名」も基準の明記なし。",
+    "全校在籍生徒の男女別人数：沿革ページに入学式ごとの入学者数（男女別）は毎年公表されている（直近: 令和8年度186名/124名）が、在籍生徒全体の男女内訳は公開資料から確認できなかった。",
+    "推薦の応募倍率：令和8年度分（1.50倍）は東京都教育委員会の公表資料で確認できたが、過去複数年度分は今回未確認。",
+    "テニス部・剣道部・水泳部・卓球部など、学校案内の実績表に記載のない年度・大会の詳細な戦績（一般入試同様に大会ごとの1回戦目からの経過等）は部活動ブログにも乏しく、確認できなかった。",
+    "軽音部・クッキング部：校内発表や研究発表会・支援プロジェクトへの参加はあるが、勝敗や順位を競う公式大会への参加が確認できず、部活動の強さの段階を付けなかった。"
+  ],
+  "conflicts": [
+    "ハンドボール部の令和5年度秋季大会の成績：部活動ブログの記事見出し（2023/11/06）は「令和５年度秋季大会ベスト８進出！」だが、学校案内「スクールガイド2027」の部活動実績表は同じ大会を「東京都高等学校ハンドボール秋季大会　東京都ベスト16」と記載しており、両資料で成績の粒度が食い違う。",
+    "教育委員会指定の呼称：沿革ページでは令和2〜6年度にわたり「学力向上研究校」と表記されるが、令和8年度学校経営計画・学校案内の表紙では同じ趣旨の指定を「学力向上推進校」と表記している。同一の指定を指すとみられるが、資料により呼称が異なる。"
+  ]
+}

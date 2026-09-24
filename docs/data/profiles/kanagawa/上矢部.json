@@ -1,0 +1,676 @@
+{
+  "prefecture": "神奈川県",
+  "school_name": "上矢部",
+  "official_url": "https://www.pen-kanagawa.ed.jp/kamiyabe-h/",
+  "researched_at": "2026-09-24",
+  "stats": [
+    {
+      "metric": "university_count",
+      "item": "合計",
+      "basis": "実進学",
+      "fiscal_year": 2024,
+      "value_num": 132,
+      "source_url": "https://www.pen-kanagawa.ed.jp/kamiyabe-h/shinro/documents/40kiseishinrobetsushousai.pdf",
+      "source_label": "上矢部高校 40期生進路別詳細（4年制大学、大学別・入試方式別一覧）",
+      "as_of": "2025-08-25",
+      "note": "4年制大学のみの合計（指定校66+総合型45+公募・自己推薦3+一般17+その他1）。短期大学11名・専門学校90名・就職11名は含まない。40期生は令和7年3月（2025年3月）卒業。"
+    },
+    {
+      "metric": "university_count",
+      "item": "国公立",
+      "basis": "実進学",
+      "fiscal_year": 2024,
+      "value_num": 0,
+      "source_url": "https://www.pen-kanagawa.ed.jp/kamiyabe-h/shinro/documents/40kiseishinrobetsushousai.pdf",
+      "source_label": "上矢部高校 40期生進路別詳細（4年制大学、大学別・入試方式別一覧）",
+      "as_of": "2025-08-25",
+      "note": "大学別一覧（あ〜わ順、全38校）に国公立大学の行がなく、掲載大学はすべて私立大学。"
+    },
+    {
+      "metric": "university_count",
+      "item": "早慶上理",
+      "basis": "実進学",
+      "fiscal_year": 2024,
+      "value_num": 0,
+      "source_url": "https://www.pen-kanagawa.ed.jp/kamiyabe-h/shinro/documents/40kiseishinrobetsushousai.pdf",
+      "source_label": "上矢部高校 40期生進路別詳細（4年制大学、大学別・入試方式別一覧）",
+      "as_of": "2025-08-25",
+      "note": "早稲田・慶應・上智・東京理科大学のいずれも大学別一覧に行がない。"
+    },
+    {
+      "metric": "university_count",
+      "item": "GMARCH",
+      "basis": "実進学",
+      "fiscal_year": 2024,
+      "value_num": 0,
+      "source_url": "https://www.pen-kanagawa.ed.jp/kamiyabe-h/shinro/documents/40kiseishinrobetsushousai.pdf",
+      "source_label": "上矢部高校 40期生進路別詳細（4年制大学、大学別・入試方式別一覧）",
+      "as_of": "2025-08-25",
+      "note": "学習院・明治・青山学院・立教・中央・法政大学のいずれも大学別一覧に行がない。"
+    },
+    {
+      "metric": "university_count",
+      "item": "成成明武",
+      "basis": "実進学",
+      "fiscal_year": 2024,
+      "value_num": 0,
+      "source_url": "https://www.pen-kanagawa.ed.jp/kamiyabe-h/shinro/documents/40kiseishinrobetsushousai.pdf",
+      "source_label": "上矢部高校 40期生進路別詳細（4年制大学、大学別・入試方式別一覧）",
+      "as_of": "2025-08-25",
+      "note": "成蹊・成城・明治学院・武蔵大学のいずれも大学別一覧に行がない。"
+    },
+    {
+      "metric": "university_count",
+      "item": "日東駒専",
+      "basis": "実進学",
+      "fiscal_year": 2024,
+      "value_num": 2,
+      "source_url": "https://www.pen-kanagawa.ed.jp/kamiyabe-h/shinro/documents/40kiseishinrobetsushousai.pdf",
+      "source_label": "上矢部高校 40期生進路別詳細（4年制大学、大学別・入試方式別一覧）",
+      "as_of": "2025-08-25",
+      "note": "日本大学2名（一般2、いずれも通学課程）のみ。東洋・駒澤・専修大学は行がなく0。日本大学（通信教育部）1名は通信制のため合算していない。"
+    },
+    {
+      "metric": "university_count",
+      "item": "関東学院大学",
+      "basis": "実進学",
+      "fiscal_year": 2024,
+      "value_num": 35,
+      "source_url": "https://www.pen-kanagawa.ed.jp/kamiyabe-h/shinro/documents/40kiseishinrobetsushousai.pdf",
+      "source_label": "上矢部高校 40期生進路別詳細（4年制大学、大学別・入試方式別一覧）",
+      "as_of": "2025-08-25",
+      "note": "大学別一覧の合計列から。全38校中1位。"
+    },
+    {
+      "metric": "university_count",
+      "item": "神奈川大学",
+      "basis": "実進学",
+      "fiscal_year": 2024,
+      "value_num": 13,
+      "source_url": "https://www.pen-kanagawa.ed.jp/kamiyabe-h/shinro/documents/40kiseishinrobetsushousai.pdf",
+      "source_label": "上矢部高校 40期生進路別詳細（4年制大学、大学別・入試方式別一覧）",
+      "as_of": "2025-08-25",
+      "note": "大学別一覧の合計列から。上位2位。"
+    },
+    {
+      "metric": "university_count",
+      "item": "女子美術大学",
+      "basis": "実進学",
+      "fiscal_year": 2024,
+      "value_num": 11,
+      "source_url": "https://www.pen-kanagawa.ed.jp/kamiyabe-h/shinro/documents/40kiseishinrobetsushousai.pdf",
+      "source_label": "上矢部高校 40期生進路別詳細（4年制大学、大学別・入試方式別一覧）",
+      "as_of": "2025-08-25",
+      "note": "大学別一覧の合計列から。上位3位。美術科の実進学先とみられる。"
+    },
+    {
+      "metric": "university_count",
+      "item": "桐蔭横浜大学",
+      "basis": "実進学",
+      "fiscal_year": 2024,
+      "value_num": 5,
+      "source_url": "https://www.pen-kanagawa.ed.jp/kamiyabe-h/shinro/documents/40kiseishinrobetsushousai.pdf",
+      "source_label": "上矢部高校 40期生進路別詳細（4年制大学、大学別・入試方式別一覧）",
+      "as_of": "2025-08-25",
+      "note": "大学別一覧の合計列から。上位4位。"
+    },
+    {
+      "metric": "university_count",
+      "item": "東海大学",
+      "basis": "実進学",
+      "fiscal_year": 2024,
+      "value_num": 4,
+      "source_url": "https://www.pen-kanagawa.ed.jp/kamiyabe-h/shinro/documents/40kiseishinrobetsushousai.pdf",
+      "source_label": "上矢部高校 40期生進路別詳細（4年制大学、大学別・入試方式別一覧）",
+      "as_of": "2025-08-25",
+      "note": "大学別一覧の合計列から。上位5位（東京造形大学・和光大学も同数4で並ぶ）。"
+    },
+    {
+      "metric": "admission_route_share",
+      "item": "指定校推薦",
+      "basis": "実進学",
+      "fiscal_year": 2024,
+      "value_num": 50.0,
+      "source_url": "https://www.pen-kanagawa.ed.jp/kamiyabe-h/shinro/documents/40kiseishinrobetsushousai.pdf",
+      "source_label": "上矢部高校 40期生進路別詳細（4年制大学、入試方式別合計）",
+      "as_of": "2025-08-25",
+      "note": "4年制大学の実進学者132名に対する比率。実数66。"
+    },
+    {
+      "metric": "admission_route_share",
+      "item": "総合型",
+      "basis": "実進学",
+      "fiscal_year": 2024,
+      "value_num": 34.1,
+      "source_url": "https://www.pen-kanagawa.ed.jp/kamiyabe-h/shinro/documents/40kiseishinrobetsushousai.pdf",
+      "source_label": "上矢部高校 40期生進路別詳細（4年制大学、入試方式別合計）",
+      "as_of": "2025-08-25",
+      "note": "実数45。"
+    },
+    {
+      "metric": "admission_route_share",
+      "item": "公募推薦",
+      "basis": "実進学",
+      "fiscal_year": 2024,
+      "value_num": 2.3,
+      "source_url": "https://www.pen-kanagawa.ed.jp/kamiyabe-h/shinro/documents/40kiseishinrobetsushousai.pdf",
+      "source_label": "上矢部高校 40期生進路別詳細（4年制大学、入試方式別合計）",
+      "as_of": "2025-08-25",
+      "note": "実数3（表の見出しは「公募・自己推薦」で自己推薦を含む）。"
+    },
+    {
+      "metric": "admission_route_share",
+      "item": "一般",
+      "basis": "実進学",
+      "fiscal_year": 2024,
+      "value_num": 12.9,
+      "source_url": "https://www.pen-kanagawa.ed.jp/kamiyabe-h/shinro/documents/40kiseishinrobetsushousai.pdf",
+      "source_label": "上矢部高校 40期生進路別詳細（4年制大学、入試方式別合計）",
+      "as_of": "2025-08-25",
+      "note": "実数17。残り「その他」1名（0.8%）は本メトリックの区分にないため除く。"
+    },
+    {
+      "metric": "career_decided_rate",
+      "item": "",
+      "basis": "",
+      "fiscal_year": 2024,
+      "value_num": 92.4,
+      "source_url": "https://www.pen-kanagawa.ed.jp/kamiyabe-h/shinro/documents/40kiseishinrobetsushousai.pdf",
+      "source_label": "上矢部高校 40期生進路別詳細",
+      "as_of": "2025-08-25",
+      "note": "原本に進路決定率の明記はなく、当方で算出。進学(大学132+短大11+専門90)+就職11=244名 ÷ 全体264名(進学準備11+就職準備6+その他3を含む)＝92.4%。"
+    },
+    {
+      "metric": "satisfaction",
+      "item": "生徒:体育祭・翔矢祭",
+      "basis": "",
+      "fiscal_year": 2025,
+      "value_num": 95,
+      "source_url": "https://www.pen-kanagawa.ed.jp/kamiyabe-h/gaiyou/documents/reiwa7nendokamiyabekoutougakkouhyoukahoukokusho.pdf",
+      "source_label": "上矢部高校 令和7年度学校評価報告書（目標設定・実施結果）",
+      "as_of": "2026-03-31",
+      "note": "体育祭・翔矢祭後のアンケートで「楽しめた」「充実感を持った」と回答した生徒の割合（95%以上、体育祭・翔矢祭合算）。神奈川県様式のため学校生活全体の満足度数値はない。"
+    },
+    {
+      "metric": "uniform",
+      "item": "",
+      "basis": "",
+      "fiscal_year": 2021,
+      "value_text": "ブレザー。男子はズボン＋ネクタイ、女子はスカートまたはズボンを選べ、リボンまたはネクタイ。夏服（5/1〜10/31）は白無地ワイシャツ・ブラウスまたは白無地ポロシャツ（ネクタイ任意）。改造禁止。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kamiyabe-h/seikatsu/documents/kamiyabekoukou_kousoku.pdf",
+      "source_label": "上矢部高校 生活の心得",
+      "as_of": "2021-06-07"
+    },
+    {
+      "metric": "rules_summary",
+      "item": "",
+      "basis": "",
+      "fiscal_year": 2021,
+      "value_text": "頭髪はパーマ・染色・脱色を禁止。装飾品類は禁止。授業に関係ないスマホ・イヤホン使用は禁止。アルバイトは届出制で許可。通学は自転車のみ許可制（原付・バイク・車は禁止）。登校後の校外外出は原則禁止（要担任許可）。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kamiyabe-h/seikatsu/documents/kamiyabekoukou_kousoku.pdf",
+      "source_label": "上矢部高校 生活の心得",
+      "as_of": "2021-06-07"
+    }
+  ],
+  "clubs": [
+    {
+      "name": "バスケットボール部（男子）",
+      "kind": "運動",
+      "days_note": "月・火・水・金・土・日（木曜オフ）",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2024年度横浜カップでHブロック準優勝（地区大会の準優勝で、都県大会ベスト8以上の実績なし）。関東大会予選・高校総体予選・新人戦は結果の記載なし。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kamiyabe-h/seikatsu/busakettobo-rudansi.html",
+      "as_of": "2025-02-07",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "横浜カップ",
+          "level": "地区",
+          "result": "Hブロック準優勝",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kamiyabe-h/seikatsu/busakettobo-rudansi.html"
+        }
+      ]
+    },
+    {
+      "name": "バスケットボール部（女子）",
+      "kind": "運動",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kamiyabe-h/seikatsu/undoubu.html",
+      "as_of": "2025-03-24",
+      "results": []
+    },
+    {
+      "name": "硬式テニス部（男女）",
+      "kind": "運動",
+      "days_note": "月・水・木・金（放課後）、土（午前）",
+      "days_per_week": 5,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "神奈川県高校テニス大会・横浜市テニスリーグ・新人テニス大会等に参加しているが、順位・結果の記載はない。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kamiyabe-h/seikatsu/tennis-bu.html",
+      "as_of": "2025-02-07",
+      "results": []
+    },
+    {
+      "name": "バレーボール部（男子）",
+      "kind": "運動",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kamiyabe-h/seikatsu/undoubu.html",
+      "as_of": "2025-03-24",
+      "results": []
+    },
+    {
+      "name": "バレーボール部（女子）",
+      "kind": "運動",
+      "days_note": "火・木・金（土日はときどき）",
+      "days_per_week": 4,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "令和6年度に関東大会地区予選・インターハイ予選・横浜地区夏季/秋季大会・横浜市内大会・県選手権・新人戦に参加(順位の記載なし)。目標「県大会出場」は実績ではないため段階3にとどめる。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kamiyabe-h/seikatsu/bare-bo-rubuzyosi.html",
+      "as_of": "2025-03-24",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "関東大会地区予選・インターハイ予選・横浜地区夏季大会・横浜市内大会・県選手権・横浜地区秋季大会・新人戦",
+          "level": "都県",
+          "result": "参加（順位の記載なし）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kamiyabe-h/seikatsu/bare-bo-rubuzyosi.html"
+        }
+      ]
+    },
+    {
+      "name": "硬式野球部",
+      "kind": "運動",
+      "days_note": "週6日（シーズン中の土日は主に練習試合）",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "一球速報で2024〜2026年度の本大会（春・夏・秋）成績を確認。最高で3回戦敗退（2024夏・2025春・2026夏）、都県大会ベスト8以上の実績はない。2025年秋・2026年春は地区予選で敗退し本大会（16校）に出場していない。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kamiyabe-h/seikatsu/yakyuubu.html",
+      "as_of": "2025-02-07",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "令和6年度神奈川県高等学校野球春季県大会",
+          "level": "都県",
+          "result": "1勝1敗、2回戦敗退",
+          "source_url": "https://baseball.omyutech.com/CupHomePageTeams.action?cupId=20240008751"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "第106回全国高等学校野球選手権神奈川大会",
+          "level": "都県",
+          "result": "1勝1敗、3回戦敗退",
+          "source_url": "https://baseball.omyutech.com/CupHomePageTeams.action?cupId=20240009752"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "令和6年度神奈川県高等学校野球秋季県大会",
+          "level": "都県",
+          "result": "0勝1敗、2回戦敗退（学校発表では地区予選全勝1位で本大会に進出）",
+          "source_url": "https://baseball.omyutech.com/CupHomePageTeams.action?cupId=20240012872"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "令和7年度神奈川県高等学校野球春季県大会",
+          "level": "都県",
+          "result": "1勝1敗、3回戦敗退",
+          "source_url": "https://baseball.omyutech.com/CupHomePageTeams.action?cupId=20250024190"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第107回全国高等学校野球選手権神奈川大会",
+          "level": "都県",
+          "result": "0勝1敗、2回戦敗退",
+          "source_url": "https://baseball.omyutech.com/CupHomePageTeams.action?cupId=20250000302"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "令和7年度神奈川県高等学校野球秋季県大会",
+          "level": "都県",
+          "result": "地区予選敗退、本大会（16校）に出場せず",
+          "source_url": "https://baseball.omyutech.com/CupHomePageTeams.action?cupId=20250005743"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "令和8年度神奈川県高等学校野球春季県大会",
+          "level": "都県",
+          "result": "地区予選敗退、本大会（16校）に出場せず",
+          "source_url": "https://baseball.omyutech.com/CupHomePageTeams.action?cupId=20260007465"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "第108回全国高等学校野球選手権神奈川大会",
+          "level": "都県",
+          "result": "1勝1敗、3回戦敗退",
+          "source_url": "https://baseball.omyutech.com/CupHomePageTeams.action?cupId=20260013579"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "令和8年度神奈川県高等学校野球秋季県大会",
+          "level": "都県",
+          "result": "1勝1敗、2回戦で敗退（大会全体は2026年10月6日まで進行中）",
+          "source_url": "https://baseball.omyutech.com/CupHomePageTeams.action?cupId=20260000401"
+        }
+      ]
+    },
+    {
+      "name": "卓球部",
+      "kind": "運動",
+      "days_note": "火・木・金（土日はときどき）",
+      "days_per_week": 4,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "関東大会予選・高校総体・横浜市高校卓球選手権・新人戦等の地区/県予選に参加しているが、順位・結果の記載はない。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kamiyabe-h/seikatsu/takkyuu.html",
+      "as_of": "2025-02-07",
+      "results": []
+    },
+    {
+      "name": "バドミントン部",
+      "kind": "運動",
+      "days_note": "火・水・木・金（金は外練）、土日は半日練習",
+      "days_per_week": 5,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2024年度関東大会男子学校対抗で県大会に出場（順位の記載なし、都県大会ベスト8等の実績なし）。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kamiyabe-h/seikatsu/badominntonn.html",
+      "as_of": "2025-02-07",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "関東大会予選",
+          "level": "都県",
+          "result": "男子学校対抗で県大会出場（順位の記載なし）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kamiyabe-h/seikatsu/badominntonn.html"
+        }
+      ]
+    },
+    {
+      "name": "陸上競技部",
+      "kind": "運動",
+      "days_note": "月・火・木・金・土（水・日オフ）",
+      "days_per_week": 5,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "横浜市民大会・県総体横浜地区予選・横浜地区高校大会・県高校新人予選・横浜地区新人大会等に参加(順位の記載なし)。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kamiyabe-h/seikatsu/rikujoukyougibu.html",
+      "as_of": "2025-03-24",
+      "results": []
+    },
+    {
+      "name": "サッカー部",
+      "kind": "運動",
+      "days_note": "週6日",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2026年度高円宮杯U-18サッカーリーグ神奈川 K6所属（神奈川県サッカー協会公式サイトで確認）。手引き§6の決まりでK5・K6は段階3（活動日が週3日以下なら4）。活動日は週6日のため段階3のまま。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kamiyabe-h/seikatsu/sakka-bu.html",
+      "as_of": "2025-02-07",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "高円宮杯U-18サッカーリーグ神奈川",
+          "level": "都県",
+          "result": "K6所属",
+          "source_url": "https://www.kanagawa-fa.gr.jp/cms/u18-league/2026/div6/"
+        }
+      ]
+    },
+    {
+      "name": "ダンス部(KDC)",
+      "kind": "運動",
+      "days_note": "月・水・金（平日のみ週3回）",
+      "days_per_week": 3,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動は翔矢祭・体育祭など校内発表（ショー）が中心で、都県のダンス大会への出場記録はない。週3日。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kamiyabe-h/seikatsu/dannsubu.html",
+      "as_of": "2025-02-07",
+      "results": []
+    },
+    {
+      "name": "剣道部",
+      "kind": "運動",
+      "days_note": "火・木、金・土日はときどき",
+      "days_per_week": 3,
+      "weekend": "土日",
+      "tier": 4,
+      "tier_basis": "部員8名（2024年11月時点で1年生3名）。年間大会予定・活動実績は「なし」（出場できれば年10大会程度と部自身が説明）。週3日程度。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kamiyabe-h/seikatsu/kendo-bu.html",
+      "as_of": "2025-02-07",
+      "results": []
+    },
+    {
+      "name": "演劇部",
+      "kind": "文化",
+      "days_note": "月・金",
+      "days_per_week": 2,
+      "tier": 4,
+      "tier_basis": "活動は文化祭・春フェスティバルでの校内発表が中心で、大会・コンクールの実績記載はない。週2日。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kamiyabe-h/seikatsu/engeki.html",
+      "as_of": "2025-02-07",
+      "results": []
+    },
+    {
+      "name": "科学部",
+      "kind": "文化",
+      "days_note": "毎週木曜日",
+      "days_per_week": 1,
+      "tier": 4,
+      "tier_basis": "年間大会予定・活動実績は「なし」。週1日。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kamiyabe-h/seikatsu/kagakubu.html",
+      "as_of": "2025-02-07",
+      "results": []
+    },
+    {
+      "name": "合唱部",
+      "kind": "文化",
+      "days_note": "毎週火・金",
+      "days_per_week": 2,
+      "tier": 3,
+      "tier_basis": "高文連（神奈川県高等学校文化連盟）主催行事に参加しているが、受賞・県代表選出の記載はない。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kamiyabe-h/seikatsu/gassyoubu.html",
+      "as_of": "2025-02-07",
+      "results": []
+    },
+    {
+      "name": "茶道部",
+      "kind": "文化",
+      "days_note": "主に月曜日",
+      "days_per_week": 1,
+      "tier": 4,
+      "tier_basis": "外部講師（裏千家）から稽古を受ける活動が中心で、コンクール・大会の実績記載はない。週1日。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kamiyabe-h/seikatsu/sadoubu.html",
+      "as_of": "2025-02-07",
+      "results": []
+    },
+    {
+      "name": "美術・陶芸部",
+      "kind": "文化",
+      "days_note": "月・火・水・木・金（土日はときどき）",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "tier": 2,
+      "tier_basis": "第72回神奈川県高等学校美術展で教育長賞を受賞し、令和8年度第50回全国高等学校総合文化祭への出品作品に選出（全国選出は1回）。高文連会長賞・奨励賞（3名）も受賞。手引き§6の文化部の決まりで全国選出が2回未満のため段階2。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kamiyabe-h/seikatsu/bijututougei.html",
+      "as_of": "2026-05-28",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "第72回神奈川県高等学校美術展",
+          "level": "都県",
+          "result": "教育長賞（令和8年度第50回全国高等学校総合文化祭 出品作品選出）、高文連会長賞、奨励賞3名",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kamiyabe-h/seikatsu/bijututougei.html"
+        }
+      ]
+    },
+    {
+      "name": "写真部",
+      "kind": "文化",
+      "days_note": "不定期（年間10回程度）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kamiyabe-h/seikatsu/syasinnbu.html",
+      "as_of": "2025-03-24",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "写真甲子園",
+          "level": "全国",
+          "result": "正式出品（選抜通過・本戦進出の有無は記載なし）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kamiyabe-h/seikatsu/syasinnbu.html"
+        }
+      ]
+    },
+    {
+      "name": "吹奏楽部",
+      "kind": "文化",
+      "days_note": "月・火・水・金・土（木・日はときどき）",
+      "days_per_week": 6,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "2024年度第25回横浜吹奏楽コンクールで銅賞（地区レベルのコンクールで、県代表・金賞には届いていない）。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kamiyabe-h/seikatsu/suisougakubu.html",
+      "as_of": "2025-02-07",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "第25回横浜吹奏楽コンクール",
+          "level": "地区",
+          "result": "銅賞",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kamiyabe-h/seikatsu/suisougakubu.html"
+        }
+      ]
+    },
+    {
+      "name": "クッキング部",
+      "kind": "文化",
+      "days_note": "毎週金曜日",
+      "days_per_week": 1,
+      "tier": 4,
+      "tier_basis": "大会・コンクールはなく、文化祭での食品販売が活動の中心。週1日。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kamiyabe-h/seikatsu/kukkinngu.html",
+      "as_of": "2025-02-07",
+      "results": []
+    },
+    {
+      "name": "フォークソング部",
+      "kind": "文化",
+      "days_note": "月〜金（バンド練習はシフト制）",
+      "days_per_week": 5,
+      "source_url": "https://www.pen-kanagawa.ed.jp/kamiyabe-h/seikatsu/fokusonngubu.html",
+      "as_of": "2025-02-07",
+      "results": []
+    },
+    {
+      "name": "アニメ漫画研究部",
+      "kind": "文化",
+      "days_note": "月・水・金・土（日はときどき）",
+      "days_per_week": 4.5,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "YDAキャラクターイラストコンテスト・高校生ファッションデザイン画コンテスト・防災ポスターコンクール等（いずれも民間・地域主催）で各賞を受賞。賞のレベル・年度が明記されておらず全国決勝2回以上も確認できないため、手引き§6の決まりにより段階は3にとどめる。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kamiyabe-h/seikatsu/animemannga.html",
+      "as_of": "2025-09-26",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "YDAキャラクターイラストコンテスト、高校生ファッションデザイン画コンテスト、防災ポスターコンクール等",
+          "level": "その他",
+          "result": "各賞受賞（詳細不明）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kamiyabe-h/seikatsu/animemannga.html"
+        }
+      ]
+    },
+    {
+      "name": "文芸部",
+      "kind": "文化",
+      "days_note": "毎週火・水・木曜日",
+      "days_per_week": 3,
+      "tier": 4,
+      "tier_basis": "活動は小説執筆・翔矢祭での部誌作成が中心で、コンクール実績の記載はない。週3日。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kamiyabe-h/seikatsu/bungeibu.html",
+      "as_of": "2025-02-07",
+      "results": []
+    },
+    {
+      "name": "インターアクトクラブ",
+      "kind": "文化",
+      "days_note": "火曜日（校外活動は土日にときどき）",
+      "days_per_week": 2,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2024年度に「かながわ部活アクティブ賞」を受賞。コンクール・競技大会での受賞ではなく部活動表彰のため、段階は3にとどめる。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kamiyabe-h/seikatsu/intaract-club.html",
+      "as_of": "2025-02-07",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "かながわ部活アクティブ賞",
+          "level": "その他",
+          "result": "受賞",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kamiyabe-h/seikatsu/intaract-club.html"
+        }
+      ]
+    },
+    {
+      "name": "放送同好会",
+      "kind": "同好会",
+      "days_note": "毎週金曜日（大会前など不定期で朝練習）",
+      "days_per_week": 1,
+      "tier": 3,
+      "tier_basis": "県NHK杯放送コンテスト・県総合文化祭放送情報部門大会・県放送アンデパンダン大会にいずれも出場（受賞・順位の記載なし）。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kamiyabe-h/seikatsu/housoudoukoukai.html",
+      "as_of": "2025-02-07",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "県NHK杯放送コンテスト",
+          "level": "都県",
+          "result": "出場",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kamiyabe-h/seikatsu/housoudoukoukai.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "県総合文化祭放送・情報部門大会",
+          "level": "都県",
+          "result": "出場",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kamiyabe-h/seikatsu/housoudoukoukai.html"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "神奈川県放送アンデパンダン大会",
+          "level": "都県",
+          "result": "出場",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kamiyabe-h/seikatsu/housoudoukoukai.html"
+        }
+      ]
+    },
+    {
+      "name": "書道部",
+      "kind": "文化",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kamiyabe-h/seikatsu/bunnkabu.html",
+      "as_of": "2025-03-24",
+      "results": []
+    }
+  ],
+  "designated_universities": [],
+  "events": [],
+  "unresolved": [
+    "バスケットボール部（女子）・バレーボール部（男子）・書道部：運動部/文化部一覧に部名の記載のみで、個別ページがなく部員数・活動日・実績を確認できなかった。",
+    "写真部の段階：活動が不定期（年10回程度）で、写真甲子園への「正式出品」が選抜通過・本戦進出を意味するか確認できないため段階を付けなかった。",
+    "フォークソング部の段階：活動はライブ中心でコンクール等の大会に相当する情報がなく、段階を付けなかった。",
+    "指定校推薦の大学名一覧：学校案内パンフレット等、公式に「主な指定校推薦」として大学名を列挙した資料が見当たらない。40期生進路別詳細PDFには大学別の指定校推薦利用実績が載っているが、指定校列を積み上げると64名となり表の合計66名と一致せず（OCRでの列対応誤りの可能性）、個別大学の指定校推薦人数としては採用しなかった。",
+    "部活動加入率（club_join_rate）：学校評価報告書（県様式、文章のみ）・学校教育計画とも数値の記載がない。",
+    "男女別生徒数（students）：神奈川県の生徒数・学級数Excel（全校一括資料、取込済み）に含まれるため本調査では収集していない。",
+    "学級増減・改築等の学校の変化（events）：2020年以降で時期が特定できる公式発表が見当たらなかった（「彩り豊かな校内環境」ページに職員室改装等の記述はあるが時期不明）。",
+    "県指定（学力向上進学重点校・エントリー校等）：学校教育計画・学校評価報告書・スクールミッションポリシーのいずれにも該当する記載が見当たらなかった。",
+    "推薦入試の応募・受検倍率（exam_ratio/推薦）：神奈川県公立高校入試は共通選抜のみで、東京都のような別立ての推薦選抜がないため対象データなし。",
+    "普通科・美術科の学科別の合格実績内訳：40期生進路別詳細PDFは学校全体（普通科＋美術科）の合計のみで、学科別の内訳は確認できなかった。"
+  ],
+  "conflicts": [
+    "硬式野球部：学校公式サイトは「令和6年度秋季県大会2回戦進出（地区予選全勝1位通過）」のように「進出」という表現を使うが、一球速報の本大会成績では0勝1敗で2回戦敗退となっている。地区予選の扱いの違いにより、学校側の「進出」がどの段階を指すかは明確に一致させられなかった。",
+    "40期生進路別詳細PDFの4年制大学一覧で、大学別の「指定校」列を積み上げた合計（64名）が、表に記載の指定校合計（66名）と一致しない（OCR読み取りでの列対応誤りの可能性がある）。"
+  ]
+}

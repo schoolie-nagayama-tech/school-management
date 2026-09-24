@@ -1,0 +1,643 @@
+{
+  "prefecture": "東京都",
+  "school_name": "東久留米総合",
+  "official_url": "https://www.metro.ed.jp/higashikurumesogo-h/",
+  "researched_at": "2026-09-24",
+  "stats": [
+    {
+      "metric": "university_count",
+      "item": "国公立",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 1,
+      "source_url": "https://www.metro.ed.jp/higashikurumesogo-h/assets/filelink/filelink-pdffile-35710.pdf",
+      "source_label": "東久留米総合高校 令和7年度 学校経営報告",
+      "as_of": "2026-03-31",
+      "note": "経営報告の目標1数値目標達成度「国公立大学（1/3人）」。学校案内パンフレットの大学別合格実績表（2026年3月卒業＝17期生）でも国公立・公立大学欄は都留文科大学1名のみで一致。17期生進路総括（実進学ベース）では四年制大学（国公立）0名になっており、conflictsも参照。"
+    },
+    {
+      "metric": "university_count",
+      "item": "難関私立大学",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 1,
+      "source_url": "https://www.metro.ed.jp/higashikurumesogo-h/assets/filelink/filelink-pdffile-35710.pdf",
+      "source_label": "東久留米総合高校 令和7年度 学校経営報告",
+      "as_of": "2026-03-31",
+      "note": "学校独自の括り。手引きの「早慶上理」に相当すると思われる（学校案内パンフレットの大学別合格実績表では早稲田大学1名のみで、慶應・上智・東京理科は0名。合計は1名で一致）。"
+    },
+    {
+      "metric": "university_count",
+      "item": "GMARCH",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 1,
+      "source_url": "https://www.metro.ed.jp/higashikurumesogo-h/assets/filelink/filelink-pdffile-35710.pdf",
+      "source_label": "東久留米総合高校 令和7年度 学校経営報告",
+      "as_of": "2026-03-31",
+      "note": "経営報告の目標1数値目標達成度「ＧＭＡＲＣＨ（1/10人）」。大学別合格実績表では学習院大学1名のみで、明治・青学・立教・中央・法政は0名。合計1名で一致。"
+    },
+    {
+      "metric": "university_count",
+      "item": "成成明学獨國武",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 5,
+      "source_url": "https://www.metro.ed.jp/higashikurumesogo-h/assets/filelink/filelink-pdffile-35710.pdf",
+      "source_label": "東久留米総合高校 令和7年度 学校経営報告",
+      "as_of": "2026-03-31",
+      "note": "学校独自の括り（成蹊・成城・明治学院・獨協・國學院・武蔵）。手引きが定義する「成成明武」（成蹊・成城・明治学院・武蔵）とは対象大学が異なるため、成成明武としては転記していない。大学別合格実績表では成蹊大学4名・武蔵大学1名で合計5名（成城・明治学院・獨協・國學院は0名）と一致。"
+    },
+    {
+      "metric": "university_count",
+      "item": "日東駒専",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 12,
+      "source_url": "https://www.metro.ed.jp/higashikurumesogo-h/assets/filelink/filelink-pdffile-35710.pdf",
+      "source_label": "東久留米総合高校 令和7年度 学校経営報告",
+      "as_of": "2026-03-31",
+      "note": "経営報告の目標1数値目標達成度「日東駒専（12/40人）」。大学別合格実績表では日本大学5・東洋大学3・駒澤大学1・専修大学3で合計12名と一致。"
+    },
+    {
+      "metric": "university_count",
+      "item": "合計",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 146,
+      "source_url": "https://www.metro.ed.jp/higashikurumesogo-h/assets/27東久留米総合高パンフ_納品用_1.pdf",
+      "source_label": "東久留米総合高校 学校案内パンフレット SCHOOL GUIDE 2027（大学別合格実績表）",
+      "as_of": "2026-09-24",
+      "note": "四年制大学（現役のみ）合格者数の合計（2026年3月卒業＝17期生の列）。大学ごとの合格を延べで積み上げた数のため、同一生徒が複数校に合格した分を含む可能性がある。"
+    },
+    {
+      "metric": "university_count",
+      "item": "合計",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 129,
+      "source_url": "https://www.metro.ed.jp/higashikurumesogo-h/assets/filelink/filelink-pdffile-35026.pdf",
+      "source_label": "東久留米総合高校 17期生進路総括（進路状況ページ掲載）",
+      "as_of": "2026-03",
+      "note": "四年制大学（国公立+私立）への実進学者数の合計（在籍225名中）。短期大学・専門学校は含まない。"
+    },
+    {
+      "metric": "university_count",
+      "item": "帝京大学",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 13,
+      "source_url": "https://www.metro.ed.jp/higashikurumesogo-h/assets/27東久留米総合高パンフ_納品用_1.pdf",
+      "source_label": "東久留米総合高校 学校案内パンフレット SCHOOL GUIDE 2027（大学別合格実績表）",
+      "as_of": "2026-09-24",
+      "note": "2026年3月卒業＝17期生の合格者数（現役のみ）。上位5校の1つ。"
+    },
+    {
+      "metric": "university_count",
+      "item": "亜細亜大学",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 11,
+      "source_url": "https://www.metro.ed.jp/higashikurumesogo-h/assets/27東久留米総合高パンフ_納品用_1.pdf",
+      "source_label": "東久留米総合高校 学校案内パンフレット SCHOOL GUIDE 2027（大学別合格実績表）",
+      "as_of": "2026-09-24",
+      "note": "2026年3月卒業＝17期生の合格者数（現役のみ）。上位5校の1つ。"
+    },
+    {
+      "metric": "university_count",
+      "item": "明星大学",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 10,
+      "source_url": "https://www.metro.ed.jp/higashikurumesogo-h/assets/27東久留米総合高パンフ_納品用_1.pdf",
+      "source_label": "東久留米総合高校 学校案内パンフレット SCHOOL GUIDE 2027（大学別合格実績表）",
+      "as_of": "2026-09-24",
+      "note": "2026年3月卒業＝17期生の合格者数（現役のみ）。上位5校の1つ。"
+    },
+    {
+      "metric": "university_count",
+      "item": "東京経済大学",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 8,
+      "source_url": "https://www.metro.ed.jp/higashikurumesogo-h/assets/27東久留米総合高パンフ_納品用_1.pdf",
+      "source_label": "東久留米総合高校 学校案内パンフレット SCHOOL GUIDE 2027（大学別合格実績表）",
+      "as_of": "2026-09-24",
+      "note": "2026年3月卒業＝17期生の合格者数（現役のみ）。上位5校の1つ。"
+    },
+    {
+      "metric": "university_count",
+      "item": "目白大学",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 7,
+      "source_url": "https://www.metro.ed.jp/higashikurumesogo-h/assets/27東久留米総合高パンフ_納品用_1.pdf",
+      "source_label": "東久留米総合高校 学校案内パンフレット SCHOOL GUIDE 2027（大学別合格実績表）",
+      "as_of": "2026-09-24",
+      "note": "2026年3月卒業＝17期生の合格者数（現役のみ）。上位5校の1つ。"
+    },
+    {
+      "metric": "admission_route_share",
+      "item": "指定校推薦",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 40.31,
+      "source_url": "https://www.metro.ed.jp/higashikurumesogo-h/assets/filelink/filelink-pdffile-35026.pdf",
+      "source_label": "東久留米総合高校 17期生進路総括（進路状況ページ掲載）",
+      "as_of": "2026-03",
+      "note": "四年制大学進学者129名に占める入試方式別割合。"
+    },
+    {
+      "metric": "admission_route_share",
+      "item": "公募推薦",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 3.88,
+      "source_url": "https://www.metro.ed.jp/higashikurumesogo-h/assets/filelink/filelink-pdffile-35026.pdf",
+      "source_label": "東久留米総合高校 17期生進路総括（進路状況ページ掲載）",
+      "as_of": "2026-03",
+      "note": "四年制大学進学者129名に占める入試方式別割合。"
+    },
+    {
+      "metric": "admission_route_share",
+      "item": "総合型",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 30.23,
+      "source_url": "https://www.metro.ed.jp/higashikurumesogo-h/assets/filelink/filelink-pdffile-35026.pdf",
+      "source_label": "東久留米総合高校 17期生進路総括（進路状況ページ掲載）",
+      "as_of": "2026-03",
+      "note": "資料の表記は「総合型選抜（AO）」。四年制大学進学者129名に占める入試方式別割合。"
+    },
+    {
+      "metric": "admission_route_share",
+      "item": "一般",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 23.26,
+      "source_url": "https://www.metro.ed.jp/higashikurumesogo-h/assets/filelink/filelink-pdffile-35026.pdf",
+      "source_label": "東久留米総合高校 17期生進路総括（進路状況ページ掲載）",
+      "as_of": "2026-03",
+      "note": "資料の表記は「一般選抜」。四年制大学進学者129名に占める入試方式別割合。"
+    },
+    {
+      "metric": "admission_route_share",
+      "item": "共通テスト利用",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 2.33,
+      "source_url": "https://www.metro.ed.jp/higashikurumesogo-h/assets/filelink/filelink-pdffile-35026.pdf",
+      "source_label": "東久留米総合高校 17期生進路総括（進路状況ページ掲載）",
+      "as_of": "2026-03",
+      "note": "手引きの4区分にない資料独自の区分。四年制大学進学者129名に占める入試方式別割合。"
+    },
+    {
+      "metric": "career_decided_rate",
+      "fiscal_year": 2025,
+      "value_num": 92.4,
+      "source_url": "https://www.metro.ed.jp/higashikurumesogo-h/assets/filelink/filelink-pdffile-35710.pdf",
+      "source_label": "東久留米総合高校 令和7年度 学校経営報告",
+      "as_of": "2026-03-31",
+      "note": "R7実績。目標95%。17期生進路総括（進路状況ページ）の進路決定者207/225=92.00%とわずかに差があり、conflictsも参照。"
+    },
+    {
+      "metric": "club_join_rate",
+      "fiscal_year": 2025,
+      "value_num": 103.3,
+      "source_url": "https://www.metro.ed.jp/higashikurumesogo-h/assets/filelink/filelink-pdffile-35710.pdf",
+      "source_label": "東久留米総合高校 令和7年度 学校経営報告",
+      "as_of": "2026-03-31",
+      "note": "R7実績。目標100%以上（複数の部を掛け持ちする生徒がいるため100%を超えている可能性がある）。"
+    },
+    {
+      "metric": "satisfaction",
+      "item": "生徒:授業",
+      "fiscal_year": 2025,
+      "value_num": 53.5,
+      "source_url": "https://www.metro.ed.jp/higashikurumesogo-h/assets/filelink/filelink-pdffile-35710.pdf",
+      "source_label": "東久留米総合高校 令和7年度 学校経営報告",
+      "as_of": "2026-03-31",
+      "note": "授業満足度（肯定的回答率）。R7実績。目標80%。前年度（R6）の57.8%から4.3ポイント低下。"
+    },
+    {
+      "metric": "exam_ratio",
+      "item": "推薦",
+      "fiscal_year": 2026,
+      "value_num": 2.71,
+      "source_url": "https://www.metro.ed.jp/higashikurumesogo-h/assets/filelink/filelink-pdffile-35710.pdf",
+      "source_label": "東久留米総合高校 令和7年度 学校経営報告",
+      "as_of": "2026-03-31",
+      "note": "「入学者選抜推薦募集倍率」。応募倍率。目標3.0倍。令和8年4月入学者選抜（推薦）。一般入試の倍率は全校まとめ資料で取込済みのためここでは扱わない。"
+    },
+    {
+      "metric": "uniform",
+      "fiscal_year": 2026,
+      "value_text": "濃いチャコールグレー基調の3つボタンジャケット（ブレザー）にストライプ柄のスカート・スラックス。スカートと同柄のキュロットも選択可。リボン・ネクタイ、夏服は紺と白のポロシャツ可。",
+      "source_url": "https://www.metro.ed.jp/higashikurumesogo-h/school_life/symbols.html",
+      "source_label": "東久留米総合高校 制服・校章・校歌ページ／生徒心得（服装規定）",
+      "as_of": "2026-09-24",
+      "note": ""
+    },
+    {
+      "metric": "rules_summary",
+      "fiscal_year": 2026,
+      "value_text": "頭髪の染色・脱色・パーマ等の加工、化粧、ピアス等装飾品は禁止。アルバイトは原則禁止（家庭事情等はやむを得ず許可制）。ノーチャイム制で時間厳守を重視。携帯電話は校内でマナーモード、授業中・集会中は電源オフ。",
+      "source_url": "https://www.metro.ed.jp/higashikurumesogo-h/assets/filelink/filelink-pdffile-33061.pdf",
+      "source_label": "東久留米総合高校 生徒心得",
+      "as_of": "2026-09-24",
+      "note": ""
+    },
+    {
+      "metric": "designation",
+      "item": "海外学校間交流推進校",
+      "fiscal_year": 2026,
+      "value_text": "国際理解教育を推進する東京都指定校。海外の高校との交流をオンライン等で実施し、海外体験研修・海外修学旅行等にも取り組む。",
+      "source_url": "https://www.metro.ed.jp/higashikurumesogo-h/assets/filelink/filelink-pdffile-35226.pdf",
+      "source_label": "東久留米総合高校 令和8年度 学校経営計画",
+      "as_of": "2026-04-01",
+      "note": "だから都立高の学校プロフィールでも同じ指定名を確認。"
+    },
+    {
+      "metric": "designation",
+      "item": "DXハイスクール",
+      "fiscal_year": 2026,
+      "value_text": "文部科学省DXハイスクール事業の指定校（だから都立高の学校プロフィールに記載）",
+      "source_url": "https://www.toritsuko.metro.tokyo.lg.jp/school/higashikurumesogo/",
+      "source_label": "東久留米総合高校 だから都立高 学校プロフィール（東京都教育委員会）",
+      "as_of": "2026-09-24",
+      "note": "指定開始年度の記載はページ上に見当たらず、学校経営報告・経営計画（R7・R8）の本文中にも記載なし。"
+    },
+    {
+      "metric": "designation",
+      "item": "エンジョイスポーツプロジェクト指定校",
+      "fiscal_year": 2026,
+      "value_text": "運動部活動の活性化等を図る東京都教育委員会の指定校（だから都立高の学校プロフィールに記載）",
+      "source_url": "https://www.toritsuko.metro.tokyo.lg.jp/school/higashikurumesogo/",
+      "source_label": "東久留米総合高校 だから都立高 学校プロフィール（東京都教育委員会）",
+      "as_of": "2026-09-24",
+      "note": "指定開始年度の記載はページ上に見当たらず。"
+    }
+  ],
+  "clubs": [
+    {
+      "name": "男子サッカー部",
+      "kind": "運動",
+      "days_note": "カテゴリ別に休業日をとって活動",
+      "weekend": "土日",
+      "tier": 1,
+      "tier_basis": "2026年度 高円宮杯U-18サッカーリーグ東京 T2所属（https://www.tleague-u18.com/team.php?dy=2026&dt=2）。令和8年度からPremiere Club（都立学校における部活動の特別強化プロジェクト、都Premiere Club一覧2026版では強化区分tier1）の指定部（学校案内パンフレット SCHOOL GUIDE 2027表紙・6頁）。2024年度全国高校サッカー選手権東京都予選で都立八王子北高校に6-0で勝利後、暁星高校に1-2で敗退。",
+      "source_url": "https://www.metro.ed.jp/higashikurumesogo-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "全国高等学校サッカー選手権大会 東京都予選",
+          "level": "都県",
+          "result": "都立八王子北高校に6-0で勝利後、暁星高校に1-2で敗退",
+          "happened_on": "2024-10-20",
+          "source_url": "https://www.metro.ed.jp/higashikurumesogo-h/activities/2024/10/clubentry_13.html"
+        }
+      ]
+    },
+    {
+      "name": "男子バスケット部",
+      "kind": "運動",
+      "days_note": "月・火・木・金・（土）or（日）",
+      "days_per_week": 4.5,
+      "source_url": "https://www.metro.ed.jp/higashikurumesogo-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "results": []
+    },
+    {
+      "name": "女子サッカー部",
+      "kind": "運動",
+      "days_note": "週5日（平日4日＋土or日）",
+      "days_per_week": 5,
+      "tier": 1,
+      "tier_basis": "2024年度、東京都高等学校総合体育大会女子サッカー競技東京予選でベスト4（準決勝で文京学院大学高校にPK戦の末敗退）、同年度皇后杯全日本女子サッカー選手権東京都予選でも準決勝進出（ベスト4相当、修徳高校に0-2で敗退）。都県大会ベスト8超えの成績が同一年度に2件。Premiere Club指定は無い（都Premiere Club一覧2026版の女子サッカーは東大和高校）。",
+      "source_url": "https://www.metro.ed.jp/higashikurumesogo-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "東京都高等学校総合体育大会 女子サッカー競技 東京都予選",
+          "level": "都県",
+          "result": "ベスト4（準決勝で文京学院大学高校にPK戦の末敗退、3位決定戦でも修徳高校にPK戦の末敗退）",
+          "happened_on": "2024-05-12",
+          "source_url": "https://www.metro.ed.jp/higashikurumesogo-h/activities/2024/05/25_2.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "皇后杯全日本女子サッカー選手権大会 東京都予選",
+          "level": "都県",
+          "result": "準決勝進出（ベスト4相当）、修徳高校に0-2で敗退",
+          "happened_on": "2024-06-30",
+          "source_url": "https://www.metro.ed.jp/higashikurumesogo-h/activities/2024/07/6_30_nbsp_6_25_3_pk_0-2_1_1_nbsp_og_nbsp.html"
+        }
+      ]
+    },
+    {
+      "name": "女子バレーボール部",
+      "kind": "運動",
+      "days_note": "月・水・金・土",
+      "days_per_week": 4,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "2024年度春季大会で42組ブロック2位から2部大会に進出したが、2部大会1回戦で府中西高校に敗退。都県大会上位には届いていない。",
+      "source_url": "https://www.metro.ed.jp/higashikurumesogo-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "東京都高等学校バレーボール春季大会",
+          "level": "都県",
+          "result": "42組ブロック2位で2部大会進出、2部大会1回戦で府中西高校に敗退",
+          "happened_on": "2024-05-05",
+          "source_url": "https://www.metro.ed.jp/higashikurumesogo-h/activities/2024/05/4_nbsp_vs_nbsp_vs_nbsp_nbsp_nbsp_vs_nbsp.html"
+        }
+      ]
+    },
+    {
+      "name": "男子硬式テニス部",
+      "kind": "運動",
+      "days_note": "火・水・木・金",
+      "days_per_week": 4,
+      "weekend": "なし",
+      "source_url": "https://www.metro.ed.jp/higashikurumesogo-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "results": []
+    },
+    {
+      "name": "女子硬式テニス部",
+      "kind": "運動",
+      "days_note": "火・水・木・金",
+      "days_per_week": 4,
+      "weekend": "なし",
+      "source_url": "https://www.metro.ed.jp/higashikurumesogo-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "results": []
+    },
+    {
+      "name": "ソフトテニス部",
+      "kind": "運動",
+      "source_url": "https://www.metro.ed.jp/higashikurumesogo-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "results": []
+    },
+    {
+      "name": "陸上競技部",
+      "kind": "運動",
+      "days_note": "火・水・木・金・土",
+      "days_per_week": 5,
+      "weekend": "土",
+      "source_url": "https://www.metro.ed.jp/higashikurumesogo-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "results": []
+    },
+    {
+      "name": "バドミントン部",
+      "kind": "運動",
+      "days_note": "月・火・水・金・土",
+      "days_per_week": 5,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "2024年度インターハイ予選は男女団体とも1回戦敗退（男子:対立川高校0-3、女子:対明星高校0-3）。同年度新人戦Ⅱ部大会でブロック優勝の実績はあるが下位区分（Ⅱ部）にとどまる。",
+      "source_url": "https://www.metro.ed.jp/higashikurumesogo-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "全国高等学校総合体育大会（インターハイ）予選 団体戦",
+          "level": "都県",
+          "result": "男女とも1回戦敗退（男子:立川高校に0-3、女子:明星高校に0-3）",
+          "happened_on": "2024-06-02",
+          "source_url": "https://www.metro.ed.jp/higashikurumesogo-h/activities/2024/06/5_26_vs_6_2_vs_nbsp_nbsp.html"
+        }
+      ]
+    },
+    {
+      "name": "女子バスケットボール部",
+      "kind": "運動",
+      "days_note": "月・火・木・金・（土）or（日）",
+      "days_per_week": 4.5,
+      "source_url": "https://www.metro.ed.jp/higashikurumesogo-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "results": []
+    },
+    {
+      "name": "水泳部",
+      "kind": "運動",
+      "days_note": "水・木",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "source_url": "https://www.metro.ed.jp/higashikurumesogo-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "results": []
+    },
+    {
+      "name": "剣道部",
+      "kind": "運動",
+      "source_url": "https://www.metro.ed.jp/higashikurumesogo-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "results": []
+    },
+    {
+      "name": "卓球部",
+      "kind": "運動",
+      "days_note": "月・火・金",
+      "days_per_week": 3,
+      "weekend": "なし",
+      "source_url": "https://www.metro.ed.jp/higashikurumesogo-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "results": []
+    },
+    {
+      "name": "ソフトボール部",
+      "kind": "運動",
+      "days_note": "水・土・（日）",
+      "days_per_week": 2.5,
+      "weekend": "土",
+      "source_url": "https://www.metro.ed.jp/higashikurumesogo-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "results": []
+    },
+    {
+      "name": "ダンス部",
+      "kind": "文化",
+      "days_note": "月・火・水・金・（土）",
+      "days_per_week": 4.5,
+      "source_url": "https://www.metro.ed.jp/higashikurumesogo-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "results": []
+    },
+    {
+      "name": "イラスト部",
+      "kind": "文化",
+      "days_note": "月・火・水・木・金（各自が週3回活動）",
+      "source_url": "https://www.metro.ed.jp/higashikurumesogo-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "results": []
+    },
+    {
+      "name": "美術部",
+      "kind": "文化",
+      "days_note": "（月）・火・水・（木）・金",
+      "days_per_week": 4,
+      "source_url": "https://www.metro.ed.jp/higashikurumesogo-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "results": []
+    },
+    {
+      "name": "パソコン部",
+      "kind": "文化",
+      "days_note": "火・水・木",
+      "days_per_week": 3,
+      "weekend": "なし",
+      "source_url": "https://www.metro.ed.jp/higashikurumesogo-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "results": []
+    },
+    {
+      "name": "クッキング部",
+      "kind": "文化",
+      "days_note": "月・水（土曜日に行うこともある）",
+      "days_per_week": 2.5,
+      "source_url": "https://www.metro.ed.jp/higashikurumesogo-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "results": []
+    },
+    {
+      "name": "華道部",
+      "kind": "文化",
+      "days_note": "木または金（月1回）",
+      "source_url": "https://www.metro.ed.jp/higashikurumesogo-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "results": []
+    },
+    {
+      "name": "演劇部",
+      "kind": "文化",
+      "days_note": "月・水・木",
+      "days_per_week": 3,
+      "weekend": "なし",
+      "source_url": "https://www.metro.ed.jp/higashikurumesogo-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "results": []
+    },
+    {
+      "name": "囲碁・将棋部",
+      "kind": "文化",
+      "source_url": "https://www.metro.ed.jp/higashikurumesogo-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "results": []
+    },
+    {
+      "name": "写真部",
+      "kind": "文化",
+      "days_note": "不定期",
+      "source_url": "https://www.metro.ed.jp/higashikurumesogo-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "results": []
+    },
+    {
+      "name": "映画制作部",
+      "kind": "文化",
+      "days_note": "不定期",
+      "source_url": "https://www.metro.ed.jp/higashikurumesogo-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "results": []
+    },
+    {
+      "name": "吹奏楽部",
+      "kind": "文化",
+      "days_note": "月・火・水・金・土",
+      "days_per_week": 5,
+      "weekend": "土",
+      "source_url": "https://www.metro.ed.jp/higashikurumesogo-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "results": []
+    },
+    {
+      "name": "生物部",
+      "kind": "文化",
+      "days_note": "月・水・金・（土）",
+      "days_per_week": 3.5,
+      "source_url": "https://www.metro.ed.jp/higashikurumesogo-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "results": []
+    },
+    {
+      "name": "ボランティア部",
+      "kind": "文化",
+      "days_note": "月・火・金",
+      "days_per_week": 3,
+      "weekend": "なし",
+      "source_url": "https://www.metro.ed.jp/higashikurumesogo-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "results": []
+    },
+    {
+      "name": "茶道部",
+      "kind": "文化",
+      "days_note": "火",
+      "days_per_week": 1,
+      "weekend": "なし",
+      "source_url": "https://www.metro.ed.jp/higashikurumesogo-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "results": []
+    },
+    {
+      "name": "軽音楽部",
+      "kind": "文化",
+      "days_note": "週6日（シフト制）",
+      "days_per_week": 6,
+      "source_url": "https://www.metro.ed.jp/higashikurumesogo-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "results": []
+    },
+    {
+      "name": "箏曲部",
+      "kind": "文化",
+      "days_note": "火・水・木・（土）",
+      "days_per_week": 3.5,
+      "tier": 2,
+      "tier_basis": "令和8年度からPremiere Club（都立学校における部活動の特別強化プロジェクト）の指定部（学校案内パンフレット SCHOOL GUIDE 2027表紙・6頁、都Premiere Club一覧2026版では強化区分tier3）。都高文連日本音楽部門大会に毎年出場（部活動ページ、具体的な受賞結果の記載なし）。",
+      "source_url": "https://www.metro.ed.jp/higashikurumesogo-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "results": []
+    },
+    {
+      "name": "文芸同好会",
+      "kind": "同好会",
+      "days_note": "火",
+      "days_per_week": 1,
+      "weekend": "なし",
+      "source_url": "https://www.metro.ed.jp/higashikurumesogo-h/school_life/activities.html",
+      "as_of": "2026-09-24",
+      "results": []
+    }
+  ],
+  "designated_universities": [],
+  "events": [
+    {
+      "kind": "指定",
+      "period_label": "令和8年度から",
+      "summary": "男子サッカー部・箏曲部が東京都教育委員会「都立学校における部活動の特別強化プロジェクト」Premiere Clubの指定を受けた",
+      "source_url": "https://www.metro.ed.jp/higashikurumesogo-h/assets/27東久留米総合高パンフ_納品用_1.pdf",
+      "happened_on": null
+    }
+  ],
+  "unresolved": [
+    "男女別生徒数：学校経営報告・学校案内パンフレットいずれにも記載なし",
+    "指定校推薦の大学名一覧：進路指導ページ・学校案内パンフレットに具体的な大学名リストの記載なし（パンフレットには入試方式別割合のみ）",
+    "学校満足度（64/80%、令和7年度学校経営報告の目標1冒頭）：生徒か保護者かの記載がなく対象不明のため入れていない。授業満足度など対象が明記された個別指標のみ入れた",
+    "学級増減：都教委「第一学年生徒の募集人員等について」を個別に確認できず、直近の学級増減の有無は未確認",
+    "DXハイスクール・エンジョイスポーツプロジェクト指定校の指定開始年度：だから都立高の学校プロフィールに指定名はあるが、開始年度の記載が見当たらない",
+    "剣道部・ソフトテニス部・囲碁・将棋部：部活動ページに活動日・活動内容・実績の記載なし",
+    "男子バスケットボール部・女子バスケットボール部・水泳部・卓球部の公式大会結果：部活動ブログに練習試合結果や大会「出場」の報告は多数あるが、確認した記事の範囲では勝敗・順位が明記された公式戦の結果は見つからなかった（卓球部の全日本卓球選手権大会ジュニアの部は出場のみで結果の記載なし）"
+  ],
+  "conflicts": [
+    "進路決定率：令和7年度学校経営報告は92.4%（目標95%に対する実績値）、17期生進路総括（進路状況ページ掲載PDF）は進路決定者207名／225名＝92.00%と、わずかに差がある",
+    "国公立大学の合格実績：学校経営報告・学校案内パンフレットの大学別合格実績表はいずれも現役1名（都留文科大学）だが、17期生進路総括（実進学ベース）の四年制大学（国公立）欄は0名。合格しても進学しなかった可能性があり、矛盾というより基準（現役合格者数 vs 実進学者数）の違いとみられる"
+  ]
+}

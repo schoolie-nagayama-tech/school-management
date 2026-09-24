@@ -1,0 +1,749 @@
+{
+  "prefecture": "神奈川県",
+  "school_name": "大和南",
+  "official_url": "https://www.pen-kanagawa.ed.jp/yamatominami-h/",
+  "researched_at": "2026-09-24",
+  "stats": [
+    {
+      "metric": "university_count",
+      "item": "国公立",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 0,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yamatominami-h/shinro/documents/2026daigaku.pdf",
+      "source_label": "大和南高校 大学別合格者数一覧（R5〜R7年度）",
+      "as_of": "2026-05-26",
+      "note": "大学別合格者数一覧に国公立大学の記載なし（R5〜R7年度とも0）。"
+    },
+    {
+      "metric": "university_count",
+      "item": "早慶上理",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 0,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yamatominami-h/shinro/documents/2026daigaku.pdf",
+      "source_label": "大和南高校 大学別合格者数一覧（R5〜R7年度）",
+      "as_of": "2026-05-26",
+      "note": "早稲田・慶應・東京理科はR5〜R7年度とも記載なし。上智はR6年度のみ1名でR7年度は0。"
+    },
+    {
+      "metric": "university_count",
+      "item": "GMARCH",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 2,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yamatominami-h/shinro/documents/2026daigaku.pdf",
+      "source_label": "大和南高校 大学別合格者数一覧（R5〜R7年度）",
+      "as_of": "2026-05-26",
+      "note": "大学別の表から合算（青山学院1+法政1）。学習院・明治・立教・中央はR7年度の記載なし。"
+    },
+    {
+      "metric": "university_count",
+      "item": "成成明武",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 0,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yamatominami-h/shinro/documents/2026daigaku.pdf",
+      "source_label": "大和南高校 大学別合格者数一覧（R5〜R7年度）",
+      "as_of": "2026-05-26",
+      "note": "成蹊・成城・明治学院・武蔵大学いずれもR5〜R7年度とも記載なし。"
+    },
+    {
+      "metric": "university_count",
+      "item": "日東駒専",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 6,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yamatominami-h/shinro/documents/2026daigaku.pdf",
+      "source_label": "大和南高校 大学別合格者数一覧（R5〜R7年度）",
+      "as_of": "2026-05-26",
+      "note": "大学別の表から合算（専修6）。日本大学はR5年度2・R6年度5でR7年度は記載なし、東洋・駒澤はR5〜R7年度とも記載なし。"
+    },
+    {
+      "metric": "university_count",
+      "item": "合計",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 154,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yamatominami-h/shinro/documents/2026daigaku.pdf",
+      "source_label": "大和南高校 大学別合格者数一覧（R5〜R7年度）",
+      "as_of": "2026-05-26",
+      "note": "「①大学別合格者数一覧」の合計欄。（）内の1名は過年度卒業生（内数）。学校案内パンフレットの令和7年度進路状況（4年制大学への進学153名、令和8年4月1日現在）と近いがやや多い（合格＝延べのため）。短大・看護専門学校・公務員は別区分（tandai.pdf）で本集計には含まない。"
+    },
+    {
+      "metric": "university_count",
+      "item": "関東学院大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 25,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yamatominami-h/shinro/documents/2026daigaku.pdf",
+      "source_label": "大和南高校 大学別合格者数一覧（R5〜R7年度）",
+      "as_of": "2026-05-26",
+      "note": "大学別の表（合格者数）から。上位1位。"
+    },
+    {
+      "metric": "university_count",
+      "item": "桜美林大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 20,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yamatominami-h/shinro/documents/2026daigaku.pdf",
+      "source_label": "大和南高校 大学別合格者数一覧（R5〜R7年度）",
+      "as_of": "2026-05-26",
+      "note": "大学別の表（合格者数）から。上位2位。"
+    },
+    {
+      "metric": "university_count",
+      "item": "神奈川大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 14,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yamatominami-h/shinro/documents/2026daigaku.pdf",
+      "source_label": "大和南高校 大学別合格者数一覧（R5〜R7年度）",
+      "as_of": "2026-05-26",
+      "note": "大学別の表（合格者数）から。上位3位。"
+    },
+    {
+      "metric": "university_count",
+      "item": "桐蔭横浜大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 11,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yamatominami-h/shinro/documents/2026daigaku.pdf",
+      "source_label": "大和南高校 大学別合格者数一覧（R5〜R7年度）",
+      "as_of": "2026-05-26",
+      "note": "大学別の表（合格者数）から。上位4位。"
+    },
+    {
+      "metric": "university_count",
+      "item": "専修大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 6,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yamatominami-h/shinro/documents/2026daigaku.pdf",
+      "source_label": "大和南高校 大学別合格者数一覧（R5〜R7年度）",
+      "as_of": "2026-05-26",
+      "note": "大学別の表（合格者数）から。上位5位（多摩大学と同数）。"
+    },
+    {
+      "metric": "university_count",
+      "item": "多摩大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 6,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yamatominami-h/shinro/documents/2026daigaku.pdf",
+      "source_label": "大和南高校 大学別合格者数一覧（R5〜R7年度）",
+      "as_of": "2026-05-26",
+      "note": "大学別の表（合格者数）から。上位5位（専修大学と同数）。"
+    }
+  ],
+  "clubs": [
+    {
+      "name": "男子バスケットボール部",
+      "kind": "運動",
+      "days_note": "月曜日は完全オフ、火〜金は体育館練習orトレーニング、土・日は体育館練習or対外試合",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2023〜2026年度は北相地区の支部予選・ブロック止まり。県大会に出場できたのは2025年度総体県予選のみで1回戦敗退（対三浦学苑）。関東大会は支部予選のブロック決勝・2回戦で敗退。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yamatominami-h/seikatsu/club/basketball_m.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "北相地区冬季大会",
+          "level": "地区",
+          "result": "ブロック優勝",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yamatominami-h/seikatsu/club/basketball_m.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "総体支部予選・関東大会支部予選",
+          "level": "地区",
+          "result": "総体はブロック決勝敗退（vs柏木学園）、関東大会はブロック2回戦敗退（vs霧が丘）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yamatominami-h/seikatsu/club/basketball_m.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "総体県予選・関東大会支部予選",
+          "level": "都県",
+          "result": "支部予選ブロック優勝で県大会出場も、総体県予選1回戦敗退（vs三浦学苑）。関東大会は支部予選ブロック決勝敗退（vs厚木北）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yamatominami-h/seikatsu/club/basketball_m.html"
+        }
+      ]
+    },
+    {
+      "name": "女子バスケットボール部",
+      "kind": "運動",
+      "days_note": "月・火・木・金",
+      "days_per_week": 4,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yamatominami-h/seikatsu/club/jobas.html",
+      "as_of": "2026-09-24",
+      "results": []
+    },
+    {
+      "name": "ハンドボール部",
+      "kind": "運動",
+      "days_note": "毎週月〜土曜日（日曜日に公式戦が入った場合は月曜日をOFF）",
+      "days_per_week": 6,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "確認できる直近成績は2024-25年度の県新人大会で男女とも県ベスト16の1回のみ。複数回のベスト8〜32は確認できず、段階2の基準には届かない。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yamatominami-h/seikatsu/club/handball.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "神奈川県高等学校ハンドボール新人大会",
+          "level": "都県",
+          "result": "男女とも県ベスト16",
+          "happened_on": "2024-10",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yamatominami-h/seikatsu/club/handball.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "北相地区第一大会・第二大会",
+          "level": "地区",
+          "result": "第一大会は男女ともリーグ優勝、第二大会は男女とも決勝トーナメント準優勝",
+          "happened_on": "2024-08",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yamatominami-h/seikatsu/club/handball.html"
+        }
+      ]
+    },
+    {
+      "name": "野球部",
+      "kind": "運動",
+      "days_note": "週5〜6日。平日は練習・練習試合（大和スタジアム）、土日は練習試合",
+      "days_per_week": 5.5,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "一球速報で2024〜2026年度の夏の選手権神奈川大会を確認。2024年度は2回戦で相洋に0-12（5回コールド）で敗退、2025年度は2回戦で合同チームに14-13で勝利後、3回戦で星槎国際湘南に0-3で敗退、2026年度は2回戦で桐蔭学園に0-9（7回コールド）で敗退。春季・秋季県大会は一球速報に記録がなく、本大会段階まで進んでいない。",
+      "source_url": "https://baseball.omyutech.com/teamTop.action?teamId=12276",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "第106回全国高等学校野球選手権神奈川大会",
+          "level": "都県",
+          "result": "2回戦敗退（0-12 相洋、5回コールド）",
+          "happened_on": "2024-07-09",
+          "source_url": "https://baseball.omyutech.com/teamStats.action?teamId=12276&year=2024"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第107回全国高等学校野球選手権神奈川大会",
+          "level": "都県",
+          "result": "2回戦は合同チーム（田奈・釜利谷・永谷・横浜明朋・三浦初声・横須賀南・海洋科学）に14-13で勝利、3回戦で星槎国際湘南に0-3で敗退",
+          "happened_on": "2025-07-17",
+          "source_url": "https://baseball.omyutech.com/teamStats.action?teamId=12276&year=2025"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "第108回全国高等学校野球選手権神奈川大会",
+          "level": "都県",
+          "result": "2回戦敗退（0-9 桐蔭学園、7回コールド）",
+          "happened_on": "2026-07-10",
+          "source_url": "https://baseball.omyutech.com/teamStats.action?teamId=12276&year=2026"
+        }
+      ]
+    },
+    {
+      "name": "男子バレーボール部",
+      "kind": "運動",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yamatominami-h/seikatsu/club/danvol.html",
+      "as_of": "2026-09-24",
+      "results": []
+    },
+    {
+      "name": "女子バレーボール部",
+      "kind": "運動",
+      "days_note": "週6日（月曜オフ）",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "tier": 1,
+      "tier_basis": "2023年度に関東大会県予選2位で関東大会出場、2024年度は全国総体県予選2位で全国総体本大会に出場し関東大会でもベスト16、2026年度も関東大会に出場。直近3年で関東・全国大会への出場が複数回。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yamatominami-h/seikatsu/club/joval.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "関東高等学校バレーボール大会県予選・全国高等学校総合体育大会県予選",
+          "level": "都県",
+          "result": "関東大会県予選2位で関東大会出場、全国総体県予選3位",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yamatominami-h/seikatsu/club/joval.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "全国高等学校総合体育大会県予選・関東高等学校バレーボール大会",
+          "level": "全国",
+          "result": "全国総体県予選2位で全国総体本大会に出場。関東大会県予選5位も関東大会本大会でベスト16",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yamatominami-h/seikatsu/club/joval.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "県新人大会・関東高等学校バレーボール大会県予選",
+          "level": "都県",
+          "result": "県新人大会ベスト32、関東大会県予選ベスト32、全国総体県予選5位",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yamatominami-h/seikatsu/club/joval.html"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "県新人大会・関東高等学校バレーボール大会",
+          "level": "関東",
+          "result": "県新人大会5位、関東大会県予選5位も関東大会本大会に出場",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yamatominami-h/seikatsu/club/joval.html"
+        }
+      ]
+    },
+    {
+      "name": "ソフトテニス部",
+      "kind": "運動",
+      "days_note": "平日週4日（月曜オフ）、土日は練習試合・大会・研修会など",
+      "days_per_week": 4,
+      "weekend": "土日",
+      "tier": 2,
+      "tier_basis": "団体戦で県予選ベスト32を2023〜2025年度の3年連続で記録し、2025年度新人大会団体はベスト16。都県大会でのベスト16〜32が複数回。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yamatominami-h/seikatsu/club/dansofteni.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "関東大会・全国総体団体神奈川県予選",
+          "level": "都県",
+          "result": "団体ベスト32（関東大会・全国総体とも）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yamatominami-h/seikatsu/club/dansofteni.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "関東大会・全国総体団体神奈川県予選、新人大会団体神奈川県予選",
+          "level": "都県",
+          "result": "団体ベスト32（関東大会・全国総体・新人大会とも）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yamatominami-h/seikatsu/club/dansofteni.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "関東大会・全国総体団体神奈川県予選、新人大会団体・個人神奈川県予選",
+          "level": "都県",
+          "result": "関東大会・全国総体は団体ベスト32、新人大会は団体ベスト16・個人ベスト16",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yamatominami-h/seikatsu/club/dansofteni.html"
+        }
+      ]
+    },
+    {
+      "name": "バドミントン部",
+      "kind": "運動",
+      "days_note": "週4〜5日",
+      "days_per_week": 4.5,
+      "tier": 3,
+      "tier_basis": "2023年度に地区予選で男子団体6位・個人シングルス3位・ダブルス7位となり県大会出場権を得たが、県大会での順位の記載はない。2024・2025年度の実績記載なし。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yamatominami-h/seikatsu/club/bado.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "関東大会北相西地区予選・高校総体北相西地区予選",
+          "level": "地区",
+          "result": "団体男子6位・個人男子シングルス3位・ダブルス7位でいずれも県大会出場",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yamatominami-h/seikatsu/club/bado.html"
+        }
+      ]
+    },
+    {
+      "name": "テニス部",
+      "kind": "運動",
+      "days_note": "週2日（月・土）＋朝練（自由参加）",
+      "days_per_week": 2,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "2025年度新人テニス大会団体戦女子でベスト32が1回。都県大会での上位進出はこの1回のみで、複数回の実績は確認できない。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yamatominami-h/seikatsu/club/tennis.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "神奈川県高等学校新人テニス大会",
+          "level": "都県",
+          "result": "団体戦女子ベスト32、個人戦女子ダブルスはブロック決勝進出",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yamatominami-h/seikatsu/club/tennis.html"
+        }
+      ]
+    },
+    {
+      "name": "卓球部",
+      "kind": "運動",
+      "days_note": "月・水・木・土",
+      "days_per_week": 4,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "2025年度、女子シングルスで県大会に出場し2回戦・4回戦まで進出。都県大会でのベスト8以上の実績はない。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yamatominami-h/seikatsu/club/tabletennis.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "全国高等学校総合体育大会卓球競技神奈川県予選",
+          "level": "都県",
+          "result": "女子シングルス県大会出場（2回戦進出）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yamatominami-h/seikatsu/club/tabletennis.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "神奈川県高等学校新人卓球大会",
+          "level": "都県",
+          "result": "女子シングルス県大会出場（4回戦進出）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yamatominami-h/seikatsu/club/tabletennis.html"
+        }
+      ]
+    },
+    {
+      "name": "ダンスドリル部",
+      "kind": "運動",
+      "days_note": "月・火・木・金・土",
+      "days_per_week": 5,
+      "weekend": "土",
+      "tier": 1,
+      "tier_basis": "2024年度に関東大会（Miss Dance Drill Team Japan Competition 関東大会）HIPHOP女子部門で第2位、2025年度に全国高等学校ダンスドリル冬季大会に出場。直近2年で全国・関東大会が2回。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yamatominami-h/seikatsu/club/dancedrill.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "全国高等学校ダンスドリル選手権大会 Miss Dance Drill Team Japan Competition 2024 関東大会",
+          "level": "関東",
+          "result": "HIPHOP女子部門第2位",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yamatominami-h/seikatsu/club/dancedrill.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "Dance Drill Winter Cup 2026（第十七回全国高等学校ダンスドリル冬季大会）",
+          "level": "全国",
+          "result": "出場",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yamatominami-h/seikatsu/club/dancedrill.html"
+        }
+      ]
+    },
+    {
+      "name": "サッカー部",
+      "kind": "運動",
+      "days_note": "平日：練習、週末：練習試合または大会",
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2026年度 高円宮杯JFA U-18サッカーリーグ神奈川K6に所属（神奈川県サッカー協会公式サイトで確認。2025年度はK6からK5へ昇格しCグループに所属していたが、2026年度はK6）。手引きの決まりによりK5・K6は段階3。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yamatominami-h/seikatsu/club/soccer.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "関東サッカー大会神奈川県2次予選・全国高等学校総合体育大会県予選",
+          "level": "都県",
+          "result": "関東大会2次予選2回戦進出、総体県予選2回戦進出",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yamatominami-h/seikatsu/club/soccer.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "全国高等学校総合体育大会県予選・U-18神奈川県サッカーリーグ",
+          "level": "都県",
+          "result": "総体県予選出場。U-18リーグK6でCグループ2位となりK5へ昇格",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yamatominami-h/seikatsu/club/soccer.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "全国高等学校総合体育大会県予選・全国高等学校サッカー選手権大会県1次予選",
+          "level": "都県",
+          "result": "総体県予選出場、選手権1次予選2回戦進出。U-18リーグはK5 Cグループ",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yamatominami-h/seikatsu/club/soccer.html"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "高円宮杯JFA U-18サッカーリーグ神奈川",
+          "level": "都県",
+          "result": "K6に所属",
+          "source_url": "https://www.kanagawa-fa.gr.jp/cms/u18-league/2026/div6/"
+        }
+      ]
+    },
+    {
+      "name": "剣道部",
+      "kind": "運動",
+      "days_note": "月・火・水・金は稽古、土は練習試合or稽古、木はトレーニング",
+      "days_per_week": 6,
+      "weekend": "土",
+      "tier": 2,
+      "tier_basis": "全国大会である玉竜旗高校剣道大会に2024〜2026年度の3年連続で出場（2024年度男子2回戦進出、2025年度女子3回戦進出、2026年度男女とも出場）。関東大会県予選・全国総体県予選でも団体ベスト16が複数回。（2026-09-24 Opus見直し: 玉竜旗は予選の無い申込制の大会で強さの根拠にしない。県予選の団体ベスト16が複数回あるので段階2）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yamatominami-h/seikatsu/club/kendo.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "第95回玉竜旗高校剣道大会",
+          "level": "全国",
+          "result": "男子2回戦進出",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yamatominami-h/seikatsu/club/kendo.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "全国高等学校総合体育大会剣道競技神奈川県予選・関東高等学校剣道大会県予選",
+          "level": "都県",
+          "result": "女子団体ベスト16（総体県予選）、男子個人ベスト32（関東大会県予選）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yamatominami-h/seikatsu/club/kendo.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第96回玉竜旗高校剣道大会",
+          "level": "全国",
+          "result": "女子3回戦進出",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yamatominami-h/seikatsu/club/kendo.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "関東高等学校剣道大会県予選・県新人剣道大会",
+          "level": "都県",
+          "result": "男子団体ベスト16、女子団体ベスト16（新人大会・全国選抜代表選考会とも）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yamatominami-h/seikatsu/club/kendo.html"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "第97回玉竜旗高校剣道大会",
+          "level": "全国",
+          "result": "男女とも出場（女子1回戦敗退、男子2回戦敗退）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yamatominami-h/seikatsu/club/kendo.html"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "関東高等学校剣道大会県予選・全国高等学校総合体育大会剣道競技神奈川県予選",
+          "level": "都県",
+          "result": "女子団体ベスト16（両大会とも）、男子団体ベスト32、女子個人ベスト16、女子個人ベスト32",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yamatominami-h/seikatsu/club/kendo.html"
+        }
+      ]
+    },
+    {
+      "name": "陸上競技部",
+      "kind": "運動",
+      "days_note": "週5日（月・火・水・金・土）。大会等によって変更あり",
+      "days_per_week": 5,
+      "weekend": "土",
+      "tier": 1,
+      "tier_basis": "2024年度に男子三段跳で優勝し関東新人大会に出場、2025年度に男子三段跳4位で関東大会（本大会）に出場。直近3年で関東大会出場が2回以上。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yamatominami-h/seikatsu/club/trackandfield.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "関東高校陸上競技大会神奈川県予選・神奈川県高等学校新人陸上競技大会",
+          "level": "都県",
+          "result": "男子棒高跳7位入賞（県予選）、男子棒高跳5位入賞（新人大会）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yamatominami-h/seikatsu/club/trackandfield.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "神奈川県高等学校新人陸上競技大会",
+          "level": "都県",
+          "result": "男子三段跳優勝で関東新人大会出場。男子4×400mR6位、男子走幅跳6位、女子棒高跳5位",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yamatominami-h/seikatsu/club/trackandfield.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "関東高校陸上競技大会神奈川県予選・関東高校陸上競技大会",
+          "level": "関東",
+          "result": "男子三段跳4位入賞で関東大会出場、関東大会本大会では男子三段跳15位。男子400m8位・女子棒高跳7位（県予選）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yamatominami-h/seikatsu/club/trackandfield.html"
+        }
+      ]
+    },
+    {
+      "name": "吹奏楽部",
+      "kind": "文化",
+      "days_note": "月曜日〜金曜日15時40分〜18時00分、土曜日9時00分〜16時00分",
+      "days_per_week": 6,
+      "weekend": "土",
+      "tier": 2,
+      "tier_basis": "2025年度、県央吹奏楽コンクールで金賞を受賞し県大会へ推薦（選出）された。アンサンブルコンテストでも2022〜2025年度に連続して金賞・銀賞を受賞。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yamatominami-h/seikatsu/club/brass.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "第24回県央吹奏楽コンクール・第24回アンサンブルコンテスト",
+          "level": "地区",
+          "result": "コンクールは銀賞、アンサンブルコンテスト（クラリネット3重奏）は金賞",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yamatominami-h/seikatsu/club/brass.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "第25回吹奏楽コンクール・第25回アンサンブルコンテスト",
+          "level": "地区",
+          "result": "コンクールは銀賞、アンサンブルコンテスト（木管4重奏）は金賞",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yamatominami-h/seikatsu/club/brass.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第26回県央吹奏楽コンクール・第26回アンサンブルコンテスト",
+          "level": "都県",
+          "result": "コンクールは金賞を受賞し県大会へ推薦。アンサンブルコンテストは木管6重奏が金賞、金管4重奏が銀賞",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yamatominami-h/seikatsu/club/brass.html"
+        }
+      ]
+    },
+    {
+      "name": "演劇部",
+      "kind": "文化",
+      "days_note": "週3日（月・火・木）",
+      "days_per_week": 3,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yamatominami-h/seikatsu/club/engeki.html",
+      "as_of": "2026-09-24",
+      "results": []
+    },
+    {
+      "name": "美術部",
+      "kind": "文化",
+      "days_note": "火曜日、水曜日、木曜日の放課後",
+      "days_per_week": 3,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yamatominami-h/seikatsu/club/art.html",
+      "as_of": "2026-09-24",
+      "results": []
+    },
+    {
+      "name": "合唱部",
+      "kind": "文化",
+      "days_note": "週3回（主に火・木・土曜日）",
+      "days_per_week": 3,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "2023〜2025年度、NHK全国学校音楽コンクール神奈川県コンクールで3年連続奨励賞。手引きが例示する「奨励賞・佳作」に当たり、都県代表・金賞には届かないため段階3。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yamatominami-h/seikatsu/club/gasshou.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "第90回NHK全国学校音楽コンクール神奈川県コンクール",
+          "level": "都県",
+          "result": "奨励賞",
+          "happened_on": "2023-08",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yamatominami-h/seikatsu/club/gasshou.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "第91回NHK全国学校音楽コンクール神奈川県コンクール",
+          "level": "都県",
+          "result": "奨励賞",
+          "happened_on": "2024-08",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yamatominami-h/seikatsu/club/gasshou.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第92回NHK全国学校音楽コンクール神奈川県コンクール",
+          "level": "都県",
+          "result": "奨励賞",
+          "happened_on": "2025-07-29",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yamatominami-h/seikatsu/club/gasshou.html"
+        }
+      ]
+    },
+    {
+      "name": "軽音楽部",
+      "kind": "文化",
+      "days_note": "月〜金・土日（イベント時）",
+      "days_per_week": 5,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yamatominami-h/seikatsu/club/band.html",
+      "as_of": "2026-09-24",
+      "results": []
+    },
+    {
+      "name": "書道部",
+      "kind": "文化",
+      "days_note": "月・火・水　放課後",
+      "days_per_week": 3,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yamatominami-h/seikatsu/club/shodo.html",
+      "as_of": "2026-09-24",
+      "results": []
+    },
+    {
+      "name": "漫画研究部",
+      "kind": "文化",
+      "days_note": "週3日（月・水・金）",
+      "days_per_week": 3,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yamatominami-h/seikatsu/club/manken.html",
+      "as_of": "2026-09-24",
+      "results": []
+    },
+    {
+      "name": "映画制作部",
+      "kind": "文化",
+      "days_note": "火曜日・木曜日（作業の進行状況や担当により別途活動日を設定する場合あり）",
+      "days_per_week": 2,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yamatominami-h/seikatsu/club/movie.html",
+      "as_of": "2026-09-24",
+      "results": []
+    },
+    {
+      "name": "茶道部",
+      "kind": "文化",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yamatominami-h/seikatsu/club.html",
+      "as_of": "2026-09-24",
+      "results": []
+    },
+    {
+      "name": "水泳同好会",
+      "kind": "同好会",
+      "days_note": "シーズン中（5〜9月）週3〜5日、シーズンオフ（1〜4月、10〜12月）週1〜3日",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yamatominami-h/seikatsu/club/swim.html",
+      "as_of": "2026-09-24",
+      "results": []
+    },
+    {
+      "name": "囲碁将棋同好会",
+      "kind": "同好会",
+      "days_note": "火曜日",
+      "days_per_week": 1,
+      "tier": 4,
+      "tier_basis": "活動日は週1日（火曜日）のみで、大会実績の記載もない。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yamatominami-h/seikatsu/club/igoshogi.html",
+      "as_of": "2026-09-24",
+      "results": []
+    },
+    {
+      "name": "かるた同好会",
+      "kind": "同好会",
+      "days_note": "毎週金曜日",
+      "days_per_week": 1,
+      "tier": 4,
+      "tier_basis": "活動日は週1日（金曜日）のみで、大会実績の記載もない。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yamatominami-h/seikatsu/club/karuta.html",
+      "as_of": "2026-09-24",
+      "results": []
+    }
+  ],
+  "designated_universities": [],
+  "events": [
+    {
+      "kind": "施設",
+      "period_label": "2022年度",
+      "summary": "ソフトテニスコートの改修工事が行われ、オムニコート2面になった。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yamatominami-h/seikatsu/club/dansofteni.html"
+    },
+    {
+      "kind": "学科改編",
+      "period_label": "令和4年度（2022年度）入学生から",
+      "summary": "令和4年度入学生から教育課程を改定（詳細は公開PDFの帯表示形式の教育課程表による。具体的な変更点は本文からは未確認）。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yamatominami-h/hogosha/20230117_kyouikukatei.html"
+    }
+  ],
+  "unresolved": [
+    "指定校推薦の大学：公式サイト・県教育委員会の学校案内パンフレットとも「主な指定校推薦」のような一覧の公開なし。学校案内に載っているのは合格大学の一覧のみ（指定校とは別物のため designated_universities には入れていない）。",
+    "制服・校則の詳細：公式サイトに生徒心得・制服の紹介ページが見当たらない（隣接する大和高校・大和西高校には /gaiyou/rules.html 等がある）。民間の制服販売サイト・口コミサイトの情報は手引きの決まりにより採用していない。",
+    "男女別生徒数：学校案内パンフレット・学校概要とも学年別の総数（令和8年4月現在、1年317・2年313・3年297、計927、学級数24）のみで男女内訳の公表はない。",
+    "進路決定率（career_decided_rate）：学校案内パンフレットには令和7年度の進路人数内訳（大学153・短大12・専門学校等92・就職15・その他24）はあるが、進路決定率(%)そのものの記載はなく、推測で算出していない。",
+    "入試方式別の進学割合（admission_route_share）：進路ページ・学校案内とも一般／指定校推薦／公募推薦／総合型の内訳の公開なし。",
+    "推薦入試の応募・受検倍率（exam_ratio/推薦）：神奈川県公立高校入試は共通選抜のみで、東京都のような別立ての推薦選抜がないため対象データなし。",
+    "部活動加入率（club_join_rate）・満足度（satisfaction）：学校評価報告書（神奈川県様式、文章のみ）・学校案内とも数値の記載なし。",
+    "茶道部の活動日・実績：部活動一覧ページには掲載があるが、個別ページ（sado.html）が404で内容を確認できなかった。",
+    "男子バレーボール部の活動実績（県央地区選手権ベスト8、全国高等学校総合体育大会ベスト32など）：年度の記載が一切なく、直近3年の実績かどうか判断できないため段階を付けていない。",
+    "書道部の受賞歴（全国学生防災書道展、全日本書初め大展覧会など）：年度の記載がなく、直近3年の実績か判断できないため段階を付けていない。",
+    "演劇部の大会成績（北相地区演劇連盟秋季発表会）：年度の記載がなく判断できない。部活動実績ページ（2018年度分）には同じ大会名での出場記録があるが古すぎるため使っていない。",
+    "女子バスケットボール部・美術部・軽音楽部・水泳同好会・漫画研究部・映画制作部：具体的な大会順位や年度が確認できず段階を判定できなかった。",
+    "学級増減：直近の学級数変化に関する県教育委員会の発表は確認していない（学校案内は令和8年4月現在も各学年8学級・計24学級）。",
+    "部活動実績ページ（/seikatsu/bukatsu_jisseki.html）は2018〜2019年度の記事で更新が止まっており、直近3年の根拠には使っていない。"
+  ],
+  "conflicts": []
+}
