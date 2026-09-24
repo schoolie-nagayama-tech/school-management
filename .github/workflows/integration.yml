@@ -1,12 +1,30 @@
 name: Integration Tests (RLS)
 
 # RLS 回帰テストをローカル Supabase 環境で実行する。
-# push/PR のたびに「講師は自教室のみ / 教室長は全件 / 匿名は不可」を自動検証する。
+# 「講師は自教室のみ / 教室長は全件 / 匿名は不可」とポータルの越境を自動検証する。
+#
+# ★毎回は回さない（2026-09 リポジトリ非公開化に合わせて Actions の分数を節約）。
+#   このテストが見ているのは DB（マイグレーション・RLS・seed）だけで、アプリのコードは import しない。
+#   だから DB まわりが変わった PR だけで回す。以前は全 PR と main への push で毎回回り、
+#   1回あたりの8割が supabase start（約80秒）だった。
+# ★拾い漏れの保険に、週1回 main で回す（Supabase CLI を version: latest で入れているので、
+#   コードを変えなくても CLI 側の変化で壊れることがある）。手動でも回せる。
 on:
-  push:
-    branches: [main]
   pull_request:
     branches: [main]
+    paths:
+      - 'supabase/**'
+      - 'src/__tests__/integration/**'
+      - 'vitest.integration.config.ts'
+      - 'package-lock.json'
+      - '.github/workflows/integration.yml'
+  schedule:
+    - cron: '0 18 * * 0' # 毎週月曜 3:00 JST
+  workflow_dispatch:
+
+concurrency:
+  group: integration-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   integration:
@@ -95,8 +113,9 @@ jobs:
           grep NEXT_PUBLIC_SUPABASE_URL .env.test
 
       # RLS 回帰テストを実行（このワークフローの目的）。
-      # 講師スコープに加え、保護者ポータル系（rls-portal-*）も PR 時に回す。
-      # service role を直接使う API が 50 本近くあり、認可の回帰を PR で止める最後の砦がここ。
+      # 講師スコープに加え、保護者ポータル系（rls-portal-*）も回す。
+      # service role を直接使う API が 50 本近くあり、DB 側の認可（RLS）の回帰を止める最後の砦がここ。
+      # ★API ルートのコードそのものはこのテストの対象外（import していない）。
       # schools/students の汎用CRUD統合テストは環境依存の既存課題があり別系統のため、
       # 引き続き対象外（ローカルでは npm run test:integration で全体を実行可）。
       - name: Run RLS regression tests

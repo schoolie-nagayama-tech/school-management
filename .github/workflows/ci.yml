@@ -1,10 +1,24 @@
 name: CI
 
+# ★Actions の分数を節約するため、PR のときだけ回す（2026-09 リポジトリ非公開化に合わせて）。
+#   非公開リポジトリの無料枠は月2,000分。公開中の直近20日で約1,900分（月換算約2,900分）使っており、
+#   そのうち main への push（ほぼスカッシュマージの再検証）が4割を占めていた。
+#   main へ直接 push したものは CI を通らない。直接 push は docs だけにすること。
+# ★docs やMarkdownだけの PR は回さない（型もビルドも変わらない）。
+#   ブランチ保護で必須チェックにはしていないので、回らなくても PR が止まることはない。
+#   必須チェックにする日が来たら paths-ignore を外すこと（回らないチェックは永遠に待ちになる）。
 on:
-  push:
-    branches: [main]
   pull_request:
     branches: [main]
+    paths-ignore:
+      - 'docs/**'
+      - '**/*.md'
+  workflow_dispatch:
+
+# 同じ PR に続けて push したら、古い方の実行を止める（結果を見ないまま分数だけ減る）
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   ci:
@@ -22,15 +36,17 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Lint
-        run: npm run lint
+      # ★Lint と Format check は手元の pre-push フック（.githooks/pre-push）に移した。
+      #   Lint は下の Build（next build）でも走る（next.config の eslint.ignoreDuringBuilds=false）ので、
+      #   CI から外しても素通りしない。Format は見た目だけなので手元で十分。
 
-      - name: Format check
-        run: npm run format:check
-
+      # ★型チェックは手元では回さない（メモリ不足で落ちる。CLAUDE.md）。ここが唯一の型の関所。
+      #   next.config の typescript.ignoreBuildErrors=true と対になっている。消すなら向こうも戻す。
       - name: TypeScript type check
         run: npx tsc --noEmit
 
+      # ★テストは手元の pre-push でも回すが、ここでも回す。CI は UTC、手元は JST なので、
+      #   日付まわりのずれはここでしか見つからない（面談台本・講習の年度計算が多い）。
       - name: Run tests
         run: npm test
 
