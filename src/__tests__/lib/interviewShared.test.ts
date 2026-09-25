@@ -134,6 +134,19 @@ describe('computeScoreSummary', () => {
     expect(summary.totals).toEqual([110, 150]);
   });
 
+  it('同じ名前の試験が学年をまたいで並んでも見分けられるよう、学年を並べて返す', () => {
+    const assessments = [
+      { category: 'regular_test', name_code: 'term1_final', grade: 9, scores: [] },
+      { category: 'regular_test', name_code: 'year_end', grade: 8, scores: [] },
+      { category: 'regular_test', name_code: 'term1_final', grade: 8, scores: [] },
+      // 学年が入っていない古い記録
+      { category: 'regular_test', name_code: 'term2_final', scores: [] },
+    ] as unknown as AssessmentWithScores[];
+    const summary = computeScoreSummary(assessments, 'regular_test', 5);
+    expect(summary.testLabels).toEqual(['2学期期末', '1学期期末', '学年末', '1学期期末']);
+    expect(summary.testGrades).toEqual([null, 8, 8, 9]);
+  });
+
   it('成績が無ければ空配列を返す', () => {
     expect(computeScoreSummary([]).testLabels).toEqual([]);
   });

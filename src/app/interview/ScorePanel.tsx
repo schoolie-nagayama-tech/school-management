@@ -26,6 +26,7 @@ import {
   type ScoreSummary,
 } from './interview.shared';
 import { TrendingUp } from 'lucide-react';
+import { formatGradeLabelOrEmpty } from '@/lib/utils/gradeLabel';
 
 interface ScorePanelProps {
   assessments: AssessmentWithScores[];
@@ -261,6 +262,10 @@ function CategorySection({
               <th className="pb-1.5 pr-2 font-medium">教科</th>
               {summary.testLabels.map((name, i) => (
                 <th key={`${name}-${i}`} className="px-1.5 pb-1.5 text-right font-medium">
+                  {/* ★学年を添える。学年をまたぐと「1学期期末」が2列並び、どちらの年か分からなかった */}
+                  <span className="block text-[10.5px] leading-tight text-text-faint">
+                    {formatGradeLabelOrEmpty(summary.testGrades[i])}
+                  </span>
                   <span className="block text-xs leading-tight">{name}</span>
                 </th>
               ))}
