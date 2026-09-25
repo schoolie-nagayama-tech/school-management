@@ -29,7 +29,7 @@ export interface PrintSheetBlock {
   items: CurriculumItem[];
 }
 
-/** 紙1枚ぶん。blocks は進める順（created_at 昇順）に並ぶ */
+/** 紙1枚ぶん。blocks は進める順（byPrintOrder）に並ぶ */
 export interface PrintSheetGroup {
   key: string;
   /** 科目。空文字＝科目未設定（まとめずに単独で1枚） */
@@ -44,8 +44,27 @@ function textbookNameOf(block: PrintSheetBlock): string {
   return block.proposal.textbook?.name ?? '';
 }
 
-/** created_at 昇順。未設定は先頭に寄せる（順番が決められないものを後ろに落とさない） */
-function byCreatedAt(a: PrintSheetBlock, b: PrintSheetBlock): number {
+/**
+ * 過去問のように1冊で全科目を扱う教材か（教材の科目が空で、紙の科目は単元から引いたもの）。
+ */
+function isAllSubjectBook(block: PrintSheetBlock): boolean {
+  return !block.proposal.textbook?.subject;
+}
+
+/**
+ * 1枚の中の並び。科目のある教材を先に created_at 昇順、過去問など全科目の教材はその後ろ。
+ *
+ * ★created_at だけで並べてはいけない。過去問の提案書は (生徒, 教材, 期) で1件しか無く、
+ *   英語のテンプレで作られたあと、数学のテンプレでは同じ1件に単元が足される（proposalMerge.ts）。
+ *   created_at は英語で作った時刻のままなので、数学の紙では数学の教材より古く見え、
+ *   テンプレでは最後に置いた過去問が1冊目に出ていた。
+ *   足し込まれた科目で何番目に置かれたかはDBに残らないため、「全科目の教材は科目の教材の後」と決める
+ *   （過去問は仕上げに使うもので、どの科目でも最後に置かれている）。
+ */
+function byPrintOrder(a: PrintSheetBlock, b: PrintSheetBlock): number {
+  const allA = isAllSubjectBook(a);
+  const allB = isAllSubjectBook(b);
+  if (allA !== allB) return allA ? 1 : -1;
   const ca = a.proposal.created_at ?? '';
   const cb = b.proposal.created_at ?? '';
   if (ca === cb) return 0;
@@ -91,7 +110,7 @@ function blocksOfProposal(source: PrintProposalSource): PrintSheetBlock[] {
  * 提案書 → 紙（複数冊を束ねたもの）。
  *
  * - まとめる単位は 生徒 × season × year × 科目。科目が空のブロックはまとめず単独で1枚。
- * - 束の中の並びは created_at 昇順＝作った順＝上から進める順。
+ * - 束の中の並びは作った順＝上から進める順。過去問など全科目の教材は後ろ（byPrintOrder）。
  * - 紙同士の並びは従来どおり科目順（同じ科目なら先頭の書名順）。
  */
 export function groupProposalsForPrint(sources: PrintProposalSource[]): PrintSheetGroup[] {
@@ -121,7 +140,7 @@ export function groupProposalsForPrint(sources: PrintProposalSource[]): PrintShe
 
   const sheets = Array.from(groups.values());
   for (const sheet of sheets) {
-    sheet.blocks.sort(byCreatedAt);
+    sheet.blocks.sort(byPrintOrder);
   }
 
   return sheets.sort((a, b) => {

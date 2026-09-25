@@ -146,6 +146,46 @@ describe('groupProposalsForPrint', () => {
     expect(math.blocks.map((b) => b.proposal.id)).toEqual(['kakomon']);
   });
 
+  it('過去問が先に作られていても、2科目目以降の紙でも科目の教材の後ろに出る', () => {
+    // 英語のテンプレ（英語テキスト→過去問）を使ったあと、数学のテンプレ（数学テキスト→過去問）を使うと、
+    // 過去問は英語のときに作った1件に数学の単元が足される。created_at は英語のときのまま
+    const sheets = groupProposalsForPrint([
+      p({ id: 'eng', subject: '英語', name: '英語テキスト', createdAt: '2026-09-01T00:00:00Z' }),
+      p({
+        id: 'kakomon',
+        subject: null,
+        name: '都立入試過去問',
+        createdAt: '2026-09-02T00:00:00Z',
+        items: [item(1, '英語 2022年度', '英語'), item(2, '数学 2022年度', '数学')],
+      }),
+      p({ id: 'math1', subject: '数学', name: '数学テキスト1', createdAt: '2026-09-03T00:00:00Z' }),
+      p({ id: 'math2', subject: '数学', name: '数学テキスト2', createdAt: '2026-09-04T00:00:00Z' }),
+    ]);
+    const eng = sheets.find((s) => s.subject === '英語')!;
+    expect(eng.blocks.map((b) => b.proposal.id)).toEqual(['eng', 'kakomon']);
+    const math = sheets.find((s) => s.subject === '数学')!;
+    expect(math.blocks.map((b) => b.proposal.id)).toEqual(['math1', 'math2', 'kakomon']);
+  });
+
+  it('全科目の教材が2冊あれば、その2冊は作った順で後ろに並ぶ', () => {
+    const sheets = groupProposalsForPrint([
+      p({
+        id: 'shiritsu',
+        subject: null,
+        createdAt: '2026-09-02T00:00:00Z',
+        items: [item(1, '英語 私立', '英語')],
+      }),
+      p({
+        id: 'toritsu',
+        subject: null,
+        createdAt: '2026-09-01T00:00:00Z',
+        items: [item(2, '英語 都立', '英語')],
+      }),
+      p({ id: 'eng', subject: '英語', createdAt: '2026-09-03T00:00:00Z' }),
+    ]);
+    expect(sheets[0].blocks.map((b) => b.proposal.id)).toEqual(['eng', 'toritsu', 'shiritsu']);
+  });
+
   it('コマが入っていない科目の紙は作らない', () => {
     const sheets = groupProposalsForPrint([
       p({
