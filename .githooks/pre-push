@@ -1,0 +1,17 @@
+#!/bin/sh
+# push の前に、手元で Format・Lint・テストを回す。
+#
+# ★GitHub Actions の分数を節約するため、CI から Format と Lint をここへ移した（2026-09）。
+#   落ちる PR を CI に送ってから直すと、そのぶんの分数がまるごと無駄になる。
+# ★型チェック（tsc）はここでは回さない。手元ではメモリ不足で落ちる（CLAUDE.md）。型は CI だけ。
+# ★急ぎで飛ばすときは git push --no-verify。ただしテストは CI でも回るので、そこで止まる。
+set -e
+
+echo "[pre-push] Format check"
+npm run -s format:check
+
+echo "[pre-push] Lint"
+npm run -s lint
+
+echo "[pre-push] Test"
+npm test --silent

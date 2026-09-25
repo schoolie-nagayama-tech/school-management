@@ -1,0 +1,3 @@
+# ★Git フックは sh が読むので必ず LF。autocrlf=true の Windows で CRLF になると
+#   1行目が "#!/bin/sh\r" になり、フックが黙って動かなくなる。
+.githooks/* text eol=lf
