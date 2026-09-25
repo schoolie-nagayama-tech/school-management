@@ -64,6 +64,11 @@ export async function loadSchools(): Promise<SchoolMatch[]> {
       .select(
         'id,prefecture,school_name,course,category,region,old_district,municipality,lat,lon,primary_station,primary_lines,access_lines,access_stations'
       )
+      // ★公立だけ。2026-09-25 に私立・国立を同じ表に入れたが、AIヘルプのプロンプトと
+      //   schoolLookup.ts は「都立・神奈川県立」の前提で組んである（「◯◯駅から近い都立は？」に
+      //   私立が混ざると、私立を都立として案内してしまう）。私立を答えさせるときは、
+      //   プロンプトと引き当ての決まりを直してからこの絞り込みを外す。
+      .eq('establishment', '公立')
       .range(from, to)
   );
 

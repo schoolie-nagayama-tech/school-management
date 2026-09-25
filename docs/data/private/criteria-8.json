@@ -1,0 +1,1793 @@
+{
+  "image": "8.jpg",
+  "page_label": "3",
+  "prefecture": "東京都",
+  "schools": [
+    {
+      "district": "港",
+      "school_name": "芝国際",
+      "division": null,
+      "phone": "03-3451-0912",
+      "gender_type": "共学",
+      "establishment": "私立",
+      "courses": [
+        { "name": "最難関選抜", "raw": "最難関選抜 10(5) [他に帰国生入試で最難関選抜若干名・国際10名募集]", "capacity": 10, "recommend_capacity": 5, "gender": null },
+        { "name": "国際", "raw": "国際 25(15) [他に帰国生入試で最難関選抜若干名・国際10名募集]", "capacity": 25, "recommend_capacity": 15, "gender": null }
+      ],
+      "exams": "※面 ※作",
+      "other_raw": "数値は3年1学期または2学期(前期または後期)\n9科に1は不可　3年次の欠席10日以内\n加点ポイント(いずれか該当で+1)：\n生徒会長(副会長)，部長(副部長)，英検準1級またはCEFR B2以上，その他著しく評価できる事由\n※最難関選抜は作文(日本語，800字50分)，国際は英エッセイ(300～500語50分)と英語面接",
+      "rules": [
+        {
+          "courses": ["最難関選抜", "国際"], "section": "推薦", "exam_label": "推薦", "kind": "推薦",
+          "public_only": false, "applicant_scope": null, "gender": null, "strength": null,
+          "any": [[{ "t": "sum", "s": "5科", "min": 23 }]],
+          "no_criterion": null,
+          "gates": [{ "t": "none_le", "s": "9科", "grade": 1 }],
+          "bonus": {
+            "max": 1, "max_by": null, "applies_to": null,
+            "items": [
+              { "label": "生徒会長(副会長)", "points": 1, "when": { "t": "manual", "text": "生徒会長(副会長)" } },
+              { "label": "部長(副部長)", "points": 1, "when": { "t": "manual", "text": "部長(副部長)" } },
+              { "label": "英検準1級またはCEFR B2以上", "points": 1, "when": { "t": "cert", "name": "英検準1級またはCEFR B2" } },
+              { "label": "その他著しく評価できる事由", "points": 1, "when": { "t": "manual", "text": "その他著しく評価できる事由" } }
+            ],
+            "note": "いずれか該当で+1"
+          },
+          "checks": ["3年次の欠席10日以内", "最難関選抜は作文(日本語，800字50分)", "国際は英エッセイ(300～500語50分)と英語面接"],
+          "raw": "最難関選抜・国際\n5科23",
+          "uncertain": false
+        }
+      ]
+    },
+    {
+      "district": "大田",
+      "school_name": "日本体育大荏原",
+      "division": null,
+      "phone": "03-3759-3291",
+      "gender_type": "共学",
+      "establishment": "私立",
+      "courses": [
+        { "name": "アカデミック", "raw": "普(アカデミック・アドバンスト・スポーツ) 320(160)", "capacity": null, "recommend_capacity": null, "gender": null },
+        { "name": "アドバンスト", "raw": "普(アカデミック・アドバンスト・スポーツ) 320(160)", "capacity": null, "recommend_capacity": null, "gender": null },
+        { "name": "スポーツ", "raw": "普(アカデミック・アドバンスト・スポーツ) 320(160)", "capacity": null, "recommend_capacity": null, "gender": null }
+      ],
+      "exams": "面 ※作 ※適",
+      "other_raw": "数値は3年1学期または2学期(前期または12月末日)\n9科に1(アカデミックは2も)不可　スポーツは保体3\n各学年の欠席10日以内　英検準2級ならば左記基準を問わない\n加点措置(推薦・一般併願，アカデミックは②⑤を除く)：\n①英・漢・数検，②部活動・生徒会・文化的活動等，③保護者・兄姉が卒業生，兄姉が在籍，④大田・世田谷・品川・目黒区・川崎・横浜市(鶴見・港北・都筑・青葉区)の中学在籍，⑤説明会参加\n[①は最大+5・他は+1まで，①②と③④⑤から各1項目適用]\n※アカデミックは適性検査(3科各40分)・面，他は作文(50分)・面",
+      "rules": [
+        {
+          "courses": ["アカデミック"], "section": "推薦", "exam_label": "推薦", "kind": "推薦",
+          "public_only": false, "applicant_scope": null, "gender": null, "strength": null,
+          "any": [[{ "t": "sum", "s": "9科", "min": 31 }], [{ "t": "sum", "s": "5科", "min": 17 }], [{ "t": "cert", "name": "英検準2級" }]],
+          "no_criterion": null,
+          "gates": [{ "t": "none_le", "s": "9科", "grade": 2 }],
+          "bonus": {
+            "max": null, "max_by": null, "applies_to": null,
+            "items": [
+              { "label": "①英・漢・数検", "points": null, "when": { "t": "cert", "name": "英・漢・数検" } },
+              { "label": "③保護者・兄姉が卒業生，兄姉が在籍", "points": 1, "when": { "t": "manual", "text": "保護者・兄姉が卒業生，兄姉が在籍" } },
+              { "label": "④大田・世田谷・品川・目黒区・川崎・横浜市(鶴見・港北・都筑・青葉区)の中学在籍", "points": 1, "when": { "t": "manual", "text": "大田・世田谷・品川・目黒区・川崎・横浜市(鶴見・港北・都筑・青葉区)の中学在籍" } }
+            ],
+            "note": "推薦・一般併願。アカデミックは②⑤を除く。①は最大+5・他は+1まで，①②と③④⑤から各1項目適用"
+          },
+          "checks": ["各学年の欠席10日以内", "英検準2級ならば左記基準を問わない", "適性検査(3科各40分)・面接"],
+          "raw": "アカデミック 9科31または5科17",
+          "uncertain": false
+        },
+        {
+          "courses": ["アドバンスト"], "section": "推薦", "exam_label": "推薦", "kind": "推薦",
+          "public_only": false, "applicant_scope": null, "gender": null, "strength": null,
+          "any": [[{ "t": "sum", "s": "9科", "min": 27 }], [{ "t": "cert", "name": "英検準2級" }]],
+          "no_criterion": null,
+          "gates": [{ "t": "none_le", "s": "9科", "grade": 1 }],
+          "bonus": {
+            "max": null, "max_by": null, "applies_to": null,
+            "items": [
+              { "label": "①英・漢・数検", "points": null, "when": { "t": "cert", "name": "英・漢・数検" } },
+              { "label": "②部活動・生徒会・文化的活動等", "points": 1, "when": { "t": "manual", "text": "部活動・生徒会・文化的活動等" } },
+              { "label": "③保護者・兄姉が卒業生，兄姉が在籍", "points": 1, "when": { "t": "manual", "text": "保護者・兄姉が卒業生，兄姉が在籍" } },
+              { "label": "④大田・世田谷・品川・目黒区・川崎・横浜市(鶴見・港北・都筑・青葉区)の中学在籍", "points": 1, "when": { "t": "manual", "text": "大田・世田谷・品川・目黒区・川崎・横浜市(鶴見・港北・都筑・青葉区)の中学在籍" } },
+              { "label": "⑤説明会参加", "points": 1, "when": { "t": "manual", "text": "説明会参加" } }
+            ],
+            "note": "推薦・一般併願。①は最大+5・他は+1まで，①②と③④⑤から各1項目適用"
+          },
+          "checks": ["各学年の欠席10日以内", "英検準2級ならば左記基準を問わない", "作文(50分)・面接"],
+          "raw": "アドバンスト 9科27",
+          "uncertain": false
+        },
+        {
+          "courses": ["スポーツ"], "section": "推薦", "exam_label": "推薦", "kind": "推薦",
+          "public_only": false, "applicant_scope": null, "gender": null, "strength": null,
+          "any": [[{ "t": "sum", "s": "9科", "min": 26 }], [{ "t": "cert", "name": "英検準2級" }]],
+          "no_criterion": null,
+          "gates": [{ "t": "none_le", "s": "9科", "grade": 1 }, { "t": "each", "s": ["保体"], "min": 3 }],
+          "bonus": {
+            "max": null, "max_by": null, "applies_to": null,
+            "items": [
+              { "label": "①英・漢・数検", "points": null, "when": { "t": "cert", "name": "英・漢・数検" } },
+              { "label": "②部活動・生徒会・文化的活動等", "points": 1, "when": { "t": "manual", "text": "部活動・生徒会・文化的活動等" } },
+              { "label": "③保護者・兄姉が卒業生，兄姉が在籍", "points": 1, "when": { "t": "manual", "text": "保護者・兄姉が卒業生，兄姉が在籍" } },
+              { "label": "④大田・世田谷・品川・目黒区・川崎・横浜市(鶴見・港北・都筑・青葉区)の中学在籍", "points": 1, "when": { "t": "manual", "text": "大田・世田谷・品川・目黒区・川崎・横浜市(鶴見・港北・都筑・青葉区)の中学在籍" } },
+              { "label": "⑤説明会参加", "points": 1, "when": { "t": "manual", "text": "説明会参加" } }
+            ],
+            "note": "推薦・一般併願。①は最大+5・他は+1まで，①②と③④⑤から各1項目適用"
+          },
+          "checks": ["各学年の欠席10日以内", "英検準2級ならば左記基準を問わない", "作文(50分)・面接"],
+          "raw": "スポーツ 9科26",
+          "uncertain": false
+        },
+        {
+          "courses": ["アドバンスト"], "section": "一般", "exam_label": "専願［2/11受験］", "kind": "単願",
+          "public_only": false, "applicant_scope": null, "gender": null, "strength": null,
+          "any": [[{ "t": "sum", "s": "9科", "min": 25 }], [{ "t": "sum", "s": "5科", "min": 13 }], [{ "t": "cert", "name": "英検準2級" }]],
+          "no_criterion": null,
+          "gates": [{ "t": "none_le", "s": "9科", "grade": 1 }],
+          "bonus": null,
+          "checks": ["各学年の欠席10日以内", "英検準2級ならば左記基準を問わない"],
+          "raw": "専願：[2/11受験]\nアドバンスト 9科25または5科13",
+          "uncertain": false
+        },
+        {
+          "courses": ["スポーツ"], "section": "一般", "exam_label": "専願［2/11受験］", "kind": "単願",
+          "public_only": false, "applicant_scope": null, "gender": null, "strength": null,
+          "any": [[{ "t": "sum", "s": "9科", "min": 24 }], [{ "t": "sum", "s": "5科", "min": 12 }], [{ "t": "cert", "name": "英検準2級" }]],
+          "no_criterion": null,
+          "gates": [{ "t": "none_le", "s": "9科", "grade": 1 }, { "t": "each", "s": ["保体"], "min": 3 }],
+          "bonus": null,
+          "checks": ["各学年の欠席10日以内", "英検準2級ならば左記基準を問わない"],
+          "raw": "専願：[2/11受験]\nスポーツ 9科24または5科12",
+          "uncertain": false
+        },
+        {
+          "courses": ["アカデミック"], "section": "一般", "exam_label": "併願（公私・第2志望）", "kind": "併願",
+          "public_only": false, "applicant_scope": null, "gender": null, "strength": null,
+          "any": [[{ "t": "sum", "s": "9科", "min": 32 }], [{ "t": "sum", "s": "5科", "min": 18 }], [{ "t": "cert", "name": "英検準2級" }]],
+          "no_criterion": null,
+          "gates": [{ "t": "none_le", "s": "9科", "grade": 2 }],
+          "bonus": {
+            "max": null, "max_by": null, "applies_to": null,
+            "items": [
+              { "label": "①英・漢・数検", "points": null, "when": { "t": "cert", "name": "英・漢・数検" } },
+              { "label": "③保護者・兄姉が卒業生，兄姉が在籍", "points": 1, "when": { "t": "manual", "text": "保護者・兄姉が卒業生，兄姉が在籍" } },
+              { "label": "④大田・世田谷・品川・目黒区・川崎・横浜市(鶴見・港北・都筑・青葉区)の中学在籍", "points": 1, "when": { "t": "manual", "text": "大田・世田谷・品川・目黒区・川崎・横浜市(鶴見・港北・都筑・青葉区)の中学在籍" } }
+            ],
+            "note": "推薦・一般併願。アカデミックは②⑤を除く。①は最大+5・他は+1まで，①②と③④⑤から各1項目適用"
+          },
+          "checks": ["各学年の欠席10日以内", "英検準2級ならば左記基準を問わない", "公立併願は2/10受験"],
+          "raw": "併願(公私・第2志望)：\nアカデミック 9科32または5科18\n[公立併願は2/10受験]",
+          "uncertain": false
+        },
+        {
+          "courses": ["アドバンスト"], "section": "一般", "exam_label": "併願（公私・第2志望）", "kind": "併願",
+          "public_only": false, "applicant_scope": null, "gender": null, "strength": null,
+          "any": [[{ "t": "sum", "s": "9科", "min": 28 }], [{ "t": "cert", "name": "英検準2級" }]],
+          "no_criterion": null,
+          "gates": [{ "t": "none_le", "s": "9科", "grade": 1 }],
+          "bonus": {
+            "max": null, "max_by": null, "applies_to": null,
+            "items": [
+              { "label": "①英・漢・数検", "points": null, "when": { "t": "cert", "name": "英・漢・数検" } },
+              { "label": "②部活動・生徒会・文化的活動等", "points": 1, "when": { "t": "manual", "text": "部活動・生徒会・文化的活動等" } },
+              { "label": "③保護者・兄姉が卒業生，兄姉が在籍", "points": 1, "when": { "t": "manual", "text": "保護者・兄姉が卒業生，兄姉が在籍" } },
+              { "label": "④大田・世田谷・品川・目黒区・川崎・横浜市(鶴見・港北・都筑・青葉区)の中学在籍", "points": 1, "when": { "t": "manual", "text": "大田・世田谷・品川・目黒区・川崎・横浜市(鶴見・港北・都筑・青葉区)の中学在籍" } },
+              { "label": "⑤説明会参加", "points": 1, "when": { "t": "manual", "text": "説明会参加" } }
+            ],
+            "note": "推薦・一般併願。①は最大+5・他は+1まで，①②と③④⑤から各1項目適用"
+          },
+          "checks": ["各学年の欠席10日以内", "英検準2級ならば左記基準を問わない", "公立併願は2/10受験"],
+          "raw": "アドバンスト 9科28\n[公立併願は2/10受験]",
+          "uncertain": false
+        },
+        {
+          "courses": ["スポーツ"], "section": "一般", "exam_label": "併願（公私・第2志望）", "kind": "併願",
+          "public_only": false, "applicant_scope": null, "gender": null, "strength": null,
+          "any": [[{ "t": "sum", "s": "9科", "min": 27 }], [{ "t": "cert", "name": "英検準2級" }]],
+          "no_criterion": null,
+          "gates": [{ "t": "none_le", "s": "9科", "grade": 1 }, { "t": "each", "s": ["保体"], "min": 3 }],
+          "bonus": {
+            "max": null, "max_by": null, "applies_to": null,
+            "items": [
+              { "label": "①英・漢・数検", "points": null, "when": { "t": "cert", "name": "英・漢・数検" } },
+              { "label": "②部活動・生徒会・文化的活動等", "points": 1, "when": { "t": "manual", "text": "部活動・生徒会・文化的活動等" } },
+              { "label": "③保護者・兄姉が卒業生，兄姉が在籍", "points": 1, "when": { "t": "manual", "text": "保護者・兄姉が卒業生，兄姉が在籍" } },
+              { "label": "④大田・世田谷・品川・目黒区・川崎・横浜市(鶴見・港北・都筑・青葉区)の中学在籍", "points": 1, "when": { "t": "manual", "text": "大田・世田谷・品川・目黒区・川崎・横浜市(鶴見・港北・都筑・青葉区)の中学在籍" } },
+              { "label": "⑤説明会参加", "points": 1, "when": { "t": "manual", "text": "説明会参加" } }
+            ],
+            "note": "推薦・一般併願。①は最大+5・他は+1まで，①②と③④⑤から各1項目適用"
+          },
+          "checks": ["各学年の欠席10日以内", "英検準2級ならば左記基準を問わない", "公立併願は2/10受験"],
+          "raw": "スポーツ 9科27\n[公立併願は2/10受験]",
+          "uncertain": false
+        }
+      ]
+    },
+    {
+      "district": "大田",
+      "school_name": "大森学園",
+      "division": null,
+      "phone": "03-3762-7336",
+      "gender_type": "共学",
+      "establishment": "私立",
+      "courses": [
+        { "name": "特選", "raw": "普 特選 40(20)", "capacity": 40, "recommend_capacity": 20, "gender": null },
+        { "name": "選抜", "raw": "普 選抜 80(40)", "capacity": 80, "recommend_capacity": 40, "gender": null },
+        { "name": "総進", "raw": "普 総進 160(80)", "capacity": 160, "recommend_capacity": 80, "gender": null },
+        { "name": "工", "raw": "工 男80(40)", "capacity": 80, "recommend_capacity": 40, "gender": "男子" }
+      ],
+      "exams": "面",
+      "other_raw": "数値は3年1学期または2学期(前期または中間期)\n普は①～④いずれか　9科に1(特選は2も，選抜は5科に2も)不可\n推薦・併願は3年次の欠席10日以内，3年次遅刻+早退計10日以内\n推薦・専願・併願とも希望者は本校イベントへの参加が必要\n内申加点(9科・5科に加点)：英・漢・数検の取得級に応じ+1～2(全科コース)，3年間精勤，3年間部活動等継続(総進・工)，体験行事等参加(工のみ)で+1(特選は1項目のみ，他は2項目[総進の5科は1項目，工の推薦・専願は3項目]まで)，\n他に縁故関係の優遇や地元加点(大田区・品川区)あり",
+      "rules": [
+        {
+          "courses": ["特選"], "section": "推薦", "exam_label": "推薦", "kind": "推薦",
+          "public_only": false, "applicant_scope": null, "gender": null, "strength": null,
+          "any": [[{ "t": "sum", "s": "9科", "min": 36 }], [{ "t": "sum", "s": "5科", "min": 21 }], [{ "t": "sum", "s": "3科", "min": 13 }], [{ "t": "cert", "name": "英検2級" }]],
+          "no_criterion": null,
+          "gates": [{ "t": "none_le", "s": "9科", "grade": 2 }],
+          "bonus": {
+            "max": null, "max_by": null, "applies_to": ["9科", "5科"],
+            "items": [
+              { "label": "英・漢・数検の取得級に応じ+1～2", "points": null, "when": { "t": "cert", "name": "英・漢・数検" } },
+              { "label": "3年間精勤", "points": 1, "when": { "t": "manual", "text": "3年間精勤" } }
+            ],
+            "note": "特選は1項目のみ。他に縁故関係の優遇や地元加点(大田区・品川区)あり"
+          },
+          "checks": ["3年次の欠席10日以内，3年次遅刻+早退計10日以内", "本校イベントへの参加が必要"],
+          "raw": "特選 ①9科36 ②5科21 ③3科13\n④英検2級",
+          "uncertain": false
+        },
+        {
+          "courses": ["選抜"], "section": "推薦", "exam_label": "推薦", "kind": "推薦",
+          "public_only": false, "applicant_scope": null, "gender": null, "strength": null,
+          "any": [[{ "t": "sum", "s": "9科", "min": 31 }], [{ "t": "sum", "s": "5科", "min": 18 }], [{ "t": "sum", "s": "3科", "min": 11 }], [{ "t": "cert", "name": "英検準2級" }]],
+          "no_criterion": null,
+          "gates": [{ "t": "none_le", "s": "9科", "grade": 1 }, { "t": "none_le", "s": "5科", "grade": 2 }],
+          "bonus": {
+            "max": null, "max_by": null, "applies_to": ["9科", "5科"],
+            "items": [
+              { "label": "英・漢・数検の取得級に応じ+1～2", "points": null, "when": { "t": "cert", "name": "英・漢・数検" } },
+              { "label": "3年間精勤", "points": 1, "when": { "t": "manual", "text": "3年間精勤" } }
+            ],
+            "note": "2項目まで。他に縁故関係の優遇や地元加点(大田区・品川区)あり"
+          },
+          "checks": ["3年次の欠席10日以内，3年次遅刻+早退計10日以内", "本校イベントへの参加が必要"],
+          "raw": "選抜 ①9科31 ②5科18 ③3科11\n④英検準2級",
+          "uncertain": false
+        },
+        {
+          "courses": ["総進"], "section": "推薦", "exam_label": "推薦", "kind": "推薦",
+          "public_only": false, "applicant_scope": null, "gender": null, "strength": null,
+          "any": [[{ "t": "sum", "s": "9科", "min": 27 }], [{ "t": "sum", "s": "5科", "min": 15 }], [{ "t": "each", "s": ["英"], "min": 4 }], [{ "t": "cert", "name": "英検3級" }]],
+          "no_criterion": null,
+          "gates": [{ "t": "none_le", "s": "9科", "grade": 1 }],
+          "bonus": {
+            "max": null, "max_by": null, "applies_to": ["9科", "5科"],
+            "items": [
+              { "label": "英・漢・数検の取得級に応じ+1～2", "points": null, "when": { "t": "cert", "name": "英・漢・数検" } },
+              { "label": "3年間精勤", "points": 1, "when": { "t": "manual", "text": "3年間精勤" } },
+              { "label": "3年間部活動等継続", "points": 1, "when": { "t": "manual", "text": "3年間部活動等継続" } }
+            ],
+            "note": "2項目まで(総進の5科は1項目)。他に縁故関係の優遇や地元加点(大田区・品川区)あり"
+          },
+          "checks": ["3年次の欠席10日以内，3年次遅刻+早退計10日以内", "本校イベントへの参加が必要"],
+          "raw": "総進 ①9科27 ②5科15 ③英4 ④英検3級",
+          "uncertain": false
+        },
+        {
+          "courses": ["工"], "section": "推薦", "exam_label": "推薦", "kind": "推薦",
+          "public_only": false, "applicant_scope": null, "gender": null, "strength": null,
+          "any": [[{ "t": "sum", "s": "9科", "min": 22 }]],
+          "no_criterion": null,
+          "gates": [{ "t": "none_le", "s": "9科", "grade": 1 }],
+          "bonus": {
+            "max": null, "max_by": null, "applies_to": ["9科", "5科"],
+            "items": [
+              { "label": "英・漢・数検の取得級に応じ+1～2", "points": null, "when": { "t": "cert", "name": "英・漢・数検" } },
+              { "label": "3年間精勤", "points": 1, "when": { "t": "manual", "text": "3年間精勤" } },
+              { "label": "3年間部活動等継続", "points": 1, "when": { "t": "manual", "text": "3年間部活動等継続" } },
+              { "label": "体験行事等参加", "points": 1, "when": { "t": "manual", "text": "体験行事等参加" } }
+            ],
+            "note": "工の推薦・専願は3項目まで。他に縁故関係の優遇や地元加点(大田区・品川区)あり"
+          },
+          "checks": ["3年次の欠席10日以内，3年次遅刻+早退計10日以内", "本校イベントへの参加が必要"],
+          "raw": "工 9科22",
+          "uncertain": false
+        },
+        {
+          "courses": ["特選"], "section": "推薦", "exam_label": "推薦Ⅱ（公私併願, 千葉・埼玉県生）", "kind": "併願",
+          "public_only": false, "applicant_scope": "千葉・埼玉県生", "gender": null, "strength": null,
+          "any": [[{ "t": "sum", "s": "9科", "min": 37 }], [{ "t": "sum", "s": "5科", "min": 22 }], [{ "t": "sum", "s": "3科", "min": 14 }]],
+          "no_criterion": null,
+          "gates": [{ "t": "none_le", "s": "9科", "grade": 2 }],
+          "bonus": {
+            "max": null, "max_by": null, "applies_to": ["9科", "5科"],
+            "items": [
+              { "label": "英・漢・数検の取得級に応じ+1～2", "points": null, "when": { "t": "cert", "name": "英・漢・数検" } },
+              { "label": "3年間精勤", "points": 1, "when": { "t": "manual", "text": "3年間精勤" } }
+            ],
+            "note": "特選は1項目のみ"
+          },
+          "checks": ["3年次の欠席10日以内，3年次遅刻+早退計10日以内", "本校イベントへの参加が必要"],
+          "raw": "推薦Ⅱ(公私併願，千葉・埼玉県生)：\n一般併願基準同様\n（一般 併願(公私)：特選 ①9科37 ②5科22 ③3科14）",
+          "uncertain": false
+        },
+        {
+          "courses": ["選抜"], "section": "推薦", "exam_label": "推薦Ⅱ（公私併願, 千葉・埼玉県生）", "kind": "併願",
+          "public_only": false, "applicant_scope": "千葉・埼玉県生", "gender": null, "strength": null,
+          "any": [[{ "t": "sum", "s": "9科", "min": 32 }], [{ "t": "sum", "s": "5科", "min": 19 }], [{ "t": "sum", "s": "3科", "min": 12 }]],
+          "no_criterion": null,
+          "gates": [{ "t": "none_le", "s": "9科", "grade": 1 }, { "t": "none_le", "s": "5科", "grade": 2 }],
+          "bonus": {
+            "max": null, "max_by": null, "applies_to": ["9科", "5科"],
+            "items": [
+              { "label": "英・漢・数検の取得級に応じ+1～2", "points": null, "when": { "t": "cert", "name": "英・漢・数検" } },
+              { "label": "3年間精勤", "points": 1, "when": { "t": "manual", "text": "3年間精勤" } }
+            ],
+            "note": "2項目まで"
+          },
+          "checks": ["3年次の欠席10日以内，3年次遅刻+早退計10日以内", "本校イベントへの参加が必要"],
+          "raw": "推薦Ⅱ(公私併願，千葉・埼玉県生)：\n一般併願基準同様\n（一般 併願(公私)：選抜 ①9科32 ②5科19 ③3科12）",
+          "uncertain": false
+        },
+        {
+          "courses": ["総進"], "section": "推薦", "exam_label": "推薦Ⅱ（公私併願, 千葉・埼玉県生）", "kind": "併願",
+          "public_only": false, "applicant_scope": "千葉・埼玉県生", "gender": null, "strength": null,
+          "any": [[{ "t": "sum", "s": "9科", "min": 29 }], [{ "t": "sum", "s": "5科", "min": 16 }]],
+          "no_criterion": null,
+          "gates": [{ "t": "none_le", "s": "9科", "grade": 1 }],
+          "bonus": {
+            "max": null, "max_by": null, "applies_to": ["9科", "5科"],
+            "items": [
+              { "label": "英・漢・数検の取得級に応じ+1～2", "points": null, "when": { "t": "cert", "name": "英・漢・数検" } },
+              { "label": "3年間精勤", "points": 1, "when": { "t": "manual", "text": "3年間精勤" } },
+              { "label": "3年間部活動等継続", "points": 1, "when": { "t": "manual", "text": "3年間部活動等継続" } }
+            ],
+            "note": "2項目まで(総進の5科は1項目)"
+          },
+          "checks": ["3年次の欠席10日以内，3年次遅刻+早退計10日以内", "本校イベントへの参加が必要"],
+          "raw": "推薦Ⅱ(公私併願，千葉・埼玉県生)：\n一般併願基準同様\n（一般 併願(公私)：総進 ①9科29 ②5科16）",
+          "uncertain": false
+        },
+        {
+          "courses": ["工"], "section": "推薦", "exam_label": "推薦Ⅱ（公私併願, 千葉・埼玉県生）", "kind": "併願",
+          "public_only": false, "applicant_scope": "千葉・埼玉県生", "gender": null, "strength": null,
+          "any": [[{ "t": "sum", "s": "9科", "min": 24 }]],
+          "no_criterion": null,
+          "gates": [{ "t": "none_le", "s": "9科", "grade": 1 }],
+          "bonus": {
+            "max": null, "max_by": null, "applies_to": ["9科", "5科"],
+            "items": [
+              { "label": "英・漢・数検の取得級に応じ+1～2", "points": null, "when": { "t": "cert", "name": "英・漢・数検" } },
+              { "label": "3年間精勤", "points": 1, "when": { "t": "manual", "text": "3年間精勤" } },
+              { "label": "3年間部活動等継続", "points": 1, "when": { "t": "manual", "text": "3年間部活動等継続" } },
+              { "label": "体験行事等参加", "points": 1, "when": { "t": "manual", "text": "体験行事等参加" } }
+            ],
+            "note": "2項目まで"
+          },
+          "checks": ["3年次の欠席10日以内，3年次遅刻+早退計10日以内", "本校イベントへの参加が必要"],
+          "raw": "推薦Ⅱ(公私併願，千葉・埼玉県生)：\n一般併願基準同様\n（一般 併願(公私)：工 9科24）",
+          "uncertain": false
+        },
+        {
+          "courses": ["特選"], "section": "一般", "exam_label": "専願［2/10or12受験］", "kind": "単願",
+          "public_only": false, "applicant_scope": null, "gender": null, "strength": null,
+          "any": [[{ "t": "sum", "s": "9科", "min": 36 }], [{ "t": "sum", "s": "5科", "min": 21 }], [{ "t": "sum", "s": "3科", "min": 13 }], [{ "t": "cert", "name": "英検2級" }]],
+          "no_criterion": null,
+          "gates": [{ "t": "none_le", "s": "9科", "grade": 2 }],
+          "bonus": {
+            "max": null, "max_by": null, "applies_to": ["9科", "5科"],
+            "items": [
+              { "label": "英・漢・数検の取得級に応じ+1～2", "points": null, "when": { "t": "cert", "name": "英・漢・数検" } },
+              { "label": "3年間精勤", "points": 1, "when": { "t": "manual", "text": "3年間精勤" } }
+            ],
+            "note": "特選は1項目のみ"
+          },
+          "checks": ["3年次の欠席・遅刻・早退計20日以内", "本校イベントへの参加が必要"],
+          "raw": "専願：[2/10or12受験]\n推薦基準同様(3年次の欠席・遅刻・早退計20日以内)\n（推薦：特選 ①9科36 ②5科21 ③3科13 ④英検2級）",
+          "uncertain": false
+        },
+        {
+          "courses": ["選抜"], "section": "一般", "exam_label": "専願［2/10or12受験］", "kind": "単願",
+          "public_only": false, "applicant_scope": null, "gender": null, "strength": null,
+          "any": [[{ "t": "sum", "s": "9科", "min": 31 }], [{ "t": "sum", "s": "5科", "min": 18 }], [{ "t": "sum", "s": "3科", "min": 11 }], [{ "t": "cert", "name": "英検準2級" }]],
+          "no_criterion": null,
+          "gates": [{ "t": "none_le", "s": "9科", "grade": 1 }, { "t": "none_le", "s": "5科", "grade": 2 }],
+          "bonus": {
+            "max": null, "max_by": null, "applies_to": ["9科", "5科"],
+            "items": [
+              { "label": "英・漢・数検の取得級に応じ+1～2", "points": null, "when": { "t": "cert", "name": "英・漢・数検" } },
+              { "label": "3年間精勤", "points": 1, "when": { "t": "manual", "text": "3年間精勤" } }
+            ],
+            "note": "2項目まで"
+          },
+          "checks": ["3年次の欠席・遅刻・早退計20日以内", "本校イベントへの参加が必要"],
+          "raw": "専願：[2/10or12受験]\n推薦基準同様(3年次の欠席・遅刻・早退計20日以内)\n（推薦：選抜 ①9科31 ②5科18 ③3科11 ④英検準2級）",
+          "uncertain": false
+        },
+        {
+          "courses": ["総進"], "section": "一般", "exam_label": "専願［2/10or12受験］", "kind": "単願",
+          "public_only": false, "applicant_scope": null, "gender": null, "strength": null,
+          "any": [[{ "t": "sum", "s": "9科", "min": 27 }], [{ "t": "sum", "s": "5科", "min": 15 }], [{ "t": "each", "s": ["英"], "min": 4 }], [{ "t": "cert", "name": "英検3級" }]],
+          "no_criterion": null,
+          "gates": [{ "t": "none_le", "s": "9科", "grade": 1 }],
+          "bonus": {
+            "max": null, "max_by": null, "applies_to": ["9科", "5科"],
+            "items": [
+              { "label": "英・漢・数検の取得級に応じ+1～2", "points": null, "when": { "t": "cert", "name": "英・漢・数検" } },
+              { "label": "3年間精勤", "points": 1, "when": { "t": "manual", "text": "3年間精勤" } },
+              { "label": "3年間部活動等継続", "points": 1, "when": { "t": "manual", "text": "3年間部活動等継続" } }
+            ],
+            "note": "2項目まで(総進の5科は1項目)"
+          },
+          "checks": ["3年次の欠席・遅刻・早退計20日以内", "本校イベントへの参加が必要"],
+          "raw": "専願：[2/10or12受験]\n推薦基準同様(3年次の欠席・遅刻・早退計20日以内)\n（推薦：総進 ①9科27 ②5科15 ③英4 ④英検3級）",
+          "uncertain": false
+        },
+        {
+          "courses": ["工"], "section": "一般", "exam_label": "専願［2/10or12受験］", "kind": "単願",
+          "public_only": false, "applicant_scope": null, "gender": null, "strength": null,
+          "any": [[{ "t": "sum", "s": "9科", "min": 22 }]],
+          "no_criterion": null,
+          "gates": [{ "t": "none_le", "s": "9科", "grade": 1 }],
+          "bonus": {
+            "max": null, "max_by": null, "applies_to": ["9科", "5科"],
+            "items": [
+              { "label": "英・漢・数検の取得級に応じ+1～2", "points": null, "when": { "t": "cert", "name": "英・漢・数検" } },
+              { "label": "3年間精勤", "points": 1, "when": { "t": "manual", "text": "3年間精勤" } },
+              { "label": "3年間部活動等継続", "points": 1, "when": { "t": "manual", "text": "3年間部活動等継続" } },
+              { "label": "体験行事等参加", "points": 1, "when": { "t": "manual", "text": "体験行事等参加" } }
+            ],
+            "note": "工の推薦・専願は3項目まで"
+          },
+          "checks": ["3年次の欠席・遅刻・早退計20日以内", "本校イベントへの参加が必要"],
+          "raw": "専願：[2/10or12受験]\n推薦基準同様(3年次の欠席・遅刻・早退計20日以内)\n（推薦：工 9科22）",
+          "uncertain": false
+        },
+        {
+          "courses": ["特選"], "section": "一般", "exam_label": "併願（公私）［2/10or12受験］", "kind": "併願",
+          "public_only": false, "applicant_scope": null, "gender": null, "strength": null,
+          "any": [[{ "t": "sum", "s": "9科", "min": 37 }], [{ "t": "sum", "s": "5科", "min": 22 }], [{ "t": "sum", "s": "3科", "min": 14 }]],
+          "no_criterion": null,
+          "gates": [{ "t": "none_le", "s": "9科", "grade": 2 }],
+          "bonus": {
+            "max": null, "max_by": null, "applies_to": ["9科", "5科"],
+            "items": [
+              { "label": "英・漢・数検の取得級に応じ+1～2", "points": null, "when": { "t": "cert", "name": "英・漢・数検" } },
+              { "label": "3年間精勤", "points": 1, "when": { "t": "manual", "text": "3年間精勤" } }
+            ],
+            "note": "特選は1項目のみ"
+          },
+          "checks": ["3年次の欠席10日以内，3年次遅刻+早退計10日以内", "本校イベントへの参加が必要"],
+          "raw": "併願(公私)：[2/10or12受験]\n特選 ①9科37 ②5科22 ③3科14",
+          "uncertain": false
+        },
+        {
+          "courses": ["選抜"], "section": "一般", "exam_label": "併願（公私）［2/10or12受験］", "kind": "併願",
+          "public_only": false, "applicant_scope": null, "gender": null, "strength": null,
+          "any": [[{ "t": "sum", "s": "9科", "min": 32 }], [{ "t": "sum", "s": "5科", "min": 19 }], [{ "t": "sum", "s": "3科", "min": 12 }]],
+          "no_criterion": null,
+          "gates": [{ "t": "none_le", "s": "9科", "grade": 1 }, { "t": "none_le", "s": "5科", "grade": 2 }],
+          "bonus": {
+            "max": null, "max_by": null, "applies_to": ["9科", "5科"],
+            "items": [
+              { "label": "英・漢・数検の取得級に応じ+1～2", "points": null, "when": { "t": "cert", "name": "英・漢・数検" } },
+              { "label": "3年間精勤", "points": 1, "when": { "t": "manual", "text": "3年間精勤" } }
+            ],
+            "note": "2項目まで"
+          },
+          "checks": ["3年次の欠席10日以内，3年次遅刻+早退計10日以内", "本校イベントへの参加が必要"],
+          "raw": "選抜 ①9科32 ②5科19 ③3科12",
+          "uncertain": false
+        },
+        {
+          "courses": ["総進"], "section": "一般", "exam_label": "併願（公私）［2/10or12受験］", "kind": "併願",
+          "public_only": false, "applicant_scope": null, "gender": null, "strength": null,
+          "any": [[{ "t": "sum", "s": "9科", "min": 29 }], [{ "t": "sum", "s": "5科", "min": 16 }]],
+          "no_criterion": null,
+          "gates": [{ "t": "none_le", "s": "9科", "grade": 1 }],
+          "bonus": {
+            "max": null, "max_by": null, "applies_to": ["9科", "5科"],
+            "items": [
+              { "label": "英・漢・数検の取得級に応じ+1～2", "points": null, "when": { "t": "cert", "name": "英・漢・数検" } },
+              { "label": "3年間精勤", "points": 1, "when": { "t": "manual", "text": "3年間精勤" } },
+              { "label": "3年間部活動等継続", "points": 1, "when": { "t": "manual", "text": "3年間部活動等継続" } }
+            ],
+            "note": "2項目まで(総進の5科は1項目)"
+          },
+          "checks": ["3年次の欠席10日以内，3年次遅刻+早退計10日以内", "本校イベントへの参加が必要"],
+          "raw": "総進 ①9科29 ②5科16",
+          "uncertain": false
+        },
+        {
+          "courses": ["工"], "section": "一般", "exam_label": "併願（公私）［2/10or12受験］", "kind": "併願",
+          "public_only": false, "applicant_scope": null, "gender": null, "strength": null,
+          "any": [[{ "t": "sum", "s": "9科", "min": 24 }]],
+          "no_criterion": null,
+          "gates": [{ "t": "none_le", "s": "9科", "grade": 1 }],
+          "bonus": {
+            "max": null, "max_by": null, "applies_to": ["9科", "5科"],
+            "items": [
+              { "label": "英・漢・数検の取得級に応じ+1～2", "points": null, "when": { "t": "cert", "name": "英・漢・数検" } },
+              { "label": "3年間精勤", "points": 1, "when": { "t": "manual", "text": "3年間精勤" } },
+              { "label": "3年間部活動等継続", "points": 1, "when": { "t": "manual", "text": "3年間部活動等継続" } },
+              { "label": "体験行事等参加", "points": 1, "when": { "t": "manual", "text": "体験行事等参加" } }
+            ],
+            "note": "2項目まで"
+          },
+          "checks": ["3年次の欠席10日以内，3年次遅刻+早退計10日以内", "本校イベントへの参加が必要"],
+          "raw": "工 9科24",
+          "uncertain": false
+        }
+      ]
+    },
+    {
+      "district": "大田",
+      "school_name": "東京実業",
+      "division": null,
+      "phone": "03-3732-4481",
+      "gender_type": "共学",
+      "establishment": "私立",
+      "courses": [
+        { "name": "特進", "raw": "普 特進 20(5)", "capacity": 20, "recommend_capacity": 5, "gender": null },
+        { "name": "総進Ⅰ", "raw": "普 総進Ⅰ 35(15)", "capacity": 35, "recommend_capacity": 15, "gender": null },
+        { "name": "総進Ⅱ", "raw": "普 総進Ⅱ 35(15)", "capacity": 35, "recommend_capacity": 15, "gender": null },
+        { "name": "総進Ⅲ", "raw": "普 総進Ⅲ 35(30)", "capacity": 35, "recommend_capacity": 30, "gender": null },
+        { "name": "ビジネス", "raw": "普 ビジネス 70(30)", "capacity": 70, "recommend_capacity": 30, "gender": null },
+        { "name": "機械システム", "raw": "機 機械システム 35(15)", "capacity": 35, "recommend_capacity": 15, "gender": null },
+        { "name": "電気システム", "raw": "電 電気システム 35(15)", "capacity": 35, "recommend_capacity": 15, "gender": null },
+        { "name": "ゲームIT", "raw": "電 ゲームIT 35(15)", "capacity": 35, "recommend_capacity": 15, "gender": null }
+      ],
+      "exams": "面",
+      "other_raw": "総進Ⅱ・Ⅲ・ビジ・機械・電気・ITの数値は目安(相談可)\n特進の3科は国数英・国英社・数英理のいずれか\n3年次の欠席10日以内　特進・総進Ⅰは9科に1不可\n内申加点(①②各+2まで[計最大+3まで]，特進除く)：\n①英・漢・数検・珠算検定3級は+1(準2級は+2)，\n②生徒会役員，委員長，同一クラブ3年間(外部チーム含む)，部長，3年次皆勤は+1，生徒会長，3年間皆勤は+2\n特進は英検準2級で内申に+1，2級で+2",
+      "rules": [
+        {
+          "courses": ["特進"], "section": "推薦", "exam_label": "推薦", "kind": "推薦",
+          "public_only": false, "applicant_scope": null, "gender": null, "strength": null,
+          "any": [[{ "t": "sum", "s": "3科", "min": 12 }], [{ "t": "sum", "s": ["国", "英", "社"], "min": 12 }], [{ "t": "sum", "s": ["数", "英", "理"], "min": 12 }], [{ "t": "sum", "s": "5科", "min": 19 }]],
+          "no_criterion": null,
+          "gates": [{ "t": "none_le", "s": "9科", "grade": 1 }],
+          "bonus": {
+            "max": null, "max_by": null, "applies_to": null,
+            "items": [
+              { "label": "英検準2級", "points": 1, "when": { "t": "cert", "name": "英検準2級" } },
+              { "label": "英検2級", "points": 2, "when": { "t": "cert", "name": "英検2級" } }
+            ],
+            "note": "特進は英検準2級で内申に+1，2級で+2"
+          },
+          "checks": ["3年次の欠席10日以内"],
+          "raw": "推薦：特進 3科12または5科19",
+          "uncertain": false
+        },
+        {
+          "courses": ["総進Ⅰ"], "section": "推薦", "exam_label": "推薦", "kind": "推薦",
+          "public_only": false, "applicant_scope": null, "gender": null, "strength": null,
+          "any": [[{ "t": "sum", "s": "9科", "min": 27 }]],
+          "no_criterion": null,
+          "gates": [{ "t": "none_le", "s": "9科", "grade": 1 }],
+          "bonus": {
+            "max": 3, "max_by": null, "applies_to": null,
+            "items": [
+              { "label": "①英・漢・数検・珠算検定3級", "points": 1, "when": { "t": "cert", "name": "英・漢・数検・珠算検定いずれか3級" } },
+              { "label": "①英・漢・数検・珠算検定準2級", "points": 2, "when": { "t": "cert", "name": "英・漢・数検・珠算検定いずれか準2級" } },
+              { "label": "②生徒会役員，委員長，同一クラブ3年間(外部チーム含む)，部長，3年次皆勤", "points": 1, "when": { "t": "manual", "text": "生徒会役員，委員長，同一クラブ3年間(外部チーム含む)，部長，3年次皆勤" } },
+              { "label": "②生徒会長，3年間皆勤", "points": 2, "when": { "t": "manual", "text": "生徒会長，3年間皆勤" } }
+            ],
+            "note": "①②各+2まで[計最大+3まで]，特進除く"
+          },
+          "checks": ["3年次の欠席10日以内"],
+          "raw": "総進Ⅰ 9科27",
+          "uncertain": false
+        },
+        {
+          "courses": ["総進Ⅱ", "総進Ⅲ", "ビジネス"], "section": "推薦", "exam_label": "推薦", "kind": "推薦",
+          "public_only": false, "applicant_scope": null, "gender": null, "strength": "目安",
+          "any": [[{ "t": "sum", "s": "9科", "min": 25 }]],
+          "no_criterion": null,
+          "gates": [],
+          "bonus": {
+            "max": 3, "max_by": null, "applies_to": null,
+            "items": [
+              { "label": "①英・漢・数検・珠算検定3級", "points": 1, "when": { "t": "cert", "name": "英・漢・数検・珠算検定いずれか3級" } },
+              { "label": "①英・漢・数検・珠算検定準2級", "points": 2, "when": { "t": "cert", "name": "英・漢・数検・珠算検定いずれか準2級" } },
+              { "label": "②生徒会役員，委員長，同一クラブ3年間(外部チーム含む)，部長，3年次皆勤", "points": 1, "when": { "t": "manual", "text": "生徒会役員，委員長，同一クラブ3年間(外部チーム含む)，部長，3年次皆勤" } },
+              { "label": "②生徒会長，3年間皆勤", "points": 2, "when": { "t": "manual", "text": "生徒会長，3年間皆勤" } }
+            ],
+            "note": "①②各+2まで[計最大+3まで]，特進除く"
+          },
+          "checks": ["3年次の欠席10日以内", "総進Ⅲはサッカー・野球部対象", "数値は目安(相談可)"],
+          "raw": "総進Ⅱ・Ⅲ・ビジ 9科25\n(総進Ⅲはサッカー・野球部対象)",
+          "uncertain": false
+        },
+        {
+          "courses": ["機械システム", "電気システム"], "section": "推薦", "exam_label": "推薦", "kind": "推薦",
+          "public_only": false, "applicant_scope": null, "gender": null, "strength": "目安",
+          "any": [[{ "t": "sum", "s": "9科", "min": 23 }]],
+          "no_criterion": null,
+          "gates": [],
+          "bonus": {
+            "max": 3, "max_by": null, "applies_to": null,
+            "items": [
+              { "label": "①英・漢・数検・珠算検定3級", "points": 1, "when": { "t": "cert", "name": "英・漢・数検・珠算検定いずれか3級" } },
+              { "label": "①英・漢・数検・珠算検定準2級", "points": 2, "when": { "t": "cert", "name": "英・漢・数検・珠算検定いずれか準2級" } },
+              { "label": "②生徒会役員，委員長，同一クラブ3年間(外部チーム含む)，部長，3年次皆勤", "points": 1, "when": { "t": "manual", "text": "生徒会役員，委員長，同一クラブ3年間(外部チーム含む)，部長，3年次皆勤" } },
+              { "label": "②生徒会長，3年間皆勤", "points": 2, "when": { "t": "manual", "text": "生徒会長，3年間皆勤" } }
+            ],
+            "note": "①②各+2まで[計最大+3まで]，特進除く"
+          },
+          "checks": ["3年次の欠席10日以内", "数値は目安(相談可)"],
+          "raw": "機械・電気 9科23",
+          "uncertain": false
+        },
+        {
+          "courses": ["ゲームIT"], "section": "推薦", "exam_label": "推薦", "kind": "推薦",
+          "public_only": false, "applicant_scope": null, "gender": null, "strength": "目安",
+          "any": [[{ "t": "sum", "s": "9科", "min": 27 }]],
+          "no_criterion": null,
+          "gates": [],
+          "bonus": {
+            "max": 3, "max_by": null, "applies_to": null,
+            "items": [
+              { "label": "①英・漢・数検・珠算検定3級", "points": 1, "when": { "t": "cert", "name": "英・漢・数検・珠算検定いずれか3級" } },
+              { "label": "①英・漢・数検・珠算検定準2級", "points": 2, "when": { "t": "cert", "name": "英・漢・数検・珠算検定いずれか準2級" } },
+              { "label": "②生徒会役員，委員長，同一クラブ3年間(外部チーム含む)，部長，3年次皆勤", "points": 1, "when": { "t": "manual", "text": "生徒会役員，委員長，同一クラブ3年間(外部チーム含む)，部長，3年次皆勤" } },
+              { "label": "②生徒会長，3年間皆勤", "points": 2, "when": { "t": "manual", "text": "生徒会長，3年間皆勤" } }
+            ],
+            "note": "①②各+2まで[計最大+3まで]，特進除く"
+          },
+          "checks": ["3年次の欠席10日以内", "数値は目安(相談可)"],
+          "raw": "IT 9科27",
+          "uncertain": false
+        },
+        {
+          "courses": ["特進"], "section": "推薦", "exam_label": "併願Ⅰ（公私, 埼玉・千葉県生）", "kind": "併願",
+          "public_only": false, "applicant_scope": "埼玉・千葉県生", "gender": null, "strength": null,
+          "any": [[{ "t": "sum", "s": "3科", "min": 13 }], [{ "t": "sum", "s": ["国", "英", "社"], "min": 13 }], [{ "t": "sum", "s": ["数", "英", "理"], "min": 13 }], [{ "t": "sum", "s": "5科", "min": 20 }]],
+          "no_criterion": null,
+          "gates": [{ "t": "none_le", "s": "9科", "grade": 1 }],
+          "bonus": {
+            "max": null, "max_by": null, "applies_to": null,
+            "items": [
+              { "label": "英検準2級", "points": 1, "when": { "t": "cert", "name": "英検準2級" } },
+              { "label": "英検2級", "points": 2, "when": { "t": "cert", "name": "英検2級" } }
+            ],
+            "note": "特進は英検準2級で内申に+1，2級で+2"
+          },
+          "checks": ["3年次の欠席10日以内"],
+          "raw": "併願Ⅰ(公私，埼玉・千葉県生)：\n一般併願Ⅱ基準同様\n（一般 併願Ⅱ(公私)：特進 3科13または5科20）",
+          "uncertain": false
+        },
+        {
+          "courses": ["総進Ⅰ"], "section": "推薦", "exam_label": "併願Ⅰ（公私, 埼玉・千葉県生）", "kind": "併願",
+          "public_only": false, "applicant_scope": "埼玉・千葉県生", "gender": null, "strength": null,
+          "any": [[{ "t": "sum", "s": "9科", "min": 28 }]],
+          "no_criterion": null,
+          "gates": [{ "t": "none_le", "s": "9科", "grade": 1 }],
+          "bonus": {
+            "max": 3, "max_by": null, "applies_to": null,
+            "items": [
+              { "label": "①英・漢・数検・珠算検定3級", "points": 1, "when": { "t": "cert", "name": "英・漢・数検・珠算検定いずれか3級" } },
+              { "label": "①英・漢・数検・珠算検定準2級", "points": 2, "when": { "t": "cert", "name": "英・漢・数検・珠算検定いずれか準2級" } },
+              { "label": "②生徒会役員，委員長，同一クラブ3年間(外部チーム含む)，部長，3年次皆勤", "points": 1, "when": { "t": "manual", "text": "生徒会役員，委員長，同一クラブ3年間(外部チーム含む)，部長，3年次皆勤" } },
+              { "label": "②生徒会長，3年間皆勤", "points": 2, "when": { "t": "manual", "text": "生徒会長，3年間皆勤" } }
+            ],
+            "note": "①②各+2まで[計最大+3まで]，特進除く"
+          },
+          "checks": ["3年次の欠席10日以内"],
+          "raw": "併願Ⅰ(公私，埼玉・千葉県生)：\n一般併願Ⅱ基準同様\n（一般 併願Ⅱ(公私)：総進Ⅰ 9科28）",
+          "uncertain": false
+        },
+        {
+          "courses": ["総進Ⅱ", "ビジネス"], "section": "推薦", "exam_label": "併願Ⅰ（公私, 埼玉・千葉県生）", "kind": "併願",
+          "public_only": false, "applicant_scope": "埼玉・千葉県生", "gender": null, "strength": "目安",
+          "any": [[{ "t": "sum", "s": "9科", "min": 27 }]],
+          "no_criterion": null,
+          "gates": [],
+          "bonus": {
+            "max": 3, "max_by": null, "applies_to": null,
+            "items": [
+              { "label": "①英・漢・数検・珠算検定3級", "points": 1, "when": { "t": "cert", "name": "英・漢・数検・珠算検定いずれか3級" } },
+              { "label": "①英・漢・数検・珠算検定準2級", "points": 2, "when": { "t": "cert", "name": "英・漢・数検・珠算検定いずれか準2級" } },
+              { "label": "②生徒会役員，委員長，同一クラブ3年間(外部チーム含む)，部長，3年次皆勤", "points": 1, "when": { "t": "manual", "text": "生徒会役員，委員長，同一クラブ3年間(外部チーム含む)，部長，3年次皆勤" } },
+              { "label": "②生徒会長，3年間皆勤", "points": 2, "when": { "t": "manual", "text": "生徒会長，3年間皆勤" } }
+            ],
+            "note": "①②各+2まで[計最大+3まで]，特進除く"
+          },
+          "checks": ["3年次の欠席10日以内", "数値は目安(相談可)"],
+          "raw": "併願Ⅰ(公私，埼玉・千葉県生)：\n一般併願Ⅱ基準同様\n（一般 併願Ⅱ(公私)：総進Ⅱ・ビジ 9科27）",
+          "uncertain": false
+        },
+        {
+          "courses": ["機械システム", "電気システム"], "section": "推薦", "exam_label": "併願Ⅰ（公私, 埼玉・千葉県生）", "kind": "併願",
+          "public_only": false, "applicant_scope": "埼玉・千葉県生", "gender": null, "strength": "目安",
+          "any": [[{ "t": "sum", "s": "9科", "min": 25 }]],
+          "no_criterion": null,
+          "gates": [],
+          "bonus": {
+            "max": 3, "max_by": null, "applies_to": null,
+            "items": [
+              { "label": "①英・漢・数検・珠算検定3級", "points": 1, "when": { "t": "cert", "name": "英・漢・数検・珠算検定いずれか3級" } },
+              { "label": "①英・漢・数検・珠算検定準2級", "points": 2, "when": { "t": "cert", "name": "英・漢・数検・珠算検定いずれか準2級" } },
+              { "label": "②生徒会役員，委員長，同一クラブ3年間(外部チーム含む)，部長，3年次皆勤", "points": 1, "when": { "t": "manual", "text": "生徒会役員，委員長，同一クラブ3年間(外部チーム含む)，部長，3年次皆勤" } },
+              { "label": "②生徒会長，3年間皆勤", "points": 2, "when": { "t": "manual", "text": "生徒会長，3年間皆勤" } }
+            ],
+            "note": "①②各+2まで[計最大+3まで]，特進除く"
+          },
+          "checks": ["3年次の欠席10日以内", "数値は目安(相談可)"],
+          "raw": "併願Ⅰ(公私，埼玉・千葉県生)：\n一般併願Ⅱ基準同様\n（一般 併願Ⅱ(公私)：機械・電気 9科25）",
+          "uncertain": false
+        },
+        {
+          "courses": ["ゲームIT"], "section": "推薦", "exam_label": "併願Ⅰ（公私, 埼玉・千葉県生）", "kind": "併願",
+          "public_only": false, "applicant_scope": "埼玉・千葉県生", "gender": null, "strength": "目安",
+          "any": [[{ "t": "sum", "s": "9科", "min": 29 }]],
+          "no_criterion": null,
+          "gates": [],
+          "bonus": {
+            "max": 3, "max_by": null, "applies_to": null,
+            "items": [
+              { "label": "①英・漢・数検・珠算検定3級", "points": 1, "when": { "t": "cert", "name": "英・漢・数検・珠算検定いずれか3級" } },
+              { "label": "①英・漢・数検・珠算検定準2級", "points": 2, "when": { "t": "cert", "name": "英・漢・数検・珠算検定いずれか準2級" } },
+              { "label": "②生徒会役員，委員長，同一クラブ3年間(外部チーム含む)，部長，3年次皆勤", "points": 1, "when": { "t": "manual", "text": "生徒会役員，委員長，同一クラブ3年間(外部チーム含む)，部長，3年次皆勤" } },
+              { "label": "②生徒会長，3年間皆勤", "points": 2, "when": { "t": "manual", "text": "生徒会長，3年間皆勤" } }
+            ],
+            "note": "①②各+2まで[計最大+3まで]，特進除く"
+          },
+          "checks": ["3年次の欠席10日以内", "数値は目安(相談可)"],
+          "raw": "併願Ⅰ(公私，埼玉・千葉県生)：\n一般併願Ⅱ基準同様\n（一般 併願Ⅱ(公私)：IT 9科29）",
+          "uncertain": false
+        },
+        {
+          "courses": ["特進"], "section": "一般", "exam_label": "併願Ⅱ（公私）", "kind": "併願",
+          "public_only": false, "applicant_scope": null, "gender": null, "strength": null,
+          "any": [[{ "t": "sum", "s": "3科", "min": 13 }], [{ "t": "sum", "s": ["国", "英", "社"], "min": 13 }], [{ "t": "sum", "s": ["数", "英", "理"], "min": 13 }], [{ "t": "sum", "s": "5科", "min": 20 }]],
+          "no_criterion": null,
+          "gates": [{ "t": "none_le", "s": "9科", "grade": 1 }],
+          "bonus": {
+            "max": null, "max_by": null, "applies_to": null,
+            "items": [
+              { "label": "英検準2級", "points": 1, "when": { "t": "cert", "name": "英検準2級" } },
+              { "label": "英検2級", "points": 2, "when": { "t": "cert", "name": "英検2級" } }
+            ],
+            "note": "特進は英検準2級で内申に+1，2級で+2"
+          },
+          "checks": ["3年次の欠席10日以内"],
+          "raw": "併願Ⅱ(公私)：\n特進 3科13または5科20",
+          "uncertain": false
+        },
+        {
+          "courses": ["総進Ⅰ"], "section": "一般", "exam_label": "併願Ⅱ（公私）", "kind": "併願",
+          "public_only": false, "applicant_scope": null, "gender": null, "strength": null,
+          "any": [[{ "t": "sum", "s": "9科", "min": 28 }]],
+          "no_criterion": null,
+          "gates": [{ "t": "none_le", "s": "9科", "grade": 1 }],
+          "bonus": {
+            "max": 3, "max_by": null, "applies_to": null,
+            "items": [
+              { "label": "①英・漢・数検・珠算検定3級", "points": 1, "when": { "t": "cert", "name": "英・漢・数検・珠算検定いずれか3級" } },
+              { "label": "①英・漢・数検・珠算検定準2級", "points": 2, "when": { "t": "cert", "name": "英・漢・数検・珠算検定いずれか準2級" } },
+              { "label": "②生徒会役員，委員長，同一クラブ3年間(外部チーム含む)，部長，3年次皆勤", "points": 1, "when": { "t": "manual", "text": "生徒会役員，委員長，同一クラブ3年間(外部チーム含む)，部長，3年次皆勤" } },
+              { "label": "②生徒会長，3年間皆勤", "points": 2, "when": { "t": "manual", "text": "生徒会長，3年間皆勤" } }
+            ],
+            "note": "①②各+2まで[計最大+3まで]，特進除く"
+          },
+          "checks": ["3年次の欠席10日以内"],
+          "raw": "総進Ⅰ 9科28",
+          "uncertain": false
+        },
+        {
+          "courses": ["総進Ⅱ", "ビジネス"], "section": "一般", "exam_label": "併願Ⅱ（公私）", "kind": "併願",
+          "public_only": false, "applicant_scope": null, "gender": null, "strength": "目安",
+          "any": [[{ "t": "sum", "s": "9科", "min": 27 }]],
+          "no_criterion": null,
+          "gates": [],
+          "bonus": {
+            "max": 3, "max_by": null, "applies_to": null,
+            "items": [
+              { "label": "①英・漢・数検・珠算検定3級", "points": 1, "when": { "t": "cert", "name": "英・漢・数検・珠算検定いずれか3級" } },
+              { "label": "①英・漢・数検・珠算検定準2級", "points": 2, "when": { "t": "cert", "name": "英・漢・数検・珠算検定いずれか準2級" } },
+              { "label": "②生徒会役員，委員長，同一クラブ3年間(外部チーム含む)，部長，3年次皆勤", "points": 1, "when": { "t": "manual", "text": "生徒会役員，委員長，同一クラブ3年間(外部チーム含む)，部長，3年次皆勤" } },
+              { "label": "②生徒会長，3年間皆勤", "points": 2, "when": { "t": "manual", "text": "生徒会長，3年間皆勤" } }
+            ],
+            "note": "①②各+2まで[計最大+3まで]，特進除く"
+          },
+          "checks": ["3年次の欠席10日以内", "数値は目安(相談可)"],
+          "raw": "総進Ⅱ・ビジ 9科27",
+          "uncertain": false
+        },
+        {
+          "courses": ["機械システム", "電気システム"], "section": "一般", "exam_label": "併願Ⅱ（公私）", "kind": "併願",
+          "public_only": false, "applicant_scope": null, "gender": null, "strength": "目安",
+          "any": [[{ "t": "sum", "s": "9科", "min": 25 }]],
+          "no_criterion": null,
+          "gates": [],
+          "bonus": {
+            "max": 3, "max_by": null, "applies_to": null,
+            "items": [
+              { "label": "①英・漢・数検・珠算検定3級", "points": 1, "when": { "t": "cert", "name": "英・漢・数検・珠算検定いずれか3級" } },
+              { "label": "①英・漢・数検・珠算検定準2級", "points": 2, "when": { "t": "cert", "name": "英・漢・数検・珠算検定いずれか準2級" } },
+              { "label": "②生徒会役員，委員長，同一クラブ3年間(外部チーム含む)，部長，3年次皆勤", "points": 1, "when": { "t": "manual", "text": "生徒会役員，委員長，同一クラブ3年間(外部チーム含む)，部長，3年次皆勤" } },
+              { "label": "②生徒会長，3年間皆勤", "points": 2, "when": { "t": "manual", "text": "生徒会長，3年間皆勤" } }
+            ],
+            "note": "①②各+2まで[計最大+3まで]，特進除く"
+          },
+          "checks": ["3年次の欠席10日以内", "数値は目安(相談可)"],
+          "raw": "機械・電気 9科25",
+          "uncertain": false
+        },
+        {
+          "courses": ["ゲームIT"], "section": "一般", "exam_label": "併願Ⅱ（公私）", "kind": "併願",
+          "public_only": false, "applicant_scope": null, "gender": null, "strength": "目安",
+          "any": [[{ "t": "sum", "s": "9科", "min": 29 }]],
+          "no_criterion": null,
+          "gates": [],
+          "bonus": {
+            "max": 3, "max_by": null, "applies_to": null,
+            "items": [
+              { "label": "①英・漢・数検・珠算検定3級", "points": 1, "when": { "t": "cert", "name": "英・漢・数検・珠算検定いずれか3級" } },
+              { "label": "①英・漢・数検・珠算検定準2級", "points": 2, "when": { "t": "cert", "name": "英・漢・数検・珠算検定いずれか準2級" } },
+              { "label": "②生徒会役員，委員長，同一クラブ3年間(外部チーム含む)，部長，3年次皆勤", "points": 1, "when": { "t": "manual", "text": "生徒会役員，委員長，同一クラブ3年間(外部チーム含む)，部長，3年次皆勤" } },
+              { "label": "②生徒会長，3年間皆勤", "points": 2, "when": { "t": "manual", "text": "生徒会長，3年間皆勤" } }
+            ],
+            "note": "①②各+2まで[計最大+3まで]，特進除く"
+          },
+          "checks": ["3年次の欠席10日以内", "数値は目安(相談可)"],
+          "raw": "IT 9科29",
+          "uncertain": false
+        }
+      ]
+    },
+    {
+      "district": "大田",
+      "school_name": "羽田国際",
+      "division": null,
+      "phone": "03-3742-1511",
+      "gender_type": "共学",
+      "establishment": "私立",
+      "courses": [
+        { "name": "特別進学", "raw": "特別進学 36(18)", "capacity": 36, "recommend_capacity": 18, "gender": null },
+        { "name": "総合進学", "raw": "総合進学 108(54)", "capacity": 108, "recommend_capacity": 54, "gender": null },
+        { "name": "幼児教育", "raw": "幼児教育 女36(18)", "capacity": 36, "recommend_capacity": 18, "gender": "女子" }
+      ],
+      "exams": "面 作",
+      "other_raw": "3年間の欠席30日かつ3年次の欠席10日程度以内\n内申加点対象(5科に+1・9科に+3まで)：\n①英・漢・数検3級，②生徒会役員・委員長・部長，③出席状況良好(3年間欠席10日以内)，④入試説明会参加，⑤学校説明イベント参加(①～④最大+1，⑤最大+2)",
+      "rules": [
+        {
+          "courses": ["特別進学"], "section": "推薦", "exam_label": "推薦", "kind": "推薦",
+          "public_only": false, "applicant_scope": null, "gender": null, "strength": null,
+          "any": [[{ "t": "sum", "s": "5科", "min": 18 }]],
+          "no_criterion": null, "gates": [],
+          "bonus": {
+            "max": null, "max_by": { "5科": 1, "9科": 3 }, "applies_to": ["5科", "9科"],
+            "items": [
+              { "label": "①英・漢・数検3級", "points": 1, "when": { "t": "cert", "name": "英・漢・数検いずれか3級" } },
+              { "label": "②生徒会役員・委員長・部長", "points": 1, "when": { "t": "manual", "text": "生徒会役員・委員長・部長" } },
+              { "label": "③出席状況良好(3年間欠席10日以内)", "points": 1, "when": { "t": "manual", "text": "3年間欠席10日以内" } },
+              { "label": "④入試説明会参加", "points": 1, "when": { "t": "manual", "text": "入試説明会参加" } },
+              { "label": "⑤学校説明イベント参加", "points": 2, "when": { "t": "manual", "text": "学校説明イベント参加" } }
+            ],
+            "note": "①～④最大+1，⑤最大+2。5科に+1・9科に+3まで"
+          },
+          "checks": ["3年間の欠席30日かつ3年次の欠席10日程度以内"],
+          "raw": "特進 5科18",
+          "uncertain": false
+        },
+        {
+          "courses": ["総合進学"], "section": "推薦", "exam_label": "推薦", "kind": "推薦",
+          "public_only": false, "applicant_scope": null, "gender": null, "strength": null,
+          "any": [[{ "t": "sum", "s": "9科", "min": 28 }], [{ "t": "sum", "s": "5科", "min": 16 }]],
+          "no_criterion": null, "gates": [],
+          "bonus": {
+            "max": null, "max_by": { "5科": 1, "9科": 3 }, "applies_to": ["5科", "9科"],
+            "items": [
+              { "label": "①英・漢・数検3級", "points": 1, "when": { "t": "cert", "name": "英・漢・数検いずれか3級" } },
+              { "label": "②生徒会役員・委員長・部長", "points": 1, "when": { "t": "manual", "text": "生徒会役員・委員長・部長" } },
+              { "label": "③出席状況良好(3年間欠席10日以内)", "points": 1, "when": { "t": "manual", "text": "3年間欠席10日以内" } },
+              { "label": "④入試説明会参加", "points": 1, "when": { "t": "manual", "text": "入試説明会参加" } },
+              { "label": "⑤学校説明イベント参加", "points": 2, "when": { "t": "manual", "text": "学校説明イベント参加" } }
+            ],
+            "note": "①～④最大+1，⑤最大+2。5科に+1・9科に+3まで"
+          },
+          "checks": ["3年間の欠席30日かつ3年次の欠席10日程度以内"],
+          "raw": "総進 9科28または5科16",
+          "uncertain": false
+        },
+        {
+          "courses": ["幼児教育"], "section": "推薦", "exam_label": "推薦", "kind": "推薦",
+          "public_only": false, "applicant_scope": null, "gender": null, "strength": null,
+          "any": [[{ "t": "sum", "s": "9科", "min": 27 }], [{ "t": "sum", "s": "5科", "min": 15 }]],
+          "no_criterion": null, "gates": [],
+          "bonus": {
+            "max": null, "max_by": { "5科": 1, "9科": 3 }, "applies_to": ["5科", "9科"],
+            "items": [
+              { "label": "①英・漢・数検3級", "points": 1, "when": { "t": "cert", "name": "英・漢・数検いずれか3級" } },
+              { "label": "②生徒会役員・委員長・部長", "points": 1, "when": { "t": "manual", "text": "生徒会役員・委員長・部長" } },
+              { "label": "③出席状況良好(3年間欠席10日以内)", "points": 1, "when": { "t": "manual", "text": "3年間欠席10日以内" } },
+              { "label": "④入試説明会参加", "points": 1, "when": { "t": "manual", "text": "入試説明会参加" } },
+              { "label": "⑤学校説明イベント参加", "points": 2, "when": { "t": "manual", "text": "学校説明イベント参加" } }
+            ],
+            "note": "①～④最大+1，⑤最大+2。5科に+1・9科に+3まで"
+          },
+          "checks": ["3年間の欠席30日かつ3年次の欠席10日程度以内"],
+          "raw": "幼教 9科27または5科15",
+          "uncertain": false
+        },
+        {
+          "courses": ["特別進学"], "section": "一般", "exam_label": "併願（公）［2/10受験］", "kind": "併願",
+          "public_only": true, "applicant_scope": null, "gender": null, "strength": null,
+          "any": [[{ "t": "sum", "s": "5科", "min": 20 }]],
+          "no_criterion": null, "gates": [],
+          "bonus": {
+            "max": null, "max_by": { "5科": 1, "9科": 3 }, "applies_to": ["5科", "9科"],
+            "items": [
+              { "label": "①英・漢・数検3級", "points": 1, "when": { "t": "cert", "name": "英・漢・数検いずれか3級" } },
+              { "label": "②生徒会役員・委員長・部長", "points": 1, "when": { "t": "manual", "text": "生徒会役員・委員長・部長" } },
+              { "label": "③出席状況良好(3年間欠席10日以内)", "points": 1, "when": { "t": "manual", "text": "3年間欠席10日以内" } },
+              { "label": "④入試説明会参加", "points": 1, "when": { "t": "manual", "text": "入試説明会参加" } },
+              { "label": "⑤学校説明イベント参加", "points": 2, "when": { "t": "manual", "text": "学校説明イベント参加" } }
+            ],
+            "note": "①～④最大+1，⑤最大+2。5科に+1・9科に+3まで"
+          },
+          "checks": ["3年間の欠席30日かつ3年次の欠席10日程度以内"],
+          "raw": "併願(公)：[2/10受験]\n特進 5科20",
+          "uncertain": false
+        },
+        {
+          "courses": ["総合進学"], "section": "一般", "exam_label": "併願（公）［2/10受験］", "kind": "併願",
+          "public_only": true, "applicant_scope": null, "gender": null, "strength": null,
+          "any": [[{ "t": "sum", "s": "9科", "min": 30 }], [{ "t": "sum", "s": "5科", "min": 17 }]],
+          "no_criterion": null, "gates": [],
+          "bonus": {
+            "max": null, "max_by": { "5科": 1, "9科": 3 }, "applies_to": ["5科", "9科"],
+            "items": [
+              { "label": "①英・漢・数検3級", "points": 1, "when": { "t": "cert", "name": "英・漢・数検いずれか3級" } },
+              { "label": "②生徒会役員・委員長・部長", "points": 1, "when": { "t": "manual", "text": "生徒会役員・委員長・部長" } },
+              { "label": "③出席状況良好(3年間欠席10日以内)", "points": 1, "when": { "t": "manual", "text": "3年間欠席10日以内" } },
+              { "label": "④入試説明会参加", "points": 1, "when": { "t": "manual", "text": "入試説明会参加" } },
+              { "label": "⑤学校説明イベント参加", "points": 2, "when": { "t": "manual", "text": "学校説明イベント参加" } }
+            ],
+            "note": "①～④最大+1，⑤最大+2。5科に+1・9科に+3まで"
+          },
+          "checks": ["3年間の欠席30日かつ3年次の欠席10日程度以内", "第1志望[2/10受験]：総進・幼教は入試点に30点加算(要入試相談)"],
+          "raw": "総進 9科30または5科17\n第1志望：[2/10受験]\n総進・幼教 入試点に30点加算\n(要入試相談)",
+          "uncertain": false
+        },
+        {
+          "courses": ["幼児教育"], "section": "一般", "exam_label": "併願（公）［2/10受験］", "kind": "併願",
+          "public_only": true, "applicant_scope": null, "gender": null, "strength": null,
+          "any": [[{ "t": "sum", "s": "9科", "min": 29 }], [{ "t": "sum", "s": "5科", "min": 16 }]],
+          "no_criterion": null, "gates": [],
+          "bonus": {
+            "max": null, "max_by": { "5科": 1, "9科": 3 }, "applies_to": ["5科", "9科"],
+            "items": [
+              { "label": "①英・漢・数検3級", "points": 1, "when": { "t": "cert", "name": "英・漢・数検いずれか3級" } },
+              { "label": "②生徒会役員・委員長・部長", "points": 1, "when": { "t": "manual", "text": "生徒会役員・委員長・部長" } },
+              { "label": "③出席状況良好(3年間欠席10日以内)", "points": 1, "when": { "t": "manual", "text": "3年間欠席10日以内" } },
+              { "label": "④入試説明会参加", "points": 1, "when": { "t": "manual", "text": "入試説明会参加" } },
+              { "label": "⑤学校説明イベント参加", "points": 2, "when": { "t": "manual", "text": "学校説明イベント参加" } }
+            ],
+            "note": "①～④最大+1，⑤最大+2。5科に+1・9科に+3まで"
+          },
+          "checks": ["3年間の欠席30日かつ3年次の欠席10日程度以内", "第1志望[2/10受験]：総進・幼教は入試点に30点加算(要入試相談)"],
+          "raw": "幼教 9科29または5科16\n第1志望：[2/10受験]\n総進・幼教 入試点に30点加算\n(要入試相談)",
+          "uncertain": false
+        }
+      ]
+    },
+    {
+      "district": "大田",
+      "school_name": "東京",
+      "division": null,
+      "phone": "03-3750-2635",
+      "gender_type": "共学",
+      "establishment": "私立",
+      "courses": [
+        { "name": "", "raw": "普 300 (Ⅰ120・Ⅱ30)", "capacity": 300, "recommend_capacity": 150, "gender": null }
+      ],
+      "exams": "面 ※作 ※適",
+      "other_raw": "数値は出願基準　推薦は3か年の欠席合計15日以内\n一般併願は3か年の欠席合計20日以内\n加点制度：英・漢・数検3級，出席優良(3か年の欠席合計5日以内)，生徒会役員，部長，委員長は内申に各+1，英・漢・数検準2級，生徒会長は各+2[推薦は3科に+1・5科に+2・9科に+3まで，一般併願は5科+1・9科に+2まで]\n※推薦Ⅰは作文(400字60分)と面接\n※推薦Ⅱは適性検査(3科計60分マークシート)と面接",
+      "rules": [
+        {
+          "courses": ["*"], "section": "推薦", "exam_label": "推薦Ⅰ", "kind": "推薦",
+          "public_only": false, "applicant_scope": null, "gender": null, "strength": "出願基準",
+          "any": [[{ "t": "sum", "s": "9科", "min": 32 }], [{ "t": "sum", "s": "5科", "min": 18 }], [{ "t": "sum", "s": "3科", "min": 11 }]],
+          "no_criterion": null,
+          "gates": [{ "t": "none_le", "s": "3科", "grade": 2 }, { "t": "none_le", "s": ["理", "社", "音", "美", "保体", "技家"], "grade": 1 }],
+          "bonus": {
+            "max": null, "max_by": { "3科": 1, "5科": 2, "9科": 3 }, "applies_to": ["3科", "5科", "9科"],
+            "items": [
+              { "label": "英・漢・数検3級", "points": 1, "when": { "t": "cert", "name": "英・漢・数検いずれか3級" } },
+              { "label": "出席優良(3か年の欠席合計5日以内)", "points": 1, "when": { "t": "manual", "text": "3か年の欠席合計5日以内" } },
+              { "label": "生徒会役員，部長，委員長", "points": 1, "when": { "t": "manual", "text": "生徒会役員，部長，委員長" } },
+              { "label": "英・漢・数検準2級", "points": 2, "when": { "t": "cert", "name": "英・漢・数検いずれか準2級" } },
+              { "label": "生徒会長", "points": 2, "when": { "t": "manual", "text": "生徒会長" } }
+            ],
+            "note": "推薦は3科に+1・5科に+2・9科に+3まで"
+          },
+          "checks": ["3か年の欠席合計15日以内", "作文(400字60分)と面接"],
+          "raw": "推薦Ⅰ：\n①9科32 ②5科18 ③3科11\n(①～③のいずれか，\n3科に2，他6科に1は不可)",
+          "uncertain": false
+        },
+        {
+          "courses": ["*"], "section": "推薦", "exam_label": "推薦Ⅱ", "kind": "推薦",
+          "public_only": false, "applicant_scope": null, "gender": null, "strength": null,
+          "any": [],
+          "no_criterion": "内申基準なし",
+          "gates": [],
+          "bonus": null,
+          "checks": ["3か年の欠席合計15日以内", "適性検査(3科計60分マークシート)と面接"],
+          "raw": "推薦Ⅱ：内申基準なし",
+          "uncertain": false
+        },
+        {
+          "courses": ["*"], "section": "一般", "exam_label": "併願（公私）［2/10受験］", "kind": "併願",
+          "public_only": false, "applicant_scope": null, "gender": null, "strength": "出願基準",
+          "any": [
+            [{ "t": "sum", "s": "9科", "min": 35 }],
+            [{ "t": "sum", "s": "5科", "min": 20 }],
+            [{ "t": "sum", "s": "3科", "min": 12 }],
+            [{ "t": "sum", "s": "3科", "min": 11 }, { "t": "cert", "name": "英・漢・数検いずれか準2級" }]
+          ],
+          "no_criterion": null,
+          "gates": [{ "t": "none_le", "s": "9科", "grade": 2 }],
+          "bonus": {
+            "max": null, "max_by": { "5科": 1, "9科": 2 }, "applies_to": ["5科", "9科"],
+            "items": [
+              { "label": "英・漢・数検3級", "points": 1, "when": { "t": "cert", "name": "英・漢・数検いずれか3級" } },
+              { "label": "出席優良(3か年の欠席合計5日以内)", "points": 1, "when": { "t": "manual", "text": "3か年の欠席合計5日以内" } },
+              { "label": "生徒会役員，部長，委員長", "points": 1, "when": { "t": "manual", "text": "生徒会役員，部長，委員長" } },
+              { "label": "英・漢・数検準2級", "points": 2, "when": { "t": "cert", "name": "英・漢・数検いずれか準2級" } },
+              { "label": "生徒会長", "points": 2, "when": { "t": "manual", "text": "生徒会長" } }
+            ],
+            "note": "一般併願は5科+1・9科に+2まで"
+          },
+          "checks": ["3か年の欠席合計20日以内", "第1志望[2/10受験]は入試点に15点加算(要入試相談)"],
+          "raw": "併願(公私)：[2/10受験]\n①9科35 ②5科20 ③3科12\n④3科11かつ\n英・漢・数検いずれか準2級\n(①～④のいずれか，9科に2不可)\n第1志望：[2/10受験]\n入試点に15点加算(要入試相談)",
+          "uncertain": false
+        }
+      ]
+    },
+    {
+      "district": "大田",
+      "school_name": "立正大付立正",
+      "division": null,
+      "phone": "03-6303-7683",
+      "gender_type": "共学",
+      "establishment": "私立",
+      "courses": [
+        { "name": "進学", "raw": "普(進学・特進) 200(100)", "capacity": null, "recommend_capacity": null, "gender": null },
+        { "name": "特進", "raw": "普(進学・特進) 200(100)", "capacity": null, "recommend_capacity": null, "gender": null }
+      ],
+      "exams": "面 作",
+      "other_raw": "数値は3年1または2学期(前期または後期中間)で出願基準\n9科に1は不可　3年間の欠席15日以内\n加点制度：英・漢・数検3級，部活動3年間継続，都県大会出場，生徒会役員，3カ年精勤(欠席3日以内)，1または2年次皆勤は各+1，英・漢・数検準2級は+2[最大+3まで，特進の推薦と一般併願優遇は検定準2級・3カ年精勤のみ適用，特進の推薦は最大+1，一般併願は最大+2まで]\n推薦作文(600字50分)",
+      "rules": [
+        {
+          "courses": ["進学"], "section": "推薦", "exam_label": "推薦", "kind": "推薦",
+          "public_only": false, "applicant_scope": null, "gender": null, "strength": "出願基準",
+          "any": [[{ "t": "sum", "s": "5科", "min": 18 }], [{ "t": "sum", "s": "9科", "min": 33 }]],
+          "no_criterion": null,
+          "gates": [{ "t": "none_le", "s": "9科", "grade": 1 }],
+          "bonus": {
+            "max": 3, "max_by": null, "applies_to": null,
+            "items": [
+              { "label": "英・漢・数検3級", "points": 1, "when": { "t": "cert", "name": "英・漢・数検いずれか3級" } },
+              { "label": "部活動3年間継続", "points": 1, "when": { "t": "manual", "text": "部活動3年間継続" } },
+              { "label": "都県大会出場", "points": 1, "when": { "t": "manual", "text": "都県大会出場" } },
+              { "label": "生徒会役員", "points": 1, "when": { "t": "manual", "text": "生徒会役員" } },
+              { "label": "3カ年精勤(欠席3日以内)", "points": 1, "when": { "t": "manual", "text": "3カ年の欠席3日以内" } },
+              { "label": "1または2年次皆勤", "points": 1, "when": { "t": "manual", "text": "1または2年次皆勤" } },
+              { "label": "英・漢・数検準2級", "points": 2, "when": { "t": "cert", "name": "英・漢・数検いずれか準2級" } }
+            ],
+            "note": "最大+3まで"
+          },
+          "checks": ["3年間の欠席15日以内", "推薦作文(600字50分)"],
+          "raw": "進学 5科18または9科33",
+          "uncertain": false
+        },
+        {
+          "courses": ["特進"], "section": "推薦", "exam_label": "推薦", "kind": "推薦",
+          "public_only": false, "applicant_scope": null, "gender": null, "strength": "出願基準",
+          "any": [[{ "t": "sum", "s": "5科", "min": 19 }]],
+          "no_criterion": null,
+          "gates": [{ "t": "none_le", "s": "9科", "grade": 1 }],
+          "bonus": {
+            "max": 1, "max_by": null, "applies_to": null,
+            "items": [
+              { "label": "英・漢・数検準2級", "points": 2, "when": { "t": "cert", "name": "英・漢・数検いずれか準2級" } },
+              { "label": "3カ年精勤(欠席3日以内)", "points": 1, "when": { "t": "manual", "text": "3カ年の欠席3日以内" } }
+            ],
+            "note": "特進の推薦は検定準2級・3カ年精勤のみ適用，最大+1"
+          },
+          "checks": ["3年間の欠席15日以内", "推薦作文(600字50分)"],
+          "raw": "特進 5科19",
+          "uncertain": false
+        },
+        {
+          "courses": ["進学"], "section": "一般", "exam_label": "併願（公私）", "kind": "併願",
+          "public_only": false, "applicant_scope": null, "gender": null, "strength": "出願基準",
+          "any": [[{ "t": "sum", "s": "5科", "min": 19 }], [{ "t": "sum", "s": "9科", "min": 34 }]],
+          "no_criterion": null,
+          "gates": [{ "t": "none_le", "s": "9科", "grade": 1 }],
+          "bonus": {
+            "max": 2, "max_by": null, "applies_to": null,
+            "items": [
+              { "label": "英・漢・数検準2級", "points": 2, "when": { "t": "cert", "name": "英・漢・数検いずれか準2級" } },
+              { "label": "3カ年精勤(欠席3日以内)", "points": 1, "when": { "t": "manual", "text": "3カ年の欠席3日以内" } }
+            ],
+            "note": "一般併願優遇は検定準2級・3カ年精勤のみ適用(原文の係り方は「特進の推薦と一般併願優遇は」)，一般併願は最大+2まで"
+          },
+          "checks": ["3年間の欠席15日以内"],
+          "raw": "併願(公私)：\n進学 5科19または9科34",
+          "uncertain": false
+        }
+      ]
+    },
+    {
+      "district": "品川",
+      "school_name": "品川翔英",
+      "division": null,
+      "phone": "03-3774-1154",
+      "gender_type": "共学",
+      "establishment": "私立",
+      "courses": [
+        { "name": "難関進学", "raw": "難関進学 40(20)", "capacity": 40, "recommend_capacity": 20, "gender": null },
+        { "name": "国際教養AD", "raw": "国際教養(AD・ST) 40(20)", "capacity": null, "recommend_capacity": null, "gender": null },
+        { "name": "国際教養ST", "raw": "国際教養(AD・ST) 40(20)", "capacity": null, "recommend_capacity": null, "gender": null },
+        { "name": "特別進学", "raw": "特別進学 140(70)", "capacity": 140, "recommend_capacity": 70, "gender": null },
+        { "name": "総合進学", "raw": "総合進学 100(50)", "capacity": 100, "recommend_capacity": 50, "gender": null }
+      ],
+      "exams": "面",
+      "other_raw": "9科に1(難関は2も)不可　3年次の欠席10日以内\n推薦・一般併願優遇希望者は要個別相談\n内申加点(上限は5科に+2・9科に+3，①は3つまで，②③は各1つまで可)：\n①難関・国際は英・数検準2級で+1，2級で+2，特進・総進は英・漢・数検3級で+1，準2級で+2\n②3年間同一部活動継続，生徒会役員は+1\n③3年間欠席・遅刻・早退計3日以内は+1",
+      "rules": [
+        {
+          "courses": ["難関進学"], "section": "推薦", "exam_label": "推薦", "kind": "推薦",
+          "public_only": false, "applicant_scope": null, "gender": null, "strength": null,
+          "any": [[{ "t": "sum", "s": "5科", "min": 22 }]],
+          "no_criterion": null,
+          "gates": [{ "t": "none_le", "s": "9科", "grade": 2 }],
+          "bonus": {
+            "max": null, "max_by": { "5科": 2, "9科": 3 }, "applies_to": ["5科", "9科"],
+            "items": [
+              { "label": "①英・数検準2級", "points": 1, "when": { "t": "cert", "name": "英・数検いずれか準2級" } },
+              { "label": "①英・数検2級", "points": 2, "when": { "t": "cert", "name": "英・数検いずれか2級" } },
+              { "label": "②3年間同一部活動継続，生徒会役員", "points": 1, "when": { "t": "manual", "text": "3年間同一部活動継続，生徒会役員" } },
+              { "label": "③3年間欠席・遅刻・早退計3日以内", "points": 1, "when": { "t": "manual", "text": "3年間欠席・遅刻・早退計3日以内" } }
+            ],
+            "note": "①は3つまで，②③は各1つまで"
+          },
+          "checks": ["3年次の欠席10日以内", "要個別相談"],
+          "raw": "難関 5科22",
+          "uncertain": false
+        },
+        {
+          "courses": ["国際教養AD"], "section": "推薦", "exam_label": "推薦", "kind": "推薦",
+          "public_only": false, "applicant_scope": null, "gender": null, "strength": null,
+          "any": [[{ "t": "sum", "s": "5科", "min": 18 }, { "t": "cert", "name": "英検準2級" }]],
+          "no_criterion": null,
+          "gates": [{ "t": "none_le", "s": "9科", "grade": 1 }],
+          "bonus": {
+            "max": null, "max_by": { "5科": 2, "9科": 3 }, "applies_to": ["5科", "9科"],
+            "items": [
+              { "label": "①英・数検準2級", "points": 1, "when": { "t": "cert", "name": "英・数検いずれか準2級" } },
+              { "label": "①英・数検2級", "points": 2, "when": { "t": "cert", "name": "英・数検いずれか2級" } },
+              { "label": "②3年間同一部活動継続，生徒会役員", "points": 1, "when": { "t": "manual", "text": "3年間同一部活動継続，生徒会役員" } },
+              { "label": "③3年間欠席・遅刻・早退計3日以内", "points": 1, "when": { "t": "manual", "text": "3年間欠席・遅刻・早退計3日以内" } }
+            ],
+            "note": "①は3つまで，②③は各1つまで"
+          },
+          "checks": ["3年次の欠席10日以内", "要個別相談"],
+          "raw": "国際 5科18(ADは英検準2級，\nSTは英4または英検準2級)",
+          "uncertain": false
+        },
+        {
+          "courses": ["国際教養ST"], "section": "推薦", "exam_label": "推薦", "kind": "推薦",
+          "public_only": false, "applicant_scope": null, "gender": null, "strength": null,
+          "any": [
+            [{ "t": "sum", "s": "5科", "min": 18 }, { "t": "each", "s": ["英"], "min": 4 }],
+            [{ "t": "sum", "s": "5科", "min": 18 }, { "t": "cert", "name": "英検準2級" }]
+          ],
+          "no_criterion": null,
+          "gates": [{ "t": "none_le", "s": "9科", "grade": 1 }],
+          "bonus": {
+            "max": null, "max_by": { "5科": 2, "9科": 3 }, "applies_to": ["5科", "9科"],
+            "items": [
+              { "label": "①英・数検準2級", "points": 1, "when": { "t": "cert", "name": "英・数検いずれか準2級" } },
+              { "label": "①英・数検2級", "points": 2, "when": { "t": "cert", "name": "英・数検いずれか2級" } },
+              { "label": "②3年間同一部活動継続，生徒会役員", "points": 1, "when": { "t": "manual", "text": "3年間同一部活動継続，生徒会役員" } },
+              { "label": "③3年間欠席・遅刻・早退計3日以内", "points": 1, "when": { "t": "manual", "text": "3年間欠席・遅刻・早退計3日以内" } }
+            ],
+            "note": "①は3つまで，②③は各1つまで"
+          },
+          "checks": ["3年次の欠席10日以内", "要個別相談"],
+          "raw": "国際 5科18(ADは英検準2級，\nSTは英4または英検準2級)",
+          "uncertain": false
+        },
+        {
+          "courses": ["特別進学"], "section": "推薦", "exam_label": "推薦", "kind": "推薦",
+          "public_only": false, "applicant_scope": null, "gender": null, "strength": null,
+          "any": [[{ "t": "sum", "s": "5科", "min": 18 }], [{ "t": "sum", "s": "9科", "min": 32 }]],
+          "no_criterion": null,
+          "gates": [{ "t": "none_le", "s": "9科", "grade": 1 }],
+          "bonus": {
+            "max": null, "max_by": { "5科": 2, "9科": 3 }, "applies_to": ["5科", "9科"],
+            "items": [
+              { "label": "①英・漢・数検3級", "points": 1, "when": { "t": "cert", "name": "英・漢・数検いずれか3級" } },
+              { "label": "①英・漢・数検準2級", "points": 2, "when": { "t": "cert", "name": "英・漢・数検いずれか準2級" } },
+              { "label": "②3年間同一部活動継続，生徒会役員", "points": 1, "when": { "t": "manual", "text": "3年間同一部活動継続，生徒会役員" } },
+              { "label": "③3年間欠席・遅刻・早退計3日以内", "points": 1, "when": { "t": "manual", "text": "3年間欠席・遅刻・早退計3日以内" } }
+            ],
+            "note": "①は3つまで，②③は各1つまで"
+          },
+          "checks": ["3年次の欠席10日以内", "要個別相談"],
+          "raw": "特進 5科18または9科32",
+          "uncertain": false
+        },
+        {
+          "courses": ["総合進学"], "section": "推薦", "exam_label": "推薦", "kind": "推薦",
+          "public_only": false, "applicant_scope": null, "gender": null, "strength": null,
+          "any": [[{ "t": "sum", "s": "5科", "min": 17 }], [{ "t": "sum", "s": "9科", "min": 30 }]],
+          "no_criterion": null,
+          "gates": [{ "t": "none_le", "s": "9科", "grade": 1 }],
+          "bonus": {
+            "max": null, "max_by": { "5科": 2, "9科": 3 }, "applies_to": ["5科", "9科"],
+            "items": [
+              { "label": "①英・漢・数検3級", "points": 1, "when": { "t": "cert", "name": "英・漢・数検いずれか3級" } },
+              { "label": "①英・漢・数検準2級", "points": 2, "when": { "t": "cert", "name": "英・漢・数検いずれか準2級" } },
+              { "label": "②3年間同一部活動継続，生徒会役員", "points": 1, "when": { "t": "manual", "text": "3年間同一部活動継続，生徒会役員" } },
+              { "label": "③3年間欠席・遅刻・早退計3日以内", "points": 1, "when": { "t": "manual", "text": "3年間欠席・遅刻・早退計3日以内" } }
+            ],
+            "note": "①は3つまで，②③は各1つまで"
+          },
+          "checks": ["3年次の欠席10日以内", "要個別相談", "右記加点がない場合は5科16または9科29で可（原文どおり。解釈は要確認）"],
+          "raw": "総進 5科17または9科30\n(右記加点がない場合は\n5科16または9科29で可)",
+          "uncertain": false
+        },
+        {
+          "courses": ["難関進学"], "section": "一般", "exam_label": "併願（公私）", "kind": "併願",
+          "public_only": false, "applicant_scope": null, "gender": null, "strength": null,
+          "any": [[{ "t": "sum", "s": "5科", "min": 22 }]],
+          "no_criterion": null,
+          "gates": [{ "t": "none_le", "s": "9科", "grade": 2 }],
+          "bonus": {
+            "max": null, "max_by": { "5科": 2, "9科": 3 }, "applies_to": ["5科", "9科"],
+            "items": [
+              { "label": "①英・数検準2級", "points": 1, "when": { "t": "cert", "name": "英・数検いずれか準2級" } },
+              { "label": "①英・数検2級", "points": 2, "when": { "t": "cert", "name": "英・数検いずれか2級" } },
+              { "label": "②3年間同一部活動継続，生徒会役員", "points": 1, "when": { "t": "manual", "text": "3年間同一部活動継続，生徒会役員" } },
+              { "label": "③3年間欠席・遅刻・早退計3日以内", "points": 1, "when": { "t": "manual", "text": "3年間欠席・遅刻・早退計3日以内" } }
+            ],
+            "note": "①は3つまで，②③は各1つまで"
+          },
+          "checks": ["3年次の欠席10日以内", "要個別相談"],
+          "raw": "併願(公私)：\n難関 5科22",
+          "uncertain": false
+        },
+        {
+          "courses": ["国際教養AD"], "section": "一般", "exam_label": "併願（公私）", "kind": "併願",
+          "public_only": false, "applicant_scope": null, "gender": null, "strength": null,
+          "any": [[{ "t": "sum", "s": "5科", "min": 19 }, { "t": "cert", "name": "英検準2級" }]],
+          "no_criterion": null,
+          "gates": [{ "t": "none_le", "s": "9科", "grade": 1 }],
+          "bonus": {
+            "max": null, "max_by": { "5科": 2, "9科": 3 }, "applies_to": ["5科", "9科"],
+            "items": [
+              { "label": "①英・数検準2級", "points": 1, "when": { "t": "cert", "name": "英・数検いずれか準2級" } },
+              { "label": "①英・数検2級", "points": 2, "when": { "t": "cert", "name": "英・数検いずれか2級" } },
+              { "label": "②3年間同一部活動継続，生徒会役員", "points": 1, "when": { "t": "manual", "text": "3年間同一部活動継続，生徒会役員" } },
+              { "label": "③3年間欠席・遅刻・早退計3日以内", "points": 1, "when": { "t": "manual", "text": "3年間欠席・遅刻・早退計3日以内" } }
+            ],
+            "note": "①は3つまで，②③は各1つまで"
+          },
+          "checks": ["3年次の欠席10日以内", "要個別相談"],
+          "raw": "国際 5科19(ADは英検準2級，\nSTは英4または英検準2級)",
+          "uncertain": false
+        },
+        {
+          "courses": ["国際教養ST"], "section": "一般", "exam_label": "併願（公私）", "kind": "併願",
+          "public_only": false, "applicant_scope": null, "gender": null, "strength": null,
+          "any": [
+            [{ "t": "sum", "s": "5科", "min": 19 }, { "t": "each", "s": ["英"], "min": 4 }],
+            [{ "t": "sum", "s": "5科", "min": 19 }, { "t": "cert", "name": "英検準2級" }]
+          ],
+          "no_criterion": null,
+          "gates": [{ "t": "none_le", "s": "9科", "grade": 1 }],
+          "bonus": {
+            "max": null, "max_by": { "5科": 2, "9科": 3 }, "applies_to": ["5科", "9科"],
+            "items": [
+              { "label": "①英・数検準2級", "points": 1, "when": { "t": "cert", "name": "英・数検いずれか準2級" } },
+              { "label": "①英・数検2級", "points": 2, "when": { "t": "cert", "name": "英・数検いずれか2級" } },
+              { "label": "②3年間同一部活動継続，生徒会役員", "points": 1, "when": { "t": "manual", "text": "3年間同一部活動継続，生徒会役員" } },
+              { "label": "③3年間欠席・遅刻・早退計3日以内", "points": 1, "when": { "t": "manual", "text": "3年間欠席・遅刻・早退計3日以内" } }
+            ],
+            "note": "①は3つまで，②③は各1つまで"
+          },
+          "checks": ["3年次の欠席10日以内", "要個別相談"],
+          "raw": "国際 5科19(ADは英検準2級，\nSTは英4または英検準2級)",
+          "uncertain": false
+        },
+        {
+          "courses": ["特別進学"], "section": "一般", "exam_label": "併願（公私）", "kind": "併願",
+          "public_only": false, "applicant_scope": null, "gender": null, "strength": null,
+          "any": [[{ "t": "sum", "s": "5科", "min": 19 }], [{ "t": "sum", "s": "9科", "min": 33 }]],
+          "no_criterion": null,
+          "gates": [{ "t": "none_le", "s": "9科", "grade": 1 }],
+          "bonus": {
+            "max": null, "max_by": { "5科": 2, "9科": 3 }, "applies_to": ["5科", "9科"],
+            "items": [
+              { "label": "①英・漢・数検3級", "points": 1, "when": { "t": "cert", "name": "英・漢・数検いずれか3級" } },
+              { "label": "①英・漢・数検準2級", "points": 2, "when": { "t": "cert", "name": "英・漢・数検いずれか準2級" } },
+              { "label": "②3年間同一部活動継続，生徒会役員", "points": 1, "when": { "t": "manual", "text": "3年間同一部活動継続，生徒会役員" } },
+              { "label": "③3年間欠席・遅刻・早退計3日以内", "points": 1, "when": { "t": "manual", "text": "3年間欠席・遅刻・早退計3日以内" } }
+            ],
+            "note": "①は3つまで，②③は各1つまで"
+          },
+          "checks": ["3年次の欠席10日以内", "要個別相談"],
+          "raw": "特進 5科19または9科33",
+          "uncertain": false
+        },
+        {
+          "courses": ["総合進学"], "section": "一般", "exam_label": "併願（公私）", "kind": "併願",
+          "public_only": false, "applicant_scope": null, "gender": null, "strength": null,
+          "any": [[{ "t": "sum", "s": "5科", "min": 18 }], [{ "t": "sum", "s": "9科", "min": 31 }]],
+          "no_criterion": null,
+          "gates": [{ "t": "none_le", "s": "9科", "grade": 1 }],
+          "bonus": {
+            "max": null, "max_by": { "5科": 2, "9科": 3 }, "applies_to": ["5科", "9科"],
+            "items": [
+              { "label": "①英・漢・数検3級", "points": 1, "when": { "t": "cert", "name": "英・漢・数検いずれか3級" } },
+              { "label": "①英・漢・数検準2級", "points": 2, "when": { "t": "cert", "name": "英・漢・数検いずれか準2級" } },
+              { "label": "②3年間同一部活動継続，生徒会役員", "points": 1, "when": { "t": "manual", "text": "3年間同一部活動継続，生徒会役員" } },
+              { "label": "③3年間欠席・遅刻・早退計3日以内", "points": 1, "when": { "t": "manual", "text": "3年間欠席・遅刻・早退計3日以内" } }
+            ],
+            "note": "①は3つまで，②③は各1つまで"
+          },
+          "checks": ["3年次の欠席10日以内", "要個別相談"],
+          "raw": "総進 5科18または9科31",
+          "uncertain": false
+        }
+      ]
+    },
+    {
+      "district": "品川",
+      "school_name": "青稜",
+      "division": null,
+      "phone": "03-3782-1502",
+      "gender_type": "共学",
+      "establishment": "私立",
+      "courses": [
+        { "name": "", "raw": "普 130(推薦なし)", "capacity": 130, "recommend_capacity": 0, "gender": null }
+      ],
+      "exams": "",
+      "other_raw": "英検2級取得者は5科内申に+1",
+      "rules": [
+        {
+          "courses": ["*"], "section": "一般", "exam_label": "併願（公私）", "kind": "併願",
+          "public_only": false, "applicant_scope": null, "gender": null, "strength": null,
+          "any": [[{ "t": "sum", "s": "3科", "min": 15 }], [{ "t": "sum", "s": "5科", "min": 24 }]],
+          "no_criterion": null, "gates": [],
+          "bonus": {
+            "max": null, "max_by": { "5科": 1 }, "applies_to": ["5科"],
+            "items": [{ "label": "英検2級", "points": 1, "when": { "t": "cert", "name": "英検2級" } }],
+            "note": "英検2級取得者は5科内申に+1"
+          },
+          "checks": [],
+          "raw": "併願(公私)：\n3科15または5科24",
+          "uncertain": false
+        }
+      ]
+    },
+    {
+      "district": "品川",
+      "school_name": "朋優学院",
+      "division": null,
+      "phone": "03-3784-2131",
+      "gender_type": "共学",
+      "establishment": "私立",
+      "courses": [
+        { "name": "TG", "raw": "TG 25(推薦なし)", "capacity": 25, "recommend_capacity": 0, "gender": null },
+        { "name": "AG", "raw": "AG 170(40)", "capacity": 170, "recommend_capacity": 40, "gender": null },
+        { "name": "SG", "raw": "SG 200(60)", "capacity": 200, "recommend_capacity": 60, "gender": null }
+      ],
+      "exams": "面",
+      "other_raw": "9科に2は不可\n3年次の欠席10日以内\n英・数検準2級は内申に+1(両方取得でも+1)\n卒業生の子や弟妹，在校生の弟妹は内申に+1",
+      "rules": [
+        {
+          "courses": ["AG"], "section": "推薦", "exam_label": "推薦", "kind": "推薦",
+          "public_only": false, "applicant_scope": null, "gender": null, "strength": null,
+          "any": [[{ "t": "sum", "s": "5科", "min": 25 }]],
+          "no_criterion": null,
+          "gates": [{ "t": "none_le", "s": "9科", "grade": 2 }],
+          "bonus": {
+            "max": null, "max_by": null, "applies_to": null,
+            "items": [
+              { "label": "英・数検準2級(両方取得でも+1)", "points": 1, "when": { "t": "cert", "name": "英・数検いずれか準2級" } },
+              { "label": "卒業生の子や弟妹，在校生の弟妹", "points": 1, "when": { "t": "manual", "text": "卒業生の子や弟妹，在校生の弟妹" } }
+            ],
+            "note": null
+          },
+          "checks": ["3年次の欠席10日以内"],
+          "raw": "AG 5科25",
+          "uncertain": false
+        },
+        {
+          "courses": ["SG"], "section": "推薦", "exam_label": "推薦", "kind": "推薦",
+          "public_only": false, "applicant_scope": null, "gender": null, "strength": null,
+          "any": [[{ "t": "sum", "s": "5科", "min": 24 }]],
+          "no_criterion": null,
+          "gates": [{ "t": "none_le", "s": "9科", "grade": 2 }],
+          "bonus": {
+            "max": null, "max_by": null, "applies_to": null,
+            "items": [
+              { "label": "英・数検準2級(両方取得でも+1)", "points": 1, "when": { "t": "cert", "name": "英・数検いずれか準2級" } },
+              { "label": "卒業生の子や弟妹，在校生の弟妹", "points": 1, "when": { "t": "manual", "text": "卒業生の子や弟妹，在校生の弟妹" } }
+            ],
+            "note": null
+          },
+          "checks": ["3年次の欠席10日以内"],
+          "raw": "SG 5科24",
+          "uncertain": false
+        },
+        {
+          "courses": ["SG"], "section": "一般", "exam_label": "併願（公私）", "kind": "併願",
+          "public_only": false, "applicant_scope": null, "gender": null, "strength": null,
+          "any": [[{ "t": "sum", "s": "5科", "min": 25 }]],
+          "no_criterion": null,
+          "gates": [{ "t": "none_le", "s": "9科", "grade": 2 }],
+          "bonus": {
+            "max": null, "max_by": null, "applies_to": null,
+            "items": [
+              { "label": "英・数検準2級(両方取得でも+1)", "points": 1, "when": { "t": "cert", "name": "英・数検いずれか準2級" } },
+              { "label": "卒業生の子や弟妹，在校生の弟妹", "points": 1, "when": { "t": "manual", "text": "卒業生の子や弟妹，在校生の弟妹" } }
+            ],
+            "note": null
+          },
+          "checks": ["3年次の欠席10日以内", "入試点130点以上が必要"],
+          "raw": "併願(公私)：\nSG 5科25\n(入試点130点以上が必要)",
+          "uncertain": false
+        }
+      ]
+    },
+    {
+      "district": "品川",
+      "school_name": "品川エトワール女子",
+      "division": null,
+      "phone": "03-3474-2231",
+      "gender_type": "女子",
+      "establishment": "私立",
+      "courses": [
+        { "name": "キャリアデザイン", "raw": "キャリアデザイン 150(75)", "capacity": 150, "recommend_capacity": 75, "gender": null },
+        { "name": "保育", "raw": "保育 40(20)", "capacity": 40, "recommend_capacity": 20, "gender": null },
+        { "name": "マルチメディア表現", "raw": "マルチメディア表現 60(30)", "capacity": 60, "recommend_capacity": 30, "gender": null },
+        { "name": "国際キャリア", "raw": "国際キャリア 50(25)", "capacity": 50, "recommend_capacity": 25, "gender": null }
+      ],
+      "exams": "面 ※実",
+      "other_raw": "メディアは美3　国際は英3\n加点制度(①は最大+2，②は+1，①②で最大+3)：\n①イベント参加(オープンキャンパス・インターナショナルフェア，文化祭，学校説明会，個別相談会)\n②地域加点(品川・大田・世田谷・目黒・港区)\n※C推薦でメディアは実技審査(デッサン)あり",
+      "rules": [
+        {
+          "courses": ["キャリアデザイン"], "section": "推薦", "exam_label": "A推薦", "kind": "推薦",
+          "public_only": false, "applicant_scope": null, "gender": null, "strength": null,
+          "any": [[{ "t": "sum", "s": "9科", "min": 20 }]],
+          "no_criterion": null, "gates": [],
+          "bonus": {
+            "max": 3, "max_by": null, "applies_to": null,
+            "items": [
+              { "label": "①イベント参加(最大+2)", "points": 2, "when": { "t": "manual", "text": "イベント参加(オープンキャンパス・インターナショナルフェア，文化祭，学校説明会，個別相談会)" } },
+              { "label": "②地域加点(品川・大田・世田谷・目黒・港区)", "points": 1, "when": { "t": "manual", "text": "品川・大田・世田谷・目黒・港区" } }
+            ],
+            "note": "①は最大+2，②は+1，①②で最大+3"
+          },
+          "checks": [],
+          "raw": "A推薦：\nキャリアD 9科20",
+          "uncertain": false
+        },
+        {
+          "courses": ["保育"], "section": "推薦", "exam_label": "A推薦", "kind": "推薦",
+          "public_only": false, "applicant_scope": null, "gender": null, "strength": null,
+          "any": [[{ "t": "sum", "s": "9科", "min": 22 }]],
+          "no_criterion": null, "gates": [],
+          "bonus": {
+            "max": 3, "max_by": null, "applies_to": null,
+            "items": [
+              { "label": "①イベント参加(最大+2)", "points": 2, "when": { "t": "manual", "text": "イベント参加(オープンキャンパス・インターナショナルフェア，文化祭，学校説明会，個別相談会)" } },
+              { "label": "②地域加点(品川・大田・世田谷・目黒・港区)", "points": 1, "when": { "t": "manual", "text": "品川・大田・世田谷・目黒・港区" } }
+            ],
+            "note": "①は最大+2，②は+1，①②で最大+3"
+          },
+          "checks": [],
+          "raw": "A推薦：\n保育 9科22",
+          "uncertain": false
+        },
+        {
+          "courses": ["マルチメディア表現"], "section": "推薦", "exam_label": "A推薦", "kind": "推薦",
+          "public_only": false, "applicant_scope": null, "gender": null, "strength": null,
+          "any": [[{ "t": "sum", "s": ["国", "数", "英", "音", "美"], "min": 15 }]],
+          "no_criterion": null,
+          "gates": [{ "t": "each", "s": ["美"], "min": 3 }],
+          "bonus": {
+            "max": 3, "max_by": null, "applies_to": null,
+            "items": [
+              { "label": "①イベント参加(最大+2)", "points": 2, "when": { "t": "manual", "text": "イベント参加(オープンキャンパス・インターナショナルフェア，文化祭，学校説明会，個別相談会)" } },
+              { "label": "②地域加点(品川・大田・世田谷・目黒・港区)", "points": 1, "when": { "t": "manual", "text": "品川・大田・世田谷・目黒・港区" } }
+            ],
+            "note": "①は最大+2，②は+1，①②で最大+3"
+          },
+          "checks": [],
+          "raw": "A推薦：\nメディア 5科(国数英音美)15",
+          "uncertain": false
+        },
+        {
+          "courses": ["国際キャリア"], "section": "推薦", "exam_label": "A推薦", "kind": "推薦",
+          "public_only": false, "applicant_scope": null, "gender": null, "strength": null,
+          "any": [[{ "t": "sum", "s": "5科", "min": 15 }]],
+          "no_criterion": null,
+          "gates": [{ "t": "each", "s": ["英"], "min": 3 }],
+          "bonus": {
+            "max": 3, "max_by": null, "applies_to": null,
+            "items": [
+              { "label": "①イベント参加(最大+2)", "points": 2, "when": { "t": "manual", "text": "イベント参加(オープンキャンパス・インターナショナルフェア，文化祭，学校説明会，個別相談会)" } },
+              { "label": "②地域加点(品川・大田・世田谷・目黒・港区)", "points": 1, "when": { "t": "manual", "text": "品川・大田・世田谷・目黒・港区" } }
+            ],
+            "note": "①は最大+2，②は+1，①②で最大+3"
+          },
+          "checks": [],
+          "raw": "A推薦：\n国際キャリア 5科15",
+          "uncertain": false
+        },
+        {
+          "courses": ["マルチメディア表現", "国際キャリア"], "section": "推薦", "exam_label": "C推薦（単願）", "kind": "推薦",
+          "public_only": false, "applicant_scope": null, "gender": null, "strength": null,
+          "any": [],
+          "no_criterion": "応相談",
+          "gates": [],
+          "bonus": null,
+          "checks": ["メディアは実技審査(デッサン)あり"],
+          "raw": "C推薦(単願)：\nメディア・国際キャリア\n応相談",
+          "uncertain": false
+        },
+        {
+          "courses": ["キャリアデザイン"], "section": "一般", "exam_label": "併願", "kind": "併願",
+          "public_only": false, "applicant_scope": null, "gender": null, "strength": null,
+          "any": [[{ "t": "sum", "s": "9科", "min": 22 }]],
+          "no_criterion": null, "gates": [],
+          "bonus": {
+            "max": 3, "max_by": null, "applies_to": null,
+            "items": [
+              { "label": "①イベント参加(最大+2)", "points": 2, "when": { "t": "manual", "text": "イベント参加(オープンキャンパス・インターナショナルフェア，文化祭，学校説明会，個別相談会)" } },
+              { "label": "②地域加点(品川・大田・世田谷・目黒・港区)", "points": 1, "when": { "t": "manual", "text": "品川・大田・世田谷・目黒・港区" } }
+            ],
+            "note": "①は最大+2，②は+1，①②で最大+3"
+          },
+          "checks": [],
+          "raw": "併願：\nキャリアD 9科22",
+          "uncertain": false
+        },
+        {
+          "courses": ["保育"], "section": "一般", "exam_label": "併願", "kind": "併願",
+          "public_only": false, "applicant_scope": null, "gender": null, "strength": null,
+          "any": [[{ "t": "sum", "s": "9科", "min": 24 }]],
+          "no_criterion": null, "gates": [],
+          "bonus": {
+            "max": 3, "max_by": null, "applies_to": null,
+            "items": [
+              { "label": "①イベント参加(最大+2)", "points": 2, "when": { "t": "manual", "text": "イベント参加(オープンキャンパス・インターナショナルフェア，文化祭，学校説明会，個別相談会)" } },
+              { "label": "②地域加点(品川・大田・世田谷・目黒・港区)", "points": 1, "when": { "t": "manual", "text": "品川・大田・世田谷・目黒・港区" } }
+            ],
+            "note": "①は最大+2，②は+1，①②で最大+3"
+          },
+          "checks": [],
+          "raw": "保育 9科24",
+          "uncertain": false
+        },
+        {
+          "courses": ["マルチメディア表現"], "section": "一般", "exam_label": "併願", "kind": "併願",
+          "public_only": false, "applicant_scope": null, "gender": null, "strength": null,
+          "any": [[{ "t": "sum", "s": ["国", "数", "英", "音", "美"], "min": 15 }]],
+          "no_criterion": null,
+          "gates": [{ "t": "each", "s": ["美"], "min": 3 }],
+          "bonus": {
+            "max": 3, "max_by": null, "applies_to": null,
+            "items": [
+              { "label": "①イベント参加(最大+2)", "points": 2, "when": { "t": "manual", "text": "イベント参加(オープンキャンパス・インターナショナルフェア，文化祭，学校説明会，個別相談会)" } },
+              { "label": "②地域加点(品川・大田・世田谷・目黒・港区)", "points": 1, "when": { "t": "manual", "text": "品川・大田・世田谷・目黒・港区" } }
+            ],
+            "note": "①は最大+2，②は+1，①②で最大+3"
+          },
+          "checks": [],
+          "raw": "メディア 5科(国数英音美)15",
+          "uncertain": false
+        },
+        {
+          "courses": ["国際キャリア"], "section": "一般", "exam_label": "併願", "kind": "併願",
+          "public_only": false, "applicant_scope": null, "gender": null, "strength": null,
+          "any": [[{ "t": "sum", "s": "5科", "min": 15 }]],
+          "no_criterion": null,
+          "gates": [{ "t": "each", "s": ["英"], "min": 3 }],
+          "bonus": {
+            "max": 3, "max_by": null, "applies_to": null,
+            "items": [
+              { "label": "①イベント参加(最大+2)", "points": 2, "when": { "t": "manual", "text": "イベント参加(オープンキャンパス・インターナショナルフェア，文化祭，学校説明会，個別相談会)" } },
+              { "label": "②地域加点(品川・大田・世田谷・目黒・港区)", "points": 1, "when": { "t": "manual", "text": "品川・大田・世田谷・目黒・港区" } }
+            ],
+            "note": "①は最大+2，②は+1，①②で最大+3"
+          },
+          "checks": [],
+          "raw": "国際キャリア 5科15",
+          "uncertain": false
+        }
+      ]
+    },
+    {
+      "district": "品川",
+      "school_name": "文教大付属",
+      "division": null,
+      "phone": "03-3783-5511",
+      "gender_type": "共学",
+      "establishment": "私立",
+      "courses": [
+        { "name": "アルティメット", "raw": "普(アルティメット・アドバンスト・スタンダード) 140(70)", "capacity": null, "recommend_capacity": null, "gender": null },
+        { "name": "アドバンスト", "raw": "普(アルティメット・アドバンスト・スタンダード) 140(70)", "capacity": null, "recommend_capacity": null, "gender": null },
+        { "name": "スタンダード", "raw": "普(アルティメット・アドバンスト・スタンダード) 140(70)", "capacity": null, "recommend_capacity": null, "gender": null }
+      ],
+      "exams": "面 作",
+      "other_raw": "数値は3年1または2学期(前期または後期中間)で出願条件\n各学年の欠席10日以内　推薦作文(800字60分)\n加点制度(最大+2)：英検準2級プラス(アド・スタの推薦は準2級)は+2，英検準2級(アド・スタの推薦は3級)，漢・数・理検3級，ICTプロフィシエンシー検定4級，3年間皆勤は各+1，生徒会役員，部長，委員長，各種スポーツ大会・コンクール成績優秀者は要相談",
+      "rules": [
+        {
+          "courses": ["アルティメット"], "section": "推薦", "exam_label": "推薦", "kind": "推薦",
+          "public_only": false, "applicant_scope": null, "gender": null, "strength": "出願資格",
+          "any": [[{ "t": "sum", "s": "5科", "min": 24 }]],
+          "no_criterion": null, "gates": [],
+          "bonus": {
+            "max": 2, "max_by": null, "applies_to": null,
+            "items": [
+              { "label": "英検準2級プラス", "points": 2, "when": { "t": "cert", "name": "英検準2級プラス" } },
+              { "label": "英検準2級", "points": 1, "when": { "t": "cert", "name": "英検準2級" } },
+              { "label": "漢・数・理検3級", "points": 1, "when": { "t": "cert", "name": "漢・数・理検いずれか3級" } },
+              { "label": "ICTプロフィシエンシー検定4級", "points": 1, "when": { "t": "cert", "name": "ICTプロフィシエンシー検定4級" } },
+              { "label": "3年間皆勤", "points": 1, "when": { "t": "manual", "text": "3年間皆勤" } }
+            ],
+            "note": "最大+2。生徒会役員，部長，委員長，各種スポーツ大会・コンクール成績優秀者は要相談"
+          },
+          "checks": ["各学年の欠席10日以内", "推薦作文(800字60分)"],
+          "raw": "アルティメット 5科24",
+          "uncertain": false
+        },
+        {
+          "courses": ["アドバンスト", "スタンダード"], "section": "推薦", "exam_label": "推薦", "kind": "推薦",
+          "public_only": false, "applicant_scope": null, "gender": null, "strength": "出願資格",
+          "any": [[{ "t": "sum", "s": "3科", "min": 12 }], [{ "t": "sum", "s": "5科", "min": 19 }]],
+          "no_criterion": null, "gates": [],
+          "bonus": {
+            "max": 2, "max_by": null, "applies_to": null,
+            "items": [
+              { "label": "英検準2級(アド・スタの推薦)", "points": 2, "when": { "t": "cert", "name": "英検準2級" } },
+              { "label": "英検3級(アド・スタの推薦)", "points": 1, "when": { "t": "cert", "name": "英検3級" } },
+              { "label": "漢・数・理検3級", "points": 1, "when": { "t": "cert", "name": "漢・数・理検いずれか3級" } },
+              { "label": "ICTプロフィシエンシー検定4級", "points": 1, "when": { "t": "cert", "name": "ICTプロフィシエンシー検定4級" } },
+              { "label": "3年間皆勤", "points": 1, "when": { "t": "manual", "text": "3年間皆勤" } }
+            ],
+            "note": "最大+2。生徒会役員，部長，委員長，各種スポーツ大会・コンクール成績優秀者は要相談"
+          },
+          "checks": ["各学年の欠席10日以内", "推薦作文(800字60分)"],
+          "raw": "アドバンスト・スタンダード\n3科12または5科19",
+          "uncertain": false
+        },
+        {
+          "courses": ["アルティメット"], "section": "一般", "exam_label": "併願（公私）", "kind": "併願",
+          "public_only": false, "applicant_scope": null, "gender": null, "strength": "出願資格",
+          "any": [[{ "t": "sum", "s": "5科", "min": 25 }]],
+          "no_criterion": null, "gates": [],
+          "bonus": {
+            "max": 2, "max_by": null, "applies_to": null,
+            "items": [
+              { "label": "英検準2級プラス", "points": 2, "when": { "t": "cert", "name": "英検準2級プラス" } },
+              { "label": "英検準2級", "points": 1, "when": { "t": "cert", "name": "英検準2級" } },
+              { "label": "漢・数・理検3級", "points": 1, "when": { "t": "cert", "name": "漢・数・理検いずれか3級" } },
+              { "label": "ICTプロフィシエンシー検定4級", "points": 1, "when": { "t": "cert", "name": "ICTプロフィシエンシー検定4級" } },
+              { "label": "3年間皆勤", "points": 1, "when": { "t": "manual", "text": "3年間皆勤" } }
+            ],
+            "note": "最大+2。生徒会役員，部長，委員長，各種スポーツ大会・コンクール成績優秀者は要相談"
+          },
+          "checks": ["各学年の欠席10日以内", "アルティメットは2/10or11or23受験"],
+          "raw": "併願(公私)：\nアルティメット 5科25\n[アルティメットは2/10or11or23，アド・スタは2/10or11受験]",
+          "uncertain": false
+        },
+        {
+          "courses": ["アドバンスト", "スタンダード"], "section": "一般", "exam_label": "併願（公私）", "kind": "併願",
+          "public_only": false, "applicant_scope": null, "gender": null, "strength": "出願資格",
+          "any": [[{ "t": "sum", "s": "3科", "min": 14 }], [{ "t": "sum", "s": "5科", "min": 22 }]],
+          "no_criterion": null, "gates": [],
+          "bonus": {
+            "max": 2, "max_by": null, "applies_to": null,
+            "items": [
+              { "label": "英検準2級プラス", "points": 2, "when": { "t": "cert", "name": "英検準2級プラス" } },
+              { "label": "英検準2級", "points": 1, "when": { "t": "cert", "name": "英検準2級" } },
+              { "label": "漢・数・理検3級", "points": 1, "when": { "t": "cert", "name": "漢・数・理検いずれか3級" } },
+              { "label": "ICTプロフィシエンシー検定4級", "points": 1, "when": { "t": "cert", "name": "ICTプロフィシエンシー検定4級" } },
+              { "label": "3年間皆勤", "points": 1, "when": { "t": "manual", "text": "3年間皆勤" } }
+            ],
+            "note": "最大+2。生徒会役員，部長，委員長，各種スポーツ大会・コンクール成績優秀者は要相談"
+          },
+          "checks": ["各学年の欠席10日以内", "アド・スタは2/10or11受験"],
+          "raw": "アドバンスト・スタンダード\n3科14または5科22\n[アルティメットは2/10or11or23，アド・スタは2/10or11受験]",
+          "uncertain": false
+        }
+      ]
+    },
+    {
+      "district": "品川",
+      "school_name": "品川学藝",
+      "division": null,
+      "phone": "03-3786-1711",
+      "gender_type": "共学",
+      "establishment": "私立",
+      "courses": [
+        { "name": "eスポーツ・リベラルアーツ", "raw": "普(eスポーツ・リベラルアーツ) 50 (推薦含む)", "capacity": 50, "recommend_capacity": null, "gender": null },
+        { "name": "パフォーミングアーツ・ミュージック", "raw": "音楽(パフォーミングアーツ・ミュージック) 50 (推薦含む)", "capacity": 50, "recommend_capacity": null, "gender": null }
+      ],
+      "exams": "面 ※実",
+      "other_raw": "①②のいずれか\n音楽科の推薦・併願優遇希望者はオープンスクールに参加すること\n加点制度(最大+2)：英・漢・数検・P検3級，3年間皆勤，生徒会役員・委員長・部長，保護者・兄弟姉妹が卒業生は+1，英・漢・数検・P検準2級，生徒会長は+2\n※音楽科は実技あり",
+      "rules": [
+        {
+          "courses": ["*"], "section": "推薦", "exam_label": "A推薦", "kind": "推薦",
+          "public_only": false, "applicant_scope": null, "gender": null, "strength": null,
+          "any": [[{ "t": "sum", "s": "9科", "min": 29 }], [{ "t": "sum", "s": "5科", "min": 17 }]],
+          "no_criterion": null, "gates": [],
+          "bonus": {
+            "max": 2, "max_by": null, "applies_to": null,
+            "items": [
+              { "label": "英・漢・数検・P検3級", "points": 1, "when": { "t": "cert", "name": "英・漢・数検・P検いずれか3級" } },
+              { "label": "3年間皆勤", "points": 1, "when": { "t": "manual", "text": "3年間皆勤" } },
+              { "label": "生徒会役員・委員長・部長", "points": 1, "when": { "t": "manual", "text": "生徒会役員・委員長・部長" } },
+              { "label": "保護者・兄弟姉妹が卒業生", "points": 1, "when": { "t": "manual", "text": "保護者・兄弟姉妹が卒業生" } },
+              { "label": "英・漢・数検・P検準2級", "points": 2, "when": { "t": "cert", "name": "英・漢・数検・P検いずれか準2級" } },
+              { "label": "生徒会長", "points": 2, "when": { "t": "manual", "text": "生徒会長" } }
+            ],
+            "note": "最大+2"
+          },
+          "checks": ["音楽科はオープンスクールに参加", "音楽科は実技あり"],
+          "raw": "A推薦：\n全コース ①9科29 ②5科17",
+          "uncertain": false
+        },
+        {
+          "courses": ["*"], "section": "推薦", "exam_label": "B推薦（公私併願, 都神外生）", "kind": "併願",
+          "public_only": false, "applicant_scope": "都神外生", "gender": null, "strength": null,
+          "any": [[{ "t": "sum", "s": "9科", "min": 30 }], [{ "t": "sum", "s": "5科", "min": 18 }]],
+          "no_criterion": null, "gates": [],
+          "bonus": {
+            "max": 2, "max_by": null, "applies_to": null,
+            "items": [
+              { "label": "英・漢・数検・P検3級", "points": 1, "when": { "t": "cert", "name": "英・漢・数検・P検いずれか3級" } },
+              { "label": "3年間皆勤", "points": 1, "when": { "t": "manual", "text": "3年間皆勤" } },
+              { "label": "生徒会役員・委員長・部長", "points": 1, "when": { "t": "manual", "text": "生徒会役員・委員長・部長" } },
+              { "label": "保護者・兄弟姉妹が卒業生", "points": 1, "when": { "t": "manual", "text": "保護者・兄弟姉妹が卒業生" } },
+              { "label": "英・漢・数検・P検準2級", "points": 2, "when": { "t": "cert", "name": "英・漢・数検・P検いずれか準2級" } },
+              { "label": "生徒会長", "points": 2, "when": { "t": "manual", "text": "生徒会長" } }
+            ],
+            "note": "最大+2"
+          },
+          "checks": ["音楽科はオープンスクールに参加", "音楽科は実技あり"],
+          "raw": "B推薦(公私併願，都神外生)：\n全コース ①9科30 ②5科18",
+          "uncertain": false
+        },
+        {
+          "courses": ["*"], "section": "一般", "exam_label": "併願（公私）［東京・神奈川県生］", "kind": "併願",
+          "public_only": false, "applicant_scope": "東京・神奈川県生", "gender": null, "strength": null,
+          "any": [[{ "t": "sum", "s": "9科", "min": 30 }], [{ "t": "sum", "s": "5科", "min": 18 }]],
+          "no_criterion": null, "gates": [],
+          "bonus": {
+            "max": 2, "max_by": null, "applies_to": null,
+            "items": [
+              { "label": "英・漢・数検・P検3級", "points": 1, "when": { "t": "cert", "name": "英・漢・数検・P検いずれか3級" } },
+              { "label": "3年間皆勤", "points": 1, "when": { "t": "manual", "text": "3年間皆勤" } },
+              { "label": "生徒会役員・委員長・部長", "points": 1, "when": { "t": "manual", "text": "生徒会役員・委員長・部長" } },
+              { "label": "保護者・兄弟姉妹が卒業生", "points": 1, "when": { "t": "manual", "text": "保護者・兄弟姉妹が卒業生" } },
+              { "label": "英・漢・数検・P検準2級", "points": 2, "when": { "t": "cert", "name": "英・漢・数検・P検いずれか準2級" } },
+              { "label": "生徒会長", "points": 2, "when": { "t": "manual", "text": "生徒会長" } }
+            ],
+            "note": "最大+2"
+          },
+          "checks": ["音楽科はオープンスクールに参加", "音楽科は実技あり"],
+          "raw": "併願(公私)：[東京・神奈川県生]\n全コース\n①9科30 ②5科18",
+          "uncertain": false
+        }
+      ]
+    }
+  ]
+}

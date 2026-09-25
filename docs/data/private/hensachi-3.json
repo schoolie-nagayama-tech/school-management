@@ -1,0 +1,3056 @@
+{
+  "image": "3.jpg",
+  "gender": "女子",
+  "title": "令和9[2027]年度受験用 私立高校 合格のめやす（一般受験）【女子】暫定版 6月時点",
+  "notes": [
+    "データ解析中のため、また学科(コース)の改編や定員等の変更により、今後基準数値を変更する場合があります。最新の基準値は、8・9月以降進研Vもぎで確認して下さい。",
+    "合格可能性60%位置を示しています。安全圏はさらに2～3ポイント程度上にみてください。",
+    "令和9年度校名変更：東京家政学院 → 法政大千代田三番町（コース改編のため基準未設定）",
+    "藤村女子［女子］→ 吉祥寺湧水［共学］",
+    "※スポーツ(体育)／音楽系の学科・コースは非掲載"
+  ],
+  "entries": [
+    {
+      "prefecture": "東京都",
+      "block": "東京都区東南部",
+      "school_name": "慶応義塾女子",
+      "course": "",
+      "hensachi": 72,
+      "raw": "慶応義塾女子72",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区東南部",
+      "school_name": "朋優学院",
+      "course": "TG",
+      "hensachi": 68,
+      "raw": "朋優学院(TG)68",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区東南部",
+      "school_name": "広尾学園",
+      "course": "医進SC",
+      "hensachi": 68,
+      "raw": "広尾学園(医進SC)68",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区東南部",
+      "school_name": "朋優学院",
+      "course": "AG",
+      "hensachi": 65,
+      "raw": "朋優学院(AG)65",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区東南部",
+      "school_name": "明治学院",
+      "course": "",
+      "hensachi": 64,
+      "raw": "明治学院64",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区東南部",
+      "school_name": "青稜",
+      "course": "",
+      "hensachi": 63,
+      "raw": "青稜63",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区東南部",
+      "school_name": "朋優学院",
+      "course": "SG",
+      "hensachi": 62,
+      "raw": "朋優学院(SG)62",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区東南部",
+      "school_name": "東洋",
+      "course": "特選",
+      "hensachi": 61,
+      "raw": "東洋(特選)61",
+      "uncertain": true
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区東南部",
+      "school_name": "文教大付属",
+      "course": "アルティメット",
+      "hensachi": 61,
+      "raw": "文教大付属(アルティメット)61",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区東南部",
+      "school_name": "芝国際",
+      "course": "最難関",
+      "hensachi": 60,
+      "raw": "芝国際(最難関)60",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区東南部",
+      "school_name": "芝国際",
+      "course": "国際",
+      "hensachi": 59,
+      "raw": "芝国際(国際)59",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区東南部",
+      "school_name": "東洋",
+      "course": "特進",
+      "hensachi": 59,
+      "raw": "東洋(特進)59",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区東南部",
+      "school_name": "品川翔英",
+      "course": "難関進学",
+      "hensachi": 58,
+      "raw": "品川翔英(難関進学)58",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区東南部",
+      "school_name": "文教大付属",
+      "course": "アドバンスト",
+      "hensachi": 58,
+      "raw": "文教大付属(アドバンスト)58",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区東南部",
+      "school_name": "二松学舎大附属",
+      "course": "特進",
+      "hensachi": 57,
+      "raw": "二松学舎大附属(特進)57",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区東南部",
+      "school_name": "大森学園",
+      "course": "特進",
+      "hensachi": 56,
+      "raw": "大森学園(特進)56",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区東南部",
+      "school_name": "和洋九段女子",
+      "course": "グローバル・サイエンス",
+      "hensachi": 56,
+      "raw": "和洋九段女子(グローバル・サイエンス)56",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区東南部",
+      "school_name": "千代田",
+      "course": "研究",
+      "hensachi": 55,
+      "raw": "千代田(研究)55",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区東南部",
+      "school_name": "文教大付属",
+      "course": "スタンダード",
+      "hensachi": 55,
+      "raw": "文教大付属(スタンダード)55",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区東南部",
+      "school_name": "立正大付立正",
+      "course": "特進",
+      "hensachi": 55,
+      "raw": "立正大付立正(特進)55",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区東南部",
+      "school_name": "品川翔英",
+      "course": "国際教養",
+      "hensachi": 54,
+      "raw": "品川翔英(国際教養)54",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区東南部",
+      "school_name": "品川翔英",
+      "course": "特進",
+      "hensachi": 53,
+      "raw": "品川翔英(特進)53",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区東南部",
+      "school_name": "麹町学園女子",
+      "course": "東洋大GL",
+      "hensachi": 51,
+      "raw": "麹町学園女子(東洋大GL)51",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区東南部",
+      "school_name": "二松学舎大附属",
+      "course": "進学",
+      "hensachi": 51,
+      "raw": "二松学舎大附属(進学)51",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区東南部",
+      "school_name": "和洋九段女子",
+      "course": "フューチャーデザイン",
+      "hensachi": 51,
+      "raw": "和洋九段女子(フューチャーデザイン)51",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区東南部",
+      "school_name": "東京実業",
+      "course": "特進",
+      "hensachi": 51,
+      "raw": "東京実業(特進)51",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区東南部",
+      "school_name": "東京",
+      "course": "",
+      "hensachi": 51,
+      "raw": "東京51",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区東南部",
+      "school_name": "神田女学園",
+      "course": "アドバンスト・グローバル",
+      "hensachi": 50,
+      "raw": "神田女学園(アドバンスト・グローバル)50",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区東南部",
+      "school_name": "東海大付高輪台",
+      "course": "",
+      "hensachi": 50,
+      "raw": "東海大付高輪台50",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区東南部",
+      "school_name": "千代田",
+      "course": "開発",
+      "hensachi": 50,
+      "raw": "千代田(開発)50",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区東南部",
+      "school_name": "羽田国際",
+      "course": "特進",
+      "hensachi": 50,
+      "raw": "羽田国際(特進)50",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区東南部",
+      "school_name": "立正大付立正",
+      "course": "進学",
+      "hensachi": 50,
+      "raw": "立正大付立正(進学)50",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区東南部",
+      "school_name": "錦城学園",
+      "course": "",
+      "hensachi": 48,
+      "raw": "錦城学園48",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区東南部",
+      "school_name": "品川翔英",
+      "course": "総進",
+      "hensachi": 48,
+      "raw": "品川翔英(総進)48",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区東南部",
+      "school_name": "大森学園",
+      "course": "選抜",
+      "hensachi": 48,
+      "raw": "大森学園(選抜)48",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区東南部",
+      "school_name": "日体大荏原",
+      "course": "アカデミック",
+      "hensachi": 47,
+      "raw": "日体大荏原(アカデミック)47",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区東南部",
+      "school_name": "正則",
+      "course": "",
+      "hensachi": 46,
+      "raw": "正則46",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区東南部",
+      "school_name": "東京実業",
+      "course": "ゲームIT",
+      "hensachi": 45,
+      "raw": "東京実業(ゲームIT)45",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区東南部",
+      "school_name": "東京実業",
+      "course": "総進I類",
+      "hensachi": 44,
+      "raw": "東京実業(総進I類)44",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区東南部",
+      "school_name": "大森学園",
+      "course": "総進",
+      "hensachi": 42,
+      "raw": "大森学園(総進)42",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区東南部",
+      "school_name": "品川エトワール",
+      "course": "国際C",
+      "hensachi": 42,
+      "raw": "品川エトワール(国際C)42",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区東南部",
+      "school_name": "日体大荏原",
+      "course": "アドバンスト",
+      "hensachi": 42,
+      "raw": "日体大荏原(アドバンスト)42",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区東南部",
+      "school_name": "羽田国際",
+      "course": "総進・幼教",
+      "hensachi": 41,
+      "raw": "羽田国際(総進・幼教)41",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区東南部",
+      "school_name": "神田女学園",
+      "course": "キャリア",
+      "hensachi": 41,
+      "raw": "神田女学園(キャリア)41",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区東南部",
+      "school_name": "東京実業",
+      "course": "ビジネス",
+      "hensachi": 41,
+      "raw": "東京実業(ビジネス)41",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区東南部",
+      "school_name": "品川学藝",
+      "course": "普",
+      "hensachi": 40,
+      "raw": "品川学藝(普)40",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区東南部",
+      "school_name": "品川エトワール",
+      "course": "メディア",
+      "hensachi": 40,
+      "raw": "品川エトワール(メディア)40",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区東南部",
+      "school_name": "東京実業",
+      "course": "総進II類",
+      "hensachi": 40,
+      "raw": "東京実業(総進II類)40",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区東南部",
+      "school_name": "東京実業",
+      "course": "機シス・電シス",
+      "hensachi": 39,
+      "raw": "東京実業(機シス・電シス)39",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区東南部",
+      "school_name": "品川エトワール",
+      "course": "保育",
+      "hensachi": 38,
+      "raw": "品川エトワール(保育)38",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区東南部",
+      "school_name": "品川エトワール",
+      "course": "キャリア",
+      "hensachi": 36,
+      "raw": "品川エトワール(キャリア)36",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区南西部",
+      "school_name": "青山学院",
+      "course": "",
+      "hensachi": 69,
+      "raw": "青山学院69",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区南西部",
+      "school_name": "明大付世田谷",
+      "course": "",
+      "hensachi": 63,
+      "raw": "明大付世田谷63",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区南西部",
+      "school_name": "東京都市大等々力",
+      "course": "特選",
+      "hensachi": 63,
+      "raw": "東京都市大等々力(特選)63",
+      "uncertain": true
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区南西部",
+      "school_name": "国学院",
+      "course": "",
+      "hensachi": 61,
+      "raw": "国学院61",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区南西部",
+      "school_name": "日大桜丘",
+      "course": "特進S",
+      "hensachi": 60,
+      "raw": "日大桜丘(特進S)60",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区南西部",
+      "school_name": "成城学園",
+      "course": "",
+      "hensachi": 58,
+      "raw": "成城学園58",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区南西部",
+      "school_name": "目黒学院",
+      "course": "SPR",
+      "hensachi": 58,
+      "raw": "目黒学院(SPR)58",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区南西部",
+      "school_name": "目黒日大",
+      "course": "選抜",
+      "hensachi": 58,
+      "raw": "目黒日大(選抜)58",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区南西部",
+      "school_name": "自由ヶ丘学園",
+      "course": "プログレス",
+      "hensachi": 58,
+      "raw": "自由ヶ丘学園(プログレス)58",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区南西部",
+      "school_name": "日本工大駒場",
+      "course": "特進",
+      "hensachi": 57,
+      "raw": "日本工大駒場(特進)57",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区南西部",
+      "school_name": "駒澤大学",
+      "course": "",
+      "hensachi": 57,
+      "raw": "駒澤大学57",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区南西部",
+      "school_name": "佼成学園女子",
+      "course": "Sグローバル",
+      "hensachi": 56,
+      "raw": "佼成学園女子(Sグローバル)56",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区南西部",
+      "school_name": "目白研心",
+      "course": "特進",
+      "hensachi": 56,
+      "raw": "目白研心(特進)56",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区南西部",
+      "school_name": "富士見丘",
+      "course": "AD",
+      "hensachi": 56,
+      "raw": "富士見丘(AD)56",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区南西部",
+      "school_name": "八雲学園",
+      "course": "特進",
+      "hensachi": 56,
+      "raw": "八雲学園(特進)56",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区南西部",
+      "school_name": "日大桜丘",
+      "course": "総進G",
+      "hensachi": 56,
+      "raw": "日大桜丘(総進G)56",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区南西部",
+      "school_name": "多摩大目黒",
+      "course": "",
+      "hensachi": 55,
+      "raw": "多摩大目黒55",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区南西部",
+      "school_name": "目黒学院",
+      "course": "PR",
+      "hensachi": 55,
+      "raw": "目黒学院(PR)55",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区南西部",
+      "school_name": "駒場学園",
+      "course": "特進",
+      "hensachi": 55,
+      "raw": "駒場学園(特進)55",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区南西部",
+      "school_name": "トキワ松学園",
+      "course": "AD",
+      "hensachi": 55,
+      "raw": "トキワ松学園(AD)55",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区南西部",
+      "school_name": "目白研心",
+      "course": "Gコミュニケーション・Gサイエンス",
+      "hensachi": 54,
+      "raw": "目白研心(Gコミュニケーション・Gサイエンス)54",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区南西部",
+      "school_name": "目黒日大",
+      "course": "N進学",
+      "hensachi": 54,
+      "raw": "目黒日大(N進学)54",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区南西部",
+      "school_name": "国士舘",
+      "course": "選抜",
+      "hensachi": 54,
+      "raw": "国士舘(選抜)54",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区南西部",
+      "school_name": "佼成学園女子",
+      "course": "特進・留学",
+      "hensachi": 53,
+      "raw": "佼成学園女子(特進・留学)53",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区南西部",
+      "school_name": "下北沢成徳",
+      "course": "セレクト",
+      "hensachi": 53,
+      "raw": "下北沢成徳(セレクト)53",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区南西部",
+      "school_name": "駒場学園",
+      "course": "国際",
+      "hensachi": 53,
+      "raw": "駒場学園(国際)53",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区南西部",
+      "school_name": "玉川聖学院",
+      "course": "",
+      "hensachi": 53,
+      "raw": "玉川聖学院53",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区南西部",
+      "school_name": "自由ヶ丘学園",
+      "course": "理数・国際教養",
+      "hensachi": 53,
+      "raw": "自由ヶ丘学園(理数・国際教養)53",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区南西部",
+      "school_name": "富士見丘",
+      "course": "GL",
+      "hensachi": 52,
+      "raw": "富士見丘(GL)52",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区南西部",
+      "school_name": "目白研心",
+      "course": "総合",
+      "hensachi": 51,
+      "raw": "目白研心(総合)51",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区南西部",
+      "school_name": "目黒学院",
+      "course": "AD",
+      "hensachi": 51,
+      "raw": "目黒学院(AD)51",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区南西部",
+      "school_name": "八雲学園",
+      "course": "進学",
+      "hensachi": 51,
+      "raw": "八雲学園(進学)51",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区南西部",
+      "school_name": "日本工大駒場",
+      "course": "総進",
+      "hensachi": 50,
+      "raw": "日本工大駒場(総進)50",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区南西部",
+      "school_name": "下北沢成徳",
+      "course": "グローバル",
+      "hensachi": 49,
+      "raw": "下北沢成徳(グローバル)49",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区南西部",
+      "school_name": "関東国際",
+      "course": "英・フランス",
+      "hensachi": 49,
+      "raw": "関東国際(英・フランス)49",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区南西部",
+      "school_name": "松蔭大附松蔭",
+      "course": "",
+      "hensachi": 49,
+      "raw": "松蔭大附松蔭49",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区南西部",
+      "school_name": "国士舘",
+      "course": "進学",
+      "hensachi": 48,
+      "raw": "国士舘(進学)48",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区南西部",
+      "school_name": "駒場学園",
+      "course": "進学",
+      "hensachi": 48,
+      "raw": "駒場学園(進学)48",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区南西部",
+      "school_name": "成女",
+      "course": "",
+      "hensachi": 48,
+      "raw": "成女48",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区南西部",
+      "school_name": "日本工大駒場",
+      "course": "文理未来",
+      "hensachi": 48,
+      "raw": "日本工大駒場(文理未来)48",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区南西部",
+      "school_name": "トキワ松学園",
+      "course": "美デ・ST",
+      "hensachi": 47,
+      "raw": "トキワ松学園(美デ・ST)47",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区南西部",
+      "school_name": "佼成学園女子",
+      "course": "進学",
+      "hensachi": 46,
+      "raw": "佼成学園女子(進学)46",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区南西部",
+      "school_name": "下北沢成徳",
+      "course": "ブロード",
+      "hensachi": 46,
+      "raw": "下北沢成徳(ブロード)46",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区南西部",
+      "school_name": "関東国際",
+      "course": "文理・中・露・韓",
+      "hensachi": 46,
+      "raw": "関東国際(文理・中・露・韓)46",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区南西部",
+      "school_name": "目黒学院",
+      "course": "ST",
+      "hensachi": 46,
+      "raw": "目黒学院(ST)46",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区南西部",
+      "school_name": "関東国際",
+      "course": "イタリア・スペイン",
+      "hensachi": 45,
+      "raw": "関東国際(イタリア・スペイン)45",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区南西部",
+      "school_name": "自由ヶ丘学園",
+      "course": "文理",
+      "hensachi": 45,
+      "raw": "自由ヶ丘学園(文理)45",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区南西部",
+      "school_name": "日女体大附二階堂",
+      "course": "特進",
+      "hensachi": 44,
+      "raw": "日女体大附二階堂(特進)44",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区南西部",
+      "school_name": "関東国際",
+      "course": "タイ・インドネシア・ベトナム",
+      "hensachi": 43,
+      "raw": "関東国際(タイ・インドネシア・ベトナム)43",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区南西部",
+      "school_name": "国本女子",
+      "course": "総進",
+      "hensachi": 43,
+      "raw": "国本女子(総進)43",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区南西部",
+      "school_name": "駒場学園",
+      "course": "食調",
+      "hensachi": 42,
+      "raw": "駒場学園(食調)42",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区南西部",
+      "school_name": "日女体大附二階堂",
+      "course": "ダンス",
+      "hensachi": 41,
+      "raw": "日女体大附二階堂(ダンス)41",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区南西部",
+      "school_name": "日女体大附二階堂",
+      "course": "キャリア",
+      "hensachi": 39,
+      "raw": "日女体大附二階堂(キャリア)39",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区南西部",
+      "school_name": "大東学園",
+      "course": "",
+      "hensachi": 36,
+      "raw": "大東学園36",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区西部",
+      "school_name": "中大杉並",
+      "course": "",
+      "hensachi": 65,
+      "raw": "中大杉並65",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区西部",
+      "school_name": "宝仙学園",
+      "course": "医学進学",
+      "hensachi": 65,
+      "raw": "宝仙学園(医学進学)65",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区西部",
+      "school_name": "宝仙学園",
+      "course": "理数本科",
+      "hensachi": 62,
+      "raw": "宝仙学園(理数本科)62",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区西部",
+      "school_name": "国学院久我山",
+      "course": "",
+      "hensachi": 62,
+      "raw": "国学院久我山62",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区西部",
+      "school_name": "日大鶴ヶ丘",
+      "course": "特進",
+      "hensachi": 61,
+      "raw": "日大鶴ヶ丘(特進)61",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区西部",
+      "school_name": "日大第二",
+      "course": "",
+      "hensachi": 60,
+      "raw": "日大第二60",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区西部",
+      "school_name": "文化学園大杉並",
+      "course": "ダブルディプロマ",
+      "hensachi": 59,
+      "raw": "文化学園大杉並(ダブルディプロマ)59",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区西部",
+      "school_name": "実践学園",
+      "course": "特進・リベラル",
+      "hensachi": 57,
+      "raw": "実践学園(特進・リベラル)57",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区西部",
+      "school_name": "文化学園大杉並",
+      "course": "特進",
+      "hensachi": 57,
+      "raw": "文化学園大杉並(特進)57",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区西部",
+      "school_name": "杉並学院",
+      "course": "特進",
+      "hensachi": 56,
+      "raw": "杉並学院(特進)56",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区西部",
+      "school_name": "東亜学園",
+      "course": "特進",
+      "hensachi": 55,
+      "raw": "東亜学園(特進)55",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区西部",
+      "school_name": "専修大附属",
+      "course": "",
+      "hensachi": 55,
+      "raw": "専修大附属55",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区西部",
+      "school_name": "日大鶴ヶ丘",
+      "course": "総進",
+      "hensachi": 55,
+      "raw": "日大鶴ヶ丘(総進)55",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区西部",
+      "school_name": "英明フロンティア",
+      "course": "フロンティアα",
+      "hensachi": 53,
+      "raw": "英明フロンティア(フロンティアα)53",
+      "uncertain": true
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区西部",
+      "school_name": "実践学園",
+      "course": "文理",
+      "hensachi": 52,
+      "raw": "実践学園(文理)52",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区西部",
+      "school_name": "杉並学院",
+      "course": "総進",
+      "hensachi": 52,
+      "raw": "杉並学院(総進)52",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区西部",
+      "school_name": "東京立正",
+      "course": "アドバンスト",
+      "hensachi": 52,
+      "raw": "東京立正(アドバンスト)52",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区西部",
+      "school_name": "女子美大付属",
+      "course": "",
+      "hensachi": 52,
+      "raw": "女子美大付属52",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区西部",
+      "school_name": "文化学園大杉並",
+      "course": "進学・イノベーションL",
+      "hensachi": 51,
+      "raw": "文化学園大杉並(進学・イノベーションL)51",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区西部",
+      "school_name": "新渡戸文化",
+      "course": "探究進学",
+      "hensachi": 49,
+      "raw": "新渡戸文化(探究進学)49",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区西部",
+      "school_name": "東亜学園",
+      "course": "総合選抜",
+      "hensachi": 49,
+      "raw": "東亜学園(総合選抜)49",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区西部",
+      "school_name": "東京立正",
+      "course": "イノベーション",
+      "hensachi": 49,
+      "raw": "東京立正(イノベーション)49",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区西部",
+      "school_name": "新渡戸文化",
+      "course": "美術",
+      "hensachi": 47,
+      "raw": "新渡戸文化(美術)47",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区西部",
+      "school_name": "英明フロンティア",
+      "course": "フロンティア",
+      "hensachi": 46,
+      "raw": "英明フロンティア(フロンティア)46",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区西部",
+      "school_name": "東京立正",
+      "course": "スタンダード",
+      "hensachi": 44,
+      "raw": "東京立正(スタンダード)44",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区西部",
+      "school_name": "新渡戸文化",
+      "course": "フード",
+      "hensachi": 44,
+      "raw": "新渡戸文化(フード)44",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区西部",
+      "school_name": "宝仙学園",
+      "course": "こども教育",
+      "hensachi": 43,
+      "raw": "宝仙学園(こども教育)43",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区西部",
+      "school_name": "堀越",
+      "course": "",
+      "hensachi": 37,
+      "raw": "堀越37",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北西部",
+      "school_name": "淑徳",
+      "course": "S特進",
+      "hensachi": 67,
+      "raw": "淑徳(S特進)67",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北西部",
+      "school_name": "中央大学",
+      "course": "",
+      "hensachi": 66,
+      "raw": "中央大学66",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北西部",
+      "school_name": "駒込",
+      "course": "理系先進",
+      "hensachi": 64,
+      "raw": "駒込(理系先進)64",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北西部",
+      "school_name": "淑徳巣鴨",
+      "course": "選抜U",
+      "hensachi": 63,
+      "raw": "淑徳巣鴨(選抜U)63",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北西部",
+      "school_name": "駒込",
+      "course": "国際教養",
+      "hensachi": 63,
+      "raw": "駒込(国際教養)63",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北西部",
+      "school_name": "淑徳",
+      "course": "特進選抜",
+      "hensachi": 62,
+      "raw": "淑徳(特進選抜)62",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北西部",
+      "school_name": "駒込",
+      "course": "特S",
+      "hensachi": 62,
+      "raw": "駒込(特S)62",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北西部",
+      "school_name": "十文字",
+      "course": "特選",
+      "hensachi": 61,
+      "raw": "十文字(特選)61",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北西部",
+      "school_name": "淑徳巣鴨",
+      "course": "選抜P",
+      "hensachi": 61,
+      "raw": "淑徳巣鴨(選抜P)61",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北西部",
+      "school_name": "郁文館",
+      "course": "iP",
+      "hensachi": 61,
+      "raw": "郁文館(iP)61",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北西部",
+      "school_name": "豊島学院",
+      "course": "S特進",
+      "hensachi": 60,
+      "raw": "豊島学院(S特進)60",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北西部",
+      "school_name": "京華女子",
+      "course": "特奨",
+      "hensachi": 60,
+      "raw": "京華女子(特奨)60",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北西部",
+      "school_name": "淑徳",
+      "course": "留学",
+      "hensachi": 59,
+      "raw": "淑徳(留学)59",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北西部",
+      "school_name": "淑徳巣鴨",
+      "course": "選抜",
+      "hensachi": 59,
+      "raw": "淑徳巣鴨(選抜)59",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北西部",
+      "school_name": "駒込",
+      "course": "S",
+      "hensachi": 59,
+      "raw": "駒込(S)59",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北西部",
+      "school_name": "東洋大京北",
+      "course": "",
+      "hensachi": 58,
+      "raw": "東洋大京北58",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北西部",
+      "school_name": "大東文化大第一",
+      "course": "特進",
+      "hensachi": 58,
+      "raw": "大東文化大第一(特進)58",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北西部",
+      "school_name": "郁文館",
+      "course": "国立選抜",
+      "hensachi": 58,
+      "raw": "郁文館(国立選抜)58",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北西部",
+      "school_name": "東京家政大附",
+      "course": "SA特選",
+      "hensachi": 57,
+      "raw": "東京家政大附(SA特選)57",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北西部",
+      "school_name": "日大豊山女子",
+      "course": "A特進",
+      "hensachi": 57,
+      "raw": "日大豊山女子(A特進)57",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北西部",
+      "school_name": "京華女子",
+      "course": "特進",
+      "hensachi": 57,
+      "raw": "京華女子(特進)57",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北西部",
+      "school_name": "豊島学院",
+      "course": "特進",
+      "hensachi": 57,
+      "raw": "豊島学院(特進)57",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北西部",
+      "school_name": "淑徳巣鴨",
+      "course": "特進",
+      "hensachi": 57,
+      "raw": "淑徳巣鴨(特進)57",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北西部",
+      "school_name": "帝京",
+      "course": "特進",
+      "hensachi": 57,
+      "raw": "帝京(特進)57",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北西部",
+      "school_name": "郁文館グローバル",
+      "course": "Honors",
+      "hensachi": 57,
+      "raw": "郁文館グローバル(Honors)57",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北西部",
+      "school_name": "文京学院大女子",
+      "course": "国際特進",
+      "hensachi": 56,
+      "raw": "文京学院大女子(国際特進)56",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北西部",
+      "school_name": "郁文館",
+      "course": "特進",
+      "hensachi": 56,
+      "raw": "郁文館(特進)56",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北西部",
+      "school_name": "文京学院大女子",
+      "course": "理数特進",
+      "hensachi": 55,
+      "raw": "文京学院大女子(理数特進)55",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北西部",
+      "school_name": "東京家政大附",
+      "course": "CA特進",
+      "hensachi": 55,
+      "raw": "東京家政大附(CA特進)55",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北西部",
+      "school_name": "日大豊山女子",
+      "course": "理数",
+      "hensachi": 55,
+      "raw": "日大豊山女子(理数)55",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北西部",
+      "school_name": "東洋女子",
+      "course": "特進",
+      "hensachi": 55,
+      "raw": "東洋女子(特進)55",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北西部",
+      "school_name": "十文字",
+      "course": "リベラルアーツ",
+      "hensachi": 55,
+      "raw": "十文字(リベラルアーツ)55",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北西部",
+      "school_name": "豊南",
+      "course": "特進探究",
+      "hensachi": 55,
+      "raw": "豊南(特進探究)55",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北西部",
+      "school_name": "大東文化大第一",
+      "course": "選抜進学",
+      "hensachi": 55,
+      "raw": "大東文化大第一(選抜進学)55",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北西部",
+      "school_name": "帝京",
+      "course": "インター",
+      "hensachi": 55,
+      "raw": "帝京(インター)55",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北西部",
+      "school_name": "十文字",
+      "course": "自己発信",
+      "hensachi": 54,
+      "raw": "十文字(自己発信)54",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北西部",
+      "school_name": "郁文館グローバル",
+      "course": "LA",
+      "hensachi": 54,
+      "raw": "郁文館グローバル(LA)54",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北西部",
+      "school_name": "豊島学院",
+      "course": "選抜",
+      "hensachi": 54,
+      "raw": "豊島学院(選抜)54",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北西部",
+      "school_name": "郁文館",
+      "course": "進学",
+      "hensachi": 53,
+      "raw": "郁文館(進学)53",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北西部",
+      "school_name": "日大豊山女子",
+      "course": "N進学",
+      "hensachi": 52,
+      "raw": "日大豊山女子(N進学)52",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北西部",
+      "school_name": "城西大附城西",
+      "course": "AC",
+      "hensachi": 52,
+      "raw": "城西大附城西(AC)52",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北西部",
+      "school_name": "昭和第一",
+      "course": "特進",
+      "hensachi": 52,
+      "raw": "昭和第一(特進)52",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北西部",
+      "school_name": "大東文化大第一",
+      "course": "進学",
+      "hensachi": 51,
+      "raw": "大東文化大第一(進学)51",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北西部",
+      "school_name": "東京家政大附",
+      "course": "TKU内部進学",
+      "hensachi": 50,
+      "raw": "東京家政大附(TKU内部進学)50",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北西部",
+      "school_name": "帝京",
+      "course": "進学",
+      "hensachi": 50,
+      "raw": "帝京(進学)50",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北西部",
+      "school_name": "豊島学院",
+      "course": "普",
+      "hensachi": 50,
+      "raw": "豊島学院(普)50",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北西部",
+      "school_name": "豊南",
+      "course": "選抜探究",
+      "hensachi": 50,
+      "raw": "豊南(選抜探究)50",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北西部",
+      "school_name": "貞静学園",
+      "course": "特進",
+      "hensachi": 49,
+      "raw": "貞静学園(特進)49",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北西部",
+      "school_name": "文京学院大女子",
+      "course": "理数進学・国際進学",
+      "hensachi": 48,
+      "raw": "文京学院大女子(理数進学・国際進学)48",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北西部",
+      "school_name": "京華女子",
+      "course": "進学",
+      "hensachi": 48,
+      "raw": "京華女子(進学)48",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北西部",
+      "school_name": "小石川淑徳学園",
+      "course": "特選",
+      "hensachi": 47,
+      "raw": "小石川淑徳学園(特選)47",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北西部",
+      "school_name": "城西大附城西",
+      "course": "CS",
+      "hensachi": 47,
+      "raw": "城西大附城西(CS)47",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北西部",
+      "school_name": "東洋女子",
+      "course": "総進",
+      "hensachi": 45,
+      "raw": "東洋女子(総進)45",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北西部",
+      "school_name": "川村",
+      "course": "",
+      "hensachi": 45,
+      "raw": "川村45",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北西部",
+      "school_name": "昭和鉄道",
+      "course": "",
+      "hensachi": 45,
+      "raw": "昭和鉄道45",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北西部",
+      "school_name": "昭和第一",
+      "course": "進学",
+      "hensachi": 45,
+      "raw": "昭和第一(進学)45",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北西部",
+      "school_name": "豊南",
+      "course": "文理探究",
+      "hensachi": 45,
+      "raw": "豊南(文理探究)45",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北西部",
+      "school_name": "小石川淑徳学園",
+      "course": "選抜",
+      "hensachi": 42,
+      "raw": "小石川淑徳学園(選抜)42",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北西部",
+      "school_name": "貞静学園",
+      "course": "総進・幼保",
+      "hensachi": 42,
+      "raw": "貞静学園(総進・幼保)42",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北西部",
+      "school_name": "京華商業",
+      "course": "",
+      "hensachi": 40,
+      "raw": "京華商業40",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北東部",
+      "school_name": "北里大附順天",
+      "course": "理数選抜",
+      "hensachi": 64,
+      "raw": "北里大附順天(理数選抜)64",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北東部",
+      "school_name": "関東第一",
+      "course": "叡智",
+      "hensachi": 63,
+      "raw": "関東第一(叡智)63",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北東部",
+      "school_name": "芝浦工大附属",
+      "course": "",
+      "hensachi": 62,
+      "raw": "芝浦工大附属62",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北東部",
+      "school_name": "桜丘",
+      "course": "Sアカデミック",
+      "hensachi": 62,
+      "raw": "桜丘(Sアカデミック)62",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北東部",
+      "school_name": "安田学園",
+      "course": "S特",
+      "hensachi": 61,
+      "raw": "安田学園(S特)61",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北東部",
+      "school_name": "東京成徳大学",
+      "course": "特進S",
+      "hensachi": 61,
+      "raw": "東京成徳大学(特進S)61",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北東部",
+      "school_name": "江戸川女子",
+      "course": "III類",
+      "hensachi": 61,
+      "raw": "江戸川女子(III類)61",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北東部",
+      "school_name": "北里大附順天",
+      "course": "特進選抜・英語選抜",
+      "hensachi": 61,
+      "raw": "北里大附順天(特進選抜・英語選抜)61",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北東部",
+      "school_name": "江戸川女子",
+      "course": "英",
+      "hensachi": 59,
+      "raw": "江戸川女子(英)59",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北東部",
+      "school_name": "安田学園",
+      "course": "特進",
+      "hensachi": 58,
+      "raw": "安田学園(特進)58",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北東部",
+      "school_name": "東京成徳大学",
+      "course": "特進",
+      "hensachi": 57,
+      "raw": "東京成徳大学(特進)57",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北東部",
+      "school_name": "かえつ有明",
+      "course": "",
+      "hensachi": 57,
+      "raw": "かえつ有明57",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北東部",
+      "school_name": "桜丘",
+      "course": "アカデミック",
+      "hensachi": 57,
+      "raw": "桜丘(アカデミック)57",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北東部",
+      "school_name": "江戸川女子",
+      "course": "II類",
+      "hensachi": 57,
+      "raw": "江戸川女子(II類)57",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北東部",
+      "school_name": "共栄学園",
+      "course": "未来探究",
+      "hensachi": 57,
+      "raw": "共栄学園(未来探究)57",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北東部",
+      "school_name": "成立学園",
+      "course": "特進",
+      "hensachi": 56,
+      "raw": "成立学園(特進)56",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北東部",
+      "school_name": "関東第一",
+      "course": "ハイパー",
+      "hensachi": 55,
+      "raw": "関東第一(ハイパー)55",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北東部",
+      "school_name": "中村",
+      "course": "国際・先進",
+      "hensachi": 55,
+      "raw": "中村(国際・先進)55",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北東部",
+      "school_name": "桜丘",
+      "course": "インターLA",
+      "hensachi": 55,
+      "raw": "桜丘(インターLA)55",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北東部",
+      "school_name": "上野学園",
+      "course": "特進α",
+      "hensachi": 54,
+      "raw": "上野学園(特進α)54",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北東部",
+      "school_name": "東京成徳大学",
+      "course": "進選",
+      "hensachi": 54,
+      "raw": "東京成徳大学(進選)54",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北東部",
+      "school_name": "北豊島",
+      "course": "IP",
+      "hensachi": 54,
+      "raw": "北豊島(IP)54",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北東部",
+      "school_name": "サレジアン国際",
+      "course": "本科・インター",
+      "hensachi": 54,
+      "raw": "サレジアン国際(本科・インター)54",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北東部",
+      "school_name": "日大第一",
+      "course": "",
+      "hensachi": 53,
+      "raw": "日大第一53",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北東部",
+      "school_name": "瀧野川女子学園",
+      "course": "特選",
+      "hensachi": 53,
+      "raw": "瀧野川女子学園(特選)53",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北東部",
+      "school_name": "岩倉",
+      "course": "普グローバル・サイエンス",
+      "hensachi": 53,
+      "raw": "岩倉(普グローバル・サイエンス)53",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北東部",
+      "school_name": "駿台学園",
+      "course": "特選",
+      "hensachi": 52,
+      "raw": "駿台学園(特選)52",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北東部",
+      "school_name": "共栄学園",
+      "course": "理数創造・国際共生・探究特進",
+      "hensachi": 52,
+      "raw": "共栄学園(理数創造・国際共生・探究特進)52",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北東部",
+      "school_name": "関東第一",
+      "course": "アドバンスト選抜",
+      "hensachi": 52,
+      "raw": "関東第一(アドバンスト選抜)52",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北東部",
+      "school_name": "中村",
+      "course": "探究",
+      "hensachi": 52,
+      "raw": "中村(探究)52",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北東部",
+      "school_name": "修徳",
+      "course": "特進",
+      "hensachi": 51,
+      "raw": "修徳(特進)51",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北東部",
+      "school_name": "潤徳女子",
+      "course": "特進",
+      "hensachi": 51,
+      "raw": "潤徳女子(特進)51",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北東部",
+      "school_name": "東京成徳大学",
+      "course": "進学",
+      "hensachi": 51,
+      "raw": "東京成徳大学(進学)51",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北東部",
+      "school_name": "上野学園",
+      "course": "特進β",
+      "hensachi": 50,
+      "raw": "上野学園(特進β)50",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北東部",
+      "school_name": "成立学園",
+      "course": "総合",
+      "hensachi": 49,
+      "raw": "成立学園(総合)49",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北東部",
+      "school_name": "関東第一",
+      "course": "アドバンスト",
+      "hensachi": 48,
+      "raw": "関東第一(アドバンスト)48",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北東部",
+      "school_name": "愛国",
+      "course": "看",
+      "hensachi": 48,
+      "raw": "愛国(看)48",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北東部",
+      "school_name": "武蔵野",
+      "course": "特進",
+      "hensachi": 48,
+      "raw": "武蔵野(特進)48",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北東部",
+      "school_name": "瀧野川女子学園",
+      "course": "特進",
+      "hensachi": 47,
+      "raw": "瀧野川女子学園(特進)47",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北東部",
+      "school_name": "北豊島",
+      "course": "GP",
+      "hensachi": 47,
+      "raw": "北豊島(GP)47",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北東部",
+      "school_name": "岩倉",
+      "course": "運輸",
+      "hensachi": 46,
+      "raw": "岩倉(運輸)46",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北東部",
+      "school_name": "潤徳女子",
+      "course": "美術",
+      "hensachi": 45,
+      "raw": "潤徳女子(美術)45",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北東部",
+      "school_name": "岩倉",
+      "course": "普キャリア",
+      "hensachi": 45,
+      "raw": "岩倉(普キャリア)45",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北東部",
+      "school_name": "共栄学園",
+      "course": "探究進学",
+      "hensachi": 44,
+      "raw": "共栄学園(探究進学)44",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北東部",
+      "school_name": "上野学園",
+      "course": "総進",
+      "hensachi": 44,
+      "raw": "上野学園(総進)44",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北東部",
+      "school_name": "駿台学園",
+      "course": "進学",
+      "hensachi": 43,
+      "raw": "駿台学園(進学)43",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北東部",
+      "school_name": "潤徳女子",
+      "course": "進学",
+      "hensachi": 43,
+      "raw": "潤徳女子(進学)43",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北東部",
+      "school_name": "関東第一",
+      "course": "アグレッシブ",
+      "hensachi": 43,
+      "raw": "関東第一(アグレッシブ)43",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北東部",
+      "school_name": "修徳",
+      "course": "文理進学",
+      "hensachi": 42,
+      "raw": "修徳(文理進学)42",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北東部",
+      "school_name": "北豊島",
+      "course": "VP",
+      "hensachi": 42,
+      "raw": "北豊島(VP)42",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北東部",
+      "school_name": "駿台学園",
+      "course": "SPハイブリッド",
+      "hensachi": 41,
+      "raw": "駿台学園(SPハイブリッド)41",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北東部",
+      "school_name": "武蔵野",
+      "course": "進学",
+      "hensachi": 41,
+      "raw": "武蔵野(進学)41",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北東部",
+      "school_name": "愛国",
+      "course": "普・商・家",
+      "hensachi": 40,
+      "raw": "愛国(普・商・家)40",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北東部",
+      "school_name": "中央学院大中央",
+      "course": "普",
+      "hensachi": 40,
+      "raw": "中央学院大中央(普)40",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北東部",
+      "school_name": "瀧野川女子学園",
+      "course": "進学",
+      "hensachi": 40,
+      "raw": "瀧野川女子学園(進学)40",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北東部",
+      "school_name": "中央学院大中央",
+      "course": "商",
+      "hensachi": 38,
+      "raw": "中央学院大中央(商)38",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北東部",
+      "school_name": "駿台学園",
+      "course": "SPオリジナル",
+      "hensachi": 38,
+      "raw": "駿台学園(SPオリジナル)38",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都区北東部",
+      "school_name": "安部学院",
+      "course": "",
+      "hensachi": 35,
+      "raw": "安部学院35",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都多摩西部",
+      "school_name": "明大付八王子",
+      "course": "",
+      "hensachi": 67,
+      "raw": "明大付八王子67",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都多摩西部",
+      "school_name": "帝京大学",
+      "course": "",
+      "hensachi": 64,
+      "raw": "帝京大学64",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都多摩西部",
+      "school_name": "八王子",
+      "course": "特選",
+      "hensachi": 64,
+      "raw": "八王子(特選)64",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都多摩西部",
+      "school_name": "桜美林",
+      "course": "国公立",
+      "hensachi": 64,
+      "raw": "桜美林(国公立)64",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都多摩西部",
+      "school_name": "拓大第一",
+      "course": "特進",
+      "hensachi": 63,
+      "raw": "拓大第一(特進)63",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都多摩西部",
+      "school_name": "日大第三",
+      "course": "特進",
+      "hensachi": 62,
+      "raw": "日大第三(特進)62",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都多摩西部",
+      "school_name": "八王子",
+      "course": "特進",
+      "hensachi": 61,
+      "raw": "八王子(特進)61",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都多摩西部",
+      "school_name": "桜美林",
+      "course": "特進",
+      "hensachi": 60,
+      "raw": "桜美林(特進)60",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都多摩西部",
+      "school_name": "八王子実践",
+      "course": "J特進",
+      "hensachi": 60,
+      "raw": "八王子実践(J特進)60",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都多摩西部",
+      "school_name": "東京純心女子",
+      "course": "特進",
+      "hensachi": 59,
+      "raw": "東京純心女子(特進)59",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都多摩西部",
+      "school_name": "拓大第一",
+      "course": "進学",
+      "hensachi": 58,
+      "raw": "拓大第一(進学)58",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都多摩西部",
+      "school_name": "桜美林",
+      "course": "進学",
+      "hensachi": 58,
+      "raw": "桜美林(進学)58",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都多摩西部",
+      "school_name": "日大第三",
+      "course": "普",
+      "hensachi": 57,
+      "raw": "日大第三(普)57",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都多摩西部",
+      "school_name": "昭和第一学園",
+      "course": "英語",
+      "hensachi": 57,
+      "raw": "昭和第一学園(英語)57",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都多摩西部",
+      "school_name": "八王子",
+      "course": "進学",
+      "hensachi": 56,
+      "raw": "八王子(進学)56",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都多摩西部",
+      "school_name": "共立女子第二",
+      "course": "特進",
+      "hensachi": 55,
+      "raw": "共立女子第二(特進)55",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都多摩西部",
+      "school_name": "工学院大附属",
+      "course": "先進文理",
+      "hensachi": 55,
+      "raw": "工学院大附属(先進文理)55",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都多摩西部",
+      "school_name": "八王子実践",
+      "course": "特進",
+      "hensachi": 55,
+      "raw": "八王子実践(特進)55",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都多摩西部",
+      "school_name": "八王子",
+      "course": "LA系・美術系",
+      "hensachi": 54,
+      "raw": "八王子(LA系・美術系)54",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都多摩西部",
+      "school_name": "日大明誠",
+      "course": "特進",
+      "hensachi": 54,
+      "raw": "日大明誠(特進)54",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都多摩西部",
+      "school_name": "工学院大附属",
+      "course": "インター",
+      "hensachi": 54,
+      "raw": "工学院大附属(インター)54",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都多摩西部",
+      "school_name": "帝京八王子",
+      "course": "特進",
+      "hensachi": 54,
+      "raw": "帝京八王子(特進)54",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都多摩西部",
+      "school_name": "共立女子第二",
+      "course": "英語",
+      "hensachi": 53,
+      "raw": "共立女子第二(英語)53",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都多摩西部",
+      "school_name": "東海大菅生",
+      "course": "医学・難関大",
+      "hensachi": 53,
+      "raw": "東海大菅生(医学・難関大)53",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都多摩西部",
+      "school_name": "玉川学園",
+      "course": "一般",
+      "hensachi": 53,
+      "raw": "玉川学園(一般)53",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都多摩西部",
+      "school_name": "東京純心女子",
+      "course": "セレクト",
+      "hensachi": 52,
+      "raw": "東京純心女子(セレクト)52",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都多摩西部",
+      "school_name": "工学院大附属",
+      "course": "文理",
+      "hensachi": 51,
+      "raw": "工学院大附属(文理)51",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都多摩西部",
+      "school_name": "昭和第一学園",
+      "course": "選進",
+      "hensachi": 51,
+      "raw": "昭和第一学園(選進)51",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都多摩西部",
+      "school_name": "八王子実践",
+      "course": "選抜",
+      "hensachi": 51,
+      "raw": "八王子実践(選抜)51",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都多摩西部",
+      "school_name": "サレジオ高専",
+      "course": "情報",
+      "hensachi": 51,
+      "raw": "サレジオ高専(情報)51",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都多摩西部",
+      "school_name": "共立女子第二",
+      "course": "総進",
+      "hensachi": 51,
+      "raw": "共立女子第二(総進)51",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都多摩西部",
+      "school_name": "啓明学園",
+      "course": "",
+      "hensachi": 51,
+      "raw": "啓明学園51",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都多摩西部",
+      "school_name": "和光",
+      "course": "",
+      "hensachi": 49,
+      "raw": "和光49",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都多摩西部",
+      "school_name": "立川女子",
+      "course": "特進",
+      "hensachi": 49,
+      "raw": "立川女子(特進)49",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都多摩西部",
+      "school_name": "日大明誠",
+      "course": "普",
+      "hensachi": 48,
+      "raw": "日大明誠(普)48",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都多摩西部",
+      "school_name": "昭和第一学園",
+      "course": "文理進学・デザイン",
+      "hensachi": 47,
+      "raw": "昭和第一学園(文理進学・デザイン)47",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都多摩西部",
+      "school_name": "帝京八王子",
+      "course": "進学",
+      "hensachi": 46,
+      "raw": "帝京八王子(進学)46",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都多摩西部",
+      "school_name": "八王子実践",
+      "course": "総進",
+      "hensachi": 46,
+      "raw": "八王子実践(総進)46",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都多摩西部",
+      "school_name": "東海大菅生",
+      "course": "進学",
+      "hensachi": 45,
+      "raw": "東海大菅生(進学)45",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都多摩西部",
+      "school_name": "聖パウロ学園",
+      "course": "グローバル",
+      "hensachi": 44,
+      "raw": "聖パウロ学園(グローバル)44",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都多摩西部",
+      "school_name": "昭和第一学園",
+      "course": "探究",
+      "hensachi": 43,
+      "raw": "昭和第一学園(探究)43",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都多摩西部",
+      "school_name": "立川女子",
+      "course": "総合",
+      "hensachi": 40,
+      "raw": "立川女子(総合)40",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都多摩西部",
+      "school_name": "聖パウロ学園",
+      "course": "セレクティブ",
+      "hensachi": 40,
+      "raw": "聖パウロ学園(セレクティブ)40",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都多摩西部",
+      "school_name": "フェリシア",
+      "course": "",
+      "hensachi": 36,
+      "raw": "フェリシア36",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都多摩東部",
+      "school_name": "早稲田実業",
+      "course": "",
+      "hensachi": 72,
+      "raw": "早稲田実業72",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都多摩東部",
+      "school_name": "明大付明治",
+      "course": "",
+      "hensachi": 69,
+      "raw": "明大付明治69",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都多摩東部",
+      "school_name": "国際基督教大学",
+      "course": "",
+      "hensachi": 68,
+      "raw": "国際基督教大学68",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都多摩東部",
+      "school_name": "中大附属",
+      "course": "",
+      "hensachi": 65,
+      "raw": "中大附属65",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都多摩東部",
+      "school_name": "法政大学",
+      "course": "",
+      "hensachi": 65,
+      "raw": "法政大学65",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都多摩東部",
+      "school_name": "錦城",
+      "course": "特進",
+      "hensachi": 64,
+      "raw": "錦城(特進)64",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都多摩東部",
+      "school_name": "成蹊",
+      "course": "",
+      "hensachi": 62,
+      "raw": "成蹊62",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都多摩東部",
+      "school_name": "聖徳学園",
+      "course": "データサイエンス",
+      "hensachi": 62,
+      "raw": "聖徳学園(データサイエンス)62",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都多摩東部",
+      "school_name": "聖徳学園",
+      "course": "難関国公立",
+      "hensachi": 61,
+      "raw": "聖徳学園(難関国公立)61",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都多摩東部",
+      "school_name": "白梅学園",
+      "course": "特選国公立",
+      "hensachi": 60,
+      "raw": "白梅学園(特選国公立)60",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都多摩東部",
+      "school_name": "錦城",
+      "course": "進学",
+      "hensachi": 60,
+      "raw": "錦城(進学)60",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都多摩東部",
+      "school_name": "明星",
+      "course": "SMGS",
+      "hensachi": 60,
+      "raw": "明星(SMGS)60",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都多摩東部",
+      "school_name": "明法",
+      "course": "特進",
+      "hensachi": 59,
+      "raw": "明法(特進)59",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都多摩東部",
+      "school_name": "明学東村山",
+      "course": "",
+      "hensachi": 58,
+      "raw": "明学東村山58",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都多摩東部",
+      "school_name": "武蔵野大学",
+      "course": "ハイグレード",
+      "hensachi": 58,
+      "raw": "武蔵野大学(ハイグレード)58",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都多摩東部",
+      "school_name": "桐朋女子",
+      "course": "普",
+      "hensachi": 57,
+      "raw": "桐朋女子(普)57",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都多摩東部",
+      "school_name": "国立音大附属",
+      "course": "特進",
+      "hensachi": 57,
+      "raw": "国立音大附属(特進)57",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都多摩東部",
+      "school_name": "聖徳学園",
+      "course": "文理進学",
+      "hensachi": 57,
+      "raw": "聖徳学園(文理進学)57",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都多摩東部",
+      "school_name": "創価",
+      "course": "",
+      "hensachi": 56,
+      "raw": "創価56",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都多摩東部",
+      "school_name": "東京電機大学",
+      "course": "",
+      "hensachi": 56,
+      "raw": "東京電機大学56",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都多摩東部",
+      "school_name": "武蔵野大学",
+      "course": "インター",
+      "hensachi": 56,
+      "raw": "武蔵野大学(インター)56",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都多摩東部",
+      "school_name": "明星",
+      "course": "MGS",
+      "hensachi": 56,
+      "raw": "明星(MGS)56",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都多摩東部",
+      "school_name": "大成",
+      "course": "特進",
+      "hensachi": 56,
+      "raw": "大成(特進)56",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都多摩東部",
+      "school_name": "明星学園",
+      "course": "",
+      "hensachi": 55,
+      "raw": "明星学園55",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都多摩東部",
+      "school_name": "白梅学園",
+      "course": "特選文理",
+      "hensachi": 55,
+      "raw": "白梅学園(特選文理)55",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都多摩東部",
+      "school_name": "多摩大聖ヶ丘",
+      "course": "",
+      "hensachi": 54,
+      "raw": "多摩大聖ヶ丘54",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都多摩東部",
+      "school_name": "明法",
+      "course": "総進",
+      "hensachi": 54,
+      "raw": "明法(総進)54",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都多摩東部",
+      "school_name": "国立音大附属",
+      "course": "総進",
+      "hensachi": 53,
+      "raw": "国立音大附属(総進)53",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都多摩東部",
+      "school_name": "武蔵野大学",
+      "course": "本科",
+      "hensachi": 52,
+      "raw": "武蔵野大学(本科)52",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都多摩東部",
+      "school_name": "明星",
+      "course": "本科",
+      "hensachi": 51,
+      "raw": "明星(本科)51",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都多摩東部",
+      "school_name": "白梅学園",
+      "course": "選抜文理",
+      "hensachi": 51,
+      "raw": "白梅学園(選抜文理)51",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都多摩東部",
+      "school_name": "駒沢学園女子",
+      "course": "特進",
+      "hensachi": 50,
+      "raw": "駒沢学園女子(特進)50",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都多摩東部",
+      "school_name": "大成",
+      "course": "文理",
+      "hensachi": 49,
+      "raw": "大成(文理)49",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都多摩東部",
+      "school_name": "吉祥寺湧水",
+      "course": "",
+      "hensachi": 47,
+      "raw": "吉祥寺湧水47",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都多摩東部",
+      "school_name": "白梅学園",
+      "course": "進学文理",
+      "hensachi": 47,
+      "raw": "白梅学園(進学文理)47",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都多摩東部",
+      "school_name": "駒沢学園女子",
+      "course": "英語",
+      "hensachi": 47,
+      "raw": "駒沢学園女子(英語)47",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都多摩東部",
+      "school_name": "自由学園",
+      "course": "",
+      "hensachi": 47,
+      "raw": "自由学園47",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都多摩東部",
+      "school_name": "東星学園",
+      "course": "",
+      "hensachi": 47,
+      "raw": "東星学園47",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都多摩東部",
+      "school_name": "白梅学園",
+      "course": "保育教育",
+      "hensachi": 46,
+      "raw": "白梅学園(保育教育)46",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都多摩東部",
+      "school_name": "日体大桜華",
+      "course": "アドバンスト",
+      "hensachi": 46,
+      "raw": "日体大桜華(アドバンスト)46",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都多摩東部",
+      "school_name": "東京文華",
+      "course": "進学",
+      "hensachi": 45,
+      "raw": "東京文華(進学)45",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都多摩東部",
+      "school_name": "駒沢学園女子",
+      "course": "進学",
+      "hensachi": 44,
+      "raw": "駒沢学園女子(進学)44",
+      "uncertain": false
+    },
+    {
+      "prefecture": "東京都",
+      "block": "東京都多摩東部",
+      "school_name": "日体大桜華",
+      "course": "総進",
+      "hensachi": 38,
+      "raw": "日体大桜華(総進)38",
+      "uncertain": false
+    }
+  ]
+}

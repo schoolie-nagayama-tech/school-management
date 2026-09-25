@@ -1,0 +1,420 @@
+<title>私立の内申判定</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap">
+<style>
+  /* NEST の globals.css のトークンに寄せる（primary は赤系・背景は机色） */
+  :root {
+    --primary: oklch(55% 0.19 27);
+    --primary-subtle: oklch(96% 0.03 27);
+    --bg: oklch(96.5% 0.004 27);
+    --surface: oklch(100% 0 0);
+    --surface-sunk: oklch(97.5% 0.004 27);
+    --text-heading: oklch(22% 0.01 27);
+    --text-body: oklch(38% 0.008 27);
+    --text-muted: oklch(55% 0.008 27);
+    --border: oklch(87% 0.006 27);
+    --border-subtle: oklch(92% 0.005 27);
+    --success: oklch(48% 0.14 145);
+    --success-subtle: oklch(93% 0.06 145);
+    --warning: oklch(52% 0.13 70);
+    --warning-subtle: oklch(94% 0.08 80);
+    --danger: oklch(50% 0.19 27);
+    --danger-subtle: oklch(93% 0.05 27);
+    --info: oklch(48% 0.15 250);
+    --info-subtle: oklch(93% 0.05 250);
+    --neutral-subtle: oklch(93% 0.006 27);
+    --ink: oklch(30% 0.07 257);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --primary: oklch(68% 0.16 27);
+      --primary-subtle: oklch(30% 0.06 27);
+      --bg: oklch(18% 0.006 27);
+      --surface: oklch(23% 0.006 27);
+      --surface-sunk: oklch(20% 0.006 27);
+      --text-heading: oklch(95% 0.005 27);
+      --text-body: oklch(82% 0.006 27);
+      --text-muted: oklch(65% 0.006 27);
+      --border: oklch(35% 0.008 27);
+      --border-subtle: oklch(29% 0.006 27);
+      --success: oklch(75% 0.13 145);
+      --success-subtle: oklch(30% 0.06 145);
+      --warning: oklch(80% 0.12 80);
+      --warning-subtle: oklch(32% 0.06 80);
+      --danger: oklch(72% 0.15 27);
+      --danger-subtle: oklch(31% 0.07 27);
+      --info: oklch(75% 0.12 250);
+      --info-subtle: oklch(30% 0.06 250);
+      --neutral-subtle: oklch(30% 0.006 27);
+      --ink: oklch(82% 0.06 257);
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --primary: oklch(68% 0.16 27);
+    --primary-subtle: oklch(30% 0.06 27);
+    --bg: oklch(18% 0.006 27);
+    --surface: oklch(23% 0.006 27);
+    --surface-sunk: oklch(20% 0.006 27);
+    --text-heading: oklch(95% 0.005 27);
+    --text-body: oklch(82% 0.006 27);
+    --text-muted: oklch(65% 0.006 27);
+    --border: oklch(35% 0.008 27);
+    --border-subtle: oklch(29% 0.006 27);
+    --success: oklch(75% 0.13 145);
+    --success-subtle: oklch(30% 0.06 145);
+    --warning: oklch(80% 0.12 80);
+    --warning-subtle: oklch(32% 0.06 80);
+    --danger: oklch(72% 0.15 27);
+    --danger-subtle: oklch(31% 0.07 27);
+    --info: oklch(75% 0.12 250);
+    --info-subtle: oklch(30% 0.06 250);
+    --neutral-subtle: oklch(30% 0.006 27);
+    --ink: oklch(82% 0.06 257);
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text-body);
+    font-family: "Noto Sans JP", "Hiragino Sans", "Yu Gothic UI", system-ui, sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 24px 16px 48px; display: grid; gap: 20px; }
+  h1, h2, h3 { color: var(--text-heading); margin: 0; text-wrap: balance; }
+  h1 { font-size: 20px; font-weight: 700; }
+  h2 { font-size: 16px; font-weight: 700; }
+  h3 { font-size: 14px; font-weight: 700; }
+  p { margin: 0; }
+  .num { font-variant-numeric: tabular-nums; }
+  .muted { color: var(--text-muted); }
+  .small { font-size: 12px; }
+
+  .mock-note {
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 12px;
+    color: var(--text-muted);
+    background: var(--surface-sunk);
+  }
+
+  .panel { background: var(--surface); border: 1px solid var(--border-subtle); border-radius: 10px; }
+  .panel-head { padding: 14px 18px; border-bottom: 1px solid var(--border-subtle); display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: baseline; justify-content: space-between; }
+  .panel-body { padding: 16px 18px; }
+
+  /* 本人の内申の帯 */
+  .me { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px 20px; }
+  .me dt { font-size: 12px; color: var(--text-muted); }
+  .me dd { margin: 0; font-size: 18px; font-weight: 700; color: var(--text-heading); }
+  .me dd small { font-size: 12px; font-weight: 400; color: var(--text-muted); margin-left: 4px; }
+  .grades { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+  .g { display: inline-flex; gap: 3px; align-items: baseline; font-size: 12px; padding: 1px 6px; border-radius: 4px; background: var(--neutral-subtle); }
+  .g b { font-size: 13px; }
+  .g.low { background: var(--danger-subtle); color: var(--danger); }
+  .g.top { background: var(--success-subtle); color: var(--success); }
+
+  /* 表 */
+  .table-scroll { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; min-width: 760px; }
+  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border-subtle); vertical-align: top; }
+  th { font-size: 12px; font-weight: 500; color: var(--text-muted); background: var(--surface-sunk); white-space: nowrap; }
+  tr.zone td { background: var(--surface-sunk); font-size: 12px; font-weight: 700; color: var(--text-heading); padding: 6px 12px; letter-spacing: 0.04em; }
+  tr.row { cursor: pointer; }
+  tr.row:hover td { background: var(--surface-sunk); }
+  tr.row.selected td { background: var(--primary-subtle); }
+  tr.row:focus-visible { outline: 2px solid var(--primary); outline-offset: -2px; }
+  .school { font-weight: 700; color: var(--text-heading); }
+  .course { color: var(--text-body); margin-left: 4px; }
+  .kind { display: inline-block; font-size: 11px; padding: 0 6px; border-radius: 4px; border: 1px solid var(--border); color: var(--text-muted); margin-right: 6px; vertical-align: 1px; }
+  .diff-plus { color: var(--danger); }
+  .diff-minus { color: var(--success); }
+
+  .chip { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 700; padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
+  .chip.ok { background: var(--success-subtle); color: var(--success); }
+  .chip.near { background: var(--warning-subtle); color: var(--warning); }
+  .chip.bonus { background: var(--info-subtle); color: var(--info); }
+  .chip.ng { background: var(--danger-subtle); color: var(--danger); }
+  .chip.na { background: var(--neutral-subtle); color: var(--text-muted); }
+  .chip.unverified { background: transparent; border: 1px dashed var(--border); color: var(--text-muted); font-weight: 500; }
+  .why { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
+
+  /* 詳細 */
+  .detail-grid { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 20px; }
+  @media (max-width: 820px) { .detail-grid { grid-template-columns: 1fr; } }
+  .tabs { display: flex; flex-wrap: wrap; gap: 6px; }
+  .tab { font: inherit; font-size: 13px; padding: 4px 12px; border-radius: 6px; border: 1px solid var(--border); background: var(--surface); color: var(--text-body); cursor: pointer; }
+  .tab[aria-selected="true"] { background: var(--ink); border-color: var(--ink); color: var(--surface); }
+  .tab:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+
+  .alts { display: grid; gap: 8px; margin-top: 12px; }
+  .alt { display: grid; grid-template-columns: 28px 1fr auto; gap: 10px; align-items: center; padding: 10px 12px; border: 1px solid var(--border-subtle); border-radius: 8px; }
+  .alt .mark { font-weight: 700; color: var(--text-muted); }
+  .alt.met { border-color: var(--success); background: var(--success-subtle); }
+  .alt.met .mark { color: var(--success); }
+  .alt .cond { color: var(--text-heading); font-weight: 500; }
+  .alt .have { font-size: 12px; color: var(--text-muted); }
+  .alts-label { font-size: 12px; color: var(--text-muted); margin-top: 14px; }
+
+  .gate { display: flex; gap: 8px; align-items: baseline; font-size: 13px; padding: 4px 0; }
+  .gate .ok-mark { color: var(--success); font-weight: 700; }
+  .gate .ng-mark { color: var(--danger); font-weight: 700; }
+
+  .bonus-list { display: grid; gap: 6px; margin-top: 8px; }
+  .bonus { display: flex; justify-content: space-between; gap: 12px; font-size: 13px; padding: 6px 10px; border-radius: 6px; background: var(--surface-sunk); }
+  .bonus .pt { font-weight: 700; color: var(--info); white-space: nowrap; }
+  .bonus .state { font-size: 12px; color: var(--text-muted); white-space: nowrap; }
+
+  .checks { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 6px; }
+  .checks li { display: flex; gap: 8px; align-items: baseline; font-size: 13px; }
+  .checks input { margin: 0; accent-color: var(--primary); }
+
+  .verdict { padding: 12px 14px; border-radius: 8px; background: var(--info-subtle); color: var(--text-heading); display: grid; gap: 4px; }
+  .verdict strong { color: var(--info); }
+
+  details.raw { margin-top: 4px; }
+  details.raw summary { cursor: pointer; font-size: 12px; color: var(--text-muted); }
+  details.raw pre { white-space: pre-wrap; font-family: inherit; font-size: 12px; background: var(--surface-sunk); border-radius: 6px; padding: 10px 12px; margin: 8px 0 0; color: var(--text-body); }
+  .source { font-size: 12px; color: var(--text-muted); display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; font-size: 12px; color: var(--text-muted); }
+  section.stack { display: grid; gap: 10px; }
+</style>
+
+<div class="wrap">
+  <header style="display:grid; gap:6px;">
+    <h1>面談④「志望校と提案」— 私立の内申判定（モック）</h1>
+    <p class="muted small">都立と私立を同じ表に並べる。挑戦／順当／安全は偏差値で分け、私立の行には併願優遇の判定を出す。右の地図は別作業のため省略。</p>
+  </header>
+
+  <div class="mock-note">
+    モック用の架空の生徒。学校の条件は資料（推薦・一般入試の基準表）の実際の文言から取った。偏差値と都立の数値は仮の値。
+  </div>
+
+  <!-- 本人 -->
+  <section class="panel">
+    <div class="panel-head">
+      <h2>本人の内申（3年2学期）</h2>
+      <span class="small muted">保護者入力の成績から計算。2学期が未入力の時期は2年の学年末で仮に判定し、その旨を出す</span>
+    </div>
+    <div class="panel-body">
+      <dl class="me" style="margin:0;">
+        <div><dt>3科（国数英）</dt><dd class="num">12<small>/15</small></dd></div>
+        <div><dt>5科</dt><dd class="num">19<small>/25</small></dd></div>
+        <div><dt>9科</dt><dd class="num">33<small>/45</small></dd></div>
+        <div><dt>Vもぎ偏差値（直近3回平均）</dt><dd class="num">55</dd></div>
+        <div><dt>英検・漢検・数検</dt><dd style="font-size:14px; font-weight:500; color:var(--text-muted);">未登録</dd></div>
+      </dl>
+      <div class="grades" aria-label="教科ごとの評定">
+        <span class="g">国<b>4</b></span><span class="g">数<b>4</b></span><span class="g">英<b>4</b></span><span class="g">理<b>4</b></span><span class="g">社<b>3</b></span>
+        <span class="g">音<b>4</b></span><span class="g">美<b>3</b></span><span class="g top">保体<b>5</b></span><span class="g low">技家<b>2</b></span>
+      </div>
+    </div>
+  </section>
+
+  <!-- 表 -->
+  <section class="panel">
+    <div class="panel-head">
+      <h2>候補校</h2>
+      <div class="legend">
+        <span class="chip ok">届いている</span>
+        <span class="chip bonus">加点次第</span>
+        <span class="chip near">あと少し</span>
+        <span class="chip ng">不可</span>
+        <span class="chip na">内申では決まらない</span>
+        <span class="chip unverified">紙と未照合</span>
+      </div>
+    </div>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>学校・コース</th>
+            <th>偏差値</th>
+            <th>本人との差</th>
+            <th>内申の判定（私立は併願優遇・公私）</th>
+            <th>沿線</th>
+          </tr>
+        </thead>
+        <tbody id="rows">
+          <tr class="zone"><td colspan="5">挑戦</td></tr>
+          <tr class="row" tabindex="0" data-id="kogakuin">
+            <td><span class="kind">私立</span><span class="school">工学院大附属</span><span class="course">先進文理</span></td>
+            <td class="num">59</td><td class="num diff-plus">+4</td>
+            <td><span class="chip bonus">加点次第</span><div class="why">3科12（基準14・あと2）。英検準2級で+2</div></td>
+            <td class="small">JR中央線・京王高尾線</td>
+          </tr>
+          <tr class="row" tabindex="0" data-id="toritsu1">
+            <td><span class="kind">都立</span><span class="school">国分寺</span></td>
+            <td class="num">61</td><td class="num diff-plus">+6</td>
+            <td><span class="muted small">換算内申 44（めやす 50）</span></td>
+            <td class="small">JR中央線・西武国分寺線</td>
+          </tr>
+
+          <tr class="zone"><td colspan="5">順当</td></tr>
+          <tr class="row" tabindex="0" data-id="toritsu2">
+            <td><span class="kind">都立</span><span class="school">小金井北</span></td>
+            <td class="num">56</td><td class="num">+1</td>
+            <td><span class="muted small">換算内申 44（めやす 45）</span></td>
+            <td class="small">JR中央線</td>
+          </tr>
+          <tr class="row" tabindex="0" data-id="shinagawa">
+            <td><span class="kind">私立</span><span class="school">東京立正</span><span class="course">アドバンスト</span></td>
+            <td class="num">55</td><td class="num">0</td>
+            <td><span class="chip ok">届いている</span><div class="why">①3科11 を満たす（本人12）</div></td>
+            <td class="small">東京メトロ丸ノ内線</td>
+          </tr>
+          <tr class="row" tabindex="0" data-id="suginami">
+            <td><span class="kind">私立</span><span class="school">杉並学院</span><span class="course">総進</span></td>
+            <td class="num">54</td><td class="num diff-minus">−1</td>
+            <td><span class="chip ng">不可</span><div class="why">数値は届いているが「9科に2は不可」（技家2）</div></td>
+            <td class="small">JR中央線・総武線</td>
+          </tr>
+
+          <tr class="zone"><td colspan="5">安全</td></tr>
+          <tr class="row" tabindex="0" data-id="jissen">
+            <td><span class="kind">私立</span><span class="school">八王子実践</span><span class="course">選抜</span></td>
+            <td class="num">51</td><td class="num diff-minus">−4</td>
+            <td><span class="chip ok">届いている</span><div class="why">5科18 を満たす（本人19）</div></td>
+            <td class="small">JR中央線</td>
+          </tr>
+          <tr class="row" tabindex="0" data-id="taisei">
+            <td><span class="kind">私立</span><span class="school">大成</span><span class="course">文理進学</span></td>
+            <td class="num">50</td><td class="num diff-minus">−5</td>
+            <td><span class="chip ok">届いている</span> <span class="chip unverified">紙と未照合</span><div class="why">5科18 を満たす（本人19）</div></td>
+            <td class="small">JR中央線</td>
+          </tr>
+          <tr class="row" tabindex="0" data-id="hachioji">
+            <td><span class="kind">私立</span><span class="school">八王子学園八王子</span><span class="course">文理特選</span></td>
+            <td class="num">60</td><td class="num diff-plus">+5</td>
+            <td><span class="chip na">内申では決まらない</span><div class="why">併願優遇は「基準なし（入試点重視）」</div></td>
+            <td class="small">JR中央線</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="small muted" style="padding:10px 18px 14px;">行をクリックすると、下に条件の中身が出る。八王子学園八王子は偏差値では挑戦だが、表の例として安全の帯に置いている。</p>
+  </section>
+
+  <!-- 詳細 -->
+  <section class="panel" aria-labelledby="detail-title">
+    <div class="panel-head">
+      <h2 id="detail-title">工学院大附属　先進文理</h2>
+      <div class="source">
+        <span>出典：推薦・一般入試の基準表（2027年度用）</span>
+        <span class="chip unverified">紙と未照合</span>
+      </div>
+    </div>
+    <div class="panel-body detail-grid">
+      <div class="stack" style="display:grid; gap:14px;">
+        <div class="tabs" role="tablist" aria-label="入試区分">
+          <button class="tab" role="tab" id="tab-heigan" aria-selected="true">併願優遇（公私）</button>
+          <button class="tab" role="tab" id="tab-suisen" aria-selected="false">推薦</button>
+        </div>
+
+        <div class="verdict" id="verdict">
+          <strong>加点次第</strong>
+          <span>内申だけでは3科であと2。英検準2級を持っていれば+2で届く。</span>
+        </div>
+
+        <div>
+          <p class="alts-label">いずれかを満たせばよい</p>
+          <div class="alts" id="alts">
+            <div class="alt"><span class="mark">①</span><div><div class="cond">3科 14 以上</div><div class="have">本人 12 → あと 2</div></div><span class="chip near">あと2</span></div>
+            <div class="alt"><span class="mark">②</span><div><div class="cond">5科 21 以上</div><div class="have">本人 19 → あと 2</div></div><span class="chip near">あと2</span></div>
+          </div>
+        </div>
+
+        <div>
+          <h3>出願の前提（満たさないと不可）</h3>
+          <div class="gate"><span class="ok-mark">満たす</span><span>各学年の9科に1がない</span></div>
+        </div>
+
+        <div>
+          <h3>加点（最大 +3）</h3>
+          <div class="bonus-list">
+            <div class="bonus"><span>英検・漢検・数検 いずれか3級</span><span class="state">検定が未登録</span><span class="pt">+1</span></div>
+            <div class="bonus"><span>英検準2級</span><span class="state">検定が未登録</span><span class="pt">+2</span></div>
+            <div class="bonus"><span>女子</span><span class="state">該当しない</span><span class="pt">+1</span></div>
+            <div class="bonus"><span>八王子・日野・昭島市の中学在籍、または兄弟姉妹が在校生・卒業生</span><span class="state">要確認</span><span class="pt">+1</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:grid; gap:14px; align-content:start;">
+        <div>
+          <h3>面談で確かめること</h3>
+          <ul class="checks">
+            <li><input type="checkbox" id="c1"><label for="c1">3年次の欠席 10日以内</label></li>
+            <li><input type="checkbox" id="c2"><label for="c2">英検・漢検・数検の取得級（NESTに未登録）</label></li>
+            <li><input type="checkbox" id="c3"><label for="c3">兄弟姉妹が在校生・卒業生か</label></li>
+          </ul>
+          <p class="small muted" style="margin-top:6px;">式にできない条件はここに並べる。チェックは面談記録に残す。</p>
+        </div>
+        <div>
+          <h3>試験</h3>
+          <p class="small">推薦は作文（50分）。一般は学力検査。</p>
+        </div>
+        <details class="raw" open>
+          <summary>資料の原文</summary>
+<pre>推薦入試：先進文理 3科13または5科20
+一般入試　併願（公私）：先進文理 3科14または5科21
+各学年9科に1は不可　3年次の欠席10日以内
+加点制度（最大+3）：①英・漢・数検いずれか3級は+1（英検準2級は+2）②女子生徒（+1）③八王子・日野・昭島市の中学校在籍（文理一般併願除く）または兄弟姉妹が本校の在校生・卒業生は+1
+推薦作文（50分）</pre>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <section class="mock-note" style="display:grid; gap:4px;">
+    <b style="color:var(--text-heading);">このモックで見てほしいところ</b>
+    <span>・私立の行は「届いている／加点次第／あと少し／不可／内申では決まらない」の5つで足りるか</span>
+    <span>・「数値は届いているが 9科に2は不可」のような、見落としやすい前提を理由として1行で出す形でよいか</span>
+    <span>・判定は併願優遇（公私）を既定で出し、推薦・単願は詳細のタブで切り替える形でよいか</span>
+  </section>
+</div>
+
+<script>
+  // 詳細タブの切り替えだけ動かす（モック）。推薦は3科13・5科20の基準。
+  (function () {
+    const heigan = document.getElementById('tab-heigan');
+    const suisen = document.getElementById('tab-suisen');
+    const alts = document.getElementById('alts');
+    const verdict = document.getElementById('verdict');
+    const data = {
+      heigan: {
+        verdict: '<strong>加点次第</strong><span>内申だけでは3科であと2。英検準2級を持っていれば+2で届く。</span>',
+        alts: [['①', '3科 14 以上', 12, 14], ['②', '5科 21 以上', 19, 21]],
+      },
+      suisen: {
+        verdict: '<strong>加点次第</strong><span>内申だけでは3科であと1。英検・漢検・数検のいずれか3級で+1なら届く。</span>',
+        alts: [['①', '3科 13 以上', 12, 13], ['②', '5科 20 以上', 19, 20]],
+      },
+    };
+    function render(key) {
+      const d = data[key];
+      verdict.innerHTML = d.verdict;
+      alts.innerHTML = d.alts
+        .map(([m, cond, have, need]) => {
+          const gap = need - have;
+          const met = gap <= 0;
+          return `<div class="alt${met ? ' met' : ''}"><span class="mark">${m}</span><div><div class="cond">${cond}</div><div class="have">本人 ${have}${met ? '' : ` → あと ${gap}`}</div></div><span class="chip ${met ? 'ok' : 'near'}">${met ? '満たす' : 'あと' + gap}</span></div>`;
+        })
+        .join('');
+      heigan.setAttribute('aria-selected', String(key === 'heigan'));
+      suisen.setAttribute('aria-selected', String(key === 'suisen'));
+    }
+    heigan.addEventListener('click', () => render('heigan'));
+    suisen.addEventListener('click', () => render('suisen'));
+    document.querySelectorAll('tr.row').forEach((tr) => {
+      tr.addEventListener('click', () => {
+        document.querySelectorAll('tr.row').forEach((r) => r.classList.remove('selected'));
+        tr.classList.add('selected');
+      });
+    });
+    document.querySelector('tr.row[data-id="kogakuin"]').classList.add('selected');
+  })();
+</script>

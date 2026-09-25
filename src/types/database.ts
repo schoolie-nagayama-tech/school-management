@@ -3222,12 +3222,19 @@ export type Database = {
           access_stations: string[] | null;
           station_source: string | null;
           location_source: string | null;
+          // 設置区分。既存の都立・神奈川県立は既定値の '公立'（20260925120000_private_high_schools.sql）
+          establishment: '公立' | '私立' | '国立';
+          gender_type: '男子' | '女子' | '共学' | null;
+          phone: string | null;
           created_at: string;
           updated_at: string;
         };
         Insert: {
           id?: string;
           prefecture?: string;
+          establishment?: '公立' | '私立' | '国立';
+          gender_type?: '男子' | '女子' | '共学' | null;
+          phone?: string | null;
           school_name: string;
           course?: string;
           category: string;
@@ -3250,6 +3257,9 @@ export type Database = {
         Update: {
           id?: string;
           prefecture?: string;
+          establishment?: '公立' | '私立' | '国立';
+          gender_type?: '男子' | '女子' | '共学' | null;
+          phone?: string | null;
           school_name?: string;
           course?: string;
           category?: string;
@@ -3285,6 +3295,8 @@ export type Database = {
           exam_type: string | null;
           gakuryoku_ratio: string | null;
           note: string | null;
+          // 男女別のめやす（私立の偏差値表は男子表・女子表で別）。NULL＝男女共通（都立など）
+          gender: '男子' | '女子' | null;
           // ★NULL = 紙の原本とまだ突き合わせていない。保護者に見せる画面では
           // その旨が分かるようにする（数値の出どころが手起こしのため）。
           verified_at: string | null;
@@ -3304,6 +3316,7 @@ export type Database = {
           exam_type?: string | null;
           gakuryoku_ratio?: string | null;
           note?: string | null;
+          gender?: '男子' | '女子' | null;
           verified_at?: string | null;
           created_at?: string;
           updated_at?: string;
@@ -3321,6 +3334,7 @@ export type Database = {
           exam_type?: string | null;
           gakuryoku_ratio?: string | null;
           note?: string | null;
+          gender?: '男子' | '女子' | null;
           verified_at?: string | null;
           created_at?: string;
           updated_at?: string;
@@ -3328,6 +3342,87 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: 'high_school_standards_high_school_id_fkey';
+            columns: ['high_school_id'];
+            referencedRelation: 'high_schools';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      // 私立・国立高校の推薦・併願優遇の基準（条件を式で持ち、生徒の内申に当てて判定する）
+      // rule の型は src/lib/interview/privateAdmission.ts の AdmissionRuleBody
+      high_school_admission_rules: {
+        Row: {
+          id: string;
+          high_school_id: string;
+          source: string;
+          source_year: number;
+          source_label: string;
+          source_page: string | null;
+          section: '推薦' | '一般';
+          exam_label: string;
+          kind: '推薦' | '単願' | '併願';
+          public_only: boolean;
+          applicant_scope: string | null;
+          gender: '男子' | '女子' | null;
+          strength: '出願資格' | '出願基準' | '目安' | null;
+          rule: Record<string, unknown>;
+          checks: string[];
+          raw_text: string;
+          uncertain: boolean;
+          sort_order: number;
+          verified_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          high_school_id: string;
+          source: string;
+          source_year: number;
+          source_label: string;
+          source_page?: string | null;
+          section: '推薦' | '一般';
+          exam_label: string;
+          kind: '推薦' | '単願' | '併願';
+          public_only?: boolean;
+          applicant_scope?: string | null;
+          gender?: '男子' | '女子' | null;
+          strength?: '出願資格' | '出願基準' | '目安' | null;
+          rule: Record<string, unknown>;
+          checks?: string[];
+          raw_text?: string;
+          uncertain?: boolean;
+          sort_order?: number;
+          verified_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          high_school_id?: string;
+          source?: string;
+          source_year?: number;
+          source_label?: string;
+          source_page?: string | null;
+          section?: '推薦' | '一般';
+          exam_label?: string;
+          kind?: '推薦' | '単願' | '併願';
+          public_only?: boolean;
+          applicant_scope?: string | null;
+          gender?: '男子' | '女子' | null;
+          strength?: '出願資格' | '出願基準' | '目安' | null;
+          rule?: Record<string, unknown>;
+          checks?: string[];
+          raw_text?: string;
+          uncertain?: boolean;
+          sort_order?: number;
+          verified_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'high_school_admission_rules_high_school_id_fkey';
             columns: ['high_school_id'];
             referencedRelation: 'high_schools';
             referencedColumns: ['id'];
