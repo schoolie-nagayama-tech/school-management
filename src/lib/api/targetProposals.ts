@@ -33,9 +33,13 @@ interface SchoolWithStandards {
   high_school_standards: StandardEmbed[] | null;
 }
 
-const SELECT =
-  'id,prefecture,school_name,course,category,lat,lon,access_lines,' +
-  'high_school_standards(naishin,naishin_max,hensachi,source_year,source_label,verified_at)';
+/**
+ * ★1本の文字列リテラルで書く（`+` でつながない）。つなぐと型が string に広がり、
+ *   supabase-js が select の文字列を型の上で読み解く処理が string 全体に対して走って、
+ *   CI の tsc がメモリ不足で落ちた（2026-09-25）。
+ */
+// prettier-ignore
+const SELECT = 'id,prefecture,school_name,course,category,lat,lon,access_lines,high_school_standards(naishin,naishin_max,hensachi,source_year,source_label,verified_at)' as const;
 
 /** numeric 列は文字列で返ってくることがある */
 function num(v: number | string | null): number | null {
@@ -83,11 +87,7 @@ export async function getProposalSchools(
   return Array.from(byId.values());
 }
 
-/**
- * ★問い合わせは1本ずつ関数に分け、戻り値の型をここで確定させる。
- *   条件つきの Supabase の問い合わせ（埋め込み付き）を Promise.all の中で三項演算子に並べると、
- *   型の推論が膨らんで CI の tsc がメモリ不足で落ちた（2026-09-25）。
- */
+/** 問い合わせは1本ずつ関数に分け、戻り値の型をここで確定させる（呼び出し側で型を推論させない） */
 async function fetchByPrefecture(prefecture: string): Promise<SchoolWithStandards[]> {
   const { data, error } = await supabase
     .from('high_schools')
