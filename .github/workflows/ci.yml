@@ -42,8 +42,13 @@ jobs:
 
       # ★型チェックは手元では回さない（メモリ不足で落ちる。CLAUDE.md）。ここが唯一の型の関所。
       #   next.config の typescript.ignoreBuildErrors=true と対になっている。消すなら向こうも戻す。
+      # ★Node の既定のヒープ上限では足りない。2026-09-25、面談④の地図（leaflet の型）を足した時点で
+      #   「JavaScript heap out of memory」で落ちるようになった（コードの誤りではなく規模の問題）。
+      #   ubuntu-latest のランナーはメモリ16GBなので 6GB まで使わせる。
       - name: TypeScript type check
         run: npx tsc --noEmit
+        env:
+          NODE_OPTIONS: --max-old-space-size=6144
 
       # ★テストは手元の pre-push でも回すが、ここでも回す。CI は UTC、手元は JST なので、
       #   日付まわりのずれはここでしか見つからない（面談台本・講習の年度計算が多い）。
