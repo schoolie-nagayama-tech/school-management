@@ -42,6 +42,8 @@ export const BIKE_MAX_KM = 8;
 export interface ProposalSchool {
   id: string;
   prefecture: string;
+  /** 設置区分。省略＝公立 */
+  establishment?: '公立' | '私立' | '国立';
   schoolName: string;
   course: string;
   category: string;

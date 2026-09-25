@@ -19,11 +19,14 @@ interface StandardEmbed {
   source_year: number;
   source_label: string | null;
   verified_at: string | null;
+  /** 私立は男子表・女子表で別の行（NULL＝男女共通） */
+  gender: '男子' | '女子' | null;
 }
 
 interface SchoolWithStandards {
   id: string;
   prefecture: string;
+  establishment: '公立' | '私立' | '国立';
   school_name: string;
   course: string;
   category: string;
@@ -39,7 +42,7 @@ interface SchoolWithStandards {
  *   CI の tsc がメモリ不足で落ちた（2026-09-25）。
  */
 // prettier-ignore
-const SELECT = 'id,prefecture,school_name,course,category,lat,lon,access_lines,high_school_standards(naishin,naishin_max,hensachi,source_year,source_label,verified_at)' as const;
+const SELECT = 'id,prefecture,establishment,school_name,course,category,lat,lon,access_lines,high_school_standards(naishin,naishin_max,hensachi,source_year,source_label,verified_at,gender)' as const;
 
 /** numeric 列は文字列で返ってくることがある */
 function num(v: number | string | null): number | null {
@@ -49,13 +52,22 @@ function num(v: number | string | null): number | null {
 }
 
 function toProposalSchool(row: SchoolWithStandards): ProposalSchool {
-  // 最新年度のめやす1件だけを使う（targetSchools.ts の pickLatestStandard と同じ規則）
-  const latest = (row.high_school_standards ?? [])
-    .slice()
-    .sort((a, b) => b.source_year - a.source_year)[0];
+  // 最新年度のめやすを使う（targetSchools.ts の pickLatestStandards と同じ規則）
+  const all = row.high_school_standards ?? [];
+  const latestYear = Math.max(...all.map((s) => s.source_year));
+  const latestRows = all.filter((s) => s.source_year === latestYear);
+  const latest = latestRows.find((s) => s.gender == null) ?? latestRows[0];
+  /**
+   * ★私立の共学校は男子表・女子表で偏差値が違うことがある。違えば null（区分を付けない）。
+   *   NEST は生徒の性別を持っていないので、どちらかに寄せると半分の生徒に違う表で区分を言う。
+   */
+  const values = Array.from(new Set(latestRows.map((s) => s.hensachi).filter((v) => v != null)));
+  const hensachi =
+    latest?.gender == null ? (latest?.hensachi ?? null) : values.length === 1 ? values[0] : null;
   return {
     id: row.id,
     prefecture: row.prefecture,
+    establishment: row.establishment ?? '公立',
     schoolName: row.school_name,
     course: row.course,
     category: row.category,
@@ -64,7 +76,7 @@ function toProposalSchool(row: SchoolWithStandards): ProposalSchool {
     accessLines: row.access_lines ?? [],
     naishin: latest?.naishin ?? null,
     naishinMax: latest?.naishin_max ?? null,
-    hensachi: latest?.hensachi ?? null,
+    hensachi,
     sourceLabel: latest?.source_label ?? '',
     verifiedAt: latest?.verified_at ?? null,
   };
@@ -93,6 +105,13 @@ async function fetchByPrefecture(prefecture: string): Promise<SchoolWithStandard
     .from('high_schools')
     .select(SELECT)
     .eq('prefecture', prefecture)
+    /**
+     * ★提案の候補は公立だけ。私立・国立は所在地（緯度経度）がまだ無く、距離で絞れないので
+     *   候補にできない（2026-09-25 時点。所在地を入れたらこの絞り込みを外す）。
+     *   登録済みの私立の志望校は fetchByIds で読むので、表には並ぶ。
+     * ★私立を足すと東京都だけで千行近くになり、1000行の上限にも掛かる（外すときは .range で分ける）。
+     */
+    .eq('establishment', '公立')
     .limit(1000);
   if (error) throw new Error(`高校マスタの取得に失敗しました: ${error.message}`);
   return (data ?? []) as unknown as SchoolWithStandards[];

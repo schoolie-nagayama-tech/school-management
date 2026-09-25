@@ -270,7 +270,9 @@ for (const f of hensachiFiles) {
     const alias = aliases[aliasKey];
     if (alias === null) continue; // 取り込まないと決めた行
     const name = alias?.school_name ?? e.school_name;
-    const courses = alias?.courses ?? [e.course];
+    // ★募集が男女で分かれている学校（明治学院など）は、男子表の値を男子のコースへ、女子表の値を
+    //   女子のコースへ当てる（courses_by_gender）。キーが男女共通なのでこう書き分ける
+    const courses = alias?.courses_by_gender?.[sheet.gender] ?? alias?.courses ?? [e.course];
     const nk = `${e.prefecture}|${norm(name)}`;
     const candidates = byName.get(nk);
 
