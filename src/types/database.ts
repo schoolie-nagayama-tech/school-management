@@ -3232,6 +3232,8 @@ export type Database = {
           access_stations: string[] | null;
           station_source: string | null;
           location_source: string | null;
+          // 学校（親）への紐付け。学科の行から親校をまとめる（部活・進学実績はここにぶら下がる）
+          campus_id: string;
           // 設置区分。既存の都立・神奈川県立は既定値の '公立'（20260925120000_private_high_schools.sql）
           establishment: '公立' | '私立' | '国立';
           gender_type: '男子' | '女子' | '共学' | null;
@@ -3261,6 +3263,9 @@ export type Database = {
           access_stations?: string[] | null;
           station_source?: string | null;
           location_source?: string | null;
+          // ★省略可。BEFORE INSERT トリガー（high_schools_attach_campus）が
+          // prefecture・school_name から high_school_campuses を自動で探す／作って埋める。
+          campus_id?: string;
           created_at?: string;
           updated_at?: string;
         };
@@ -3286,10 +3291,18 @@ export type Database = {
           access_stations?: string[] | null;
           station_source?: string | null;
           location_source?: string | null;
+          campus_id?: string;
           created_at?: string;
           updated_at?: string;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: 'high_schools_campus_id_fkey';
+            columns: ['campus_id'];
+            referencedRelation: 'high_school_campuses';
+            referencedColumns: ['id'];
+          },
+        ];
       };
       high_school_standards: {
         Row: {
@@ -3352,6 +3365,134 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: 'high_school_standards_high_school_id_fkey';
+            columns: ['high_school_id'];
+            referencedRelation: 'high_schools';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      // ============================================
+      // 高校プロフィール（学校単位）
+      // 正典: docs/high-school-profile-plan.md
+      // ★学校単位の親。high_schools（学校×学科）はここにぶら下がる。
+      //   部活・進学実績・学校の変化は学科ではなく学校全体の情報なのでここに持つ。
+      // ============================================
+      high_school_campuses: {
+        Row: {
+          id: string;
+          prefecture: string;
+          school_name: string;
+          // 都教委の学校番号（6桁）。都立だけ。神奈川は使わない（県CSVのIDが重複するため）
+          school_code: string | null;
+          // 文部科学省の学校コード（13桁）。神奈川の県統計に載っている。将来の結合キー
+          mext_code: string | null;
+          official_url: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          prefecture: string;
+          school_name: string;
+          school_code?: string | null;
+          mext_code?: string | null;
+          official_url?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          prefecture?: string;
+          school_name?: string;
+          school_code?: string | null;
+          mext_code?: string | null;
+          official_url?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      // 年度ごとの数字・事実（生徒数・倍率・合格実績・校則の要約など）。
+      // ★項目キー（metric）はDBのCHECKでなくコードで閉じる。src/lib/highSchools/metrics.ts を見る
+      // （項目を足すたびにマイグレーションが要るのを避けるため）。
+      high_school_stats: {
+        Row: {
+          id: string;
+          campus_id: string;
+          // マスタの学科に当たったときだけ埋める。資料の学科名は course_label にそのまま残す
+          high_school_id: string | null;
+          // 資料上の学科・コース名。学校全体の値は空文字（NULLにしない。一意制約を素直に効かせるため）
+          course_label: string;
+          fiscal_year: number;
+          metric: string;
+          // 内訳。大学名・大学群（'GMARCH'）・入試方式（'指定校推薦'）など。無ければ空文字
+          item: string;
+          grade: number | null; // NULL＝全学年（1〜4の範囲でDB CHECK）
+          sex: 'male' | 'female' | null; // NULL＝男女計
+          // 合格実績の数え方。★延べ・現役・実進学を混ぜて比べない
+          basis: '延べ' | '現役' | '実進学' | null;
+          value_num: number | null;
+          value_text: string | null;
+          source_url: string;
+          source_label: string; // 画面に出す出典表記（'都教委 令和7年度 公立学校一覧'）
+          as_of: string | null; // 資料の時点
+          // 人（か別資料との一致）で確かめた日時。NULL＝未確認。AIヘルプにはこれがある値だけ渡す
+          verified_at: string | null;
+          note: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          campus_id: string;
+          high_school_id?: string | null;
+          course_label?: string;
+          fiscal_year: number;
+          metric: string;
+          item?: string;
+          grade?: number | null;
+          sex?: 'male' | 'female' | null;
+          basis?: '延べ' | '現役' | '実進学' | null;
+          value_num?: number | null;
+          value_text?: string | null;
+          source_url: string;
+          source_label: string;
+          as_of?: string | null;
+          verified_at?: string | null;
+          note?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          campus_id?: string;
+          high_school_id?: string | null;
+          course_label?: string;
+          fiscal_year?: number;
+          metric?: string;
+          item?: string;
+          grade?: number | null;
+          sex?: 'male' | 'female' | null;
+          basis?: '延べ' | '現役' | '実進学' | null;
+          value_num?: number | null;
+          value_text?: string | null;
+          source_url?: string;
+          source_label?: string;
+          as_of?: string | null;
+          verified_at?: string | null;
+          note?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'high_school_stats_campus_id_fkey';
+            columns: ['campus_id'];
+            referencedRelation: 'high_school_campuses';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'high_school_stats_high_school_id_fkey';
             columns: ['high_school_id'];
             referencedRelation: 'high_schools';
             referencedColumns: ['id'];
@@ -3435,6 +3576,252 @@ export type Database = {
             foreignKeyName: 'high_school_admission_rules_high_school_id_fkey';
             columns: ['high_school_id'];
             referencedRelation: 'high_schools';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      // 部活。★強さの段階（tier）は根拠（tier_basis）とセット必須（DB CHECK）。
+      // 珍しさは保存せずこの表から数える。
+      high_school_clubs: {
+        Row: {
+          id: string;
+          campus_id: string;
+          // 統一した部名（検索・珍しさの集計用）。学校ごとの表記揺れ（サッカー部／蹴球部）をここで揃える
+          club_key: string;
+          name: string; // 学校での呼び名（原文）
+          kind: '運動' | '文化' | '同好会' | null;
+          // 男子バスケ・女子バスケは別の部。男女とも・区別なしは空文字
+          sex: '' | '男子' | '女子';
+          // ★活動の重さは強さ（tier）と別に持つ。「強豪ではない所で続けたい」生徒に答えるため
+          days_per_week: number | null;
+          weekend: '土日' | '土' | '日' | 'なし' | '試合のみ' | null;
+          days_note: string | null; // 原文（'月・水・木・金・土・(日)'）
+          // 1=私立と戦える／2=都立（県立）の強豪／3=普通に活動／4=ゆるめ。★根拠なしで付けない
+          tier: number | null;
+          tier_basis: string | null;
+          designation: string | null; // 公式の指定（'Premiere Club Tier1'）
+          source_url: string | null;
+          as_of: string | null;
+          verified_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          campus_id: string;
+          club_key: string;
+          name: string;
+          kind?: '運動' | '文化' | '同好会' | null;
+          sex?: '' | '男子' | '女子';
+          days_per_week?: number | null;
+          weekend?: '土日' | '土' | '日' | 'なし' | '試合のみ' | null;
+          days_note?: string | null;
+          tier?: number | null;
+          tier_basis?: string | null;
+          designation?: string | null;
+          source_url?: string | null;
+          as_of?: string | null;
+          verified_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          campus_id?: string;
+          club_key?: string;
+          name?: string;
+          kind?: '運動' | '文化' | '同好会' | null;
+          sex?: '' | '男子' | '女子';
+          days_per_week?: number | null;
+          weekend?: '土日' | '土' | '日' | 'なし' | '試合のみ' | null;
+          days_note?: string | null;
+          tier?: number | null;
+          tier_basis?: string | null;
+          designation?: string | null;
+          source_url?: string | null;
+          as_of?: string | null;
+          verified_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'high_school_clubs_campus_id_fkey';
+            columns: ['campus_id'];
+            referencedRelation: 'high_school_campuses';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      // 部活の大会実績。★生徒名を入れない（大会結果の資料には個人名が載っている）
+      high_school_club_results: {
+        Row: {
+          id: string;
+          club_id: string;
+          fiscal_year: number;
+          competition: string;
+          level: '全国' | '関東' | '都県' | '地区' | 'その他';
+          // 回戦の呼び方は資料で違う（学校「1回戦」＝一球速報「2回戦」）。'初戦敗退' '3勝' のように書く
+          result: string;
+          happened_on: string | null;
+          source_url: string;
+          verified_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          club_id: string;
+          fiscal_year: number;
+          competition: string;
+          level: '全国' | '関東' | '都県' | '地区' | 'その他';
+          result: string;
+          happened_on?: string | null;
+          source_url: string;
+          verified_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          club_id?: string;
+          fiscal_year?: number;
+          competition?: string;
+          level?: '全国' | '関東' | '都県' | '地区' | 'その他';
+          result?: string;
+          happened_on?: string | null;
+          source_url?: string;
+          verified_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'high_school_club_results_club_id_fkey';
+            columns: ['club_id'];
+            referencedRelation: 'high_school_clubs';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      // 指定校推薦の大学。★出どころを分ける。学校の公式一覧と、卒塾生・説明会で聞いた話は重みが違う
+      high_school_designated_universities: {
+        Row: {
+          id: string;
+          campus_id: string;
+          fiscal_year: number | null; // NULL＝年度不明（パンフの「主な指定校推薦」など）
+          university: string;
+          source_kind: '公式' | '塾内';
+          source_url: string | null;
+          note: string | null;
+          verified_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          campus_id: string;
+          fiscal_year?: number | null;
+          university: string;
+          source_kind: '公式' | '塾内';
+          source_url?: string | null;
+          note?: string | null;
+          verified_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          campus_id?: string;
+          fiscal_year?: number | null;
+          university?: string;
+          source_kind?: '公式' | '塾内';
+          source_url?: string | null;
+          note?: string | null;
+          verified_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'high_school_designated_universities_campus_id_fkey';
+            columns: ['campus_id'];
+            referencedRelation: 'high_school_campuses';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      // 学校の変化（教室長向け：改築・制服変更・学級増減など）
+      high_school_events: {
+        Row: {
+          id: string;
+          campus_id: string;
+          kind:
+            | '改築'
+            | '改修'
+            | '制服'
+            | '学級増減'
+            | '学科改編'
+            | '統合'
+            | '指定'
+            | '施設'
+            | 'その他';
+          happened_on: string | null; // 日付が分かるとき
+          // '2025年4月' '2025年度から'。日付が曖昧な資料が多いので文字で必ず持つ
+          period_label: string;
+          summary: string;
+          source_url: string;
+          verified_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          campus_id: string;
+          kind:
+            | '改築'
+            | '改修'
+            | '制服'
+            | '学級増減'
+            | '学科改編'
+            | '統合'
+            | '指定'
+            | '施設'
+            | 'その他';
+          happened_on?: string | null;
+          period_label: string;
+          summary: string;
+          source_url: string;
+          verified_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          campus_id?: string;
+          kind?:
+            | '改築'
+            | '改修'
+            | '制服'
+            | '学級増減'
+            | '学科改編'
+            | '統合'
+            | '指定'
+            | '施設'
+            | 'その他';
+          happened_on?: string | null;
+          period_label?: string;
+          summary?: string;
+          source_url?: string;
+          verified_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'high_school_events_campus_id_fkey';
+            columns: ['campus_id'];
+            referencedRelation: 'high_school_campuses';
             referencedColumns: ['id'];
           },
         ];
