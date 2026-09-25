@@ -3,6 +3,11 @@ import {
   SCENE_KEYS,
   SCENE_LABEL,
   SCENE_OF_SECTION,
+  ASK_LINES,
+  HEARING_GROUP_KEYS,
+  HEARING_GROUPS,
+  HEARING_GROUP_OF_SECTION,
+  hearingGroupOfSection,
   GRADE_BAND_LABEL,
   gradeBandOf,
   timingLines,
@@ -51,6 +56,53 @@ describe('面談のシーン定義', () => {
   it('セクションが置かれるのは②④⑤の3シーンだけ（①③⑥⑦はAIを使わない）', () => {
     const used = new Set(Object.values(SCENE_OF_SECTION));
     expect([...used].sort()).toEqual(['hearing', 'plan', 'status']);
+  });
+});
+
+describe('②ヒアリングの小見出し', () => {
+  it('振り返り → 学校 → 塾 → 家庭 の順（承認済みのモックの順）', () => {
+    expect(HEARING_GROUP_KEYS).toEqual(['review', 'school', 'juku', 'home']);
+    expect(HEARING_GROUP_KEYS.map((k) => HEARING_GROUPS[k].label)).toEqual([
+      '振り返り',
+      '学校',
+      '塾',
+      '家庭',
+    ]);
+  });
+
+  it('★②に置いたセクションは全部どれかの小見出しに入る（入れ忘れると画面から消える）', () => {
+    for (const s of BRIEF_SECTIONS) {
+      if (SCENE_OF_SECTION[s.key] !== 'hearing') continue;
+      expect(HEARING_GROUP_KEYS).toContain(hearingGroupOfSection(s.key));
+    }
+  });
+
+  it('②以外のセクションは小見出しを持たない', () => {
+    expect(hearingGroupOfSection('score')).toBeNull();
+    expect(hearingGroupOfSection('koushu')).toBeNull();
+  });
+
+  it('セクションの振り分け（前回→振り返り／授業・宿題→塾／保護者→家庭）', () => {
+    expect(HEARING_GROUP_OF_SECTION).toEqual({
+      lastInterview: 'review',
+      lessons: 'juku',
+      discipline: 'juku',
+      parent: 'home',
+    });
+  });
+
+  it('聞くことは小見出しごとに持つ（学校のことは学校、家庭学習は家庭）', () => {
+    expect(HEARING_GROUPS.school.ask).toEqual([
+      '学校の授業と宿題の進み具合',
+      '学校の面談で言われたこと',
+      '学校生活の様子（部活動の引退後の過ごし方など）',
+    ]);
+    expect(HEARING_GROUPS.home.ask).toEqual([
+      '家庭学習の様子。机に向かう時間は取れているか',
+      '次の定期テスト・模試の目標を決める',
+    ]);
+    // ★②の聞くことを平たい ASK_LINES に戻さない（どの小見出しにも出ない行になる）
+    expect(ASK_LINES.hearing).toBeUndefined();
   });
 });
 
@@ -313,6 +365,36 @@ describe('Nottaの要約を構造化する（parseNottaSummary）', () => {
 
   it('メタ行しか無い本文も null（節に割れないものを無理に構造化しない）', () => {
     expect(parseNottaSummary('【タイトル】面談\n【録音日時】2026/08/03')).toBeNull();
+  });
+
+  it('★中身のある見出しに混ざった「発言はありません」等は、その1件だけ落とす', () => {
+    // 小川 華佳さんの実物。要望の節に「無い」という箇条書きが混ざり、②で要望として読み上げていた
+    const parsed = parseNottaSummary(
+      [
+        '■ 保護者からの要望',
+        '・保護者からの明確な要望として確認できる発言はありません。',
+        '・志望校選びの相談をしたい',
+        '■ 前回の確認',
+        '・前回の面談での約束事項について明確な記録は確認できません',
+        '■ 相談事項',
+        '・部活は特になし',
+        '・進路の相談',
+      ].join('\n')
+    );
+    expect(parsed!.sections.map((s) => s.heading)).toEqual(['保護者からの要望', '相談事項']);
+    expect(parsed!.sections[0].bullets).toEqual(['志望校選びの相談をしたい']);
+    expect(parsed!.sections[1].bullets).toEqual(['進路の相談']);
+    // すべて落ちた見出しは従来どおり omitted へ
+    expect(parsed!.omitted).toEqual(['前回の確認']);
+  });
+
+  it('★文末で当てる。文中に「ありませんでした」を含むだけの箇条書きは残す', () => {
+    const parsed = parseNottaSummary(
+      ['■ 塾からの報告', '・宿題は問題ありませんでしたが、英語の小テストが続けて低い'].join('\n')
+    );
+    expect(parsed!.sections[0].bullets).toEqual([
+      '宿題は問題ありませんでしたが、英語の小テストが続けて低い',
+    ]);
   });
 
   it('箇条書きが1件も無い見出しも「記載なし」に回す', () => {

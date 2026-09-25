@@ -39,7 +39,13 @@ import {
 import { getRegularPatterns } from '@/lib/api/schedule';
 import { getKoushuEnrollmentsByStudent, type KoushuEnrollment } from '@/lib/api/seasonalCourses';
 import { getStudentTargetSchools, type TargetSchoolRow } from '@/lib/api/targetSchools';
+import { getStudentMockSchools, type MockSchoolRecord } from '@/lib/api/mockTargetSchools';
 import { getSubjects } from '@/lib/api/subjects';
+import {
+  getInterviewMockApplications,
+  getInterviewShukaisu,
+  getInterviewTestPrep,
+} from '@/lib/api/interviewApplications';
 import {
   getSeasonalProposalSummaryByStudent,
   type SeasonalProposalSeasonSummary,
@@ -62,6 +68,9 @@ import {
   stripNottaMeta,
   summarizeCurrentKoushu,
   INTERVIEW_CARD_IDS,
+  type MockApplicationForInterview,
+  type ShukaisuChangeForInterview,
+  type TestPrepProposalForInterview,
 } from './interview.shared';
 import { InterviewHub } from './InterviewHub';
 import { ArrowLeft, History, Printer } from 'lucide-react';
@@ -113,6 +122,15 @@ export function InterviewWorkspace() {
   const [examGoals, setExamGoals] = useState<StudentExamGoalWithType[]>([]);
   // 志望校（④現状の確認「志望校との差」の材料。TargetSchoolsPanel の保存後に反映するため refetch も持つ）
   const [targetSchools, setTargetSchools] = useState<TargetSchoolRow[]>([]);
+  // 模試の志望校と合格可能性（④現状の確認「直近の模試」の材料。模試の取り込みで入る）
+  const [mockSchools, setMockSchools] = useState<MockSchoolRecord[]>([]);
+  /**
+   * 申込から見えること（2026-09-23 教室長）。④テスト対策の提案書と増コマ申込・
+   * ②週回数変更の申込・④模試の申込。★台本と印刷シートの両方に渡す
+   */
+  const [testPrep, setTestPrep] = useState<TestPrepProposalForInterview[]>([]);
+  const [shukaisu, setShukaisu] = useState<ShukaisuChangeForInterview | null>(null);
+  const [mockApplications, setMockApplications] = useState<MockApplicationForInterview[]>([]);
   /**
    * 科目ID→科目名。⑤プラン提示の「講習の履歴」で科目名を出すために使う。
    * ★生徒に依存しないマスタなので、生徒の切り替えでは取り直さない。
@@ -308,17 +326,35 @@ export function InterviewWorkspace() {
           disciplineFrom.getMonth() + 1
         ).padStart(2, '0')}-01`;
 
-        const [iv, asm, patterns, koushu, koushuProposals, discipline, goals, schools] =
-          await Promise.all([
-            getStudentInterviews(selectedStudentId).catch(() => []),
-            listAssessments(selectedStudentId).catch(() => []),
-            getRegularPatterns(student.school_id, { studentId: selectedStudentId }).catch(() => []),
-            getKoushuEnrollmentsByStudent(selectedStudentId).catch(() => []),
-            getSeasonalProposalSummaryByStudent(selectedStudentId).catch(() => []),
-            getStudentDisciplineSessions(selectedStudentId, disciplineFromStr).catch(() => []),
-            getStudentExamGoalsForInterview(selectedStudentId).catch(() => []),
-            getStudentTargetSchools(selectedStudentId).catch(() => []),
-          ]);
+        const [
+          iv,
+          asm,
+          patterns,
+          koushu,
+          koushuProposals,
+          discipline,
+          goals,
+          schools,
+          mocks,
+          prep,
+          weekly,
+          mockApps,
+        ] = await Promise.all([
+          getStudentInterviews(selectedStudentId).catch(() => []),
+          listAssessments(selectedStudentId).catch(() => []),
+          getRegularPatterns(student.school_id, { studentId: selectedStudentId }).catch(() => []),
+          getKoushuEnrollmentsByStudent(selectedStudentId).catch(() => []),
+          getSeasonalProposalSummaryByStudent(selectedStudentId).catch(() => []),
+          getStudentDisciplineSessions(selectedStudentId, disciplineFromStr).catch(() => []),
+          getStudentExamGoalsForInterview(selectedStudentId).catch(() => []),
+          getStudentTargetSchools(selectedStudentId).catch(() => []),
+          // ★表がまだ無い環境（マイグレーション未適用）でも面談画面は開けるよう、失敗は空で受ける
+          getStudentMockSchools(selectedStudentId).catch(() => []),
+          // ★申込が読めなくても面談画面は開けるよう、失敗は空で受ける（lib/api/interviewApplications.ts）
+          getInterviewTestPrep(selectedStudentId).catch(() => []),
+          getInterviewShukaisu(selectedStudentId).catch(() => null),
+          getInterviewMockApplications(selectedStudentId).catch(() => []),
+        ]);
         if (cancelled) return;
         setInterviews(iv);
         setAssessments(asm);
@@ -328,6 +364,10 @@ export function InterviewWorkspace() {
         setDisciplineSessions(discipline);
         setExamGoals(goals);
         setTargetSchools(schools);
+        setMockSchools(mocks);
+        setTestPrep(prep);
+        setShukaisu(weekly);
+        setMockApplications(mockApps);
       } finally {
         if (!cancelled) setLightLoading(false);
       }
@@ -525,6 +565,10 @@ export function InterviewWorkspace() {
               regularPatterns={regularPatterns}
               examGoals={examGoals}
               targetSchools={targetSchools}
+              mockSchools={mockSchools}
+              testPrep={testPrep}
+              shukaisu={shukaisu}
+              mockApplications={mockApplications}
               subjectNames={subjectNames}
               loading={lightLoading || progressLoading}
               onResult={handleScriptResult}
@@ -598,6 +642,10 @@ export function InterviewWorkspace() {
             regularPatterns={regularPatterns}
             examGoals={examGoals}
             targetSchools={targetSchools}
+            mockSchools={mockSchools}
+            testPrep={testPrep}
+            shukaisu={shukaisu}
+            mockApplications={mockApplications}
             subjectNames={subjectNames}
             script={script}
           />

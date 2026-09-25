@@ -182,15 +182,22 @@ supabase/migrations/
 
 ## 3. CI/CD
 
-`.github/workflows/ci.yml` にユニットテスト実行ステップが含まれています：
+チェックは「手元で回すもの」と「CI で回すもの」に分けてある（2026-09、リポジトリ非公開化で
+Actions の無料枠が月2,000分になったため）。
 
-```yaml
-- name: Run tests
-  run: npm test
-```
+| どこで                                    | 何を                                 | いつ                                                          |
+| ----------------------------------------- | ------------------------------------ | ------------------------------------------------------------- |
+| 手元（`.githooks/pre-push`）              | Format check・Lint・`npm test`       | `git push` のたび。`npm install` で自動で有効になる           |
+| CI（`.github/workflows/ci.yml`）          | 型チェック（tsc）・`npm test`・Build | main 向けの PR（docs と Markdown だけの PR は除く）           |
+| CI（`.github/workflows/integration.yml`） | RLS 回帰テスト                       | DB まわり（`supabase/**` など）が変わった PR ＋ 週1回 ＋ 手動 |
+
+- ★型チェックは手元では回さない（メモリ不足で落ちる）。CI だけが型の関所。
+- ★テストは両方で回す。CI は UTC・手元は JST なので、日付まわりのずれは CI でしか見つからない。
+- ★main への push では CI を回さない。main へ直接 push するのは docs だけにする。
+- フックを飛ばすときは `git push --no-verify`。
 
 RLS 回帰テスト（`src/__tests__/integration/rls-*.test.ts`）は `.github/workflows/integration.yml` が
-PR ごとにローカル Supabase を立てて実行する。schools/students の汎用CRUD統合テストは環境依存の
+ローカル Supabase を立てて実行する。DB だけを見るテストなので、アプリのコードだけの PR では回らない。schools/students の汎用CRUD統合テストは環境依存の
 既存課題があるため CI では実行しない（ローカルで `npm run test:integration`）。
 
 ---

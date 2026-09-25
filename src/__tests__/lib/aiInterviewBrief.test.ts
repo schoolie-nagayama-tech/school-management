@@ -111,9 +111,25 @@ describe('briefSystemPrompt', () => {
   it('見えることが無ければ空にさせる（無理に書かせない）', () => {
     expect(briefSystemPrompt()).toContain('無理に書かず');
   });
+
+  it('★④では志望校に必ず触れさせる。学校名は出し、数字は書かせない', () => {
+    const p = briefSystemPrompt();
+    expect(p).toContain('志望校（【現状】に志望校の行があるとき）には必ず触れる');
+    expect(p).toContain('学校名を出して書く');
+    expect(p).toContain('差の数字は画面が別に出す');
+  });
 });
 
 describe('briefUserText', () => {
+  it('★神奈川の教室では推薦・換算内申の話をしないと明示して渡す', () => {
+    const k = briefUserText([{ key: 'score', current: ['x'] }], [], 'kanagawa');
+    expect(k).toContain('【教室の都県】神奈川県');
+    expect(k).toContain('推薦・換算内申・都立の話はしない');
+    const t = briefUserText([{ key: 'score', current: ['x'] }], [], 'tokyo');
+    expect(t).toContain('【教室の都県】東京都');
+    expect(briefUserText([{ key: 'score', current: ['x'] }])).not.toContain('【教室の都県】');
+  });
+
   it('★見出しは key と日本語ラベルの両方を出す', () => {
     const t = briefUserText([{ key: 'score', current: ['定期テスト: 英語 72（前回 65）'] }]);
     expect(t).toContain('【score: 成績】');
@@ -427,7 +443,7 @@ describe('briefSystemPrompt（followUps）', () => {
 describe('briefUserText（前回の約束・要望）', () => {
   it('渡した約束・要望を別枠の見出しで並べる', () => {
     const t = briefUserText([{ key: 'score', current: ['定期テスト: 英語'] }], sentItems);
-    expect(t).toContain('■ 前回の約束・要望（followUps の item はこの文をそのまま使う）');
+    expect(t).toContain('■ 前回の約束・要望（followUps の item はこの文をそのまま使う');
     expect(t).toContain('- 英語の長文を増やしてほしい');
   });
 

@@ -1,11 +1,15 @@
 /**
  * 通塾日程v2（編集モーダル・授業追加・変更履歴・開始日指定）を出すか。
  *
- * 座席表の運用を始めた教室から順に開けていく段階公開。
- * 一斉に切り替えると、まだ座席表を使っていない教室の講師・教室長が
+ * 講師には、座席表の運用を始めた教室から順に開けていく段階公開。
+ * 一斉に切り替えると、まだ座席表を使っていない教室の講師が
  * 「見たことのないUI」に当たって混乱するため、教室単位で開ける。
  *
- * 公開の手順:
+ * 教室長以上（manager/owner/admin）は教室を問わず先に開けてある（2026-09-23）。
+ * 期間（適用開始日・終了日）を決めて通塾日程を組むのは教室長の仕事で、
+ * 講師に開ける前に教室長が使い慣れておく必要があるため。
+ *
+ * 講師への公開の手順:
  *  1. その教室で座席表の運用を始める
  *  2. 下の LESSON_ENTRY_V2_SCHOOL_IDS にその教室のIDを足す（1行）
  *  3. 全教室に行き渡ったら、この関数を無条件 true にして定数ごと消す
@@ -13,10 +17,10 @@
  * 判定はこの1か所に集約すること（呼び出し側で role を直接見ない）。
  */
 
-import { hasRoleLevel, isSystemAdmin } from '@/lib/utils/roles';
+import { hasRoleLevel } from '@/lib/utils/roles';
 
 /**
- * 通塾日程v2を有効にする教室のID。
+ * 講師に通塾日程v2を開ける教室のID（教室長以上はこの一覧に関係なく使える）。
  *
  * 教室ID（本番）:
  *   デモ校（保護者ポータル体験） d0000000-0000-4000-8000-000000000001
@@ -37,18 +41,19 @@ const LESSON_ENTRY_V2_SCHOOL_IDS: ReadonlySet<string> = new Set([
  * @param role  user_profiles.role
  * @param schoolId 対象の教室ID（生徒詳細なら生徒の所属校、座席表なら表示中の教室）
  *
- * - admin … 動作確認のためどの教室でも使える
- * - 講師・教室長 … 有効化した教室にいるときだけ
+ * - 教室長以上（manager/owner/admin）… どの教室でも使える
+ * - 講師 … 有効化した教室にいるときだけ
  * - 保護者・ロール未設定 … 常に false
  *   ★教室で判定する前に必ずロールを見ること。教室だけで判定すると、有効化した教室の
  *     保護者アカウント（/mypage）にまで職員用UIが出る。
- *   教室IDが分からないときも出さない（安全側）。
+ *   講師で教室IDが分からないときも出さない（安全側）。
  */
 export function canUseLessonEntryV2(
   role: string | null | undefined,
   schoolId?: string | null
 ): boolean {
-  if (isSystemAdmin(role)) return true;
+  // 教室長以上は教室を問わず開ける（理由はファイル冒頭）
+  if (hasRoleLevel(role, 'manager')) return true;
   // 職員（講師以上）でなければどの教室でも出さない
   if (!hasRoleLevel(role, 'teacher')) return false;
   if (!schoolId) return false;

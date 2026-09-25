@@ -25,6 +25,9 @@ import {
   buildGoalAchievementLines,
   buildMissingRecordAskLines,
   buildTargetSchoolGapLines,
+  buildTargetSchoolTalkLines,
+  latestOwnKanagawaNaishin,
+  latestOwnNaishin,
   isTargetSchoolFactLine,
   stripTargetSchoolFactLines,
   TARGET_SCHOOL_FACT_PREFIX,
@@ -577,6 +580,9 @@ describe('formatNaishin', () => {
 });
 
 describe('buildGoalAchievementLines', () => {
+  // 2026年度（中3＝9）。既存の目標はすべて2026年度の試験なので、成績側も grade: 9 で揃える
+  const GOAL_TODAY = new Date(2026, 8, 24);
+
   // 変換表そのものの検証: 目標側(日本語)と成績側(英語キー)の対応が崩れていないか
   it('科目の変換表が5科すべて揃っている', () => {
     expect(GOAL_SUBJECT_TO_ASSESSMENT_SUBJECT).toEqual({
@@ -617,12 +623,13 @@ describe('buildGoalAchievementLines', () => {
     const assessments = [
       {
         category: 'regular_test',
+        grade: 9,
         name_code: 'term1_final',
         scores: [{ subject: 'english', value: 68 }],
       },
     ] as unknown as AssessmentWithScores[];
 
-    const { tell, ask } = buildGoalAchievementLines(goals, assessments);
+    const { tell, ask } = buildGoalAchievementLines(goals, assessments, 9, GOAL_TODAY);
     expect(ask).toEqual([]);
     expect(tell).toEqual(['英語 1学期期末 目標75 → 68（-7）']);
   });
@@ -640,12 +647,13 @@ describe('buildGoalAchievementLines', () => {
     const assessments = [
       {
         category: 'regular_test',
+        grade: 9,
         name_code: 'term2_mid',
         scores: [{ subject: 'math', value: 73 }],
       },
     ] as unknown as AssessmentWithScores[];
 
-    const { tell } = buildGoalAchievementLines(goals, assessments);
+    const { tell } = buildGoalAchievementLines(goals, assessments, 9, GOAL_TODAY);
     expect(tell).toEqual(['数学 2学期中間 目標70 → 73（+3・達成）']);
   });
 
@@ -660,7 +668,7 @@ describe('buildGoalAchievementLines', () => {
       },
     ];
     // 成績側にまだ何も入っていない
-    const { tell, ask } = buildGoalAchievementLines(goals, []);
+    const { tell, ask } = buildGoalAchievementLines(goals, [], 9, GOAL_TODAY);
     expect(tell).toEqual([]);
     expect(ask).toEqual(['英語 1学期期末 目標75点。結果を聞いて入れる']);
   });
@@ -678,12 +686,13 @@ describe('buildGoalAchievementLines', () => {
     const assessments = [
       {
         category: 'regular_test',
+        grade: 9,
         name_code: 'term1_final',
         scores: [{ subject: 'english', value: 68 }],
       },
     ] as unknown as AssessmentWithScores[];
 
-    const { tell, ask } = buildGoalAchievementLines(goals, assessments);
+    const { tell, ask } = buildGoalAchievementLines(goals, assessments, 9, GOAL_TODAY);
     expect(tell).toEqual([]);
     expect(ask).toEqual(['英語 実力テスト 目標75点。結果を聞いて入れる']);
   });
@@ -705,14 +714,14 @@ describe('buildGoalAchievementLines', () => {
         target_score: 80,
       },
     ];
-    const { tell, ask } = buildGoalAchievementLines(goals, []);
+    const { tell, ask } = buildGoalAchievementLines(goals, [], 9, GOAL_TODAY);
     // 古い方（1学期中間）は落ち、新しい方（1学期期末）だけが残る
     expect(tell.length + ask.length).toBe(1);
     expect(ask[0]).toContain('数学');
   });
 
   it('目標が1件も無ければ何も出さない', () => {
-    expect(buildGoalAchievementLines([], [])).toEqual({ tell: [], ask: [] });
+    expect(buildGoalAchievementLines([], [], 9, GOAL_TODAY)).toEqual({ tell: [], ask: [] });
   });
 
   it('target_score が無い行は対象外', () => {
@@ -725,7 +734,7 @@ describe('buildGoalAchievementLines', () => {
         target_score: null,
       },
     ];
-    expect(buildGoalAchievementLines(goals, [])).toEqual({ tell: [], ask: [] });
+    expect(buildGoalAchievementLines(goals, [], 9, GOAL_TODAY)).toEqual({ tell: [], ask: [] });
   });
 
   it('★同じ内容の目標が2件あっても1行にまとめる（聞くこと）', () => {
@@ -739,7 +748,7 @@ describe('buildGoalAchievementLines', () => {
       exam_date: '2026-10-08',
       target_score: 80,
     };
-    const { tell, ask } = buildGoalAchievementLines([same, { ...same }], []);
+    const { tell, ask } = buildGoalAchievementLines([same, { ...same }], [], 9, GOAL_TODAY);
     expect(tell).toEqual([]);
     expect(ask).toEqual(['英語 学校の成績で「5」をとる 目標80点。結果を聞いて入れる']);
   });
@@ -755,12 +764,13 @@ describe('buildGoalAchievementLines', () => {
     const assessments = [
       {
         category: 'regular_test',
+        grade: 9,
         name_code: 'term2_mid',
         scores: [{ subject: 'math', value: 73 }],
       },
     ] as unknown as AssessmentWithScores[];
 
-    const { tell } = buildGoalAchievementLines([same, { ...same }], assessments);
+    const { tell } = buildGoalAchievementLines([same, { ...same }], assessments, 9, GOAL_TODAY);
     expect(tell).toEqual(['数学 2学期中間 目標70 → 73（+3・達成）']);
   });
 
@@ -772,8 +782,86 @@ describe('buildGoalAchievementLines', () => {
       exam_date: '2026-10-08',
       target_score: 80,
     };
-    const { ask } = buildGoalAchievementLines([base, { ...base, target_score: 90 }], []);
+    const { ask } = buildGoalAchievementLines(
+      [base, { ...base, target_score: 90 }],
+      [],
+      9,
+      GOAL_TODAY
+    );
     expect(ask).toHaveLength(2);
+  });
+
+  // 本番の実例（2026-09-23）: 中3の国語「2学期中間 目標90 → 69（-21）」の69は中2のときの点だった。
+  // name_code だけで引くと去年の同じ試験に当たるため、目標の年度の学年で絞る。
+  const kokugoGoal: ExamGoalForAchievement = {
+    subject_key: '国語',
+    exam_type_name: '2学期中間',
+    custom_exam_name: null,
+    exam_date: '2026-10-15',
+    target_score: 90,
+  };
+  const lastYearTerm2Mid = {
+    category: 'regular_test',
+    name_code: 'term2_mid',
+    grade: 8,
+    scores: [{ subject: 'japanese', value: 69 }],
+  };
+
+  it('★去年（前の学年）の同じ試験の点とは突き合わせず、聞くことに回す', () => {
+    const assessments = [lastYearTerm2Mid] as unknown as AssessmentWithScores[];
+    const { tell, ask } = buildGoalAchievementLines([kokugoGoal], assessments, 9, GOAL_TODAY);
+    expect(tell).toEqual([]);
+    expect(ask).toEqual(['国語 2学期中間 目標90点。結果を聞いて入れる']);
+  });
+
+  it('★去年と今年の同じ試験が両方あれば、今年（目標の年度の学年）の点を使う', () => {
+    // 去年の行を先に置く（find が先頭を拾っていた不具合の再現）
+    const assessments = [
+      lastYearTerm2Mid,
+      {
+        category: 'regular_test',
+        name_code: 'term2_mid',
+        grade: 9,
+        scores: [{ subject: 'japanese', value: 84 }],
+      },
+    ] as unknown as AssessmentWithScores[];
+    const { tell, ask } = buildGoalAchievementLines([kokugoGoal], assessments, 9, GOAL_TODAY);
+    expect(ask).toEqual([]);
+    expect(tell).toEqual(['国語 2学期中間 目標90 → 84（-6）']);
+  });
+
+  it('★学年末（1〜3月）の目標は前年度の学年で引く', () => {
+    // 2027年1月に中3（2026年度）の生徒が、2026-02 の学年末の目標を見るとき → 中2の学年末
+    const goal: ExamGoalForAchievement = {
+      subject_key: '数学',
+      exam_type_name: '学年末',
+      custom_exam_name: null,
+      exam_date: '2026-02-20',
+      target_score: 80,
+    };
+    const assessments = [
+      {
+        category: 'regular_test',
+        name_code: 'year_end',
+        grade: 8,
+        scores: [{ subject: 'math', value: 82 }],
+      },
+      {
+        category: 'regular_test',
+        name_code: 'year_end',
+        grade: 7,
+        scores: [{ subject: 'math', value: 60 }],
+      },
+    ] as unknown as AssessmentWithScores[];
+    const { tell } = buildGoalAchievementLines([goal], assessments, 9, new Date(2027, 0, 10));
+    expect(tell).toEqual(['数学 学年末 目標80 → 82（+2・達成）']);
+  });
+
+  it('学年が分からない生徒は突き合わせず、聞くことに回す', () => {
+    const assessments = [{ ...lastYearTerm2Mid, grade: 9 }] as unknown as AssessmentWithScores[];
+    const { tell, ask } = buildGoalAchievementLines([kokugoGoal], assessments, null, GOAL_TODAY);
+    expect(tell).toEqual([]);
+    expect(ask).toEqual(['国語 2学期中間 目標90点。結果を聞いて入れる']);
   });
 });
 
@@ -1586,5 +1674,477 @@ describe('buildTellSections（AIへ渡す現状の行）', () => {
     const last = sections.find((s) => s.key === 'lastInterview');
     expect(last!.current.join('')).not.toContain('確認できませんでした');
     expect(last!.current.some((l) => l.startsWith('申し送り: '))).toBe(true);
+  });
+});
+
+describe('前回の要望から「無い」と論評を外す（2026-09-23 教室長レビュー）', () => {
+  // 小川 華佳さんの実物の文（Nottaの要約）
+  const OGAWA_RECORD = [
+    '--- Notta 要約 ---',
+    '■ 保護者からの要望',
+    '・保護者からの明確な要望として確認できる発言はありません。',
+    '・要望の強さは、具体的な依頼というより進路選択に関する相談・不安の表明レベルです。',
+    '■ 前回の確認',
+    '・前回の面談での約束事項について明確な記録は確認できません',
+    '■ 相談事項',
+    '・狛江と調布北で迷っている',
+  ].join('\n');
+
+  it('★常体の「確認できなかった。」も前回の要望に出さない（松村 知佳さんの実例）', () => {
+    const { requests, items } = buildPreviousCommitmentLines([
+      interviewRow({
+        content: [
+          '■ 保護者からの要望',
+          '・保護者からの要望は会話内では確認できなかった。',
+          '・保護者の感情面についても会話内では確認できなかった。',
+          '・宿題をやらなかった日が続いたので声かけしてほしい',
+        ].join('\n'),
+      }),
+    ]);
+    // 「なかった」で終わる中身のある要望は残す（単独の「なかった」では消さない）
+    expect(requests).toEqual(['宿題をやらなかった日が続いたので声かけしてほしい']);
+    expect(items.map((i) => i.text)).toEqual(['宿題をやらなかった日が続いたので声かけしてほしい']);
+  });
+
+  it('★「発言はありません」と論評の箇条書きは前回の要望に出さない', () => {
+    const { requests, items, asks } = buildPreviousCommitmentLines([
+      interviewRow({ content: OGAWA_RECORD }),
+    ]);
+    expect(requests).toEqual([]);
+    expect(items).toEqual([]);
+    expect(asks).toEqual([]);
+  });
+
+  it('★「報告 ―― …への対応を伝える」の受け皿も立たない（items が空なので）', () => {
+    const { items } = buildPreviousCommitmentLines([interviewRow({ content: OGAWA_RECORD })]);
+    const reports = items
+      .filter((i) => i.fallback === 'report')
+      .map((i) => previousFollowUpReportLine(i.text));
+    expect(reports).toEqual([]);
+  });
+
+  it('要望そのものは残す（論評の判定を広げすぎない）', () => {
+    const { requests } = buildPreviousCommitmentLines([
+      interviewRow({
+        content: [
+          '■ 保護者からの要望',
+          '・英語の長文を増やしてほしい',
+          '・要望の強さは、具体的な依頼というより相談レベルです。',
+        ].join('\n'),
+      }),
+    ]);
+    expect(requests).toEqual(['英語の長文を増やしてほしい']);
+  });
+
+  it('★Notta が様子から推し量った所見（〜が見られます／〜がうかがえます）も要望に拾わない', () => {
+    const { requests, items } = buildPreviousCommitmentLines([
+      interviewRow({
+        content: [
+          '■ 保護者からの要望',
+          '・推薦入試の結果や志望校の倍率に対する不安が強く、早く安心したい気持ちが見られます。',
+          '・進路面では、推薦入試を活用して早期に進路を決めたいという意向・期待がうかがえます。',
+          '・過去問の進め方を教えてほしい',
+        ].join('\n'),
+      }),
+    ]);
+    expect(requests).toEqual(['過去問の進め方を教えてほしい']);
+    expect(items.map((i) => i.text)).toEqual(['過去問の進め方を教えてほしい']);
+  });
+
+  it('★今後の方針でも、塾が引き受けた行動（〜を確認します）は報告に振る', () => {
+    const { items } = buildPreviousCommitmentLines([
+      interviewRow({
+        content: [
+          '■ 今後の方針',
+          '・次回までに、内申・加点を踏まえた志望校の可能性、推薦入試の条件を確認します。',
+          '・面接対策を進め、本番の緊張に対応できるよう準備します。',
+          '・私立単願に限定しない進路方針を検討します。',
+        ].join('\n'),
+      }),
+    ]);
+    expect(items.map((i) => i.fallback)).toEqual(['report', 'report', 'ask']);
+    expect(previousFollowUpReportLine(items[0].text, items[0].source)).toMatch(
+      /^報告 ―― 前回決めた「.+」の進み具合を伝える$/
+    );
+  });
+
+  it('要望から来た報告は「対応を伝える」のまま', () => {
+    expect(previousFollowUpReportLine('長文を増やしてほしい', '保護者からの要望')).toBe(
+      '報告 ―― 前回の要望「長文を増やしてほしい」への対応を伝える'
+    );
+  });
+
+  it('申し送りの文面にも「確認できません」の1件が混ざらない', () => {
+    const text = buildHandoverText(OGAWA_RECORD);
+    expect(text).not.toContain('確認できません');
+    expect(text).not.toContain('発言はありません');
+    expect(text).toContain('狛江と調布北で迷っている');
+  });
+});
+
+describe('buildTargetSchoolTalkLines（④の左・志望校について話すこと）', () => {
+  function school(
+    name: string,
+    master: Partial<TargetSchoolMaster> | null,
+    rank = 1
+  ): TargetSchoolRow {
+    return {
+      id: `ts-${name}`,
+      rank,
+      schoolName: name,
+      highSchoolId: master ? 'hs-1' : null,
+      reason: null,
+      updatedAt: '2026-09-01T00:00:00Z',
+      master: master
+        ? {
+            prefecture: '東京都',
+            schoolName: name,
+            course: '',
+            category: '普通科',
+            naishin: 49,
+            naishinMax: 65,
+            hensachi: 55,
+            sourceLabel: 'Vもぎ 2025年9月版',
+            verifiedAt: null,
+            accessLines: [],
+            ...master,
+          }
+        : null,
+    } as TargetSchoolRow;
+  }
+
+  it('★小川 華佳さん（狛江・内申53 vs 49・偏差値54 vs 55・東京）', () => {
+    const lines = buildTargetSchoolTalkLines([school('狛江', {})], 53, 54, 'tokyo');
+    expect(lines).toEqual([
+      { kind: 'say', text: '狛江：内申はめやすを4上回っている。推薦も一般も内申が武器になる' },
+      { kind: 'say', text: '偏差値はめやすまであと1。次の模試で届く幅かを一緒に見る' },
+      { kind: 'ask', text: '狛江の推薦を受けるか聞く' },
+    ]);
+  });
+
+  it('両方プラスなら「安全圏。上の学校を狙うか」を聞く', () => {
+    const lines = buildTargetSchoolTalkLines([school('狛江', {})], 52, 58, 'tokyo');
+    expect(lines[1]).toEqual({ kind: 'say', text: '偏差値もめやすを3上回っている。このまま維持' });
+    expect(lines[2]).toEqual({
+      kind: 'ask',
+      text: '狛江は第1志望として安全圏。上の学校を狙うかを聞く',
+    });
+  });
+
+  it('★内申が足りないときは東京だけ「換算内申1点＝当日約3点」を添える（scenes.ts と同じ文）', () => {
+    const tokyo = buildTargetSchoolTalkLines([school('狛江', {})], 46, 57, 'tokyo');
+    expect(tokyo[0].text).toBe(
+      '狛江：内申がめやすに3届かない。当日の点で取り返す（換算内申1点は当日の素点で約3点ぶん）'
+    );
+    expect(tokyo[1].text).toBe('偏差値はめやすを2上回っている。このまま維持');
+    expect(tokyo[2]).toEqual({ kind: 'say', text: '狛江は一般入試の当日点で勝負する形になる' });
+  });
+
+  it('★神奈川は中立な比較だけ（換算内申の比・推薦の言葉を出さない）', () => {
+    const plus = buildTargetSchoolTalkLines([school('希望ケ丘', {})], 53, 54, 'kanagawa');
+    const minus = buildTargetSchoolTalkLines([school('希望ケ丘', {})], 46, 57, 'kanagawa');
+    const all = [...plus, ...minus].map((l) => l.text).join('\n');
+    expect(all).not.toContain('推薦');
+    expect(all).not.toContain('換算内申');
+    expect(plus.map((l) => l.text)).toEqual([
+      '希望ケ丘：内申はめやすを4上回っている。内申が武器になる',
+      '偏差値はめやすまであと1。次の模試で届く幅かを一緒に見る',
+    ]);
+    expect(minus[2].text).toBe('希望ケ丘は当日の学力検査で勝負する形になる');
+  });
+
+  it('都県が分からない教室も中立な形に倒す', () => {
+    const text = buildTargetSchoolTalkLines([school('狛江', {})], 53, 54, null)
+      .map((l) => l.text)
+      .join('\n');
+    expect(text).not.toContain('推薦');
+  });
+
+  it('めやすちょうどのとき', () => {
+    const lines = buildTargetSchoolTalkLines([school('狛江', {})], 49, 55, 'tokyo');
+    expect(lines.map((l) => l.text)).toEqual([
+      '狛江：内申はめやすちょうど',
+      '偏差値はめやすちょうど',
+    ]);
+  });
+
+  it('マスタに当たらない・本人の材料が無いときは1行だけ', () => {
+    expect(buildTargetSchoolTalkLines([school('私立A', null)], 53, 54, 'tokyo')).toEqual([
+      { kind: 'say', text: '私立A：めやすと比べる材料が無い（内申・模試を聞いて入れる）' },
+    ]);
+    expect(buildTargetSchoolTalkLines([school('狛江', {})], null, null, 'tokyo')).toEqual([
+      { kind: 'say', text: '狛江：めやすと比べる材料が無い（内申・模試を聞いて入れる）' },
+    ]);
+  });
+
+  it('★満点が65でない学校は内申の話をしない（右の志望校の行と同じ規則）', () => {
+    const lines = buildTargetSchoolTalkLines(
+      [school('駒場', { naishin: 55, naishinMax: 75 })],
+      41,
+      54,
+      'tokyo'
+    );
+    expect(lines).toEqual([
+      { kind: 'say', text: '駒場：偏差値はめやすまであと1。次の模試で届く幅かを一緒に見る' },
+    ]);
+  });
+
+  it('偏差値だけあるときは学校名を偏差値の行に付ける', () => {
+    const lines = buildTargetSchoolTalkLines([school('狛江', {})], null, 57, 'tokyo');
+    expect(lines).toEqual([
+      { kind: 'say', text: '狛江：偏差値はめやすを2上回っている。このまま維持' },
+    ]);
+  });
+});
+
+/* ============================================================
+ * 神奈川県立の志望校（135点満点の内申）
+ * 正典: docs/interview-workspace-layout-2026-09.md §「神奈川県立の志望校」
+ * ========================================================== */
+
+describe('神奈川県立の志望校（基準内申 n/135）', () => {
+  const NINE = [
+    'english',
+    'math',
+    'japanese',
+    'social',
+    'science',
+    'music',
+    'art',
+    'tech_home',
+    'pe',
+  ] as const;
+
+  /** 通知表1件。9教科を同じ値で埋める */
+  function reportCard(grade: number, nameCode: string, v: number): AssessmentWithScores {
+    return {
+      category: 'report_card',
+      grade,
+      name_code: nameCode,
+      scores: NINE.map((subject) => ({ subject, value: v })),
+    } as unknown as AssessmentWithScores;
+  }
+  const mock = (h: number) =>
+    ({
+      category: 'mock',
+      name_code: 'classroom',
+      grade: 9,
+      scores: [{ subject: 'hensa_5', value: h }],
+    }) as unknown as AssessmentWithScores;
+
+  function kanagawaSchool(overrides: Partial<TargetSchoolMaster> = {}): TargetSchoolRow {
+    return {
+      id: 'ts-k',
+      rank: 1,
+      schoolName: '光陵',
+      highSchoolId: 'hs-k',
+      reason: null,
+      updatedAt: '2026-09-01T00:00:00Z',
+      master: {
+        prefecture: '神奈川県',
+        schoolName: '光陵',
+        course: '',
+        category: '普通科',
+        naishin: 107,
+        naishinMax: 135,
+        hensachi: 60,
+        sourceLabel: '合格基準一覧表 2026年度',
+        verifiedAt: null,
+        accessLines: [],
+        ...overrides,
+      },
+    };
+  }
+  function tokyoSchool(): TargetSchoolRow {
+    return {
+      id: 'ts-t',
+      rank: 2,
+      schoolName: '狛江',
+      highSchoolId: 'hs-t',
+      reason: null,
+      updatedAt: '2026-09-01T00:00:00Z',
+      master: {
+        prefecture: '東京都',
+        schoolName: '狛江',
+        course: '',
+        category: '普通科',
+        naishin: 49,
+        naishinMax: 65,
+        hensachi: 55,
+        sourceLabel: 'Vもぎ 2025年9月版',
+        verifiedAt: null,
+        accessLines: [],
+      },
+    };
+  }
+
+  // 新しい順（中3 2学期 → 中2学年末）。中2=4×9=36・中3=4×9=36 → 36+72=108
+  const confirmed = [reportCard(9, 'term2', 4), reportCard(8, 'year_end', 4), mock(58)];
+  // 中3が1学期だけ。中2=3×9=27・中3=4×9=36 → 27+72=99
+  const provisional = [reportCard(9, 'term1', 4), reportCard(8, 'year_end', 3), mock(58)];
+
+  describe('latestOwnKanagawaNaishin', () => {
+    it('中2学年末と中3の2学期から135点満点で出す', () => {
+      expect(latestOwnKanagawaNaishin(confirmed)).toMatchObject({
+        converted: 108,
+        provisional: false,
+      });
+    });
+
+    it('中3が1学期だけなら仮計算', () => {
+      expect(latestOwnKanagawaNaishin(provisional)).toMatchObject({
+        converted: 99,
+        provisional: true,
+      });
+    });
+
+    it('★中3に2学期と1学期の両方があれば2学期を使う（新しさより入試に使う評定）', () => {
+      const r = latestOwnKanagawaNaishin([
+        reportCard(9, 'term1', 5),
+        reportCard(9, 'term2', 3),
+        reportCard(8, 'year_end', 3),
+      ]);
+      expect(r).toMatchObject({ converted: 27 + 54, provisional: false });
+    });
+
+    it('★中3の学年末があっても2学期を使う（学年末は入試のあとの評定）', () => {
+      const r = latestOwnKanagawaNaishin([
+        reportCard(9, 'year_end', 5),
+        reportCard(9, 'term2', 3),
+        reportCard(8, 'year_end', 3),
+      ]);
+      expect(r?.converted).toBe(27 + 54);
+    });
+
+    it('2期制は中2の後期（second）を学年末として使う', () => {
+      const r = latestOwnKanagawaNaishin([reportCard(9, 'second', 4), reportCard(8, 'second', 3)]);
+      expect(r).toMatchObject({ converted: 27 + 72, provisional: false });
+    });
+
+    it('中2の学年末でない通知表（1学期・前期）だけなら null', () => {
+      expect(
+        latestOwnKanagawaNaishin([reportCard(9, 'term2', 4), reportCard(8, 'term1', 4)])
+      ).toBeNull();
+      expect(
+        latestOwnKanagawaNaishin([reportCard(9, 'term2', 4), reportCard(8, 'first', 4)])
+      ).toBeNull();
+    });
+
+    it('中3が無い／中2が無いなら null', () => {
+      expect(latestOwnKanagawaNaishin([reportCard(8, 'year_end', 4)])).toBeNull();
+      expect(latestOwnKanagawaNaishin([reportCard(9, 'term2', 4)])).toBeNull();
+      expect(latestOwnKanagawaNaishin([])).toBeNull();
+    });
+  });
+
+  describe('buildTargetSchoolGapLines（④の右）', () => {
+    it('基準内申n/135と本人の値・差を並べ、偏差値は基準偏差値と呼ぶ', () => {
+      const { tell } = buildTargetSchoolGapLines([kanagawaSchool()], confirmed);
+      expect(tell[0]).toBe(
+        '第1 光陵 ／ めやす 基準内申107/135（本人 108・+1）・基準偏差値60（-2）' +
+          '（合格基準一覧表 2026年度／原本との突き合わせは未了）'
+      );
+    });
+
+    it('★「合格可能性60%の位置」は Vもぎ（都立）の定義なので神奈川には付けない', () => {
+      const { tell } = buildTargetSchoolGapLines([kanagawaSchool()], confirmed);
+      expect(tell[0]).not.toContain('合格可能性60%');
+    });
+
+    it('中3が1学期だけなら仮計算と添える', () => {
+      const { tell } = buildTargetSchoolGapLines([kanagawaSchool()], provisional);
+      expect(tell[0]).toContain('基準内申107/135（本人 99・-8）（中3は1学期の評定で仮計算）');
+    });
+
+    it('本人の内申が出せなければ、めやすだけ分母つきで出す（65点満点の数字と引かない）', () => {
+      // 中3の通知表しか無い＝都立の換算内申は出せるが、神奈川の内申は出せない
+      const { tell } = buildTargetSchoolGapLines(
+        [kanagawaSchool()],
+        [reportCard(9, 'term2', 4), mock(58)]
+      );
+      expect(tell[0]).toContain('めやす 基準内申107/135・基準偏差値60（-2）');
+      expect(tell[0]).not.toContain('107/135（');
+    });
+
+    it('内申が空の16校（naishin_max も空）でも神奈川の語で出す', () => {
+      const { tell } = buildTargetSchoolGapLines(
+        [kanagawaSchool({ naishin: null, naishinMax: null })],
+        confirmed
+      );
+      expect(tell[0]).toContain('めやす 基準偏差値60（-2）');
+      expect(tell[0]).not.toContain('必要');
+    });
+
+    it('沿線があれば出す・無ければ出さない', () => {
+      expect(
+        buildTargetSchoolGapLines([kanagawaSchool({ accessLines: ['相鉄線'] })], confirmed).tell[0]
+      ).toContain('沿線: 相鉄線');
+      expect(buildTargetSchoolGapLines([kanagawaSchool()], confirmed).tell[0]).not.toContain(
+        '沿線'
+      );
+    });
+
+    it('★都立と神奈川県立を並べても、それぞれの満点の本人の内申で比べる', () => {
+      const { tell } = buildTargetSchoolGapLines([kanagawaSchool(), tokyoSchool()], confirmed);
+      expect(tell[0]).toContain('基準内申107/135（本人 108・+1）');
+      // 都立は直近の通知表（中3 2学期・オール4）の換算内申 20+16×2=52 → 52-49=+3
+      expect(tell[1]).toContain('必要内申49（+3）');
+      expect(tell[1]).toContain('合格可能性60%の位置');
+    });
+  });
+
+  describe('buildTargetSchoolTalkLines（④の左）', () => {
+    it('神奈川の教室・神奈川県立は中立な言い方で数字を使う', () => {
+      const lines = buildTargetSchoolTalkLines(
+        [kanagawaSchool()],
+        latestOwnNaishin(confirmed),
+        58,
+        'kanagawa',
+        latestOwnKanagawaNaishin(confirmed)
+      );
+      expect(lines.map((l) => l.text)).toEqual([
+        '光陵：内申はめやすを1上回っている。内申が武器になる',
+        '偏差値はめやすまであと2。次の模試で届く幅かを一緒に見る',
+      ]);
+    });
+
+    it('仮計算なら内申の行に（仮計算）を添える', () => {
+      const lines = buildTargetSchoolTalkLines(
+        [kanagawaSchool()],
+        latestOwnNaishin(provisional),
+        58,
+        'kanagawa',
+        latestOwnKanagawaNaishin(provisional)
+      );
+      expect(lines[0].text).toBe('光陵：内申がめやすに8届かない（仮計算）。当日の点で取り返す');
+    });
+
+    it('★東京の教室の生徒が神奈川県立を志望しても、推薦・換算内申の話をしない', () => {
+      const lines = buildTargetSchoolTalkLines(
+        [kanagawaSchool()],
+        latestOwnNaishin(confirmed),
+        61,
+        'tokyo',
+        latestOwnKanagawaNaishin(confirmed)
+      );
+      const text = lines.map((l) => l.text).join('\n');
+      expect(text).not.toContain('推薦');
+      expect(text).not.toContain('換算内申');
+      expect(lines[0].text).toBe('光陵：内申はめやすを1上回っている。内申が武器になる');
+    });
+
+    it('★神奈川の本人の内申を渡さなければ、65点満点の数字で神奈川県立と比べない', () => {
+      const lines = buildTargetSchoolTalkLines([kanagawaSchool()], 52, null, 'kanagawa');
+      expect(lines).toEqual([
+        { kind: 'say', text: '光陵：めやすと比べる材料が無い（内申・模試を聞いて入れる）' },
+      ]);
+    });
+  });
+
+  it('formatNaishin: 135点満点は「基準内申」と呼ぶ（東京は従来どおり「必要内申」）', () => {
+    expect(formatNaishin(107, 135)).toBe('基準内申107/135');
+    expect(formatNaishin(null, 135)).toBe('基準内申は未設定');
+    expect(formatNaishin(107, 135, '内申')).toBe('内申107/135');
+    expect(formatNaishin(45, 65)).toBe('必要内申45');
   });
 });

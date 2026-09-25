@@ -73,15 +73,75 @@ export interface ScriptLine {
  *   入力されないまま古くなるだけ。面談の場で聞けば済む。
  */
 export const ASK_LINES: Partial<Record<SceneKey, readonly string[]>> = {
-  hearing: [
-    '家庭学習の様子。机に向かう時間は取れているか',
-    '学校の授業と宿題の進み具合',
-    '学校生活の様子（部活動の引退後の過ごし方など）',
-    '学校の面談で言われたこと',
-    '次の定期テスト・模試の目標を決める',
-  ],
+  // ★②ヒアリングの「聞くこと」はここに置かない。小見出し（振り返り／学校／塾／家庭）ごとに
+  //   持つので HEARING_GROUPS 側にある。ここに足すと、どの小見出しにも出ない行になる。
   status: ['検定資格（英検・漢検など）を取っているか'],
 };
+
+/**
+ * ②ヒアリングの小見出し。この順に出す（2026-09-23 承認のモック）。
+ *
+ * ★②は材料が多く、1列に並べると「いま何の話をしているか」が見えなくなる
+ *  （前回の約束の次に部活の話、その次に宿題の回数…）。保護者との話の順
+ *   ＝前回の振り返り → 学校のこと → 塾でのこと → 家庭でのこと、に切った。
+ * ★振り返りを先頭に置くのは、前回の約束・要望への返事から入ると
+ *  「前に言ったことを覚えていてくれた」から面談が始まるため。
+ */
+export const HEARING_GROUP_KEYS = ['review', 'school', 'juku', 'home'] as const;
+
+export type HearingGroupKey = (typeof HEARING_GROUP_KEYS)[number];
+
+export interface HearingGroup {
+  label: string;
+  /** 小見出しの横に添える短い補足。無ければ空文字 */
+  note: string;
+  /**
+   * NESTに記録が無いので面談で聞く項目（ASK_LINES と同じ性質）。
+   * ★ここを埋めるためにDBに列を足さない（ASK_LINES の注記と同じ理由）。
+   */
+  ask: readonly string[];
+}
+
+export const HEARING_GROUPS: Record<HearingGroupKey, HearingGroup> = {
+  review: { label: '振り返り', note: '前回の面談から', ask: [] },
+  school: {
+    label: '学校',
+    note: '',
+    ask: [
+      '学校の授業と宿題の進み具合',
+      '学校の面談で言われたこと',
+      '学校生活の様子（部活動の引退後の過ごし方など）',
+    ],
+  },
+  juku: { label: '塾', note: '', ask: [] },
+  home: {
+    label: '家庭',
+    note: '',
+    ask: ['家庭学習の様子。机に向かう時間は取れているか', '次の定期テスト・模試の目標を決める'],
+  },
+};
+
+/**
+ * ②に置くAIセクションを、どの小見出しに出すか。着眼点（左）も現状の行（右）もここで決める。
+ * ★型を「②に置くセクション」に絞ってある。SCENE_OF_SECTION で hearing に足したセクションを
+ *   ここに足し忘れると型エラーになる（黙ってどの小見出しにも出ない、を防ぐ）。
+ */
+export type HearingSectionKey = 'lastInterview' | 'parent' | 'lessons' | 'discipline';
+
+export const HEARING_GROUP_OF_SECTION: Record<HearingSectionKey, HearingGroupKey> = {
+  lastInterview: 'review',
+  lessons: 'juku',
+  discipline: 'juku',
+  // ★保護者とのやりとり（チャット）は家庭で見えていることの材料なので「家庭」
+  parent: 'home',
+};
+
+/** セクションが②のどの小見出しに属するか。②に置かないセクションは null */
+export function hearingGroupOfSection(key: BriefSectionKey): HearingGroupKey | null {
+  return key in HEARING_GROUP_OF_SECTION
+    ? HEARING_GROUP_OF_SECTION[key as HearingSectionKey]
+    : null;
+}
 
 /**
  * 「見せる」＝ 面談に手元に用意しておく物。
@@ -221,6 +281,14 @@ const COMMON_TIMING_TAIL: TimingGrid = {
   high3: { spring: [], summer: [], winter: [] },
 };
 
+/**
+ * 都立の「内申1点の重み」。★③（中3・夏）の定型と、④の志望校の話
+ *（interview.shared.ts の buildTargetSchoolTalkLines）の両方で使う。
+ *   数字を2か所に書くと片方だけ直して食い違うので、ここ1か所に持つ。
+ * ★東京だけの話。神奈川は内申と当日点の比が学校ごとに違うので使わない。
+ */
+export const TOKYO_NAISHIN_POINT_WEIGHT = '換算内申1点は当日の素点で約3点ぶん';
+
 /** 都県ごとの話。★入試制度・日程・教科別対策はここ */
 const REGION_TIMING: Record<Region, TimingGrid> = {
   tokyo: {
@@ -252,7 +320,7 @@ const REGION_TIMING: Record<Region, TimingGrid> = {
         '7〜8月 ―― 部活が終わり、まとまった時間が取れる最後の時期',
         '9月以降 ―― 内申が決まる2学期。三者面談と出願までの流れ',
         '夏と冬の違い ―― 冬は範囲を詰められない。戻れるのは夏だけ',
-        '内申1点の重み ―― 換算内申1点は当日の素点で約3点ぶん。当日がそのぶんラクになる',
+        `内申1点の重み ―― ${TOKYO_NAISHIN_POINT_WEIGHT}。当日がそのぶんラクになる`,
         '★私立を併願するなら、動けるのは11月の三者面談まで。12月15日からは先生同士の入試相談',
       ],
       // ★教室長の言葉で書き直した（2026-09-22）。資料から起こした制度の説明より、

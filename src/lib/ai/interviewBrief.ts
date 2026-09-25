@@ -23,9 +23,15 @@
  *   話す順になるため、AIに改めて並べさせる意味が無くなったため。代わりに「④の課題と
  *   ⑤のプランのつながり」（bridge）を足した。講習面談の核なので、他の見えることと
  *   混ぜずに独立させる。
+ *
+ * ★2026-09-23 に「ひとこと」（openers）と「場面」（episodes）を足した。どちらも教室長が
+ *   保護者にそのまま言う話し言葉で、下書きではない。そのため数字はプロンプトに加えて
+ *   パーサでも弾く（containsDigit）。場面の日付・講師名はAIに書かせず、引継ぎの行から取る。
+ *   正典: docs/interview-workspace-layout-2026-09.md「2026-09-23 整理」
  */
 
 import { isOwnerOrAbove } from '@/lib/utils/roles';
+import { STUDY_TIPS, studyTipById } from '@/lib/interview/studyTips';
 
 /** セクション（固定・この順）。key はAIとの突き合わせキー、label は画面の見出し */
 export const BRIEF_SECTIONS = [
@@ -74,6 +80,54 @@ export interface BriefFollowUp {
   text: string;
 }
 
+/**
+ * 「ひとこと」（シーン・②の小見出しの頭で、教室長がそのまま保護者に言える1文）を置く場所。
+ * ★review / school / juku / home は②ヒアリングの小見出し（scenes.ts の HEARING_GROUP_KEYS）。
+ *   ②はシーン全体ではなく小見出しごとに話題が変わるので、ひとことも小見出しごとに持つ。
+ * ★apply（申し込み）・closing（クロージング）は持たない。定型の事務連絡で、
+ *   AIに切り出しを作らせる場面ではない（2026-09-23 承認のモック）。
+ */
+export const OPENER_KEYS = [
+  'intro',
+  'review',
+  'school',
+  'juku',
+  'home',
+  'timing',
+  'status',
+  'plan',
+] as const;
+export type OpenerKey = (typeof OPENER_KEYS)[number];
+
+export function isOpenerKey(value: unknown): value is OpenerKey {
+  return typeof value === 'string' && (OPENER_KEYS as readonly string[]).includes(value);
+}
+
+/**
+ * 「場面」（講師の引継ぎから拾った、家庭では見えない具体的な瞬間）。
+ * ★日付と講師名はAIに書かせない。AIが返すのは引継ぎの行番号（lesson）と文だけで、
+ *   日付・講師はその行からシステムが取り出す（parseBriefResult）。
+ *   日付の1字違いは面談の場で誰も気づけない、という数字の決まりと同じ理由。
+ */
+/**
+ * 「勉強の仕方」の引き出しから選んだ1件（④現状の確認）。
+ * ★AIは中身を書かない。studyTips.ts の id で選び、選んだ理由を1文書くだけ。
+ */
+export interface BriefStudyTip {
+  id: string;
+  /** 選んだ理由（数字なし）。「挑戦校まで偏差値が少し足りず、失点は数学に多い」など */
+  reason: string;
+}
+
+export interface BriefEpisode {
+  /** その引継ぎの授業日（'M/D'）。システムが引継ぎの行から取り出したもの */
+  date: string;
+  /** その引継ぎを書いた講師（姓）。行に講師名が無ければ空文字 */
+  teacher: string;
+  /** AIが書いた話し言葉の1文（数字・日付なし） */
+  text: string;
+}
+
 export interface BriefResult {
   /** 渡したセクションぶん必ず並ぶ（読めなかったときは seen が全部空になる） */
   sections: BriefSectionResult[];
@@ -90,6 +144,15 @@ export interface BriefResult {
    *  （呼び出し側で強制する。プロンプトの指示だけに頼らない）。
    */
   bridge: string;
+  /**
+   * シーン・小見出しの頭の「ひとこと」。無い key は持たない（静的な文で埋めない）。
+   * ★plan は koushu セクションを渡していないときは必ず落とす（bridge と同じ理由）。
+   */
+  openers: Partial<Record<OpenerKey, string>>;
+  /** 引継ぎから拾った場面。最大 MAX_EPISODES 件。lessons を渡していなければ常に空 */
+  episodes: BriefEpisode[];
+  /** 勉強の仕方の引き出しから選んだもの。最大 MAX_STUDY_TIPS 件 */
+  studyTips: BriefStudyTip[];
 }
 
 /**
@@ -111,6 +174,22 @@ export const MAX_BRIDGE_LENGTH = 220;
  *   件数そのものは buildPreviousCommitmentLines が絞っているが、AI側にも蓋をしておく。
  */
 export const MAX_FOLLOW_UPS = 6;
+/**
+ * 「ひとこと」の上限。★保護者に向かってそのまま口に出す1文なので短く切る。
+ *   長いと読み上げになり、話し言葉として出てこない。
+ */
+export const MAX_OPENER_LENGTH = 60;
+/** 「場面」1件の上限（日付・講師名はシステムが足すので、その分は含まない） */
+export const MAX_EPISODE_LENGTH = 70;
+/**
+ * 「場面」の件数の上限。★②「塾」の話すことに並ぶので、多いと着眼点が埋もれる。
+ *   具体的な瞬間を2つ話せれば「見てくれている」は十分伝わる。
+ */
+export const MAX_EPISODES = 2;
+/** 勉強の仕方を選ぶ数の上限。★話せるのは1〜2個。多いと何をすればいいか伝わらない */
+export const MAX_STUDY_TIPS = 2;
+/** 勉強の仕方を選んだ理由の上限 */
+export const MAX_STUDY_TIP_REASON_LENGTH = 60;
 /** AIへ渡す約束・要望の件数の上限（MAX_PREVIOUS_PROMISES ＋ MAX_PREVIOUS_REQUESTS ぶん） */
 export const MAX_FOLLOW_UP_ITEMS = 10;
 /**
@@ -121,6 +200,79 @@ export const MAX_FOLLOW_UP_ITEMS = 10;
 export const MAX_CURRENT_LINES = 24;
 /** 現状の1行の上限 */
 export const MAX_CURRENT_LINE_LENGTH = 120;
+
+/**
+ * score（成績）の現状に混ぜる「テスト対策」の行の書き出し。
+ * ★画面・紙では④の根拠に別の形（試験名・増コマ申込・結果・単元を分けた行）で出すので、
+ *   表示側はこの書き出しの行を score から外す（interview.shared.ts の stripTargetSchoolFactLines）。
+ */
+export const TEST_PREP_AI_PREFIX = 'テスト対策:';
+
+/**
+ * lessons（授業の様子）の現状に足す「週回数変更」の行の書き出し。
+ * ★lessons はサーバーが引継ぎから組む決まり（クライアントの言い値を混ぜない）。
+ *   ただし週回数変更は面談画面が読んでいる申込（form_responses）から組む事実なので、
+ *   別の口（lessonNotes）で受け取り、この書き出しで始まる行だけを通す（sanitizeLessonNotes）。
+ */
+export const SHUKAISU_AI_PREFIX = '週回数変更:';
+
+/** lessonNotes の件数の上限。週回数変更は最新の1件しか組まないので、余裕を見て2 */
+export const MAX_LESSON_NOTES = 2;
+
+/**
+ * クライアントから来た lessonNotes（授業の様子に足す行）を検める。
+ * ★SHUKAISU_AI_PREFIX で始まる行だけを通す。ここを緩めると「画面に無いはずの引継ぎ」を
+ *   lessons に差し込める口になる（route.ts の fromClient の注記と同じ理由）。
+ */
+export function sanitizeLessonNotes(raw: unknown): string[] {
+  const rows = Array.isArray(raw) ? (raw as unknown[]) : [];
+  const out: string[] = [];
+  for (const row of rows) {
+    if (out.length >= MAX_LESSON_NOTES) break;
+    if (typeof row !== 'string') continue;
+    const text = row.replace(/\s+/g, ' ').trim().slice(0, MAX_CURRENT_LINE_LENGTH);
+    if (!text.startsWith(SHUKAISU_AI_PREFIX)) continue;
+    if (out.indexOf(text) !== -1) continue;
+    out.push(text);
+  }
+  return out;
+}
+
+/** lessons の行のうち、引継ぎではなく lessonNotes から足した行か（画面に出す行から外すため） */
+export function isLessonNoteLine(line: string): boolean {
+  return line.startsWith(SHUKAISU_AI_PREFIX);
+}
+
+/**
+ * 数字（半角・全角のアラビア数字）を含むか。
+ *
+ * ★「ひとこと」「場面」はこれで落とす（パーサ側の関所）。
+ *   seen / thread / bridge / followUps の「数字を書かない」はプロンプトの指示だけで守っている
+ *  （2026-09-23 時点）。あちらは教室長が読んで直せる下書きだが、ひとこと・場面は
+ *   **保護者にそのまま言う文**で、画面では直せない。1字違いがそのまま保護者の耳に入るので、
+ *   プロンプトに加えてコードでも弾く。
+ * ★漢数字は見ない。「一度」「一緒に」「一つずつ」のような言い回しまで落ちるため。
+ */
+export function containsDigit(text: string): boolean {
+  return /[0-9０-９]/.test(text);
+}
+
+/**
+ * 引継ぎの1行（loadLessonLines が組む「YYYY/MM/DD 講師名: 引継ぎ」）から、
+ * 授業日（'M/D'）と講師の姓を取り出す。形が違えば null。
+ *
+ * ★講師名は先頭の1語（姓）だけを使う。「内山 太郎先生」より「内山先生」のほうが
+ *   保護者に向かって自然に言える。姓と名の間に空白が無い名前はそのまま出る。
+ */
+export function parseLessonLineHead(line: string): { date: string; teacher: string } | null {
+  const sep = line.indexOf(': ');
+  if (sep === -1) return null;
+  const head = line.slice(0, sep).trim();
+  const m = head.match(/^(\d{4})\/(\d{1,2})\/(\d{1,2})(?:\s+(.+))?$/);
+  if (!m) return null;
+  const teacher = (m[4] ?? '').trim().split(/\s+/)[0] ?? '';
+  return { date: `${Number(m[2])}/${Number(m[3])}`, teacher };
+}
 
 /**
  * 「授業の様子」の行から、同じ講師・同じ引継ぎ文が続く塊をいちばん新しい1件に畳む。
@@ -286,11 +438,63 @@ export function sanitizeFollowUpItems(raw: unknown): string[] {
   const out: string[] = [];
   for (const row of rows) {
     if (out.length >= MAX_FOLLOW_UP_ITEMS) break;
-    if (typeof row !== 'string') continue;
-    const text = followUpItemKey(row);
+    const src = followUpRowText(row);
+    if (src === null) continue;
+    const text = followUpItemKey(src);
     if (!text) continue;
     if (out.indexOf(text) !== -1) continue;
     out.push(text);
+  }
+  return out;
+}
+
+/**
+ * 前回の方針で「誰が動くか」（新しいNottaの型の「塾：」「家庭：」「生徒：」「次回確認：」）。
+ *
+ * ★2026-09-23 に教室長がNottaの要約の型を変えた。今後の方針の箇条書きは、頭に動く人が付く。
+ *   頭の語は画面・AIとも本文から外す（interview.shared.ts の parseFollowUpActor）が、
+ *   意味はAIにも伝えたいので、本文とは別に添えて送る。
+ * ★本文（item）は外したあとの文で、画面とサーバーで同じ followUpItemKey を通す。
+ */
+export type FollowUpActor = 'juku' | 'home' | 'student' | 'nextCheck';
+
+export const FOLLOW_UP_ACTOR_LABEL: Record<FollowUpActor, string> = {
+  juku: '塾が動く',
+  home: '家庭が動く',
+  student: '生徒が動く',
+  nextCheck: '次回確認する',
+};
+
+function isFollowUpActor(value: unknown): value is FollowUpActor {
+  return typeof value === 'string' && value in FOLLOW_UP_ACTOR_LABEL;
+}
+
+/**
+ * 約束・要望1件の本文。★文字列でも { text, actor } でも受ける。
+ *   actor は古いNottaの型（頭の語が無い）では付かないので、文字列のまま送ってくる。
+ */
+function followUpRowText(row: unknown): string | null {
+  if (typeof row === 'string') return row;
+  if (row && typeof row === 'object' && typeof (row as { text?: unknown }).text === 'string') {
+    return (row as { text: string }).text;
+  }
+  return null;
+}
+
+/**
+ * 約束・要望ごとの「誰が動くか」を、突き合わせのキー（followUpItemKey）で引ける形にする。
+ * ★sanitizeFollowUpItems で落ちた行（上限超え・重複）の actor も残るが、
+ *   briefUserText は渡した item のぶんしか引かないので害は無い。
+ */
+export function sanitizeFollowUpActors(raw: unknown): Record<string, FollowUpActor> {
+  const rows = Array.isArray(raw) ? (raw as unknown[]) : [];
+  const out: Record<string, FollowUpActor> = {};
+  for (const row of rows) {
+    if (!row || typeof row !== 'object') continue;
+    const r = row as { text?: unknown; actor?: unknown };
+    if (typeof r.text !== 'string' || !isFollowUpActor(r.actor)) continue;
+    const key = followUpItemKey(r.text);
+    if (key && !(key in out)) out[key] = r.actor;
   }
   return out;
 }
@@ -326,8 +530,25 @@ export function briefSystemPrompt(): string {
     '- sign は "warn"（注意して話す）／"good"（伝えたい良い話）／""（どちらでもない）の3つだけ。',
     '',
     '■ セクションごとの書き方（渡されたものだけ）',
+    // ★2026-09-23 教室長レビュー。④で志望校に触れずに成績の話だけで終わっていた。
+    //   差の数字は画面（buildTargetSchoolTalkLines）が別に出すので、ここでは言葉だけを求める
+    '- score（成績）: 志望校（【現状】に志望校の行があるとき）には必ず触れる。',
+    '  どちらの入試（推薦・一般）が向くか、内申と当日点のどちらを伸ばすか、次の模試で何を見るかを、',
+    '  学校名を出して書く。数字は書かない（差の数字は画面が別に出す）。',
+    '  ★【教室の都県】が神奈川県のときは推薦の話をしない（神奈川の公立入試は制度が別物）。',
+    // ★2026-09-23 模試の志望校と合格可能性を取り込むようにした。数字は画面が出すので言葉だけ
+    '  【現状】に「直近の模試」の行があるときは、合格可能性が前回から上がったか・下がったか・',
+    '  判定なしかを言葉で触れてよい。数字は書かない。「判定なし」を「可能性ゼロ」と言い換えない。',
+    // ★2026-09-23 教室長「テスト対策は取ったのに点数が上がった下がったとか課題感とリンクしたい」
+    `  【現状】に「${TEST_PREP_AI_PREFIX}」の行があるときは、テスト対策を受けた科目について、`,
+    '  対策した単元と結果を結び付けて「効いたところ」と「残った課題」を書く（数字は書かない）。',
+    '  結果がまだ無いときは、結果を聞いたうえで何を確かめるかを書く。',
     '- lessons（授業の様子）: できるようになったこと・授業中の発言・態度の変化を、保護者に伝える',
     '  良い報告として書く。家庭では見えないことを優先する。',
+    // ★2026-09-23 教室長「週回数変更は変更してそのあとどうかを報告事項としてあげる」
+    `  「${SHUKAISU_AI_PREFIX}」の行があるときは、週回数を変えたあとの授業の様子（引継ぎ・宿題）を`,
+    '  塾からの報告として書く。まだ変更前なら、変更後に何を見ていくかを書く。',
+    `  ★「${SHUKAISU_AI_PREFIX}」の行は引継ぎではないので、episodes の lesson に選ばない。`,
     '- lastInterview（前回の面談から）: 前回の約束・要望に対して、その後の記録（引継ぎ・成績）から',
     '  追えることがあれば、それを書く。追えなければ無理に書かない。',
     '',
@@ -342,7 +563,10 @@ export function briefSystemPrompt(): string {
     '  ★ここで書く報告こそ、保護者が面談に来て聞きたい「家庭では見えないこと」です。',
     '- 一方、前回の約束・今後の方針（志望校を家庭で話し合う、など）は ask にする。',
     '  ただし記録（引継ぎ・成績・授業の様子）にその後が出ているなら report にしてよい。',
-    '- item は渡した文を**そのまま**書き写す（1字でも変えると捨てられます）。',
+    '- 文の後ろに〔塾が動く〕〔家庭が動く〕〔生徒が動く〕〔次回確認する〕が付いているものは、',
+    '  前回の面談で「誰が動くか」まで決めた方針です。〔塾が動く〕は塾が引き受けたことなので report、',
+    '  それ以外は ask を基本にする（記録にその後が出ていれば report にしてよい）。',
+    '- item は渡した文を**そのまま**書き写す（1字でも変えると捨てられます。〔 〕の部分は item に含めない）。',
     `- text は ${MAX_SEEN_LENGTH}字まで。★ここでも数字は書かない（上の決まりと同じ）。`,
     '  ask のときは text を空文字にしてよい（画面が「その後どうですか」を出します）。',
     `- 多くても${MAX_FOLLOW_UPS}件まで。渡していない文を item にしない。`,
@@ -361,6 +585,42 @@ export function briefSystemPrompt(): string {
     '- ★つながりが見えなければ空文字にする。無理にこじつけない。',
     '- koushu セクションを渡していないときは、この項目は使われないので考えなくてよい。',
     '',
+    // ★2026-09-23 追加。ここから下（openers・episodes）は内部の下書きではなく、
+    //   教室長が保護者に向かってそのまま口に出す文。上の「保護者向けの言い回しにしなくてよい」は当てはまらない
+    '■ openers（ひとこと＝場面の頭で、教室長が保護者にそのまま言う1文）',
+    '- ★ここだけは内部の下書きではありません。教室長が保護者に向かって、そのまま口に出します。',
+    `- key は ${OPENER_KEYS.map((k) => `"${k}"`).join('／')} の${OPENER_KEYS.length}つだけ。`,
+    '  intro＝導入、review＝前回の振り返り、school＝学校のこと、juku＝塾での様子、home＝家庭のこと、',
+    '  timing＝この時期に大事なこと、status＝現状の確認（成績・志望校）、plan＝講習のプラン。',
+    '- 温かく。まず、ねぎらい（「ありがとうございます」「頑張っていますね」）か、',
+    '  保護者の気持ちを受け止める言葉（「気になりますよね」）を置き、それから話題に入る。',
+    '- 丁寧語（です・ます）。生徒は【生徒の呼び名】の「◯◯さん」で呼ぶ（名字・様は使わない）。',
+    `- 1つ ${MAX_OPENER_LENGTH}字まで。「」で囲まない。`,
+    '- ★数字は書かない（上の決まりと同じ。数字が入ったひとことは捨てられます）。',
+    '- ★【現状】に無い事実を言わない。材料の無い話題（たとえば講習の提案が無いのに plan）は書かない。',
+    '  書けない key は省く。全部埋めなくてよい。',
+    '',
+    '■ episodes（場面＝引継ぎから拾う、家庭では見えない具体的な瞬間）',
+    '- 【lessons】の行頭の番号（1. 2. …）を lesson に入れ、その引継ぎに書かれた具体的な場面を',
+    '  保護者に話す1文にして text に書く（丁寧語）。',
+    '- 選ぶのは、自分から質問した・粘った・できるようになった、のような家庭では見えない瞬間。',
+    '  「次回：進行表通り」「確認テスト」のような事務連絡だけの引継ぎは選ばない。',
+    `- 多くても${MAX_EPISODES}件。1つ ${MAX_EPISODE_LENGTH}字まで。`,
+    '- ★日付・講師名・数字は書かない（日付と講師名は画面が引継ぎの行から付けます）。',
+    '  画面は頭に「9/17の」、末尾に「（◯◯先生）」を足すので、教科名から書き始める。',
+    '  「英語で、分からない文法を自分から質問してきたそうです」の形で書く。',
+    '- 引継ぎに具体的な場面が無ければ空配列にする。こじつけない。',
+    '',
+    '■ studyTips（勉強の仕方＝教室長の引き出しから選ぶ）',
+    '- 下の一覧から、この生徒にいま話すと良いものを id で選ぶ。中身は書かない（画面が一覧から出す）。',
+    `- 多くても${MAX_STUDY_TIPS}件。reason に選んだ理由を ${MAX_STUDY_TIP_REASON_LENGTH}字まで（数字は書かない）。`,
+    '- 理由は【現状】の材料（成績の動き・引継ぎ・宿題）から言えることだけ。材料から言えなければ空配列にする。',
+    ...STUDY_TIPS.map((t) => `  - ${t.id}：${t.title}（${t.who}）`),
+    '',
+    '■ 「」の中の言葉',
+    '- 【現状】の「前回の言葉:」の行など、「」で囲まれた言葉は本人・保護者が実際に言った言葉です。',
+    '  触れるときは言い換えずにそのまま引用する（要約しない）。',
+    '',
     '出力はJSONだけ。前置きは書かない:',
     '{"sections":[{"key":"score",' +
       '"seen":"下がったのは英語だけで、数学と国語は上がっている。英語は単語の抜けが引継ぎにも出ているので、' +
@@ -374,7 +634,11 @@ export function briefSystemPrompt(): string {
       '"thread":"英語は成績・宿題・引継ぎの3つが同じ方向を向いている。' +
       'ほかの教科は崩れていないので、生活全体の問題ではなく英語の勉強のしかたの問題と見てよい。",' +
       '"bridge":"英語の語彙不足が失点に直結しているので、プランの英語8コマは読解ではなく' +
-      '単語・文法の復習に寄せてある。ここを説明すればコマ数の根拠になる。"}',
+      '単語・文法の復習に寄せてある。ここを説明すればコマ数の根拠になる。",' +
+      '"openers":{"intro":"今日はお忙しいところありがとうございます。律さんの最近の様子からお話しさせてください",' +
+      '"juku":"塾では毎回、自分から机に向かってくれていますよ"},' +
+      '"episodes":[{"lesson":3,"text":"英語で、分からない文法を自分から質問してきたそうです"}],' +
+      '"studyTips":[{"id":"recall","reason":"英語の失点は単語の抜けで、覚えたつもりで抜けている"}]}',
   ].join('\n');
 }
 
@@ -386,20 +650,56 @@ export function briefSystemPrompt(): string {
  */
 export function briefUserText(
   sections: readonly BriefSectionInput[],
-  followUpItems: readonly string[] = []
+  followUpItems: readonly string[] = [],
+  /**
+   * 教室の都県。★神奈川では推薦・換算内申の話をさせないために渡す（東京と制度が別物）。
+   * 分からないときは null で、都県の注記を付けない。
+   */
+  region: 'tokyo' | 'kanagawa' | null = null,
+  extra: {
+    /**
+     * 生徒の名（下の名前）。★ひとことで「律さん」と呼ばせるために渡す。
+     * 名字・様は使わせない（保護者の前で子どもを呼ぶ呼び方にそろえる）。
+     */
+    givenName?: string | null;
+    /** 約束・要望ごとの「誰が動くか」（sanitizeFollowUpActors の戻り） */
+    followUpActors?: Readonly<Record<string, FollowUpActor>>;
+  } = {}
 ): string {
   const blocks = sections.map((s) => {
-    const lines = s.current.map((c) => `- ${c}`);
+    /**
+     * ★lessons（引継ぎ）だけは行に番号を振る。場面（episodes）は番号で引継ぎを指させ、
+     *   日付と講師名はその行からシステムが取り出すため（AIに日付を書き写させない）。
+     *   番号は1始まりで、parseBriefResult に渡す lessonLines の位置と一致する。
+     */
+    const lines =
+      s.key === 'lessons'
+        ? s.current.map((c, i) => `${i + 1}. ${c}`)
+        : s.current.map((c) => `- ${c}`);
     return [`【${s.key}: ${briefSectionLabel(s.key)}】`, ...lines].join('\n');
   });
-  const body = ['【現状】', ...blocks];
+  const givenName = (extra.givenName ?? '').trim();
+  const body = [
+    ...(region === 'kanagawa'
+      ? ['【教室の都県】神奈川県 ―― 神奈川の公立入試。推薦・換算内申・都立の話はしない', '']
+      : region === 'tokyo'
+        ? ['【教室の都県】東京都', '']
+        : []),
+    ...(givenName ? [`【生徒の呼び名】${givenName}さん`, ''] : []),
+    '【現状】',
+    ...blocks,
+  ];
   // ★約束・要望は現状の行とは別枠で渡す。followUps の item はこの文と1字も違えられないため、
   //   セクションの行に混ぜず「この文をそのまま使う」と見出しで明示する
   if (followUpItems.length > 0) {
+    const actors = extra.followUpActors ?? {};
     body.push(
       '',
-      '■ 前回の約束・要望（followUps の item はこの文をそのまま使う）',
-      ...followUpItems.map((t) => `- ${t}`)
+      '■ 前回の約束・要望（followUps の item はこの文をそのまま使う。〔 〕は補足で item に含めない）',
+      ...followUpItems.map((t) => {
+        const actor = actors[followUpItemKey(t)];
+        return actor ? `- ${t}〔${FOLLOW_UP_ACTOR_LABEL[actor]}〕` : `- ${t}`;
+      })
     );
   }
   return body.join('\n');
@@ -438,7 +738,12 @@ function takeSign(raw: unknown): BriefSign {
 export function parseBriefResult(
   raw: unknown,
   sentKeys: readonly BriefSectionKey[],
-  sentFollowUpItems: readonly string[] = []
+  sentFollowUpItems: readonly string[] = [],
+  /**
+   * AIに番号付きで渡した引継ぎの行（briefUserText の【lessons】と同じ並び）。
+   * ★場面（episodes）の lesson 番号はここで引く。渡していない番号は捨てる。
+   */
+  sentLessonLines: readonly string[] = []
 ): BriefResult {
   const keys = uniqueKeys(sentKeys);
   const empty: BriefResult = {
@@ -446,6 +751,9 @@ export function parseBriefResult(
     followUps: [],
     thread: '',
     bridge: '',
+    openers: {},
+    episodes: [],
+    studyTips: [],
   };
   if (!raw || typeof raw !== 'object') return empty;
 
@@ -454,6 +762,9 @@ export function parseBriefResult(
     followUps?: unknown;
     thread?: unknown;
     bridge?: unknown;
+    openers?: unknown;
+    episodes?: unknown;
+    studyTips?: unknown;
   };
 
   // 渡した key ごとに1件だけ拾う（同じ key を2回返してきたら先に来たほうを採る）
@@ -496,7 +807,8 @@ export function parseBriefResult(
     if (followUps.length >= MAX_FOLLOW_UPS) break;
     if (!row || typeof row !== 'object') continue;
     const r = row as { item?: unknown; kind?: unknown; text?: unknown };
-    const item = typeof r.item === 'string' ? r.item.trim() : '';
+    // ★〔塾が動く〕などの補足まで書き写してきたら外してから突き合わせる（briefUserText の注記）
+    const item = typeof r.item === 'string' ? r.item.replace(/〔[^〔〕]*〕\s*$/, '').trim() : '';
     if (!item || items.indexOf(item) === -1) continue;
     if (takenItems.has(item)) continue;
     takenItems.add(item);
@@ -519,5 +831,73 @@ export function parseBriefResult(
       ? bridgeRaw
       : '';
 
-  return { sections, followUps, thread, bridge };
+  /**
+   * ひとこと。★保護者にそのまま言う文なので、ほかの項目より厳しく落とす。
+   * - 知らない key は捨てる（置き場所の無い文を作らせない）
+   * - 上限超え・数字入りは捨てる（切り詰めない・数字を直さない。直した文はもうAIの文ではない）
+   * - 「」で囲んで返してきたら外す（画面が見た目で囲むため）
+   * - plan は koushu を渡していなければ捨てる（bridge と同じ。講習の話の無い面談でプランを語らせない）
+   */
+  const openers: Partial<Record<OpenerKey, string>> = {};
+  if (obj.openers && typeof obj.openers === 'object' && !Array.isArray(obj.openers)) {
+    for (const [key, value] of Object.entries(obj.openers as Record<string, unknown>)) {
+      if (!isOpenerKey(key)) continue;
+      if (typeof value !== 'string') continue;
+      const text = value
+        .trim()
+        .replace(/^「([^「」]*)」$/, '$1')
+        .trim();
+      if (!text || text.length > MAX_OPENER_LENGTH || containsDigit(text)) continue;
+      if (key === 'plan' && keys.indexOf('koushu') === -1) continue;
+      openers[key] = text;
+    }
+  }
+
+  /**
+   * 場面。★日付・講師はAIの言い値ではなく、渡した引継ぎの行から取る。
+   * - lessons を渡していなければ空（引継ぎの無い場面は作らせない）
+   * - 番号が範囲外・整数でない・同じ番号の2件目は捨てる
+   * - 上限超え・数字入り（日付の書き写し含む）は捨てる
+   * - 行の形が読めない（日付が取れない）ものは捨てる
+   */
+  const episodes: BriefEpisode[] = [];
+  const takenLessons = new Set<number>();
+  const episodeRows =
+    keys.indexOf('lessons') !== -1 && Array.isArray(obj.episodes)
+      ? (obj.episodes as unknown[])
+      : [];
+  for (const row of episodeRows) {
+    if (episodes.length >= MAX_EPISODES) break;
+    if (!row || typeof row !== 'object') continue;
+    const r = row as { lesson?: unknown; text?: unknown };
+    const lesson = typeof r.lesson === 'number' ? r.lesson : Number.NaN;
+    if (!Number.isInteger(lesson) || lesson < 1 || lesson > sentLessonLines.length) continue;
+    if (takenLessons.has(lesson)) continue;
+    const text = typeof r.text === 'string' ? r.text.trim() : '';
+    if (!text || text.length > MAX_EPISODE_LENGTH || containsDigit(text)) continue;
+    const head = parseLessonLineHead(sentLessonLines[lesson - 1]);
+    if (!head) continue;
+    takenLessons.add(lesson);
+    episodes.push({ date: head.date, teacher: head.teacher, text });
+  }
+
+  /**
+   * 勉強の仕方。★一覧に無い id・同じ id の2件目は捨てる。理由が長い・数字入りなら理由だけ落とす
+   *  （選んだこと自体は使える。中身は一覧の文なので、理由が無くても誤りにはならない）。
+   */
+  const studyTips: BriefStudyTip[] = [];
+  const tipRows = Array.isArray(obj.studyTips) ? (obj.studyTips as unknown[]) : [];
+  for (const row of tipRows) {
+    if (studyTips.length >= MAX_STUDY_TIPS) break;
+    if (!row || typeof row !== 'object') continue;
+    const r = row as { id?: unknown; reason?: unknown };
+    const id = typeof r.id === 'string' ? r.id.trim() : '';
+    if (!studyTipById(id) || studyTips.some((t) => t.id === id)) continue;
+    const reasonRaw = typeof r.reason === 'string' ? r.reason.trim() : '';
+    const reason =
+      reasonRaw.length > MAX_STUDY_TIP_REASON_LENGTH || containsDigit(reasonRaw) ? '' : reasonRaw;
+    studyTips.push({ id, reason });
+  }
+
+  return { sections, followUps, thread, bridge, openers, episodes, studyTips };
 }

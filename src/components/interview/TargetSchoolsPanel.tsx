@@ -6,8 +6,10 @@
  * 面談の②（ヒアリング）でその場で聞いて入れる想定。「面談で話すこと」カード（InterviewScriptCard）の
  * 近くに置く。正典: docs/interview-script-ai-plan.md §4
  *
- * ★候補を選ばず自由記述のままでも保存できる。私立・国立・他県はマスタ（都立のみ205件）に
- *   無いので、ここを塞ぐと入力そのものができなくなる。
+ * ★候補を選ばず自由記述のままでも保存できる。マスタ（都立・神奈川県立と、冊子に載っている
+ *   私立・国立）に無い学校もあるので、ここを塞ぐと入力そのものができなくなる。
+ * ★私立・国立は候補に設置区分を添える。同じ略称の公立と私立がありうる（私立の「八王子」など）。
+ * ★候補は教室の都県の学校を先に並べる（緑園都市校なら神奈川県立が上）。都県で絞りはしない。
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -20,7 +22,8 @@ import {
   type TargetSchoolRow,
   type HighSchoolSearchResult,
 } from '@/lib/api/targetSchools';
-import { formatNaishin } from '@/app/interview/interview.shared';
+import { displayNaishinMax, formatNaishin } from '@/app/interview/interview.shared';
+import { regionOfSchool } from '@/lib/interview/region';
 
 const SEARCH_DEBOUNCE_MS = 300;
 const RANKS = [1, 2, 3] as const;
@@ -41,6 +44,25 @@ interface FormRow {
 
 function emptyRow(rank: number): FormRow {
   return { rank, schoolName: '', highSchoolId: null, reason: '', master: null };
+}
+
+/** 候補に添える都県の短い名前（「東京」「神奈川」「埼玉」…） */
+function prefectureShort(prefecture: string): string {
+  return prefecture.replace(/[都県]$/, '');
+}
+
+/**
+ * 偏差値の表示。★私立の共学校で男女の値が違うときは両方並べる（NEST は生徒の性別を持たない）。
+ */
+function hensachiText(
+  hensachi: number | null,
+  byGender: { 男子?: number; 女子?: number } | undefined
+): string | null {
+  if (hensachi != null) return `偏差値${hensachi}`;
+  const parts: string[] = [];
+  if (byGender?.男子 != null) parts.push(`男子${byGender.男子}`);
+  if (byGender?.女子 != null) parts.push(`女子${byGender.女子}`);
+  return parts.length > 0 ? `偏差値 ${parts.join('・')}` : null;
 }
 
 // 必要内申の表示（満点65以外は分母を添える formatNaishin）は
@@ -113,17 +135,21 @@ export function TargetSchoolsPanel({ studentId, schoolId, onSaved }: Props) {
     };
   }, []);
 
-  const runSearch = useCallback(async (rank: number, q: string) => {
-    setSearchingRank(rank);
-    try {
-      const results = await searchHighSchools(q);
-      setCandidates((prev) => ({ ...prev, [rank]: results }));
-    } catch {
-      setCandidates((prev) => ({ ...prev, [rank]: [] }));
-    } finally {
-      setSearchingRank((cur) => (cur === rank ? null : cur));
-    }
-  }, []);
+  const runSearch = useCallback(
+    async (rank: number, q: string) => {
+      setSearchingRank(rank);
+      try {
+        // 教室の都県の学校を先に出す（region.ts。未登録の教室は東京都が先）
+        const results = await searchHighSchools(q, regionOfSchool(schoolId));
+        setCandidates((prev) => ({ ...prev, [rank]: results }));
+      } catch {
+        setCandidates((prev) => ({ ...prev, [rank]: [] }));
+      } finally {
+        setSearchingRank((cur) => (cur === rank ? null : cur));
+      }
+    },
+    [schoolId]
+  );
 
   const handleNameChange = (rank: number, value: string) => {
     setSavedMessage(null);
@@ -168,9 +194,13 @@ export function TargetSchoolsPanel({ studentId, schoolId, onSaved }: Props) {
                 schoolName: candidate.schoolName,
                 course: candidate.course,
                 category: candidate.category,
+                establishment: candidate.establishment,
                 naishin: candidate.naishin,
                 naishinMax: candidate.naishinMax,
                 hensachi: candidate.hensachi,
+                hensachiByGender: candidate.hensachiByGender,
+                // 推薦・併願優遇の基準は保存後の再取得（getStudentTargetSchools）で入る
+                admissionRules: [],
                 sourceLabel: candidate.sourceLabel,
                 verifiedAt: candidate.verifiedAt,
                 accessLines: candidate.accessLines,
@@ -256,7 +286,7 @@ export function TargetSchoolsPanel({ studentId, schoolId, onSaved }: Props) {
                           <div className="py-3 text-center text-xs text-text-muted">検索中...</div>
                         ) : (candidates[row.rank] || []).length === 0 ? (
                           <div className="py-3 text-center text-xs text-text-muted">
-                            該当する高校がありません（マスタは都立のみ）
+                            該当する高校がありません（名前だけでも保存できる）
                           </div>
                         ) : (
                           <ul className="py-1">
@@ -273,11 +303,19 @@ export function TargetSchoolsPanel({ studentId, schoolId, onSaved }: Props) {
                                   )}
                                   <span className="ml-1 text-xs text-text-faint">
                                     {[
+                                      // 同名・似た名前の学校を取り違えないよう、都県と設置区分を添える
+                                      c.establishment === '公立'
+                                        ? prefectureShort(c.prefecture)
+                                        : `${prefectureShort(c.prefecture)}${c.establishment}`,
                                       c.municipality,
                                       c.naishin != null
-                                        ? formatNaishin(c.naishin, c.naishinMax, '内申')
+                                        ? formatNaishin(
+                                            c.naishin,
+                                            displayNaishinMax(c.prefecture, c.naishinMax),
+                                            '内申'
+                                          )
                                         : null,
-                                      c.hensachi != null ? `偏差値${c.hensachi}` : null,
+                                      hensachiText(c.hensachi, c.hensachiByGender),
                                     ]
                                       .filter(Boolean)
                                       .join(' ・ ')}
@@ -296,10 +334,17 @@ export function TargetSchoolsPanel({ studentId, schoolId, onSaved }: Props) {
                   <div className="flex items-start gap-1.5 text-xs text-success">
                     <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                     <span>
-                      マスタに一致 ―― {formatNaishin(row.master.naishin, row.master.naishinMax)}・
-                      {row.master.hensachi != null
-                        ? `偏差値${row.master.hensachi}`
-                        : '偏差値は未設定'}
+                      マスタに一致 ――{' '}
+                      {formatNaishin(
+                        row.master.naishin,
+                        displayNaishinMax(row.master.prefecture, row.master.naishinMax)
+                      )}
+                      ・
+                      {hensachiText(row.master.hensachi, row.master.hensachiByGender) ??
+                        '偏差値は未設定'}
+                      {row.master.establishment && row.master.establishment !== '公立'
+                        ? '・推薦と併願優遇の判定'
+                        : ''}
                       が④に出る
                       {row.master.verifiedAt == null && '（紙との突き合わせ未確認）'}
                     </span>
@@ -307,7 +352,7 @@ export function TargetSchoolsPanel({ studentId, schoolId, onSaved }: Props) {
                 ) : row.schoolName.trim() ? (
                   <div className="flex items-start gap-1.5 text-xs text-warning">
                     <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                    <span>マスタに無い（私立など）。名前だけ残る</span>
+                    <span>マスタに無い。名前だけ残る</span>
                   </div>
                 ) : null}
 
@@ -331,8 +376,7 @@ export function TargetSchoolsPanel({ studentId, schoolId, onSaved }: Props) {
             </div>
 
             <p className="text-xs leading-relaxed text-text-faint">
-              マスタは都立のみ（205件）。私立・国立・他県は名前だけ残る。
-              緑園都市校のように通塾圏が神奈川県立中心の教室では、都立マスタだけでは届かない。
+              マスタは都立・神奈川県立と、冊子に載っている私立・国立。無い学校は名前だけ残る。
             </p>
           </div>
         )}

@@ -349,6 +349,10 @@ export type Database = {
           is_demo: boolean;
           /** 面談予約用のGoogleカレンダーURL。null=未設定（自動返信にURLを載せない）。 */
           meeting_booking_url: string | null;
+          /** 高校までの通学時間の起点にする最寄り駅（生徒の住所は使わない）。null=未設定。 */
+          nearest_station: string | null;
+          nearest_station_lat: number | null;
+          nearest_station_lon: number | null;
           created_at: string;
           updated_at: string;
         };
@@ -362,6 +366,9 @@ export type Database = {
           logo_url?: string | null;
           is_demo?: boolean;
           meeting_booking_url?: string | null;
+          nearest_station?: string | null;
+          nearest_station_lat?: number | null;
+          nearest_station_lon?: number | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -375,6 +382,9 @@ export type Database = {
           logo_url?: string | null;
           is_demo?: boolean;
           meeting_booking_url?: string | null;
+          nearest_station?: string | null;
+          nearest_station_lat?: number | null;
+          nearest_station_lon?: number | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -3224,12 +3234,19 @@ export type Database = {
           location_source: string | null;
           // 学校（親）への紐付け。学科の行から親校をまとめる（部活・進学実績はここにぶら下がる）
           campus_id: string;
+          // 設置区分。既存の都立・神奈川県立は既定値の '公立'（20260925120000_private_high_schools.sql）
+          establishment: '公立' | '私立' | '国立';
+          gender_type: '男子' | '女子' | '共学' | null;
+          phone: string | null;
           created_at: string;
           updated_at: string;
         };
         Insert: {
           id?: string;
           prefecture?: string;
+          establishment?: '公立' | '私立' | '国立';
+          gender_type?: '男子' | '女子' | '共学' | null;
+          phone?: string | null;
           school_name: string;
           course?: string;
           category: string;
@@ -3255,6 +3272,9 @@ export type Database = {
         Update: {
           id?: string;
           prefecture?: string;
+          establishment?: '公立' | '私立' | '国立';
+          gender_type?: '男子' | '女子' | '共学' | null;
+          phone?: string | null;
           school_name?: string;
           course?: string;
           category?: string;
@@ -3298,6 +3318,8 @@ export type Database = {
           exam_type: string | null;
           gakuryoku_ratio: string | null;
           note: string | null;
+          // 男女別のめやす（私立の偏差値表は男子表・女子表で別）。NULL＝男女共通（都立など）
+          gender: '男子' | '女子' | null;
           // ★NULL = 紙の原本とまだ突き合わせていない。保護者に見せる画面では
           // その旨が分かるようにする（数値の出どころが手起こしのため）。
           verified_at: string | null;
@@ -3317,6 +3339,7 @@ export type Database = {
           exam_type?: string | null;
           gakuryoku_ratio?: string | null;
           note?: string | null;
+          gender?: '男子' | '女子' | null;
           verified_at?: string | null;
           created_at?: string;
           updated_at?: string;
@@ -3334,6 +3357,7 @@ export type Database = {
           exam_type?: string | null;
           gakuryoku_ratio?: string | null;
           note?: string | null;
+          gender?: '男子' | '女子' | null;
           verified_at?: string | null;
           created_at?: string;
           updated_at?: string;
@@ -3469,6 +3493,87 @@ export type Database = {
           },
           {
             foreignKeyName: 'high_school_stats_high_school_id_fkey';
+            columns: ['high_school_id'];
+            referencedRelation: 'high_schools';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      // 私立・国立高校の推薦・併願優遇の基準（条件を式で持ち、生徒の内申に当てて判定する）
+      // rule の型は src/lib/interview/privateAdmission.ts の AdmissionRuleBody
+      high_school_admission_rules: {
+        Row: {
+          id: string;
+          high_school_id: string;
+          source: string;
+          source_year: number;
+          source_label: string;
+          source_page: string | null;
+          section: '推薦' | '一般';
+          exam_label: string;
+          kind: '推薦' | '単願' | '併願';
+          public_only: boolean;
+          applicant_scope: string | null;
+          gender: '男子' | '女子' | null;
+          strength: '出願資格' | '出願基準' | '目安' | null;
+          rule: Record<string, unknown>;
+          checks: string[];
+          raw_text: string;
+          uncertain: boolean;
+          sort_order: number;
+          verified_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          high_school_id: string;
+          source: string;
+          source_year: number;
+          source_label: string;
+          source_page?: string | null;
+          section: '推薦' | '一般';
+          exam_label: string;
+          kind: '推薦' | '単願' | '併願';
+          public_only?: boolean;
+          applicant_scope?: string | null;
+          gender?: '男子' | '女子' | null;
+          strength?: '出願資格' | '出願基準' | '目安' | null;
+          rule: Record<string, unknown>;
+          checks?: string[];
+          raw_text?: string;
+          uncertain?: boolean;
+          sort_order?: number;
+          verified_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          high_school_id?: string;
+          source?: string;
+          source_year?: number;
+          source_label?: string;
+          source_page?: string | null;
+          section?: '推薦' | '一般';
+          exam_label?: string;
+          kind?: '推薦' | '単願' | '併願';
+          public_only?: boolean;
+          applicant_scope?: string | null;
+          gender?: '男子' | '女子' | null;
+          strength?: '出願資格' | '出願基準' | '目安' | null;
+          rule?: Record<string, unknown>;
+          checks?: string[];
+          raw_text?: string;
+          uncertain?: boolean;
+          sort_order?: number;
+          verified_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'high_school_admission_rules_high_school_id_fkey';
             columns: ['high_school_id'];
             referencedRelation: 'high_schools';
             referencedColumns: ['id'];
@@ -3782,6 +3887,77 @@ export type Database = {
             foreignKeyName: 'student_target_schools_updated_by_fkey';
             columns: ['updated_by'];
             referencedRelation: 'user_profiles';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      // 模試に書いた志望校と合格可能性（20260923140000_assessment_target_schools.sql）
+      assessment_target_schools: {
+        Row: {
+          id: string;
+          assessment_id: string;
+          student_id: string;
+          // ★トリガーで生徒の所属校に強制される（RLSが見る列）
+          school_id: string;
+          // 模試の志望校欄の位置 1〜5。★空き枠を詰めない（1〜3＝公立、4〜5＝私立）
+          slot: number;
+          is_public: boolean;
+          school_name_raw: string;
+          high_school_id: string | null;
+          // ★判定不能（**）は null。0 と読まないよう possibility_unjudged と対で見る
+          possibility: number | null;
+          possibility_unjudged: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          assessment_id: string;
+          student_id: string;
+          school_id: string;
+          slot: number;
+          is_public: boolean;
+          school_name_raw: string;
+          high_school_id?: string | null;
+          possibility?: number | null;
+          possibility_unjudged?: boolean;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          assessment_id?: string;
+          student_id?: string;
+          school_id?: string;
+          slot?: number;
+          is_public?: boolean;
+          school_name_raw?: string;
+          high_school_id?: string | null;
+          possibility?: number | null;
+          possibility_unjudged?: boolean;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'assessment_target_schools_assessment_id_fkey';
+            columns: ['assessment_id'];
+            referencedRelation: 'assessments';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'assessment_target_schools_student_id_fkey';
+            columns: ['student_id'];
+            referencedRelation: 'students';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'assessment_target_schools_school_id_fkey';
+            columns: ['school_id'];
+            referencedRelation: 'schools';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'assessment_target_schools_high_school_id_fkey';
+            columns: ['high_school_id'];
+            referencedRelation: 'high_schools';
             referencedColumns: ['id'];
           },
         ];

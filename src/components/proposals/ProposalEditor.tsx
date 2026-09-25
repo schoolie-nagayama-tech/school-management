@@ -14,7 +14,6 @@ import {
   Plus,
   Printer,
   Trash2,
-  X,
 } from 'lucide-react';
 import {
   Button,
@@ -45,8 +44,11 @@ import {
   calcTotalKoma,
   calcTotalAppliedKoma,
   promoteProposalToCourse,
+  getTermProposals,
+  mergeUnitsIntoProposal,
 } from '@/lib/api/proposals';
 import type { ProposalUnitInput } from '@/lib/api/proposals';
+import { classifyExistingBooks, type ExistingTermProposal } from './proposalMerge';
 import { ConceptBar } from './ConceptBar';
 import {
   getProposalOrderCandidates,
@@ -54,6 +56,7 @@ import {
   type OrderCandidate,
 } from '@/lib/api/ordering';
 import { PublishOrderDialog } from './PublishOrderDialog';
+import { ProposalBookTabs } from './ProposalBookTabs';
 import { getTextbooks } from '@/lib/api/textbooks';
 import {
   addFavoriteTextbook,
@@ -200,6 +203,11 @@ export default function ProposalEditor() {
   // 9月に新規作成すると冬期になる（URLで指定があればそちらが優先）
   const [season, setSeason] = useState<SeasonType>(qSeason || getPreparingSeason());
   const [year, setYear] = useState(qYear);
+  /**
+   * 新規作成で、この生徒のこの期に既にある提案書。同じテキストの冊は、保存すると新しく作らず
+   * ここに単元を足す（過去問が入ったテンプレを2つ使ったとき、過去問の提案書は1件に集まる）。
+   */
+  const [termProposals, setTermProposals] = useState<ExistingTermProposal[]>([]);
   const [theme, setTheme] = useState('');
   const [notes, setNotes] = useState('');
 
@@ -223,8 +231,6 @@ export default function ProposalEditor() {
   );
   const [templates, setTemplates] = useState<SeasonalCourseListItem[]>([]);
   const [templatesLoading, setTemplatesLoading] = useState(false);
-  /** テンプレ一覧の絞り込み（既定は準備中の季節＋その生徒の学年）。外すと全件 */
-  const [templateFiltered, setTemplateFiltered] = useState(true);
   const [applyingTemplate, setApplyingTemplate] = useState(false);
   const [textbookSearch, setTextbookSearch] = useState('');
   // テキスト選択画面で上位表示するためのお気に入り集合。ユーザー個人ごと（DB保存）
@@ -692,25 +698,16 @@ export default function ProposalEditor() {
 
   /**
    * テンプレート候補を読む。
-   * ★既定は「準備中の季節 ＋ その生徒の学年」。教室のテンプレは本番で1,265件あり、
-   *   全部並べると選べない。ただし0件になりやすいので、外す道を画面側に出している。
+   * ★絞り込み（季節・学年・科目・キーワード）は選ぶ画面（TemplatePickerScreen）の中で行う。
+   *   ここでは教室の全件を1回だけ読み、絞りを変えるたびに取りに行かない。
    * ★単元ゼロのテンプレは出さない（本番の33%が空殻）。選んでも何も入らない。
    */
-  const loadTemplates = async (useFilter: boolean) => {
+  const loadTemplates = async () => {
     if (!studentSchoolId) return;
     setTemplatesLoading(true);
     try {
       const all = await getSeasonalCourses(studentSchoolId);
-      const withUnits = all.filter((c) => c.curriculum_count > 0);
-      const list = useFilter
-        ? withUnits.filter((c) => {
-            if (c.season !== season) return false;
-            const grades = c.target_grades ?? [];
-            // 対象学年が空のテンプレは「学年を問わない」扱いにする（絞りで消さない）
-            return grades.length === 0 || studentGrade == null || grades.includes(studentGrade);
-          })
-        : withUnits;
-      setTemplates(list);
+      setTemplates(all.filter((c) => c.curriculum_count > 0));
     } catch (_e) {
       addToast('テンプレートの読み込みに失敗しました', 'error');
       setTemplates([]);
@@ -1062,6 +1059,37 @@ export default function ProposalEditor() {
   }, [selectionInfo.contiguous, selectionInfo.count]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /** 単元ドラフト → 保存用の入力 */
+  useEffect(() => {
+    if (!isNew || !studentId) return;
+    let cancelled = false;
+    getTermProposals(studentId, season, year)
+      .then((rows) => {
+        if (cancelled) return;
+        setTermProposals(
+          rows.map((r) => ({
+            id: r.id,
+            textbookId: r.textbook_id,
+            status: r.status,
+            theme: r.theme,
+          }))
+        );
+      })
+      // 確認に失敗しても作成は止めない（そのときは従来どおり新しく作ろうとし、重なれば保存で失敗が出る）
+      .catch(() => !cancelled && setTermProposals([]));
+    return () => {
+      cancelled = true;
+    };
+  }, [isNew, studentId, season, year]);
+
+  const existingBooks = useMemo(
+    () =>
+      classifyExistingBooks(
+        books.map((b) => b.textbookId),
+        termProposals
+      ),
+    [books, termProposals]
+  );
+
   const toUnitInputs = (units: UnitDraft[], appliedFallback: number | null): ProposalUnitInput[] =>
     units.map((u) => ({
       curriculum_item_id: u.curriculum_item_id,
@@ -1124,6 +1152,21 @@ export default function ProposalEditor() {
       const outcomes: BookSaveOutcome[] = [];
       for (const entry of booksWithUnits) {
         try {
+          const existing = existingBooks.mergeInto.get(entry.book.textbookId);
+          if (existing) {
+            // ★同じ生徒・期・テキストの提案書は1件しか持てない（DBの一意制約）。
+            //   新しく作らず、既にある提案書に単元を足す。テーマ・状態は先に作ったもののまま。
+            const mergedId = await mergeUnitsIntoProposal(
+              existing.id,
+              toUnitInputs(entry.units, appliedFallback)
+            );
+            outcomes.push({
+              textbookId: entry.book.textbookId,
+              name: entry.label,
+              proposalId: mergedId,
+            });
+            continue;
+          }
           const result = await upsertProposal({
             studentId,
             textbookId: entry.book.textbookId,
@@ -1174,10 +1217,17 @@ export default function ProposalEditor() {
   // 保存できない理由（保存ボタン横に表示してユーザーに知らせる）。
   // 新規作成は冊ごとに判定し、原因の冊は書名を添える。
   const saveBlockers: string[] = isNew
-    ? buildProposalSaveBlockers({
-        theme,
-        books: bookSummary.perBook.map((b) => ({ name: b.name, koma: b.koma })),
-      })
+    ? [
+        ...buildProposalSaveBlockers({
+          theme,
+          books: bookSummary.perBook.map((b) => ({ name: b.name, koma: b.koma })),
+        }),
+        // 公開済みの提案書には、ここから単元を足さない（進行表と同期済みでずれるため）
+        ...existingBooks.blocked.map((e) => {
+          const name = books.find((b) => b.textbookId === e.textbookId);
+          return `「${name ? bookLabel(name) : 'このテキスト'}」はこの期の提案書が公開済みです。公開済みの提案書を開いて、そこで単元を足してください`;
+        }),
+      ]
     : (() => {
         const blockers: string[] = [];
         if (!theme.trim()) blockers.push('テーマを入力してください');
@@ -1549,8 +1599,7 @@ export default function ProposalEditor() {
             onPickTextbook={() => setNewStartMode('textbook')}
             onPickTemplate={() => {
               setNewStartMode('template');
-              setTemplateFiltered(true);
-              void loadTemplates(true);
+              void loadTemplates();
             }}
           />
         ) : (
@@ -1560,13 +1609,8 @@ export default function ProposalEditor() {
             loading={templatesLoading}
             season={season}
             grade={studentGrade}
-            filtered={templateFiltered}
             applying={applyingTemplate}
             onSelect={(courseId) => void handleSelectTemplate(courseId)}
-            onClearFilters={() => {
-              setTemplateFiltered(false);
-              void loadTemplates(false);
-            }}
             onBack={() => setNewStartMode('choose')}
           />
         )}
@@ -1753,7 +1797,12 @@ export default function ProposalEditor() {
                 テキスト（{books.length}/{MAX_TEXTBOOKS}）
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-[11px] text-text-faint">上から順に進めます</span>
+                {/* 並び＝保存する順＝進める順。1冊のときは順番が無いので出さない */}
+                {books.length > 1 && (
+                  <span className="text-[11px] text-text-faint">
+                    左から順に進めます（ドラッグで入れ替え）
+                  </span>
+                )}
                 {books.length < MAX_TEXTBOOKS && (
                   <button
                     type="button"
@@ -1766,63 +1815,39 @@ export default function ProposalEditor() {
                 )}
               </div>
             </div>
-            <div className="flex gap-2 flex-wrap">
-              {books.map((b, i) => {
-                const isActive = selectedTextbookId === b.textbookId;
-                const koma = bookSummary.perBook.find((r) => r.textbookId === b.textbookId)?.koma;
-                return (
-                  // タブ本体と「外す」は別のボタンにする。
-                  // 入れ子のボタンはHTMLとして不正で、キーボードから「外す」に到達できなくなる。
-                  <div
-                    key={b.textbookId}
-                    className={`flex items-center rounded-lg text-sm font-medium transition-[background-color,color] duration-150 ${
-                      isActive
-                        ? 'bg-ink text-text-on-primary'
-                        : 'bg-surface-hover text-text-body hover:bg-border-default'
-                    }`}
-                  >
-                    <button
-                      type="button"
-                      onClick={() => switchBook(b.textbookId)}
-                      aria-pressed={isActive}
-                      className="pl-3 pr-2 py-1.5 rounded-l-lg"
-                    >
-                      <span
-                        className={`mr-1.5 text-[11px] tabular-nums ${
-                          isActive ? 'text-text-on-primary/70' : 'text-text-faint'
-                        }`}
-                      >
-                        {i + 1}冊目
-                      </span>
-                      {bookLabel(b)}
-                      <span
-                        className={`ml-1.5 text-[11px] tabular-nums ${
-                          isActive ? 'text-text-on-primary/70' : 'text-text-muted'
-                        }`}
-                      >
-                        {koma ?? 0}コマ
-                      </span>
-                    </button>
-                    {/* 1冊しか無いときは外すボタンを出さない（外しても作れないため） */}
-                    {books.length > 1 && (
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveBook(b)}
-                        aria-label={`${bookLabel(b)} を提案書から外す`}
-                        title="このテキストを外す"
-                        className={`pr-2.5 pl-1 py-1.5 rounded-r-lg transition-[color] duration-150 ${
-                          isActive
-                            ? 'text-text-on-primary/60 hover:text-text-on-primary'
-                            : 'text-text-faint hover:text-danger'
-                        }`}
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
+            <ProposalBookTabs
+              books={books.map((b) => ({
+                textbookId: b.textbookId,
+                label: bookLabel(b),
+                koma: bookSummary.perBook.find((r) => r.textbookId === b.textbookId)?.koma ?? 0,
+              }))}
+              selectedTextbookId={selectedTextbookId}
+              onSwitch={switchBook}
+              onRemove={(id) => {
+                const book = books.find((b) => b.textbookId === id);
+                if (book) void handleRemoveBook(book);
+              }}
+              onReorder={(ids) =>
+                setBooks((prev) =>
+                  ids
+                    .map((id) => prev.find((b) => b.textbookId === id))
+                    .filter((b): b is ProposalBook => !!b)
+                )
+              }
+            />
+            {existingBooks.mergeInto.size > 0 && (
+              <ul className="mt-2 space-y-1">
+                {books
+                  .filter((b) => existingBooks.mergeInto.has(b.textbookId))
+                  .map((b) => (
+                    <li key={b.textbookId} className="text-[11px] leading-relaxed text-info">
+                      「{bookLabel(b)}」はこの期の提案書がもうあります（
+                      {existingBooks.mergeInto.get(b.textbookId)?.theme || '講習テーマ未設定'}
+                      ）。保存すると、新しく作らずにその提案書へこの単元を足します（今ある単元は残ります）
+                    </li>
+                  ))}
+              </ul>
+            )}
           </section>
         )}
 

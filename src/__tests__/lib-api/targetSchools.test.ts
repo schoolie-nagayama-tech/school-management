@@ -125,6 +125,49 @@ describe('searchHighSchools', () => {
     expect(result[1].id).toBe('a');
   });
 
+  it('★教室の都県の学校を先に返す（都県で絞りはしない）', async () => {
+    const schools = [
+      {
+        id: 't',
+        prefecture: '東京都',
+        school_name: '光丘',
+        course: '',
+        category: '普通科',
+        municipality: '練馬区',
+      },
+      {
+        id: 'k',
+        prefecture: '神奈川県',
+        school_name: '光陵',
+        course: '',
+        category: '普通科',
+        municipality: null,
+      },
+    ];
+    const mockFor = () => {
+      let callCount = 0;
+      mockSupabase.from.mockImplementation(() => {
+        callCount++;
+        if (callCount === 1) return createMockChain(schools);
+        return createMockChain([]);
+      });
+    };
+    const { searchHighSchools } = await import('@/lib/api/targetSchools');
+
+    mockFor();
+    const kanagawa = await searchHighSchools('光', 'kanagawa');
+    expect(kanagawa.map((s) => s.id)).toEqual(['k', 't']);
+
+    mockFor();
+    const tokyo = await searchHighSchools('光', 'tokyo');
+    expect(tokyo.map((s) => s.id)).toEqual(['t', 'k']);
+
+    // 都県が分からない教室は従来どおり東京都が先
+    mockFor();
+    const unknown = await searchHighSchools('光');
+    expect(unknown.map((s) => s.id)).toEqual(['t', 'k']);
+  });
+
   it('空クエリでは検索を実行せず空配列を返す', async () => {
     const { searchHighSchools } = await import('@/lib/api/targetSchools');
     const result = await searchHighSchools('   ');

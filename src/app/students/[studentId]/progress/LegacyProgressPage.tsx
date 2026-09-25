@@ -57,7 +57,7 @@ export default function LegacyProgressPage() {
   const params = useParams();
   const router = useRouter();
   const studentId = params?.studentId as string;
-  const { toasts, removeToast, success, error } = useToast();
+  const { toasts, removeToast, success, error, warning } = useToast();
   const { confirm, ConfirmDialog } = useConfirm();
   const { profile, getSelectedSchoolIds } = useAuth();
 
@@ -684,12 +684,19 @@ export default function LegacyProgressPage() {
   const handleApplyCourse = async () => {
     if (!selectedCourseId || !studentId) return;
     try {
-      await applyCoursesToStudents(selectedCourseId, [studentId], courseApplyMode);
+      const result = await applyCoursesToStudents(selectedCourseId, [studentId], courseApplyMode);
       await fetchStudentTextbooks();
       await fetchProgress();
       setIsApplyCourseModalOpen(false);
       setSelectedCourseId('');
       success('下書きの提案書を作成しました（提案書編集画面で「公開」すると進行表に反映されます）');
+      // 公開済みの提案書には足していない（進行表とずれるため）。飛ばしたことを伝える
+      if (result.skippedPublished.length > 0) {
+        warning(
+          '同じテキストの提案書が公開済みのため、その分は足していません。公開済みの提案書を開いて足してください',
+          8000
+        );
+      }
     } catch (err) {
       console.error('Error applying course:', err);
       error(err instanceof Error ? err.message : 'コースの適用に失敗しました');
