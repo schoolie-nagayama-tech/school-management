@@ -193,8 +193,11 @@ const NOTTA_EMPTY_BULLET =
  * 新しいNottaの型（2026-09-23 に教室長が変更）で「話題が出なかった」ことを表す1件。
  * ★新しい型では、出なかった見出しには「（なし）」を1件だけ書く決まり。
  *   古い型の「確認できませんでした」と同じ扱い（見出しごと記載なしに畳む）。
+ * ★「生徒：（なし）」「受け止め：（なし）」のように頭の語が付いた（なし）も同じ（2026-09-24）。
+ *   Nottaはテンプレートの指示1つにつき1行を書くので、話に出なかった指示が頭の語付きの（なし）で
+ *   残る（本番 9/23 の実物）。畳まないと面談記録カードに「生徒：（なし）」が1件として出ていた。
  */
-const NOTTA_NONE_BULLET = /^[（(]\s*なし\s*[）)][。．.]?$/;
+const NOTTA_NONE_BULLET = /^(?:[^\s（(：:]{1,8}\s*[：:]\s*)?[（(]\s*なし\s*[）)][。．.]?$/;
 
 /**
  * Nottaの要約の見出しとして扱ってよい名前（■・【】が付いていない形で来たときだけ使う）。
@@ -298,6 +301,14 @@ export function parseNottaSummary(content: string): NottaSummary | null {
     // 見出しが始まる前の行は捨てる（メタの残りか、Nottaの前置き）
     if (!current) continue;
     const bullet = trimNottaLine(line.replace(/^[・•\-*]\s*/, ''));
+    // ★知っている見出し名だけの箇条書き（「・印象に残った言葉」）は見出しに戻す（2026-09-24）。
+    //   取り込み時の整形の見出し一覧に「印象に残った言葉」を足す前に取り込んだ記録は、
+    //   見出しが前の節（総合メモ）の箇条書きとして保存されている（本番 9/23 の実物）
+    if ((NOTTA_KNOWN_HEADINGS as readonly string[]).includes(bullet)) {
+      current = { heading: bullet, bullets: [] };
+      sections.push(current);
+      continue;
+    }
     // ★「確認できませんでした」等の箇条書きは1件ずつ落とす（NOTTA_EMPTY_BULLET の注記）。
     //   新しい型の「（なし）」も同じ（NOTTA_NONE_BULLET の注記）
     if (bullet && !NOTTA_EMPTY_BULLET.test(bullet) && !NOTTA_NONE_BULLET.test(bullet)) {
@@ -637,7 +648,9 @@ export function buildTellSections(props: {
     const text = buildHandoverText(latest.content);
     if (text) lines.push(`申し送り: ${text}`);
     // ★前回、本人・保護者が「」で言った言葉。AIには言い換えずに引用させる（extractQuotedWords）
-    for (const word of extractQuotedWords(latest.content)) lines.push(quotedWordFactLine(word));
+    // ★話し手は取り込み時に人が選んだ面談種別で決める（speakerByInterviewType の注記）
+    for (const word of extractQuotedWords(latest.content, latest.interview_type))
+      lines.push(quotedWordFactLine(word));
     sections.push({ key: 'lastInterview', current: lines });
   }
 
@@ -1484,7 +1497,7 @@ function targetSchoolStandardParts(
  *   右の「志望校」の行（数字）と左の「話すこと」（buildTargetSchoolTalkLines）が
  *   **同じこの関数**を通るので、片方だけ差が出て片方は出ない、という食い違いが起きない。
  */
-function targetSchoolDiffs(
+export function targetSchoolDiffs(
   master: TargetSchoolMaster,
   own: OwnNaishinByScale,
   ownHensachi: number | null
@@ -1860,9 +1873,11 @@ const PREVIOUS_REQUEST_HEADING = /(保護者からの要望|要望|次回への�
  *   「推薦入試の結果や志望校の倍率に対する不安が強く、早く安心したい気持ちが見られます。」が
  *   「報告 ―― 前回の要望『…気持ちが見られます。』への対応を伝える」になっていた。
  *   ②の読み取り（AI）には申し送りとして全文が渡るので、所見そのものは失われない。
+ * ★常体（〜様子が見られる。）も同じ（2026-09-24）。本番の古い型の実物で
+ *   「報告 ―― 前回の要望「…様子が見られる。」への対応を伝える」が立っていた。
  */
 const PREVIOUS_REQUEST_COMMENTARY =
-  /^(要望の強さ|要望は|要望としては)|というより|レベルです|(うかがえます|伺えます|見られます|と思われます|と考えられます)。?$/;
+  /^(要望の強さ|要望は|要望としては)|というより|レベルです|(うかがえます|伺えます|見られます|と思われます|と考えられます|うかがえる|伺える|見られる|と思われる|と考えられる)。?$/;
 
 /** 'YYYY-MM-DD' を 'M/D' にする（狭い枠に出す事実の行では年を落とす） */
 export function fmtMonthDay(dateStr: string): string {
@@ -1956,8 +1971,10 @@ export function previousItemFallbackKind(
  * 書いた人の見立てを頭の語で分けて書く決まり。
  * ★面談記録カードにはそのまま出すが、②の「前回の要望・方針」には拾わない
  *  （要望でも約束でもないものに「対応を伝える」「その後どうですか」が立つと意味が通らない）。
+ * ★古い型の「保護者の感情面：…」「保護者・生徒の受け止め：…」も同じ見立ての行（2026-09-24）。
+ *   本番の実物で「報告 ―― 前回の要望「保護者の感情面：…」への対応を伝える」が立っていた。
  */
-const NOTTA_JUDGEMENT_PREFIX = /^(感情|受け止め)\s*[：:]/;
+const NOTTA_JUDGEMENT_PREFIX = /^(?:保護者・生徒の|保護者の|生徒の)?(感情|受け止め)面?\s*[：:]/;
 
 /**
  * 新しいNottaの型の「保護者からの要望」の末尾の印（【相談】【要望】）。
@@ -1965,11 +1982,15 @@ const NOTTA_JUDGEMENT_PREFIX = /^(感情|受け止め)\s*[：:]/;
  */
 const NOTTA_REQUEST_TAG = /\s*【(相談|要望)】\s*$/;
 
-/** 新しいNottaの型の「今後の方針」の頭の語（誰が動くか） */
+/**
+ * 新しいNottaの型の「今後の方針」の頭の語（誰が動くか）。
+ * ★古い型の「【塾】テキストを発注する」「【保護者】カードを登録する」も同じ意味で読む（2026-09-24）。
+ *   読まないと「【塾】…」に保護者へ「その後どうですか」と聞く行が立っていた（本番の実物）。
+ */
 const NOTTA_ACTOR_PREFIX: readonly { re: RegExp; actor: FollowUpActor }[] = [
-  { re: /^塾\s*[：:]\s*/, actor: 'juku' },
-  { re: /^家庭\s*[：:]\s*/, actor: 'home' },
-  { re: /^生徒\s*[：:]\s*/, actor: 'student' },
+  { re: /^(?:塾\s*[：:]|【塾】)\s*/, actor: 'juku' },
+  { re: /^(?:家庭\s*[：:]|【(?:家庭|保護者)】)\s*/, actor: 'home' },
+  { re: /^(?:生徒\s*[：:]|【生徒】)\s*/, actor: 'student' },
   { re: /^次回確認\s*[：:]\s*/, actor: 'nextCheck' },
 ];
 
@@ -2008,7 +2029,33 @@ export function parsePreviousBullet(bullet: string): PreviousBullet {
       break;
     }
   }
-  return { text, actor, tag, judgement: false };
+  // ★「話者 2：」の頭の語は誰が動くかにならない（話者番号は生徒・保護者・塾のどれか分からない）。
+  //   外すだけで actor は付けず、AIが使えない日は語尾の当て推量（SCHOOL_SIDE_ACTION）に任せる
+  if (!actor) text = text.replace(NOTTA_SPEAKER_NUMBER_PREFIX, '').trim();
+  return { text: stripSpeakerNumbers(text), actor, tag, judgement: false };
+}
+
+/**
+ * Nottaの話者番号（「話者 2」「話者１」）。
+ * ★Nottaは声を聞き分けて番号を振るだけで、誰の声かは分からない。本番では「話者 1」が
+ *   教室長本人のことが多かった。テンプレートで「生徒は名前で書く」としていた頃は、名前を
+ *   知らないNottaが代わりに「話者 2は…」「話者 2：…」と書いていた（2026-09-23 の実物）。
+ *   台本に「前回の「話者 2は…」はその後どうですか」と出すと読めないので、②の本文からは外す。
+ * ★面談記録カード（parseNottaSummary の表示）では外さない。記録そのものとして残す。
+ */
+const NOTTA_SPEAKER_NUMBER_PREFIX = /^話者\s*[0-9０-９]+\s*[：:]\s*/;
+const NOTTA_SPEAKER_NUMBER = /話者\s*[0-9０-９]+/;
+
+/**
+ * 本文中の話者番号を外す。「話者 2は国立大学を…」→「国立大学を…」、
+ * 「生徒（話者 4）が…」→「生徒が…」。★名前や「本人」に置き換えない（誰の声か分からないため）。
+ */
+function stripSpeakerNumbers(text: string): string {
+  return text
+    .replace(/[（(]\s*話者\s*[0-9０-９]+\s*[）)]/g, '')
+    .replace(/話者\s*[0-9０-９]+\s*(?:は|が|も)[、，]?\s*/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
 /** 左（話すこと）: 「前回の『◯◯』はその後どうですか」 */
@@ -2072,6 +2119,9 @@ export function buildPreviousCommitmentLines(
         if (parsedBullet.judgement) continue;
         const text = parsedBullet.text;
         if (!text) continue;
+        // ★「次回確認事項：」「合意した対応・変更点：」のような小見出しだけの行は中身が無い
+        //  （古い型の実物。「前回の「次回確認事項：」はその後どうですか」が立っていた）
+        if (/[：:]$/.test(text)) continue;
         // 要望そのものではなく要望への論評（PREVIOUS_REQUEST_COMMENTARY の注記）
         if (PREVIOUS_REQUEST_COMMENTARY.test(text)) continue;
         requests.push(text);
@@ -2168,19 +2218,75 @@ const SPEAKER_PARENT = /(保護者|お母様|お母さん|お父様|お父さん
 /** 新しい型の「印象に残った言葉」の末尾の話し手の印（（生徒）（保護者）など） */
 const QUOTE_SPEAKER_LABEL = /[（(]\s*([^（）()]{1,8})\s*[）)]\s*$/;
 
-/** 話し手の語から生徒・保護者を決める（どちらでもなければ null） */
-function speakerOfWord(word: string): QuotedWord['speaker'] {
+/**
+ * 塾側を指す語。★「塾からは「最初にしては良い」と伝えた」のような塾の発言を、
+ * 「前回の面談で…という言葉が出ていました」と家庭の言葉のように読み上げないため（2026-09-24）。
+ */
+// ★「塾」単独では当てない（「生徒は塾で「頑張ります」と」の生徒の言葉まで落とすため）。
+//   話し手として書かれる形（塾から・塾側・教室長・先生…）だけにする
+const SPEAKER_JUKU = /(塾から|塾側|塾は|教室から|教室側|教室長|先生|講師)/g;
+
+/** 話し手の語から生徒・保護者・塾を決める（どれでもなければ null） */
+function speakerOfWord(word: string): QuotedWord['speaker'] | 'juku' {
   if (/^(生徒|本人|お子さん|お子様)$/.test(word)) return '生徒';
   if (/^(保護者|お母様|お母さん|お父様|お父さん|母|父)$/.test(word)) return '保護者';
+  if (/^(塾|教室|先生|講師|教室長)$/.test(word)) return 'juku';
   return null;
 }
 
-/** 正規表現で最後に当たった位置（無ければ -1） */
-function lastMatchIndex(re: RegExp, text: string): number {
-  let last = -1;
-  re.lastIndex = 0;
-  for (let m = re.exec(text); m; m = re.exec(text)) last = m.index;
-  return last;
+/**
+ * 面談種別から話し手を決める（2026-09-24・教室長と決めた）。
+ *
+ * ★Nottaは話し手が生徒か保護者か（塾か家庭かさえ）を聞き分けられない。要約に付く（生徒）（保護者）や
+ *   「生徒は「…」と」は、Nottaが中身から推し量ったもので当てにならない。
+ *   一方、面談種別は取り込むときに人が選んでいる。生徒面談なら塾以外の話し手は生徒しかいない。
+ * - 生徒面談: 生徒。ただし本文が保護者の言葉だと言っていれば食い違うので null（決めつけない）
+ * - それ以外（保護者面談・電話・その他…）: null。保護者面談は三者面談のこともあり、生徒の言葉が混ざる
+ * - 種別を渡さない呼び出し（種別が分からない本文）は、本文からの推し量りをそのまま使う（従来どおり）
+ */
+function speakerByInterviewType(
+  hinted: QuotedWord['speaker'],
+  interviewType: string | undefined,
+  /**
+   * 話し手の書かれていない言葉を家庭の言葉とみなしてよいか。
+   * ★新しい型の「印象に残った言葉」は塾の言葉を書かない決まりなので true。
+   *   古い型の文中の「」は、話し手の語が無ければ塾の言葉のこともある
+   *  （「ちょっとずつやろう」という方針が毎回確認されている…の実物）ので false。
+   */
+  unlabeledIsFamily: boolean
+): QuotedWord['speaker'] {
+  if (interviewType === undefined) return hinted;
+  if (interviewType !== 'student_interview') return null;
+  if (hinted === '保護者') return null;
+  if (hinted === null && !unlabeledIsFamily) return null;
+  return '生徒';
+}
+
+/**
+ * 古い型で、「」より前の同じ文から話し手を決める。
+ * ★主語（「保護者は」「お母様から」「塾からは」）があればそれを採る。無ければ「」にいちばん近い語。
+ *   いちばん近い語だけで決めると「保護者は生徒の現状に対して危機感を共有しており、「本当やばいな」」が
+ *   生徒の言葉になっていた（2026-09-24・本番の実物）。
+ */
+function speakerOfSentence(sentence: string): QuotedWord['speaker'] | 'juku' {
+  const kinds = [
+    { re: SPEAKER_STUDENT, kind: '生徒' as const },
+    { re: SPEAKER_PARENT, kind: '保護者' as const },
+    { re: SPEAKER_JUKU, kind: 'juku' as const },
+  ];
+  let subject: { at: number; kind: QuotedWord['speaker'] | 'juku' } | null = null;
+  let nearest: { at: number; kind: QuotedWord['speaker'] | 'juku' } | null = null;
+  for (const { re, kind } of kinds) {
+    re.lastIndex = 0;
+    for (let m = re.exec(sentence); m; m = re.exec(sentence)) {
+      const end = m.index + m[0].length;
+      // 塾から・塾は のように語そのものが助詞まで含むものは、それ自体を主語とみなす
+      const isSubject = /[はら]$/.test(m[0]) || /^(?:本人)?(は|が|から)/.test(sentence.slice(end));
+      if (isSubject && (!subject || m.index > subject.at)) subject = { at: m.index, kind };
+      if (!nearest || m.index > nearest.at) nearest = { at: m.index, kind };
+    }
+  }
+  return (subject ?? nearest)?.kind ?? null;
 }
 
 /**
@@ -2192,7 +2298,8 @@ function lastMatchIndex(re: RegExp, text: string): number {
 function looksSpoken(quote: string, after: string): boolean {
   // ★「最初にしては良い」「伸びしろがある」と… のように「」が続くときは、続きの「」を飛ばして
   //   「と」を見る（小川 華佳さんの実物。先頭の「」だけ取りこぼしていた）
-  if (after.replace(/^(?:[、・]?「[^「」]*」)+/, '').startsWith('と')) return true;
+  // ★「として」は発言ではない（「「精神的支柱」として肯定的に捉えて」の実物・2026-09-24）
+  if (/^と(?!して)/.test(after.replace(/^(?:[、・]?「[^「」]*」)+/, ''))) return true;
   return /(ます|です|たい|ない|だ|よ|ね|な|か|[。！？!?])$/.test(quote);
 }
 
@@ -2207,8 +2314,14 @@ function looksSpoken(quote: string, after: string): boolean {
  * - 3字未満・60字超・見出しと同じ語・重複は拾わない。
  * - 「感情：」「受け止め：」の見立ての行からは拾わない（本人の言葉ではない）。
  * - Nottaとして読めない本文（手入力の短い記録）は、メタ行を落とした本文から同じ規則で拾う。
+ * - ★塾側の言葉は拾わない（2026-09-24）。新しい型の（塾）（先生）の印、古い型で「」より前に
+ *   いちばん近い語が塾から・先生…のもの、「話者 1：「…」」のように話者番号で書かれたもの。
+ *   話者番号は誰の声か分からず、本番では「話者 1」が教室長本人のことが多かった
+ *  （旧型の重要発言メモ「話者 1：「提出物出せよ」」）。家庭の言葉として読み上げるより、出さないほうがよい。
+ * - ★interviewType（取り込み時に人が選んだ面談種別）を渡すと、話し手はそれで決める
+ *  （speakerByInterviewType の注記）。本文の（生徒）（保護者）は食い違いの確認にだけ使う。
  */
-export function extractQuotedWords(content: string): QuotedWord[] {
+export function extractQuotedWords(content: string, interviewType?: string): QuotedWord[] {
   const parsed = parseNottaSummary(content);
   const out: QuotedWord[] = [];
   const headings = new Set<string>([
@@ -2216,27 +2329,36 @@ export function extractQuotedWords(content: string): QuotedWord[] {
     ...(parsed?.omitted ?? []),
   ]);
 
-  const push = (quoteRaw: string, speaker: QuotedWord['speaker']) => {
+  const push = (
+    quoteRaw: string,
+    hinted: QuotedWord['speaker'] | 'juku',
+    unlabeledIsFamily: boolean
+  ) => {
     if (out.length >= MAX_QUOTED_WORDS) return;
+    // 塾側の言葉は家庭の言葉として読み上げない（この関数の注記）
+    if (hinted === 'juku') return;
     const quote = quoteRaw.replace(/\s+/g, ' ').trim();
     if (quote.length < MIN_QUOTE_LENGTH || quote.length > MAX_QUOTE_LENGTH) return;
     if (headings.has(quote)) return;
     if (out.some((q) => q.quote === quote)) return;
-    out.push({ quote, speaker });
+    out.push({ quote, speaker: speakerByInterviewType(hinted, interviewType, unlabeledIsFamily) });
   };
 
   // --- 新しい型：「印象に残った言葉」の節 ---
   const impressive = '印象に残った言葉';
   if (parsed && headings.has(impressive)) {
     const section = parsed.sections.find((s) => s.heading === impressive);
-    for (const bullet of section?.bullets ?? []) {
+    for (const raw of section?.bullets ?? []) {
+      // 話者番号で書かれた言葉は誰の声か分からない（塾側のこともある）ので拾わない
+      if (NOTTA_SPEAKER_NUMBER.test(raw)) continue;
+      const bullet = raw.trim();
       const label = bullet.match(QUOTE_SPEAKER_LABEL);
       const speaker = label ? speakerOfWord(label[1].trim()) : null;
-      const body = label ? bullet.slice(0, label.index).trim() : bullet.trim();
+      const body = label ? bullet.slice(0, label.index).trim() : bullet;
       const quoted = Array.from(body.matchAll(/「([^「」]+)」/g)).map((m) => m[1]);
       // 「」で囲んでいない書き方（頑張ります（生徒））も言葉として拾う
-      if (quoted.length === 0) push(body, speaker);
-      for (const q of quoted) push(q, speaker);
+      if (quoted.length === 0) push(body, speaker, true);
+      for (const q of quoted) push(q, speaker, true);
     }
     return out;
   }
@@ -2259,12 +2381,16 @@ export function extractQuotedWords(content: string): QuotedWord[] {
         before.lastIndexOf('？'),
         before.lastIndexOf('\n')
       );
-      const sentence = before.slice(sentenceStart + 1);
-      const s = lastMatchIndex(SPEAKER_STUDENT, sentence);
-      const p = lastMatchIndex(SPEAKER_PARENT, sentence);
-      const speaker: QuotedWord['speaker'] =
-        s === -1 && p === -1 ? null : s > p ? '生徒' : '保護者';
-      push(m[1], speaker);
+      // ★「保護者（話者 5）は「…」」の括弧書きは話し手の語の添え書きなので外して読む。
+      //   括弧でなく話者番号そのものが話し手（「話者 1：「…」」）なら誰の声か分からない（この関数の注記）
+      const sentence = before
+        .slice(sentenceStart + 1)
+        .replace(/[（(]\s*話者\s*[0-9０-９]+\s*[）)]/g, '');
+      if (NOTTA_SPEAKER_NUMBER.test(sentence)) continue;
+      // ★「「…」という外部からの指摘」のように、後ろで別の人の言葉だと言っているものは拾わない
+      //  （「接客・まとめる仕事が向いている」の実物。前の「生徒は」から生徒の言葉にしていた）
+      if (/^という[^。「」]{0,10}からの/.test(after)) continue;
+      push(m[1], speakerOfSentence(sentence), false);
     }
   }
   return out;

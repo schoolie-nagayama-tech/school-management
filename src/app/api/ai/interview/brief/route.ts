@@ -24,6 +24,7 @@ import {
   resolveInterviewBriefModelKey,
   MAX_CURRENT_LINE_LENGTH,
   type BriefEpisode,
+  type BriefStudyTip,
   type BriefFollowUp,
   type BriefSectionInput,
   type BriefSectionKey,
@@ -82,6 +83,8 @@ interface BriefResponse {
    * （parseBriefResult が番号で引く）
    */
   episodes: BriefEpisode[];
+  /** ④勉強の仕方の引き出しから選んだもの（id と理由）。中身は画面が studyTips.ts から出す */
+  studyTips: BriefStudyTip[];
   /** AIを呼べなかった・読めなかった。故障側（現状の行は返しているので画面は成立する） */
   degraded: boolean;
   /** この教室ではAIに送らない設定。故障ではなく意図した停止 */
@@ -276,6 +279,7 @@ export async function POST(request: NextRequest) {
     bridge: '',
     openers: {},
     episodes: [],
+    studyTips: [],
     degraded: false,
     disabled: false,
     model,
@@ -467,6 +471,7 @@ export async function POST(request: NextRequest) {
       bridge: parsed.bridge,
       openers: parsed.openers,
       episodes: parsed.episodes,
+      studyTips: parsed.studyTips,
       degraded: nothing,
       disabled: false,
       model,

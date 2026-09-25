@@ -31,6 +31,7 @@
  */
 
 import { isOwnerOrAbove } from '@/lib/utils/roles';
+import { STUDY_TIPS, studyTipById } from '@/lib/interview/studyTips';
 
 /** セクション（固定・この順）。key はAIとの突き合わせキー、label は画面の見出し */
 export const BRIEF_SECTIONS = [
@@ -108,6 +109,16 @@ export function isOpenerKey(value: unknown): value is OpenerKey {
  *   日付・講師はその行からシステムが取り出す（parseBriefResult）。
  *   日付の1字違いは面談の場で誰も気づけない、という数字の決まりと同じ理由。
  */
+/**
+ * 「勉強の仕方」の引き出しから選んだ1件（④現状の確認）。
+ * ★AIは中身を書かない。studyTips.ts の id で選び、選んだ理由を1文書くだけ。
+ */
+export interface BriefStudyTip {
+  id: string;
+  /** 選んだ理由（数字なし）。「挑戦校まで偏差値が少し足りず、失点は数学に多い」など */
+  reason: string;
+}
+
 export interface BriefEpisode {
   /** その引継ぎの授業日（'M/D'）。システムが引継ぎの行から取り出したもの */
   date: string;
@@ -140,6 +151,8 @@ export interface BriefResult {
   openers: Partial<Record<OpenerKey, string>>;
   /** 引継ぎから拾った場面。最大 MAX_EPISODES 件。lessons を渡していなければ常に空 */
   episodes: BriefEpisode[];
+  /** 勉強の仕方の引き出しから選んだもの。最大 MAX_STUDY_TIPS 件 */
+  studyTips: BriefStudyTip[];
 }
 
 /**
@@ -173,6 +186,10 @@ export const MAX_EPISODE_LENGTH = 70;
  *   具体的な瞬間を2つ話せれば「見てくれている」は十分伝わる。
  */
 export const MAX_EPISODES = 2;
+/** 勉強の仕方を選ぶ数の上限。★話せるのは1〜2個。多いと何をすればいいか伝わらない */
+export const MAX_STUDY_TIPS = 2;
+/** 勉強の仕方を選んだ理由の上限 */
+export const MAX_STUDY_TIP_REASON_LENGTH = 60;
 /** AIへ渡す約束・要望の件数の上限（MAX_PREVIOUS_PROMISES ＋ MAX_PREVIOUS_REQUESTS ぶん） */
 export const MAX_FOLLOW_UP_ITEMS = 10;
 /**
@@ -594,6 +611,12 @@ export function briefSystemPrompt(): string {
     '  「英語で、分からない文法を自分から質問してきたそうです」の形で書く。',
     '- 引継ぎに具体的な場面が無ければ空配列にする。こじつけない。',
     '',
+    '■ studyTips（勉強の仕方＝教室長の引き出しから選ぶ）',
+    '- 下の一覧から、この生徒にいま話すと良いものを id で選ぶ。中身は書かない（画面が一覧から出す）。',
+    `- 多くても${MAX_STUDY_TIPS}件。reason に選んだ理由を ${MAX_STUDY_TIP_REASON_LENGTH}字まで（数字は書かない）。`,
+    '- 理由は【現状】の材料（成績の動き・引継ぎ・宿題）から言えることだけ。材料から言えなければ空配列にする。',
+    ...STUDY_TIPS.map((t) => `  - ${t.id}：${t.title}（${t.who}）`),
+    '',
     '■ 「」の中の言葉',
     '- 【現状】の「前回の言葉:」の行など、「」で囲まれた言葉は本人・保護者が実際に言った言葉です。',
     '  触れるときは言い換えずにそのまま引用する（要約しない）。',
@@ -614,7 +637,8 @@ export function briefSystemPrompt(): string {
       '単語・文法の復習に寄せてある。ここを説明すればコマ数の根拠になる。",' +
       '"openers":{"intro":"今日はお忙しいところありがとうございます。律さんの最近の様子からお話しさせてください",' +
       '"juku":"塾では毎回、自分から机に向かってくれていますよ"},' +
-      '"episodes":[{"lesson":3,"text":"英語で、分からない文法を自分から質問してきたそうです"}]}',
+      '"episodes":[{"lesson":3,"text":"英語で、分からない文法を自分から質問してきたそうです"}],' +
+      '"studyTips":[{"id":"recall","reason":"英語の失点は単語の抜けで、覚えたつもりで抜けている"}]}',
   ].join('\n');
 }
 
@@ -729,6 +753,7 @@ export function parseBriefResult(
     bridge: '',
     openers: {},
     episodes: [],
+    studyTips: [],
   };
   if (!raw || typeof raw !== 'object') return empty;
 
@@ -739,6 +764,7 @@ export function parseBriefResult(
     bridge?: unknown;
     openers?: unknown;
     episodes?: unknown;
+    studyTips?: unknown;
   };
 
   // 渡した key ごとに1件だけ拾う（同じ key を2回返してきたら先に来たほうを採る）
@@ -855,5 +881,23 @@ export function parseBriefResult(
     episodes.push({ date: head.date, teacher: head.teacher, text });
   }
 
-  return { sections, followUps, thread, bridge, openers, episodes };
+  /**
+   * 勉強の仕方。★一覧に無い id・同じ id の2件目は捨てる。理由が長い・数字入りなら理由だけ落とす
+   *  （選んだこと自体は使える。中身は一覧の文なので、理由が無くても誤りにはならない）。
+   */
+  const studyTips: BriefStudyTip[] = [];
+  const tipRows = Array.isArray(obj.studyTips) ? (obj.studyTips as unknown[]) : [];
+  for (const row of tipRows) {
+    if (studyTips.length >= MAX_STUDY_TIPS) break;
+    if (!row || typeof row !== 'object') continue;
+    const r = row as { id?: unknown; reason?: unknown };
+    const id = typeof r.id === 'string' ? r.id.trim() : '';
+    if (!studyTipById(id) || studyTips.some((t) => t.id === id)) continue;
+    const reasonRaw = typeof r.reason === 'string' ? r.reason.trim() : '';
+    const reason =
+      reasonRaw.length > MAX_STUDY_TIP_REASON_LENGTH || containsDigit(reasonRaw) ? '' : reasonRaw;
+    studyTips.push({ id, reason });
+  }
+
+  return { sections, followUps, thread, bridge, openers, episodes, studyTips };
 }

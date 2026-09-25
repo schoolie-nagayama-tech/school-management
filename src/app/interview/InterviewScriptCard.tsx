@@ -65,6 +65,7 @@ import {
   SELECTABLE_MODEL_KEY_LABELS as MODEL_LABELS,
   followUpItemKey,
   type BriefEpisode,
+  type BriefStudyTip,
   type BriefFollowUp,
   type BriefSectionKey,
   type BriefSign,
@@ -78,6 +79,8 @@ import type { SeasonalProposalSeasonSummary } from '@/lib/api/seasonalProposalSu
 import type { ScheduleRegularPattern } from '@/types/schedule';
 import type { StudentExamGoalWithType } from '@/lib/api/progress';
 import type { TargetSchoolRow } from '@/lib/api/targetSchools';
+import { StudyTipCards, TargetProposalTable, useTargetProposals } from './TargetProposals';
+import { TargetSchoolMap } from './TargetSchoolMap';
 import type { MockSchoolRecord } from '@/lib/api/mockTargetSchools';
 import { SEASON_LABELS } from '@/types/database';
 import type { TextbookProgressData } from './ProgressPanel';
@@ -162,6 +165,8 @@ export interface ScriptView {
   openers: Partial<Record<OpenerKey, string>>;
   /** 引継ぎから拾った場面（AI）。日付・講師はサーバーが引継ぎの行から付けたもの */
   episodes: BriefEpisode[];
+  /** ④勉強の仕方（AIが引き出しから選んだ id と理由）。AIが使えない日は空 */
+  studyTips: BriefStudyTip[];
 }
 
 interface ScriptResponse extends ScriptView {
@@ -590,11 +595,16 @@ interface BlockParts {
   opener?: string;
   talk: ReactNode[];
   ask: ReactNode[];
+  /**
+   * 右の列で「聞くこと」と「根拠」の間に置くもの（④の地図）。
+   * ★聞くことの行に混ぜない（チェックの行ではない）。根拠と違って畳まない（面談中に指して見せる）
+   */
+  aside?: ReactNode;
   facts: ReactNode[];
 }
 
 function isEmptyBlock(b: BlockParts): boolean {
-  return !b.opener && b.talk.length === 0 && b.ask.length === 0 && b.facts.length === 0;
+  return !b.opener && b.talk.length === 0 && b.ask.length === 0 && !b.aside && b.facts.length === 0;
 }
 
 export function InterviewScriptCard({
@@ -667,8 +677,16 @@ export function InterviewScriptCard({
     };
   }, [student.school_id]);
 
+  /**
+   * ④「志望校と提案」。★AIを通さない（めやすとの差・距離はシステムが計算する）ので、
+   *   AIが使えない日にも出る。表の行を押すと右の地図がその学校に寄る。
+   */
+  const proposals = useTargetProposals(student.school_id, targetSchools, assessments);
+  const [selectedProposalId, setSelectedProposalId] = useState<string | null>(null);
+
   // 生徒を切り替えたら結果を捨てる（前の生徒の内容が残ると読み違える）
   useEffect(() => {
+    setSelectedProposalId(null);
     setView(null);
     setMadeAt(null);
     setMessage(null);
@@ -755,7 +773,8 @@ export function InterviewScriptCard({
   // ★AIを通さない（システムが拾う）ので、AIが使えない日にも出る
   const quotedWords = useMemo(() => {
     const latest = interviews.find((i) => i.interview_type !== 'task');
-    return latest ? extractQuotedWords(latest.content) : [];
+    // ★話し手は面談種別で決める（Nottaは生徒か保護者かを聞き分けられない）
+    return latest ? extractQuotedWords(latest.content, latest.interview_type) : [];
   }, [interviews]);
   // ④現状の確認「成績が無いときに黙らない」。小学生には出さない
   // ★申込から分かっていること（テスト対策の結果を聞く・模試を申し込んでいる）は重ねて聞かない
@@ -951,6 +970,7 @@ export function InterviewScriptCard({
         // ★ひとこと・場面も同じ。AIが使えない日に決まり文句で埋めない（ScriptView の注記）
         openers: json.degraded ? {} : (json.openers ?? {}),
         episodes: json.degraded ? [] : (json.episodes ?? []),
+        studyTips: json.degraded ? [] : (json.studyTips ?? []),
       });
       setMadeAt(new Date().toISOString().slice(0, 10));
       setRated(false);
@@ -1159,9 +1179,24 @@ export function InterviewScriptCard({
               .map(({ line, i }) => (
                 <SayLine key={`status:target-school-talk:${i}`} text={line.text} />
               )),
+            // 志望校と提案（1校1行の表）。地図は右の列（aside）
+            <TargetProposalTable
+              key="status:proposals"
+              state={proposals}
+              selectedId={selectedProposalId}
+              onSelect={setSelectedProposalId}
+            />,
+            <StudyTipCards key="status:study-tips" tips={view?.studyTips ?? []} />,
             ...aiSeenLines('status'),
             ...showLines,
           ],
+          aside: (
+            <TargetSchoolMap
+              rows={proposals.rows}
+              origin={proposals.origin}
+              selectedId={selectedProposalId}
+            />
+          ),
           ask: [
             ...targetSchoolTalk
               .map((line, i) => ({ line, i }))
@@ -1422,7 +1457,7 @@ export function InterviewScriptCard({
    * ★lg 未満は従来どおり縦に積む（左の中身→聞くこと→根拠）。
    */
   const renderBlock = (id: string, parts: BlockParts) => {
-    const hasRight = parts.ask.length > 0 || parts.facts.length > 0;
+    const hasRight = parts.ask.length > 0 || Boolean(parts.aside) || parts.facts.length > 0;
     const left = (
       <div className="flex min-w-0 flex-col gap-1.5" data-script-col="talk">
         {parts.opener && <OpenerLine text={parts.opener} />}
@@ -1440,6 +1475,7 @@ export function InterviewScriptCard({
               {parts.ask}
             </div>
           )}
+          {parts.aside}
           {parts.facts.length > 0 && (
             <FactsDisclosure
               count={parts.facts.length}

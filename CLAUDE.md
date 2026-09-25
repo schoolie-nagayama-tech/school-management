@@ -62,6 +62,8 @@ npm run lint
 
 - ★**ローカルで `npx tsc --noEmit` を実行しない。** メモリ不足で落ちる。
   型チェックはCI（`.github/workflows/ci.yml`）に一本化してある。
+- `git push` の前に Format・Lint・テストが手元で走る（`.githooks/pre-push`）。CIは分数節約のため
+  PRのときだけ・型とテストとビルドだけ。分担は `docs/testing.md` §3。
 - テストの方針は `docs/testing.md`。
 
 ## 言語の罠
