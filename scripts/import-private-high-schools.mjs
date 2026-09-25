@@ -4,6 +4,7 @@
 // 使い方:
 //   node scripts/import-private-high-schools.mjs          # 下見（書き込まない）。検査結果と突き合わせの漏れを出す
 //   node scripts/import-private-high-schools.mjs --go     # 実際に入れる
+//   node scripts/import-private-high-schools.mjs --go --verified  # 紙と突き合わせ済みとして入れる
 //
 // 正典: docs/private-high-school-master.md
 //
@@ -13,7 +14,10 @@
 //   hensachi-aliases.json … 偏差値表の「学校名(コース)」→ 基準表の学校・コースの対応（表記が違うものだけ）
 //   meta.json        … 出典名・年度・ラベル
 //
-// ★写真からAIが書き起こしたもの。verified_at は入れない（人が紙と突き合わせてから別に付ける）。
+// ★写真からAIが書き起こしたもの。verified_at は --verified を付けたときだけ入れる。
+//   人が紙の原本と突き合わせて「間違いなし」と言った版にだけ付ける（AI同士の読み取り一致では付けない）。
+//   ★--verified でも、判読できなかった数値を含む基準（要確認に倒したもの）には付けない。
+//   数値そのものが分かっていないのに「確認済み」と表示すると、読めていない基準を人が確かめたように見える。
 // ★基準は版を積む。同じ (source, source_year) の基準は、この取込で入れ直す（全部消してから入れる）。
 //   別の年度の基準は消さない（過去の面談の判定を後から再現できるように）。
 // ★1000行を超える書き込み・読み込みは分けて行う（PostgREST の既定の上限で静かに切れるため）。
@@ -27,6 +31,8 @@ const ENV = existsSync('.env.local') ? '.env.local' : resolve(process.cwd(), '..
 config({ path: ENV });
 
 const GO = process.argv.includes('--go');
+const VERIFIED = process.argv.includes('--verified');
+const VERIFIED_AT = VERIFIED ? new Date().toISOString() : null;
 const DIR = 'docs/data/private';
 const meta = JSON.parse(readFileSync(`${DIR}/meta.json`, 'utf8'));
 
@@ -101,6 +107,12 @@ function sanitizeClause(c) {
     return { t: 'manual', text: `数値が判読できない条件（冊子で確認）: ${JSON.stringify(c)}` };
   }
   return c;
+}
+
+/** 判読できなかった数値（min / grade が null）を含む基準か */
+function hasUnreadable(r) {
+  const clauses = [...(r.any ?? []).flat(), ...(r.gates ?? [])];
+  return clauses.some((c) => sanitizeClause(c) !== c);
 }
 
 /** 加点の点数が冊子に無い項目（points=null）は 0 点にして、ラベルに印を付ける（見込みに数えない） */
@@ -224,6 +236,7 @@ for (const f of criteriaFiles) {
               .join('\n'),
             uncertain: Boolean(r.uncertain),
             sort_order: si * 100 + ri,
+            verified_at: hasUnreadable(r) ? null : VERIFIED_AT,
           },
         });
       }
@@ -330,7 +343,7 @@ for (const f of hensachiFiles) {
           hensachi: e.hensachi,
           gender: sheet.gender === '男子' || sheet.gender === '女子' ? sheet.gender : null,
           note: e.uncertain ? `読み取りに自信なし: ${e.raw}` : null,
-          verified_at: null,
+          verified_at: VERIFIED_AT,
         },
       });
     }
@@ -453,6 +466,9 @@ for (const part of chunks(stds)) {
   }
 }
 console.log(`high_school_standards upsert: ${stds.length}行`);
+const unread = rules.filter((r) => !r.verified_at).length;
 console.log(
-  '完了。★基準・偏差値とも未照合（verified_at=NULL）。紙と突き合わせたら verified_at を入れる。'
+  VERIFIED
+    ? `完了。verified_at を入れた（人が紙と突き合わせ済み）。判読できない数値を含む基準 ${unread}行は未確認のまま。`
+    : '完了。★基準・偏差値とも未照合（verified_at=NULL）。紙と突き合わせたら --verified で入れ直す。'
 );
