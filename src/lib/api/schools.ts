@@ -114,6 +114,10 @@ export async function updateSchool(
     slack_mention_id?: string | null;
     /** 面談予約URL（Googleカレンダー）。空文字ではなく null で「未設定」を表す。 */
     meeting_booking_url?: string | null;
+    /** 最寄り駅（「駅」なし）と位置。高校までの通学時間の起点。null で「未設定」。 */
+    nearest_station?: string | null;
+    nearest_station_lat?: number | null;
+    nearest_station_lon?: number | null;
   }
 ): Promise<School> {
   const { data: school, error } = await supabase
