@@ -74,29 +74,37 @@ export async function getProposalSchools(
   prefecture: string | null,
   registeredIds: readonly string[]
 ): Promise<ProposalSchool[]> {
-  const [areaRes, registeredRes] = await Promise.all([
-    prefecture
-      ? supabase.from('high_schools').select(SELECT).eq('prefecture', prefecture).limit(1000)
-      : Promise.resolve({ data: [], error: null }),
-    registeredIds.length > 0
-      ? supabase
-          .from('high_schools')
-          .select(SELECT)
-          .in('id', [...registeredIds])
-      : Promise.resolve({ data: [], error: null }),
+  const [area, registered] = await Promise.all([
+    prefecture ? fetchByPrefecture(prefecture) : Promise.resolve([]),
+    registeredIds.length > 0 ? fetchByIds(registeredIds) : Promise.resolve([]),
   ]);
-  if (areaRes.error) throw new Error(`高校マスタの取得に失敗しました: ${areaRes.error.message}`);
-  if (registeredRes.error) {
-    throw new Error(`高校マスタの取得に失敗しました: ${registeredRes.error.message}`);
-  }
   const byId = new Map<string, ProposalSchool>();
-  for (const row of [
-    ...((areaRes.data ?? []) as unknown as SchoolWithStandards[]),
-    ...((registeredRes.data ?? []) as unknown as SchoolWithStandards[]),
-  ]) {
-    byId.set(row.id, toProposalSchool(row));
-  }
+  for (const row of [...area, ...registered]) byId.set(row.id, toProposalSchool(row));
   return Array.from(byId.values());
+}
+
+/**
+ * ★問い合わせは1本ずつ関数に分け、戻り値の型をここで確定させる。
+ *   条件つきの Supabase の問い合わせ（埋め込み付き）を Promise.all の中で三項演算子に並べると、
+ *   型の推論が膨らんで CI の tsc がメモリ不足で落ちた（2026-09-25）。
+ */
+async function fetchByPrefecture(prefecture: string): Promise<SchoolWithStandards[]> {
+  const { data, error } = await supabase
+    .from('high_schools')
+    .select(SELECT)
+    .eq('prefecture', prefecture)
+    .limit(1000);
+  if (error) throw new Error(`高校マスタの取得に失敗しました: ${error.message}`);
+  return (data ?? []) as unknown as SchoolWithStandards[];
+}
+
+async function fetchByIds(ids: readonly string[]): Promise<SchoolWithStandards[]> {
+  const { data, error } = await supabase
+    .from('high_schools')
+    .select(SELECT)
+    .in('id', [...ids]);
+  if (error) throw new Error(`高校マスタの取得に失敗しました: ${error.message}`);
+  return (data ?? []) as unknown as SchoolWithStandards[];
 }
 
 /** 教室の最寄り駅（教室設定）。未設定なら null */
