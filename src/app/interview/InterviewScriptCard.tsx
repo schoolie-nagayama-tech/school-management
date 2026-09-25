@@ -750,7 +750,8 @@ export function InterviewScriptCard({
   // ★AIを通さない（システムが拾う）ので、AIが使えない日にも出る
   const quotedWords = useMemo(() => {
     const latest = interviews.find((i) => i.interview_type !== 'task');
-    return latest ? extractQuotedWords(latest.content) : [];
+    // ★話し手は面談種別で決める（Nottaは生徒か保護者かを聞き分けられない）
+    return latest ? extractQuotedWords(latest.content, latest.interview_type) : [];
   }, [interviews]);
   // ④現状の確認「成績が無いときに黙らない」。小学生には出さない
   // ★申込から分かっていること（テスト対策の結果を聞く・模試を申し込んでいる）は重ねて聞かない
