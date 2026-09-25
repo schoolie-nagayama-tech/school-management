@@ -1475,7 +1475,7 @@ function targetSchoolStandardParts(
  *   右の「志望校」の行（数字）と左の「話すこと」（buildTargetSchoolTalkLines）が
  *   **同じこの関数**を通るので、片方だけ差が出て片方は出ない、という食い違いが起きない。
  */
-function targetSchoolDiffs(
+export function targetSchoolDiffs(
   master: TargetSchoolMaster,
   own: OwnNaishinByScale,
   ownHensachi: number | null
