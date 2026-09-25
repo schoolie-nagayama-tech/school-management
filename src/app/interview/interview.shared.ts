@@ -36,6 +36,17 @@ import {
 } from '@/lib/utils/convertedNaishin';
 import type { Region } from '@/lib/interview/region';
 import { TOKYO_NAISHIN_POINT_WEIGHT } from '@/lib/interview/scenes';
+import {
+  ADMISSION_STATUS_LABEL,
+  buildStudentReportCards,
+  evaluateRule,
+  pickPrimaryRule,
+  provisionalNote,
+  ruleHeading,
+  type AdmissionJudgment,
+  type AdmissionRule,
+  type StudentReportCards,
+} from '@/lib/interview/privateAdmission';
 
 /* ============================================================
  * 日付ユーティリティ
@@ -1462,6 +1473,17 @@ function targetSchoolStandardParts(
         ? `${label}${master.hensachi}（${signed(hensachiDiff)}）`
         : `${label}${master.hensachi}`
     );
+  } else if (master.hensachiByGender) {
+    /**
+     * ★私立の共学校で男子表・女子表の値が違うときは両方を並べ、差は出さない。
+     *   NEST は生徒の性別を持っていないので、どちらかと引き算すると半分の生徒に違う表の差を言う。
+     */
+    const g = master.hensachiByGender;
+    const bits = [
+      g.男子 != null ? `男子${g.男子}` : null,
+      g.女子 != null ? `女子${g.女子}` : null,
+    ].filter(Boolean);
+    if (bits.length > 0) parts.push(`必要偏差値 ${bits.join('・')}`);
   }
 
   return parts;
@@ -1501,6 +1523,41 @@ export function targetSchoolDiffs(
 }
 
 /**
+ * 私立・国立の志望校について、代表の入試区分（既定は併願優遇（公私））を本人の通知表に当てた判定。
+ * 公立（admissionRules が空）なら null。
+ *
+ * 「併願（公私） 届いている（3科12（基準11）を満たす）」の形。
+ * ★判定はシステムの計算なので数字を出してよい（AIには書かせない。buildTargetSchoolTalkLines の★と同じ理由）。
+ * ★基準が紙と未照合（verified_at=NULL）なら必ず添える。AIの書き起こしのままの数字で
+ *   「届いている」と言い切って、読み違いだったときに保護者の併願が崩れる。
+ * ★仮判定（中3の1学期・中2の学年末）なら添える。
+ */
+export function privateAdmissionBlock(
+  master: TargetSchoolMaster,
+  cards: StudentReportCards,
+  region: Region | null
+): { text: string; rule: AdmissionRule; judgment: AdmissionJudgment } | null {
+  const rules = master.admissionRules ?? [];
+  if (rules.length === 0) return null;
+  const rule = pickPrimaryRule(rules, region);
+  if (!rule) return null;
+  const judgment = evaluateRule(rule, cards);
+  const notes: string[] = [];
+  const prov = provisionalNote(judgment.provisional);
+  if (prov && judgment.status !== 'na' && judgment.status !== 'nodata') notes.push(prov);
+  if (rule.verifiedAt == null) notes.push('基準は原本と未照合');
+  const summary =
+    judgment.status === 'na' || judgment.status === 'nodata'
+      ? judgment.summary
+      : `${ADMISSION_STATUS_LABEL[judgment.status]}・${judgment.summary}`;
+  return {
+    text: `${ruleHeading(rule)} ${summary}` + (notes.length > 0 ? `（${notes.join('／')}）` : ''),
+    rule,
+    judgment,
+  };
+}
+
+/**
  * 志望校を1件1行にまとめる（④現状の確認）。
  *
  * 「第1 清瀬（普通科） ／ めやす 必要内申45（+0）・必要偏差値51（-3）（出典） ／ 沿線: 西武池袋線」。
@@ -1520,11 +1577,13 @@ export function targetSchoolDiffs(
  */
 export function buildTargetSchoolGapLines(
   targetSchools: readonly TargetSchoolRow[],
-  assessments: AssessmentWithScores[]
+  assessments: AssessmentWithScores[],
+  region: Region | null = null
 ): TargetSchoolGapLines {
   if (targetSchools.length === 0) {
     return { tell: [], ask: ['志望校を聞いて入れる'] };
   }
+  const cards = buildStudentReportCards(assessments);
 
   // ★本人の内申は両方の満点ぶん先に出しておき、学校ごとに満点で選ぶ（targetSchoolDiffs）
   const own: OwnNaishinByScale = {
@@ -1560,6 +1619,10 @@ export function buildTargetSchoolGapLines(
         blocks.push(`めやす ${parts.join('・')}${sourceSuffix}`);
       }
 
+      // 私立・国立: 推薦・併願優遇の基準を本人の通知表に当てた判定
+      const privateBlock = privateAdmissionBlock(master, cards, region);
+      if (privateBlock) blocks.push(privateBlock.text);
+
       /**
        * ★沿線まで。最寄駅（primary_station）は出さない。
        *   直線距離で決めており、乗り換えを無視した「最寄り」は面談で使えない
@@ -1573,6 +1636,70 @@ export function buildTargetSchoolGapLines(
   }
 
   return { tell, ask: [] };
+}
+
+/**
+ * 私立・国立の志望校について、④の左で言うこと・聞くこと。
+ * ★判定の数字はシステムの計算（privateAdmission.ts）。AIには書かせない。
+ * ★確認事項（欠席日数・説明会参加など）は、届いているときほど聞く。判定が「届いている」でも、
+ *   欠席日数で出願できない生徒を見落とすのが一番の事故になるため。
+ */
+function privateAdmissionTalkLines(
+  name: string,
+  master: TargetSchoolMaster,
+  cards: StudentReportCards,
+  region: Region | null
+): TargetSchoolTalkLine[] {
+  const block = privateAdmissionBlock(master, cards, region);
+  if (!block) return [];
+  const { rule, judgment } = block;
+  const heading = ruleHeading(rule);
+  const unverified = rule.verifiedAt == null ? '（基準は原本と未照合）' : '';
+  const lines: TargetSchoolTalkLine[] = [];
+  const firstCheck = judgment.checks[0];
+
+  switch (judgment.status) {
+    case 'ok':
+    case 'ok_with_bonus':
+      lines.push({
+        kind: 'say',
+        text: `${name}：${heading}の内申の基準は届いている${unverified}。${judgment.summary}`,
+      });
+      if (firstCheck) lines.push({ kind: 'ask', text: `${name}：${firstCheck}を確かめる` });
+      break;
+    case 'conditional':
+      lines.push({ kind: 'say', text: `${name}：${heading}は${judgment.summary}${unverified}` });
+      break;
+    case 'bonus':
+      lines.push({ kind: 'say', text: `${name}：${heading}は${judgment.summary}${unverified}` });
+      lines.push({
+        kind: 'ask',
+        text: `${name}：英検・漢検・数検など、加点になるものを持っているか聞く`,
+      });
+      break;
+    case 'short':
+      lines.push({
+        kind: 'say',
+        text: `${name}：${heading}の基準まで${judgment.summary}${unverified}。2学期の評定で届く幅かを話す`,
+      });
+      break;
+    case 'ng':
+      lines.push({
+        kind: 'say',
+        text: `${name}：${heading}は${judgment.summary}${unverified}。一般入試か別のコースを考える`,
+      });
+      break;
+    case 'na':
+      lines.push({
+        kind: 'say',
+        text: `${name}：${heading}は内申では決まらない（${judgment.summary}）。当日の点で勝負する形`,
+      });
+      break;
+    case 'nodata':
+      lines.push({ kind: 'ask', text: `${name}：通知表を入れると${heading}の判定が出る` });
+      break;
+  }
+  return lines;
 }
 
 /** ④の左（話すこと）に出す、志望校についての1行。say＝言う／ask＝聞く（チェック付き） */
@@ -1608,7 +1735,9 @@ export function buildTargetSchoolTalkLines(
   ownNaishin: number | null,
   ownHensachi: number | null,
   region: Region | null,
-  ownKanagawaNaishin: KanagawaNaishin135Result | null = null
+  ownKanagawaNaishin: KanagawaNaishin135Result | null = null,
+  /** 私立の推薦・併願優遇を判定するための本人の通知表（buildStudentReportCards） */
+  reportCards: StudentReportCards | null = null
 ): TargetSchoolTalkLine[] {
   const own: OwnNaishinByScale = { tokyo: ownNaishin, kanagawa: ownKanagawaNaishin };
   const lines: TargetSchoolTalkLine[] = [];
@@ -1623,7 +1752,16 @@ export function buildTargetSchoolTalkLines(
       region === 'tokyo' && !(school.master && naishinScaleOf(school.master) === 'kanagawa');
     const prov = provisional ? '（仮計算）' : '';
 
+    // --- 私立・国立: 推薦・併願優遇の判定 ---
+    const privateLines =
+      school.master && reportCards
+        ? privateAdmissionTalkLines(name, school.master, reportCards, region)
+        : [];
+    lines.push(...privateLines);
+
     if (naishinDiff == null && hensachiDiff == null) {
+      // 私立の判定を出したなら「材料が無い」は言わない（内申の材料はある）
+      if (privateLines.length > 0) continue;
       lines.push({
         kind: 'say',
         text: `${name}：めやすと比べる材料が無い（内申・模試を聞いて入れる）`,

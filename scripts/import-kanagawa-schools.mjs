@@ -178,8 +178,10 @@ const supa = createClient(
 const { data: upserted, error: e1 } = await supa
   .from('high_schools')
   .upsert(
-    rows.map((x) => x.row),
-    { onConflict: 'prefecture,school_name,course' }
+    // ★establishment・gender を明示する。一意制約に入っており、省くと upsert が既存行に当たらない
+    //  （2026-09-25 私立を同じ表に入れたとき一意の範囲に設置区分・男女を足した）
+    rows.map((x) => ({ ...x.row, establishment: '公立' })),
+    { onConflict: 'prefecture,establishment,school_name,course' }
   )
   .select('id,school_name,course');
 if (e1) {
@@ -192,6 +194,7 @@ const idBy = new Map(upserted.map((r) => [`${r.school_name} ${r.course}`, r.id])
 const stds = rows.map((x) => ({
   high_school_id: idBy.get(`${x.row.school_name} ${x.row.course}`),
   ...x.std,
+  gender: null,
 }));
 const missing = stds.filter((s) => !s.high_school_id).length;
 if (missing) {
@@ -201,7 +204,7 @@ if (missing) {
 
 const { data: sd, error: e2 } = await supa
   .from('high_school_standards')
-  .upsert(stds, { onConflict: 'high_school_id,source,source_year' })
+  .upsert(stds, { onConflict: 'high_school_id,source,source_year,gender' })
   .select('id');
 if (e2) {
   console.error('high_school_standards:', e2);

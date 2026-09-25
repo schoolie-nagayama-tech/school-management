@@ -22,7 +22,36 @@ import {
 import { REGION_LABEL, regionOfSchool } from '@/lib/interview/region';
 import { studyTipById } from '@/lib/interview/studyTips';
 import type { BriefStudyTip } from '@/lib/ai/interviewBrief';
-import { latestOwnHensachi, latestOwnKanagawaNaishin, latestOwnNaishin } from './interview.shared';
+import {
+  latestOwnHensachi,
+  latestOwnKanagawaNaishin,
+  latestOwnNaishin,
+  privateAdmissionBlock,
+} from './interview.shared';
+import {
+  ADMISSION_STATUS_LABEL,
+  buildStudentReportCards,
+  type AdmissionStatus,
+} from '@/lib/interview/privateAdmission';
+
+/** 私立・国立の行に「内申めやす」の代わりに出す、推薦・併願優遇の判定（代表の区分） */
+export interface PrivateJudgmentCell {
+  heading: string;
+  status: AdmissionStatus;
+  summary: string;
+}
+
+/** 判定の色（PrivateAdmissionDetails と同じ意味の色） */
+const JUDGMENT_TEXT_CLASS: Record<AdmissionStatus, string> = {
+  ok: 'text-success',
+  ok_with_bonus: 'text-success',
+  conditional: 'text-info',
+  bonus: 'text-info',
+  short: 'text-warning',
+  ng: 'text-danger',
+  na: 'text-text-muted',
+  nodata: 'text-text-muted',
+};
 
 /** 区分の色。★地図のピン（TargetSchoolMap）と同じ組み合わせにする */
 export const BAND_TEXT_CLASS = {
@@ -38,6 +67,8 @@ const BAND_BORDER_CLASS = {
 
 export interface TargetProposalsState {
   rows: ProposalRow[];
+  /** high_schools.id → 私立の判定。私立・国立の登録済みの志望校だけ入る */
+  privateJudgments: Map<string, PrivateJudgmentCell>;
   origin: ProposalOrigin | null;
   ownHensachi: number | null;
   loading: boolean;
@@ -116,7 +147,28 @@ export function useTargetProposals(
     [schools, assessments, ownHensachi, origin, registered]
   );
 
-  return { rows, origin, ownHensachi, loading, error };
+  /**
+   * 私立の志望校の判定。④の「志望校」の行と同じ関数（privateAdmissionBlock）を通し、
+   * 表と根拠の行で判定が食い違わないようにする。
+   */
+  const privateJudgments = useMemo(() => {
+    const cards = buildStudentReportCards(assessments);
+    const region = schoolId ? regionOfSchool(schoolId) : null;
+    const map = new Map<string, PrivateJudgmentCell>();
+    for (const t of targetSchools) {
+      if (!t.highSchoolId || !t.master) continue;
+      const block = privateAdmissionBlock(t.master, cards, region);
+      if (!block) continue;
+      map.set(t.highSchoolId, {
+        heading: block.rule.examLabel,
+        status: block.judgment.status,
+        summary: block.judgment.summary,
+      });
+    }
+    return map;
+  }, [targetSchools, assessments, schoolId]);
+
+  return { rows, privateJudgments, origin, ownHensachi, loading, error };
 }
 
 function Gap({ diff }: { diff: number | null }) {
@@ -141,7 +193,7 @@ export function TargetProposalTable({
   selectedId: string | null;
   onSelect: (id: string) => void;
 }) {
-  const { rows, origin, ownHensachi, loading, error } = state;
+  const { rows, privateJudgments, origin, ownHensachi, loading, error } = state;
   if (loading) {
     return <p className="text-[12px] text-text-faint">志望校と提案を読み込み中…</p>;
   }
@@ -205,6 +257,11 @@ export function TargetProposalTable({
                   </td>
                   <td className="whitespace-nowrap py-1 pr-3">
                     <span className="font-bold text-text-heading">{schoolLabel(r)}</span>
+                    {r.school.establishment && r.school.establishment !== '公立' && (
+                      <span className="ml-1 text-[10.5px] text-text-muted">
+                        {r.school.establishment}
+                      </span>
+                    )}
                     {r.rank != null && (
                       <span className="ml-1.5 rounded-full border border-text-heading px-1.5 text-[10px] text-text-heading">
                         第{r.rank}志望
@@ -216,8 +273,30 @@ export function TargetProposalTable({
                     <Gap diff={r.hensachiDiff} />
                   </td>
                   <td className="whitespace-nowrap py-1 pr-3 tabular-nums">
-                    {r.school.naishin ?? '—'}
-                    <Gap diff={r.naishinDiff} />
+                    {(() => {
+                      /**
+                       * ★私立は内申の「めやす1つ」が無い（コース・入試区分ごとに条件がばらばら）。
+                       *   代わりに代表の区分（既定は併願優遇（公私））の判定を出す。中身は根拠の
+                       *   「推薦・併願の条件」で開く。
+                       */
+                      const j = privateJudgments.get(r.school.id);
+                      if (j) {
+                        return (
+                          <span title={j.summary}>
+                            <span className="text-text-muted">{j.heading} </span>
+                            <span className={`font-bold ${JUDGMENT_TEXT_CLASS[j.status]}`}>
+                              {ADMISSION_STATUS_LABEL[j.status]}
+                            </span>
+                          </span>
+                        );
+                      }
+                      return (
+                        <>
+                          {r.school.naishin ?? '—'}
+                          <Gap diff={r.naishinDiff} />
+                        </>
+                      );
+                    })()}
                   </td>
                   <td className="py-1 text-text-muted">{r.commute ?? '—'}</td>
                 </tr>

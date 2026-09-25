@@ -135,6 +135,8 @@ import {
 } from '@/lib/interview/scenes';
 import { examCountdownLine, examApplicationLine } from '@/lib/interview/examDates';
 import { regionOfSchool } from '@/lib/interview/region';
+import { buildStudentReportCards } from '@/lib/interview/privateAdmission';
+import { PrivateAdmissionDetails } from '@/components/interview/PrivateAdmissionDetails';
 
 /** 画面に出す1セクション（APIの戻り） */
 export interface ScriptSectionView {
@@ -752,9 +754,12 @@ export function InterviewScriptCard({
   );
 
   // ④現状の確認「志望校」。志望校が未登録なら ask に「聞いて入れる」が1件入る
+  // 私立の推薦・併願優遇の判定に使う本人の通知表（中3の2学期を優先。無ければ仮判定）
+  const reportCards = useMemo(() => buildStudentReportCards(assessments), [assessments]);
+  // ★教室の都県を渡す。私立の「都神外生」向けの区分など、教室の生徒が受けられない基準で判定しないため
   const targetSchoolGap = useMemo(
-    () => buildTargetSchoolGapLines(targetSchools, assessments),
-    [targetSchools, assessments]
+    () => buildTargetSchoolGapLines(targetSchools, assessments, regionOfSchool(student.school_id)),
+    [targetSchools, assessments, student.school_id]
   );
   // ④現状の確認「直近の模試」。合格可能性と、登録に無い公立校（あれば聞く）
   const mockSchoolLines = useMemo(
@@ -795,9 +800,11 @@ export function InterviewScriptCard({
         latestOwnHensachi(assessments),
         region,
         // 神奈川県立（135点満点）と比べる本人の内申。どちらを使うかは学校の満点で決まる
-        latestOwnKanagawaNaishin(assessments)
+        latestOwnKanagawaNaishin(assessments),
+        // 私立の推薦・併願優遇の判定に使う本人の通知表
+        reportCards
       ),
-    [targetSchools, assessments, region]
+    [targetSchools, assessments, region, reportCards]
   );
 
   /**
@@ -1217,6 +1224,13 @@ export function InterviewScriptCard({
             ...targetSchoolGap.tell.map((t, i) => (
               <TellLine key={`gap-${i}`} text={i === 0 ? `志望校${FACT_SEPARATOR}${t}` : t} />
             )),
+            // 私立・国立の推薦・併願優遇の条件の中身（学校ごとに畳んで出す。無ければ何も出ない）
+            <PrivateAdmissionDetails
+              key="private-admission"
+              targetSchools={targetSchools}
+              cards={reportCards}
+              region={region}
+            />,
             // 直近の模試の合格可能性（前回との比較つき）と、登録に無い公立校の指摘
             ...mockSchoolLines.tell.map((t, i) => <TellLine key={`mock-school-${i}`} text={t} />),
             // テスト対策（試験・コマ・増コマ申込 → 結果 → 対策した単元）。数字はシステムが組む

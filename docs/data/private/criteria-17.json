@@ -1,0 +1,743 @@
+{
+  "image": "17.jpg",
+  "image_alt": "31.jpg（17.jpgとバイト単位で同一ファイル）",
+  "page_label": "28",
+  "prefecture": "東京都",
+  "schools": [
+    {
+      "district": "栃木県",
+      "school_name": "佐野日大",
+      "prefecture_override": "栃木県",
+      "division": null,
+      "phone": "0283-25-0111",
+      "gender_type": "共学",
+      "establishment": "私立",
+      "courses": [
+        { "name": "α", "raw": "α 30", "capacity": 30, "recommend_capacity": null, "gender": null },
+        {
+          "name": "特進",
+          "raw": "特進(T) 120",
+          "capacity": 120,
+          "recommend_capacity": null,
+          "gender": null
+        },
+        {
+          "name": "スーパー進学",
+          "raw": "スーパー進学(S) 160",
+          "capacity": 160,
+          "recommend_capacity": null,
+          "gender": null
+        },
+        {
+          "name": "N進学",
+          "raw": "N進学(N) 200\n(推薦含む)",
+          "capacity": 200,
+          "recommend_capacity": null,
+          "gender": null
+        }
+      ],
+      "exams": "検",
+      "other_raw": "内申数値は3年1または2学期または前期または調査書\n各学年9科に1は不可\n特進・S進学・N進学は①②③のいずれか, 英・漢・数検\n3級(N進学は特別活動, 学校外活動実績者も可)なら\nば[ ]内の数値で可(①は2年次または3年次の成績)\n推薦テストは3科または5科を選択(各50分マークシート)\n特進・S進学・N進学は指定校推薦(書類選考), SN推\n薦[部活動](国英or数英2科テスト)あり",
+      "rules": [
+        {
+          "courses": ["α"],
+          "section": "推薦",
+          "exam_label": "単願推薦",
+          "kind": "推薦",
+          "public_only": false,
+          "applicant_scope": null,
+          "gender": null,
+          "strength": null,
+          "any": [[{ "t": "manual", "text": "3年次の成績上位□%以内" }]],
+          "no_criterion": null,
+          "gates": [
+            {
+              "t": "none_le",
+              "s": "9科",
+              "grade": 1,
+              "years": [
+                { "grade": 1, "w": 1 },
+                { "grade": 2, "w": 1 },
+                { "grade": 3, "w": 1 }
+              ]
+            }
+          ],
+          "bonus": null,
+          "checks": ["推薦テストは3科または5科を選択(各50分マークシート)"],
+          "raw": "単願推薦:\nα 3年次の成績上位□%以内",
+          "uncertain": true
+        },
+        {
+          "courses": ["特進"],
+          "section": "推薦",
+          "exam_label": "単願推薦",
+          "kind": "推薦",
+          "public_only": false,
+          "applicant_scope": null,
+          "gender": null,
+          "strength": null,
+          "any": [
+            [{ "t": "manual", "text": "成績上位20%以内（2年次または3年次の成績）" }],
+            [{ "t": "sum", "s": "5科", "min": 22 }],
+            [
+              { "t": "cert", "name": "英・漢・数検いずれか3級" },
+              { "t": "manual", "text": "成績上位25%以内（2年次または3年次の成績）" }
+            ],
+            [
+              { "t": "cert", "name": "英・漢・数検いずれか3級" },
+              { "t": "sum", "s": "5科", "min": 21 }
+            ]
+          ],
+          "no_criterion": null,
+          "gates": [
+            {
+              "t": "none_le",
+              "s": "9科",
+              "grade": 1,
+              "years": [
+                { "grade": 1, "w": 1 },
+                { "grade": 2, "w": 1 },
+                { "grade": 3, "w": 1 }
+              ]
+            }
+          ],
+          "bonus": null,
+          "checks": [
+            "推薦テストは3科または5科を選択(各50分マークシート)",
+            "指定校推薦(書類選考)あり"
+          ],
+          "raw": "特進 ①20[25]%以内 ②5科22[21]",
+          "uncertain": true
+        },
+        {
+          "courses": ["スーパー進学"],
+          "section": "推薦",
+          "exam_label": "単願推薦",
+          "kind": "推薦",
+          "public_only": false,
+          "applicant_scope": null,
+          "gender": null,
+          "strength": null,
+          "any": [
+            [{ "t": "manual", "text": "成績上位35%以内（2年次または3年次の成績）" }],
+            [{ "t": "sum", "s": "5科", "min": 19 }],
+            [
+              { "t": "cert", "name": "英・漢・数検いずれか3級" },
+              { "t": "manual", "text": "成績上位40%以内（2年次または3年次の成績）" }
+            ],
+            [
+              { "t": "cert", "name": "英・漢・数検いずれか3級" },
+              { "t": "sum", "s": "5科", "min": 18 }
+            ]
+          ],
+          "no_criterion": null,
+          "gates": [
+            {
+              "t": "none_le",
+              "s": "9科",
+              "grade": 1,
+              "years": [
+                { "grade": 1, "w": 1 },
+                { "grade": 2, "w": 1 },
+                { "grade": 3, "w": 1 }
+              ]
+            }
+          ],
+          "bonus": null,
+          "checks": [
+            "推薦テストは3科または5科を選択(各50分マークシート)",
+            "指定校推薦(書類選考), SN推薦[部活動](国英or数英2科テスト)あり"
+          ],
+          "raw": "S進学 ①35[40]%以内 ②5科19[18]",
+          "uncertain": true
+        },
+        {
+          "courses": ["N進学"],
+          "section": "推薦",
+          "exam_label": "単願推薦",
+          "kind": "推薦",
+          "public_only": false,
+          "applicant_scope": null,
+          "gender": null,
+          "strength": null,
+          "any": [
+            [{ "t": "manual", "text": "成績上位50%以内（2年次または3年次の成績）" }],
+            [{ "t": "sum", "s": "5科", "min": 17 }],
+            [{ "t": "sum", "s": "9科", "min": 31 }],
+            [
+              { "t": "manual", "text": "英・漢・数検3級, または特別活動・学校外活動実績" },
+              { "t": "manual", "text": "成績上位55%以内（2年次または3年次の成績）" }
+            ],
+            [
+              { "t": "manual", "text": "英・漢・数検3級, または特別活動・学校外活動実績" },
+              { "t": "sum", "s": "5科", "min": 16 }
+            ],
+            [
+              { "t": "manual", "text": "英・漢・数検3級, または特別活動・学校外活動実績" },
+              { "t": "sum", "s": "9科", "min": 30 }
+            ]
+          ],
+          "no_criterion": null,
+          "gates": [
+            {
+              "t": "none_le",
+              "s": "9科",
+              "grade": 1,
+              "years": [
+                { "grade": 1, "w": 1 },
+                { "grade": 2, "w": 1 },
+                { "grade": 3, "w": 1 }
+              ]
+            }
+          ],
+          "bonus": null,
+          "checks": [
+            "推薦テストは3科または5科を選択(各50分マークシート)",
+            "指定校推薦(書類選考), SN推薦[部活動](国英or数英2科テスト)あり"
+          ],
+          "raw": "N進学 ①50[55]%以内 ②5科17[16]\n③9科31[30]",
+          "uncertain": true
+        },
+        {
+          "courses": ["*"],
+          "section": "推薦",
+          "exam_label": "併願推薦（入試結果によりコース分け）",
+          "kind": "併願",
+          "public_only": false,
+          "applicant_scope": null,
+          "gender": null,
+          "strength": null,
+          "any": [
+            [{ "t": "manual", "text": "成績上位40%以内（2年次または3年次の成績）" }],
+            [{ "t": "sum", "s": "5科", "min": 18 }],
+            [{ "t": "sum", "s": "9科", "min": 32 }],
+            [
+              { "t": "cert", "name": "英・漢・数検いずれか3級" },
+              { "t": "manual", "text": "成績上位45%以内（2年次または3年次の成績）" }
+            ],
+            [
+              { "t": "cert", "name": "英・漢・数検いずれか3級" },
+              { "t": "sum", "s": "5科", "min": 17 }
+            ],
+            [
+              { "t": "cert", "name": "英・漢・数検いずれか3級" },
+              { "t": "sum", "s": "9科", "min": 31 }
+            ]
+          ],
+          "no_criterion": null,
+          "gates": [
+            {
+              "t": "none_le",
+              "s": "9科",
+              "grade": 1,
+              "years": [
+                { "grade": 1, "w": 1 },
+                { "grade": 2, "w": 1 },
+                { "grade": 3, "w": 1 }
+              ]
+            }
+          ],
+          "bonus": null,
+          "checks": [
+            "推薦テストは3科または5科を選択(各50分マークシート)",
+            "[ ]内の緩和が併願推薦にも掛かるかは原文から明確でない（[ ]付きで印字されているため適用と解釈）"
+          ],
+          "raw": "併願推薦:(入試結果によりコース分け)\n①40[45]%以内 ②5科18[17] ③9科32[31]",
+          "uncertain": true
+        }
+      ]
+    },
+    {
+      "district": "栃木県",
+      "school_name": "國學院大栃木",
+      "prefecture_override": "栃木県",
+      "division": null,
+      "phone": "0282-22-5511",
+      "gender_type": "共学",
+      "establishment": "私立",
+      "courses": [
+        {
+          "name": "特選S",
+          "raw": "特選S 30",
+          "capacity": 30,
+          "recommend_capacity": 0,
+          "gender": null
+        },
+        {
+          "name": "特選",
+          "raw": "特選 150",
+          "capacity": 150,
+          "recommend_capacity": null,
+          "gender": null
+        },
+        {
+          "name": "選抜",
+          "raw": "選抜 150",
+          "capacity": 150,
+          "recommend_capacity": null,
+          "gender": null
+        },
+        {
+          "name": "文理",
+          "raw": "文理 270\n(推薦含む)",
+          "capacity": 270,
+          "recommend_capacity": null,
+          "gender": null
+        }
+      ],
+      "exams": "面",
+      "other_raw": "①評定, ②校内順位のいずれか(出願資格)\n評定は1年次から3年1学期(前期)までの5科平均\n値, 校内順位は3年1または2学期または前期の定\n期・実力試験等における5科の校内総合順位\n9科に1は不可　3年間の欠席日数30日以内\n推薦と同日程(1/6)でスポーツ・文化入試も実施\n特選Sコースは推薦募集なし",
+      "rules": [
+        {
+          "courses": ["特選"],
+          "section": "推薦",
+          "exam_label": "推薦",
+          "kind": "推薦",
+          "public_only": false,
+          "applicant_scope": null,
+          "gender": null,
+          "strength": "出願資格",
+          "any": [
+            [
+              {
+                "t": "avg",
+                "s": "5科",
+                "min": 4.2,
+                "years": [
+                  { "grade": 1, "w": 1 },
+                  { "grade": 2, "w": 1 },
+                  { "grade": 3, "w": 1 }
+                ]
+              }
+            ],
+            [
+              {
+                "t": "manual",
+                "text": "5科の校内総合順位 上位30%以内（3年1または2学期または前期の定期・実力試験等）"
+              }
+            ],
+            [
+              { "t": "cert", "name": "英・漢・数検いずれか3級" },
+              { "t": "manual", "text": "5科の校内総合順位 上位35%以内" }
+            ]
+          ],
+          "no_criterion": null,
+          "gates": [{ "t": "none_le", "s": "9科", "grade": 1 }],
+          "bonus": null,
+          "checks": ["評定は1年次から3年1学期(前期)までの5科平均値", "3年間の欠席日数30日以内"],
+          "raw": "特選 ①5科平均4.2\n②30%(35%)以内\n( )内は英・漢・数検3級取得者",
+          "uncertain": false
+        },
+        {
+          "courses": ["選抜"],
+          "section": "推薦",
+          "exam_label": "推薦",
+          "kind": "推薦",
+          "public_only": false,
+          "applicant_scope": null,
+          "gender": null,
+          "strength": "出願資格",
+          "any": [
+            [
+              {
+                "t": "avg",
+                "s": "5科",
+                "min": 3.6,
+                "years": [
+                  { "grade": 1, "w": 1 },
+                  { "grade": 2, "w": 1 },
+                  { "grade": 3, "w": 1 }
+                ]
+              }
+            ],
+            [
+              {
+                "t": "manual",
+                "text": "5科の校内総合順位 上位45%以内（3年1または2学期または前期の定期・実力試験等）"
+              }
+            ],
+            [
+              { "t": "cert", "name": "英・漢・数検いずれか3級" },
+              { "t": "manual", "text": "5科の校内総合順位 上位50%以内" }
+            ]
+          ],
+          "no_criterion": null,
+          "gates": [{ "t": "none_le", "s": "9科", "grade": 1 }],
+          "bonus": null,
+          "checks": ["評定は1年次から3年1学期(前期)までの5科平均値", "3年間の欠席日数30日以内"],
+          "raw": "選抜 ①5科平均3.6\n②45%(50%)以内\n( )内は英・漢・数検3級取得者",
+          "uncertain": false
+        },
+        {
+          "courses": ["文理"],
+          "section": "推薦",
+          "exam_label": "推薦",
+          "kind": "推薦",
+          "public_only": false,
+          "applicant_scope": null,
+          "gender": null,
+          "strength": "出願資格",
+          "any": [
+            [
+              {
+                "t": "avg",
+                "s": "5科",
+                "min": 3.2,
+                "years": [
+                  { "grade": 1, "w": 1 },
+                  { "grade": 2, "w": 1 },
+                  { "grade": 3, "w": 1 }
+                ]
+              }
+            ],
+            [
+              {
+                "t": "manual",
+                "text": "5科の校内総合順位 上位60%以内（3年1または2学期または前期の定期・実力試験等）"
+              }
+            ],
+            [
+              { "t": "cert", "name": "英・漢・数検いずれか3級" },
+              { "t": "manual", "text": "5科の校内総合順位 上位65%以内" }
+            ]
+          ],
+          "no_criterion": null,
+          "gates": [{ "t": "none_le", "s": "9科", "grade": 1 }],
+          "bonus": null,
+          "checks": ["評定は1年次から3年1学期(前期)までの5科平均値", "3年間の欠席日数30日以内"],
+          "raw": "文理 ①5科平均3.2\n②60%(65%)以内\n( )内は英・漢・数検3級取得者",
+          "uncertain": false
+        }
+      ]
+    },
+    {
+      "district": "港",
+      "school_name": "東京科学大附科学技術",
+      "division": null,
+      "phone": "03-3454-8529",
+      "gender_type": "共学",
+      "establishment": "国立",
+      "courses": [
+        {
+          "name": "応用化学",
+          "raw": "科学・技術\n応用化学 40",
+          "capacity": 40,
+          "recommend_capacity": null,
+          "gender": null
+        },
+        {
+          "name": "情報システム",
+          "raw": "情報システム 40",
+          "capacity": 40,
+          "recommend_capacity": null,
+          "gender": null
+        },
+        {
+          "name": "機械システム",
+          "raw": "機械システム 40",
+          "capacity": 40,
+          "recommend_capacity": null,
+          "gender": null
+        },
+        {
+          "name": "電気電子",
+          "raw": "電気電子 40",
+          "capacity": 40,
+          "recommend_capacity": null,
+          "gender": null
+        },
+        {
+          "name": "建築デザイン",
+          "raw": "建築デザイン 40\n(全分野計72以内)",
+          "capacity": 40,
+          "recommend_capacity": null,
+          "gender": null
+        }
+      ],
+      "exams": "面 検",
+      "other_raw": "（電話は教務担当）\n数値は出願資格\n各学年9科に1は不可\nⅠ型は分野を選択して出願(募集は各分野12名以\n内), Ⅱ型は分野選択なし\n小テスト(50分)は数学・理科(第1分野)の基本的な\n内容\n推薦試験日1/9\n（募集欄）推薦は全分野計72以内",
+      "rules": [
+        {
+          "courses": ["*"],
+          "section": "推薦",
+          "exam_label": "推薦Ⅰ型・Ⅱ型",
+          "kind": "推薦",
+          "public_only": false,
+          "applicant_scope": null,
+          "gender": null,
+          "strength": "出願資格",
+          "any": [[{ "t": "sum", "s": "9科", "min": 36 }]],
+          "no_criterion": null,
+          "gates": [
+            {
+              "t": "none_le",
+              "s": "9科",
+              "grade": 1,
+              "years": [
+                { "grade": 1, "w": 1 },
+                { "grade": 2, "w": 1 },
+                { "grade": 3, "w": 1 }
+              ]
+            }
+          ],
+          "bonus": null,
+          "checks": [
+            "Ⅰ型は分野を選択して出願(各分野12名以内), Ⅱ型は分野選択なし",
+            "小テスト(50分)は数学・理科(第1分野)",
+            "推薦試験日1/9"
+          ],
+          "raw": "推薦Ⅰ型・Ⅱ型:9科36",
+          "uncertain": false
+        }
+      ]
+    },
+    {
+      "district": "八王子",
+      "school_name": "東京工業高専",
+      "division": null,
+      "phone": "042-668-5127",
+      "gender_type": "共学",
+      "establishment": "国立",
+      "courses": [
+        {
+          "name": "機械工学",
+          "raw": "機械工学 40",
+          "capacity": 40,
+          "recommend_capacity": null,
+          "gender": null
+        },
+        {
+          "name": "電気工学",
+          "raw": "電気工学 40",
+          "capacity": 40,
+          "recommend_capacity": null,
+          "gender": null
+        },
+        {
+          "name": "電子工学",
+          "raw": "電子工学 40",
+          "capacity": 40,
+          "recommend_capacity": null,
+          "gender": null
+        },
+        {
+          "name": "情報工学",
+          "raw": "情報工学 40",
+          "capacity": 40,
+          "recommend_capacity": null,
+          "gender": null
+        },
+        {
+          "name": "物質工学",
+          "raw": "物質工学 40\n(各科60%程度)",
+          "capacity": 40,
+          "recommend_capacity": null,
+          "gender": null
+        }
+      ],
+      "exams": "面",
+      "other_raw": "（電話は学生課教務係）\n数値は出願資格\n面接点30点+内申点70点=100点満点で選考, 内\n申点は[(数英理×1.8+他6科×1.3)+資格点4点\n(英検・数検準2級, いずれか取得で2点, 両方取得\nで4点)]\n推薦試験日1/18\n（募集欄）推薦は各科60%程度",
+      "rules": [
+        {
+          "courses": ["*"],
+          "section": "推薦",
+          "exam_label": "推薦",
+          "kind": "推薦",
+          "public_only": false,
+          "applicant_scope": null,
+          "gender": null,
+          "strength": "出願資格",
+          "any": [
+            [
+              { "t": "sum", "s": "9科", "min": 36 },
+              { "t": "each", "s": ["数", "英", "理"], "min": 4 }
+            ]
+          ],
+          "no_criterion": null,
+          "gates": [],
+          "bonus": null,
+          "checks": [
+            "面接点30点+内申点70点=100点満点で選考（内申点=数英理×1.8+他6科×1.3+資格点4点）",
+            "資格点: 英検・数検準2級 いずれかで2点, 両方で4点（選考点への加点で出願基準の緩和ではない）",
+            "推薦試験日1/18"
+          ],
+          "raw": "9科36かつ数英理各4",
+          "uncertain": false
+        }
+      ]
+    },
+    {
+      "district": "木更津",
+      "school_name": "木更津工業高専",
+      "prefecture_override": "千葉県",
+      "division": null,
+      "phone": "0438-30-4040",
+      "gender_type": "共学",
+      "establishment": "国立",
+      "courses": [
+        {
+          "name": "機械工学",
+          "raw": "機械工学 40(20)",
+          "capacity": 40,
+          "recommend_capacity": 20,
+          "gender": null
+        },
+        {
+          "name": "電気電子工学",
+          "raw": "電気電子工学 40(20)",
+          "capacity": 40,
+          "recommend_capacity": 20,
+          "gender": null
+        },
+        {
+          "name": "電子制御工学",
+          "raw": "電子制御工学 40(20)",
+          "capacity": 40,
+          "recommend_capacity": 20,
+          "gender": null
+        },
+        {
+          "name": "情報工学",
+          "raw": "情報工学 40(20)",
+          "capacity": 40,
+          "recommend_capacity": 20,
+          "gender": null
+        },
+        {
+          "name": "環境都市工学",
+          "raw": "環境都市工学 40(20)",
+          "capacity": 40,
+          "recommend_capacity": 20,
+          "gender": null
+        }
+      ],
+      "exams": "面 適",
+      "other_raw": "（電話は学生課教務係）\n推薦適性検査は数学の基礎問題(60分)\n内申点(350点)+適性検査点(100点)+面接点(50点)\n=500点満点で選考\n[内申点は各科25点(=2年次×3年次)で,\n5科(125点)×2+他4科(100点)=350点満点]\n推薦試験日1/18",
+      "rules": [
+        {
+          "courses": ["*"],
+          "section": "推薦",
+          "exam_label": "推薦",
+          "kind": "推薦",
+          "public_only": false,
+          "applicant_scope": null,
+          "gender": null,
+          "strength": "目安",
+          "any": [
+            [
+              { "t": "each", "s": "9科", "min": 3 },
+              { "t": "sum", "s": "9科", "min": 32, "of": 45, "years": [{ "grade": 2, "w": 1 }] },
+              { "t": "sum", "s": "9科", "min": 32, "of": 45, "years": [{ "grade": 3, "w": 1 }] }
+            ]
+          ],
+          "no_criterion": null,
+          "gates": [],
+          "bonus": null,
+          "checks": [
+            "「2・3年次9科32」は2年次・3年次それぞれ9科32と解釈（2年間合計ではない想定）",
+            "内申点(350)+適性検査点(100)+面接点(50)=500点満点で選考",
+            "推薦試験日1/18"
+          ],
+          "raw": "9科各3かつ2・3年次9科32(目安)",
+          "uncertain": false
+        }
+      ]
+    },
+    {
+      "district": "坂戸",
+      "school_name": "筑波大附坂戸",
+      "prefecture_override": "埼玉県",
+      "division": null,
+      "phone": "049-281-1541",
+      "gender_type": "共学",
+      "establishment": "国立",
+      "courses": [
+        {
+          "name": "SG",
+          "raw": "総合科学\nSG 30(SG入試30)",
+          "capacity": 30,
+          "recommend_capacity": null,
+          "gender": null
+        },
+        {
+          "name": "IB",
+          "raw": "IB 10(IB入試10)",
+          "capacity": 10,
+          "recommend_capacity": null,
+          "gender": null
+        },
+        {
+          "name": "IG",
+          "raw": "IG 120(60〜70程度)\n[SGに海外在留生・帰国生・外国人含む]",
+          "capacity": 120,
+          "recommend_capacity": null,
+          "gender": null
+        }
+      ],
+      "exams": "面 ※検 ※論",
+      "other_raw": "※推薦は小論文と面接\n※SG入試は国英または数英2科テストと面接\n(CEFR B1レベルの資格[英検2級等]があれば\n英テストは免除)\n※IB入試は小論文と面接(日本語と英語)と保\n護者同伴面接\n推薦・SG入試・IB入試試験日1/15",
+      "rules": [
+        {
+          "courses": ["IG"],
+          "section": "推薦",
+          "exam_label": "推薦",
+          "kind": "推薦",
+          "public_only": false,
+          "applicant_scope": null,
+          "gender": null,
+          "strength": null,
+          "any": [],
+          "no_criterion": "内申基準なし",
+          "gates": [],
+          "bonus": null,
+          "checks": [
+            "小論文と面接",
+            "試験日1/15",
+            "対象コースはIGと解釈（募集欄のIG推薦60〜70程度から）"
+          ],
+          "raw": "推薦・SG入試:\n内申基準なし",
+          "uncertain": false
+        },
+        {
+          "courses": ["SG"],
+          "section": "推薦",
+          "exam_label": "SG入試",
+          "kind": "推薦",
+          "public_only": false,
+          "applicant_scope": null,
+          "gender": null,
+          "strength": null,
+          "any": [],
+          "no_criterion": "内申基準なし",
+          "gates": [],
+          "bonus": null,
+          "checks": [
+            "国英または数英2科テストと面接",
+            "CEFR B1レベル(英検2級等)があれば英テスト免除",
+            "海外在留生・帰国生・外国人含む",
+            "試験日1/15"
+          ],
+          "raw": "推薦・SG入試:\n内申基準なし",
+          "uncertain": false
+        },
+        {
+          "courses": ["IB"],
+          "section": "推薦",
+          "exam_label": "IB入試",
+          "kind": "推薦",
+          "public_only": false,
+          "applicant_scope": null,
+          "gender": null,
+          "strength": null,
+          "any": [[{ "t": "sum", "s": "9科", "min": 38 }]],
+          "no_criterion": null,
+          "gates": [],
+          "bonus": null,
+          "checks": ["小論文と面接(日本語と英語)と保護者同伴面接", "試験日1/15"],
+          "raw": "IB入試 9科38",
+          "uncertain": false
+        }
+      ]
+    }
+  ]
+}

@@ -79,6 +79,7 @@ import {
 } from '@/lib/interview/scenes';
 import { examCountdownLine, examApplicationLine } from '@/lib/interview/examDates';
 import { regionOfSchool } from '@/lib/interview/region';
+import { buildStudentReportCards } from '@/lib/interview/privateAdmission';
 import {
   BRIEF_SECTIONS,
   briefSectionLabel,
@@ -203,7 +204,11 @@ export function InterviewPrintSheet({
     student.grade,
     new Date()
   );
-  const targetSchoolGap = buildTargetSchoolGapLines(targetSchools, assessments);
+  const targetSchoolGap = buildTargetSchoolGapLines(
+    targetSchools,
+    assessments,
+    regionOfSchool(student.school_id)
+  );
   // 直近の模試の合格可能性と、登録に無い公立校（画面の④と同じ関数）
   const mockSchoolLines = buildMockSchoolLines(mockSchools, assessments, targetSchools);
   // 申込から見えること（画面の④・②塾と同じ関数）
@@ -273,7 +278,9 @@ export function InterviewPrintSheet({
     latestOwnHensachi(assessments),
     region,
     // 神奈川県立（135点満点）と比べる本人の内申。どちらを使うかは学校の満点で決まる
-    latestOwnKanagawaNaishin(assessments)
+    latestOwnKanagawaNaishin(assessments),
+    // 私立の推薦・併願優遇の判定に使う本人の通知表（画面と同じ）
+    buildStudentReportCards(assessments)
   );
   const examCountdown = examCountdownLine(new Date(), student.grade, region);
   const examApplication = examApplicationLine(new Date(), student.grade, region);
