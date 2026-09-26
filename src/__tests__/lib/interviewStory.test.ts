@@ -18,6 +18,7 @@ import type { ScheduleRegularPattern } from '@/types/schedule';
 import {
   computeStoryTone,
   formatRegularEnrollment,
+  takenTestSubjects,
   formatTestPrepEnrollment,
   storyToneLine,
   treatZeroScoresAsMissing,
@@ -142,18 +143,56 @@ describe('受講の枠', () => {
       ...over,
     }) as ScheduleRegularPattern;
 
-  it('今日有効な通常期の日程から科目と曜日をまとめる', () => {
+  const slot = (n: number) => ({
+    time_slot: { slot_number: n } as ScheduleRegularPattern['time_slot'],
+  });
+
+  it('今日有効な通常期の日程から、科目ごとに曜日と時限をまとめる（英語（月1限）の形）', () => {
     const text = formatRegularEnrollment(
       [
-        pattern({ day_of_week: 4, subject_ids: ['e'] }),
-        pattern({ day_of_week: 2, subject_ids: ['m', 'e'] }),
+        pattern({ day_of_week: 4, subject_ids: ['e'], ...slot(2) }),
+        pattern({ day_of_week: 2, subject_ids: ['m', 'e'], ...slot(3) }),
+        pattern({ day_of_week: 4, subject_ids: ['m'], ...slot(1) }),
         pattern({ day_of_week: 5, subject_ids: ['s'], period_type: 'winter' }),
         pattern({ day_of_week: 1, subject_ids: ['s'], effective_until: '2026-08-31' }),
+        pattern({ day_of_week: 3 }),
       ],
       { e: '英語', m: '数学', s: '理科' },
       '2026-09-26'
     );
-    expect(text).toBe('英語・数学（週2・火木）');
+    expect(text).toBe('数学（火3限・木1限）・英語（火3限・木2限）・科目未登録（水）');
+  });
+
+  it('見立ての定期テストは受講科目だけで比べ、札に科目を添える', () => {
+    const taken = takenTestSubjects(
+      [pattern({ subject_ids: ['e'] }), pattern({ subject_ids: ['m'] })],
+      { e: '英語', m: '数学（中3）' },
+      '2026-09-26'
+    );
+    expect(taken.label).toBe('英・数');
+    // 受講していない国語が大きく上がっても、英数の +2 だけを見る
+    const r = computeStoryTone(
+      [
+        asm('regular_test', { english: 80, math: 70, japanese: 95 }),
+        asm('regular_test', { english: 79, math: 69, japanese: 60 }),
+      ],
+      [],
+      taken
+    );
+    expect(r.signals.find((s) => s.key === 'test')?.text).toBe('定期テスト（英・数） +2点 →');
+  });
+
+  it('受講科目が分からなければ5科で比べる', () => {
+    const taken = takenTestSubjects([], {}, '2026-09-26');
+    const r = computeStoryTone(
+      [
+        asm('regular_test', { english: 80, japanese: 95 }),
+        asm('regular_test', { english: 79, japanese: 60 }),
+      ],
+      [],
+      taken
+    );
+    expect(r.signals.find((s) => s.key === 'test')?.text).toBe('定期テスト +36点 ↑');
   });
 
   it('テスト対策はコマのある科目と増コマ申込', () => {
