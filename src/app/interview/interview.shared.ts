@@ -694,6 +694,11 @@ export interface ScoreSummaryRow {
 
 export interface ScoreSummary {
   testLabels: string[]; // 直近N件、古い→新しい順
+  /**
+   * 各テストの学年（testLabels と同じ並び）。★「1学期期末」だけでは中2と中3のどちらの試験か
+   * 分からない（学年をまたいで直近5件を並べると、同じ名前の列が2つ出る）。見出しに添える用
+   */
+  testGrades: (number | null)[];
   rows: ScoreSummaryRow[];
   totals: number[]; // 各テストの合計点（testLabels と同じ並び）
 }
@@ -717,6 +722,7 @@ export function computeScoreSummary(
     .reverse();
 
   const testLabels = picked.map((a) => ASSESSMENT_NAME_LABELS[a.name_code] ?? a.name_code);
+  const testGrades = picked.map((a) => a.grade ?? null);
 
   const subjectSet = new Set<string>();
   for (const a of picked) {
@@ -733,7 +739,7 @@ export function computeScoreSummary(
   }));
   const totals = picked.map((_, i) => rows.reduce((sum, row) => sum + (row.values[i] ?? 0), 0));
 
-  return { testLabels, rows, totals };
+  return { testLabels, testGrades, rows, totals };
 }
 
 /* ============================================================
