@@ -7,7 +7,13 @@ import { Button } from '@/components/ui';
 import { MapPin } from 'lucide-react';
 import { StudentPickerList, type StudentPickerItem } from './StudentPickerList';
 import { InquirySearchInput } from './InquirySearchInput';
-import { getStudentContractRatioMap } from '@/lib/api/student-subject-contracts';
+import { getStudentCourseMap } from '@/lib/api/student-subject-contracts';
+import { CoursePicker, isCourseSelectionMissing } from '@/components/schedule/CoursePicker';
+import {
+  resolveDuration,
+  type CourseDuration,
+  type StudentCourse,
+} from '@/lib/utils/studentCourse';
 import type { HalfPosition } from '@/types/schedule';
 import type { Subject } from '@/types/database';
 import type { Inquiry } from '@/types/database';
@@ -77,10 +83,14 @@ export function AddLessonModal({
   const [selectedStudent, setSelectedStudent] = useState<StudentPickerItem | null>(null);
   const [selectedInquiry, setSelectedInquiry] = useState<Inquiry | null>(null);
   const [subjectId, setSubjectId] = useState<string>('');
-  // Phase R: 追加授業（既存生徒）のみ 指導比率・45分前後半を出す。体験は ratio=2 固定・半コマなし。
-  const [ratio, setRatio] = useState<1 | 2>(2);
+  // 追加授業（既存生徒）のみコース欄を出す。体験は ratio=2 固定・半コマなし。
+  // ★既定値を置かない。コース未設定の科目では選ばれるまで開始させない。
+  const [ratio, setRatio] = useState<1 | 2 | null>(null);
+  const [pickedDuration, setPickedDuration] = useState<CourseDuration>(null);
   const [halfPosition, setHalfPosition] = useState<HalfPosition>(null);
-  const [contractRatioMap, setContractRatioMap] = useState<Map<string, 1 | 2>>(new Map());
+  const [courseMap, setCourseMap] = useState<Map<string, StudentCourse>>(new Map());
+  const [courseLoading, setCourseLoading] = useState(false);
+  const [courseLoadError, setCourseLoadError] = useState(false);
   // P2改訂: 登録したいコマ数（1〜20）。この数だけ配置したら配置モードを自動終了する。
   const [targetCount, setTargetCount] = useState<number>(1);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -102,7 +112,6 @@ export function AddLessonModal({
   const shownSubjects = noneForGrade ? subjects : filteredForGrade;
 
   const selectedSubject = subjects.find((s) => s.id === subjectId);
-  const is45 = selectedSubject?.duration_minutes === 45;
 
   // 体験×問合せ（見込み客）のときは既存生徒の入力・比率UIを出さない。
   const isInquiryTrial = kind === 'trial' && trialTarget === 'inquiry';
@@ -117,9 +126,12 @@ export function AddLessonModal({
     setSelectedStudent(null);
     setSelectedInquiry(null);
     setSubjectId(subjects[0]?.id ?? '');
-    setRatio(2);
+    // ★既定の 1対2 を入れない。コース未設定の科目では選ばれるまで開始させない。
+    setRatio(null);
+    setPickedDuration(null);
     setHalfPosition(null);
-    setContractRatioMap(new Map());
+    setCourseMap(new Map());
+    setCourseLoadError(false);
     setTargetCount(1);
     setErrorMsg(null);
   }, [isOpen, subjects]);
@@ -132,33 +144,75 @@ export function AddLessonModal({
     }
   }, [shownSubjects, subjectId]);
 
-  // 追加授業の既存生徒選択時：契約比率マップを読み込む（科目選択時の ratio 初期値に使う）。
+  // 追加授業の既存生徒選択時：コースを読み込む。
   useEffect(() => {
     if (!selectedStudent) {
-      setContractRatioMap(new Map());
+      setCourseMap(new Map());
+      setCourseLoadError(false);
       return;
     }
     let cancelled = false;
-    getStudentContractRatioMap(selectedStudent.id).then((m) => {
-      if (!cancelled) setContractRatioMap(m);
+    setCourseLoading(true);
+    setCourseLoadError(false);
+    getStudentCourseMap(selectedStudent.id).then((res) => {
+      if (cancelled) return;
+      setCourseLoading(false);
+      if (res.ok) {
+        setCourseMap(res.map);
+      } else {
+        setCourseMap(new Map());
+        setCourseLoadError(true);
+      }
     });
     return () => {
       cancelled = true;
     };
   }, [selectedStudent]);
 
-  // 科目変更時：ratio は契約から初期化、half は45分科目なら前半を既定に。
+  // 科目変更時：選んだ形態はクリアする（別の科目へ持ち越さない）。
+  useEffect(() => {
+    setRatio(null);
+    setPickedDuration(null);
+  }, [subjectId]);
+
+  /** 選択中の科目のコース。追加授業のときだけ意味を持つ。 */
+  const selectedSubjectCourse = subjectId ? (courseMap.get(subjectId) ?? null) : null;
+  /** 実際に使う値。★コースがあればコースが正。 */
+  const effectiveRatio: 1 | 2 | null = selectedSubjectCourse ? selectedSubjectCourse.ratio : ratio;
+  const effectiveDuration: CourseDuration = selectedSubjectCourse
+    ? selectedSubjectCourse.durationMinutes
+    : pickedDuration;
+  const effectiveIs45 =
+    resolveDuration(effectiveDuration, selectedSubject?.duration_minutes) === 45;
+  /**
+   * 追加授業でコース未設定・形態未選択のあいだは開始させない。
+   * ★ここは単発の追加授業なのでコースは作らない（コースを作るのは通塾日程の初回登録だけ）。
+   */
+  const courseBlocked =
+    showRatioUi &&
+    !!subjectId &&
+    isCourseSelectionMissing(selectedSubjectCourse, courseLoadError, effectiveRatio);
+
+  // 45分になったら前後半の既定を前半にする（全コマに戻ったら外す）。
   useEffect(() => {
     if (!showRatioUi) return;
-    setRatio(contractRatioMap.get(subjectId) ?? 2);
-    setHalfPosition(selectedSubject?.duration_minutes === 45 ? 'first' : null);
-  }, [subjectId, contractRatioMap, selectedSubject?.duration_minutes, showRatioUi]);
+    setHalfPosition((prev) => (effectiveIs45 ? (prev ?? 'first') : null));
+  }, [effectiveIs45, showRatioUi]);
 
   const canStart = useMemo(() => {
     if (!schoolId || !subjectId) return false;
+    if (courseBlocked || courseLoading) return false;
     if (isInquiryTrial) return !!selectedInquiry;
     return !!selectedStudent;
-  }, [schoolId, subjectId, isInquiryTrial, selectedInquiry, selectedStudent]);
+  }, [
+    schoolId,
+    subjectId,
+    courseBlocked,
+    courseLoading,
+    isInquiryTrial,
+    selectedInquiry,
+    selectedStudent,
+  ]);
 
   const handleStart = () => {
     if (!subjectId || !selectedSubject) {
@@ -189,10 +243,12 @@ export function AddLessonModal({
       setErrorMsg('生徒を選択してください');
       return;
     }
-    // 体験×既存生徒はシンプルに ratio=2・全コマ。追加授業は選んだ比率・半コマ。
-    const effRatio: 1 | 2 = showRatioUi ? ratio : 2;
-    const effHalf: HalfPosition = showRatioUi && is45 ? halfPosition : null;
-    const effDuration = showRatioUi ? (selectedSubject.duration_minutes ?? null) : null;
+    // 体験×既存生徒はシンプルに ratio=2・全コマ。追加授業はコース（無ければ選んだ形態）に従う。
+    const effRatio: 1 | 2 = showRatioUi ? (effectiveRatio ?? 2) : 2;
+    const effHalf: HalfPosition = showRatioUi && effectiveIs45 ? halfPosition : null;
+    const effDuration = showRatioUi
+      ? resolveDuration(effectiveDuration, selectedSubject.duration_minutes)
+      : null;
     onStartPlacement({
       kind,
       studentId: selectedStudent.id,
@@ -349,23 +405,32 @@ export function AddLessonModal({
             </p>
           </div>
 
-          {/* Phase R: 追加授業（既存生徒）のみ 指導比率＋45分前後半 */}
+          {/* 追加授業（既存生徒）のみ コース＋45分の前後半 */}
           {showRatioUi && (
             <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-medium text-[var(--paragraph)] mb-1">
-                  指導比率
-                </label>
-                <select
-                  value={String(ratio)}
-                  onChange={(e) => setRatio(e.target.value === '1' ? 1 : 2)}
-                  className={selectClass}
-                >
-                  <option value="2">1対2</option>
-                  <option value="1">1対1（1名で満席）</option>
-                </select>
-              </div>
-              {is45 && (
+              <CoursePicker
+                course={selectedSubjectCourse}
+                loading={courseLoading}
+                loadError={courseLoadError}
+                ratio={ratio}
+                durationMinutes={pickedDuration}
+                onChange={(r, d) => {
+                  setRatio(r);
+                  setPickedDuration(d);
+                }}
+                grade={selectedStudent?.grade ?? null}
+                // 追加授業は単発なのでコースを作らせない（コースを作るのは通塾日程の初回登録だけ）。
+                // 未設定のときは講師と同じく生の形態で選ばせる。
+                canManageCourse={false}
+                subjectSelected={!!subjectId}
+                studentName={
+                  selectedStudent
+                    ? `${selectedStudent.last_name} ${selectedStudent.first_name}`
+                    : null
+                }
+                subjectName={selectedSubject?.name ?? null}
+              />
+              {effectiveIs45 && (
                 <div>
                   <label className="block text-xs font-medium text-[var(--paragraph)] mb-1">
                     45分の前後半

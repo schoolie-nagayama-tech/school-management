@@ -449,8 +449,10 @@ export async function loadRealAllocatorInput(opts: RealDataOptions): Promise<Rea
     }
     const fallbackStudentIds = Array.from(komaByStudent.keys());
 
-    // ratio（生徒×科目の指導契約）。無ければ既定 ratio=2。
-    // student_subject_contracts の意味は getStudentContractRatioMap と同じ（student_id×subject_id→ratio）。
+    // ratio（生徒×科目のコース＝PS1／PS2／キッズ）。無ければ既定 ratio=2。
+    // student_subject_contracts の意味は getStudentCourseMap と同じ（student_id×subject_id→ratio）。
+    // ここは講習の自動割当の「読み取り」なので、コースが無い生徒でも計算を止めずに既定へ落とす
+    // （通塾日程の登録フォームと違い、ここで止めても人が直せる場面ではない）。
     const contractRows =
       fallbackStudentIds.length > 0
         ? await fetchAllInChunks<{ student_id: string; subject_id: string; ratio: number }>(
