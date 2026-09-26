@@ -78,29 +78,81 @@ function activeRegularPatterns(
   );
 }
 
+/** 曜日と時限（「月1限」）。時限が分からなければ曜日だけ */
+function slotLabel(p: ScheduleRegularPattern): string {
+  const day = DAY_OF_WEEK_LABELS[p.day_of_week] ?? '?';
+  const n = p.time_slot?.slot_number;
+  return n != null ? `${day}${n}限` : day;
+}
+
 /**
- * 通常授業を1行に。科目は通塾日程に付いた科目（重複なし・出てきた順）、週の回数は曜日の数。
- * ★「週◯」は曜日の数（コマ数ではない）。1日に2コマある生徒でも週2と数える
- *  （週回数の言い方は保護者との契約の単位で、曜日の数と一致する運用）。
+ * 通常授業を1行に。科目ごとに、いつ受けているかを添える（「英語（月1限・木2限）・数学（木3限）」）。
+ * ★2026-09-27 教室長「英語(月1限)みたいな書き方にして」。以前は「英語・数学（週2・火木）」で、
+ *   どの科目を何曜に受けているかが読めなかった。
+ * 並びは曜日→時限の早い順。科目の付いていない枠は「科目未登録（火2限）」として残す（枠があることは事実なので）。
  */
 export function formatRegularEnrollment(
   patterns: readonly ScheduleRegularPattern[],
   subjectNames: Record<string, string>,
   today: string
 ): string | null {
-  const active = activeRegularPatterns(patterns, today);
+  const active = activeRegularPatterns(patterns, today).sort(
+    (a, b) =>
+      a.day_of_week - b.day_of_week ||
+      (a.time_slot?.slot_number ?? 0) - (b.time_slot?.slot_number ?? 0)
+  );
   if (active.length === 0) return null;
-  const subjects: string[] = [];
+  const slotsBySubject = new Map<string, string[]>();
   for (const p of active) {
-    for (const id of p.subject_ids ?? []) {
-      const name = subjectNames[id];
-      if (name && !subjects.includes(name)) subjects.push(name);
+    const names = (p.subject_ids ?? []).map((id) => subjectNames[id]).filter(Boolean);
+    for (const name of names.length > 0 ? names : ['科目未登録']) {
+      const list = slotsBySubject.get(name) ?? [];
+      const label = slotLabel(p);
+      if (!list.includes(label)) list.push(label);
+      slotsBySubject.set(name, list);
     }
   }
-  const days = Array.from(new Set(active.map((p) => p.day_of_week))).sort((a, b) => a - b);
-  const dayText = days.map((d) => DAY_OF_WEEK_LABELS[d] ?? '?').join('');
-  const head = subjects.length > 0 ? subjects.join('・') : '科目未登録';
-  return `${head}（週${days.length}・${dayText}）`;
+  return Array.from(slotsBySubject.entries())
+    .map(([name, slots]) => `${name}（${slots.join('・')}）`)
+    .join('・');
+}
+
+/** 定期テストの科目コードの束（旧コードと中学コード）。社会は中学コードで3分野に分かれる */
+const TEST_SUBJECT_FAMILIES: ReadonlyArray<{ re: RegExp; label: string; codes: string[] }> = [
+  { re: /英/, label: '英', codes: ['english', 'jhs_english'] },
+  { re: /数|算/, label: '数', codes: ['math', 'jhs_math'] },
+  { re: /国/, label: '国', codes: ['japanese', 'jhs_japanese'] },
+  { re: /理/, label: '理', codes: ['science', 'jhs_science'] },
+  {
+    re: /社|地理|歴史|公民/,
+    label: '社',
+    codes: ['social', 'jhs_social_geo', 'jhs_social_history', 'jhs_social_civics'],
+  },
+];
+
+/**
+ * 塾で受けている科目（今日有効な通常期の通塾日程）を、定期テストの科目コードに直す。
+ * ★見立ての「定期テスト」の札はこの科目だけで上下を見る（2026-09-27 教室長
+ *   「定期テストの点数UPだけど受講科目かどうかで変わるからね」）。受けていない科目の上下は、
+ *   塾の成果として話す材料にならない。
+ * 科目名から推すのは、授業の科目（subjects）と成績の科目コードが別の表で、対応を持っていないため。
+ */
+export function takenTestSubjects(
+  patterns: readonly ScheduleRegularPattern[],
+  subjectNames: Record<string, string>,
+  today: string
+): { codes: Set<string>; label: string } {
+  const codes = new Set<string>();
+  const labels: string[] = [];
+  const names = activeRegularPatterns(patterns, today).flatMap((p) =>
+    (p.subject_ids ?? []).map((id) => subjectNames[id]).filter(Boolean)
+  );
+  for (const fam of TEST_SUBJECT_FAMILIES) {
+    if (!names.some((n) => fam.re.test(n))) continue;
+    fam.codes.forEach((c) => codes.add(c));
+    labels.push(fam.label);
+  }
+  return { codes, label: labels.join('・') };
 }
 
 /* ============================================================
@@ -226,7 +278,9 @@ export interface DisciplineMonthLike {
 export function computeStoryTone(
   assessments: AssessmentWithScores[],
   /** 新しい月が先頭（computeDisciplineMonthly の戻り） */
-  disciplineMonths: readonly DisciplineMonthLike[]
+  disciplineMonths: readonly DisciplineMonthLike[],
+  /** 塾で受けている科目（takenTestSubjects）。無ければ定期テストは5科で比べる */
+  taken?: { codes: Set<string>; label: string } | null
 ): StoryToneResult {
   const signals: StorySignal[] = [];
 
@@ -257,16 +311,20 @@ export function computeStoryTone(
     });
   }
 
+  // ★受講科目が分かれば、その科目だけで比べる（takenTestSubjects の注記）。
+  //   分からない（通塾日程が無い・科目名から当てられない）ときは5科で比べる
+  const takenCodes = taken && taken.codes.size > 0 ? taken.codes : null;
   const test = compareLatestTwo(
     assessments.filter((a) => a.category === 'regular_test'),
-    (s) => CORE_TEST_SUBJECTS.has(s)
+    (s) => CORE_TEST_SUBJECTS.has(s) && (!takenCodes || takenCodes.has(s))
   );
   if (test) {
     const diff = test.curr - test.prev;
     const d = directionOf(diff, 5);
+    const head = takenCodes && taken ? `定期テスト（${taken.label}）` : '定期テスト';
     signals.push({
       key: 'test',
-      text: `定期テスト ${diff >= 0 ? '+' : '−'}${Math.abs(diff)}点 ${ARROW[d]}`,
+      text: `${head} ${diff >= 0 ? '+' : '−'}${Math.abs(diff)}点 ${ARROW[d]}`,
       direction: d,
     });
   }

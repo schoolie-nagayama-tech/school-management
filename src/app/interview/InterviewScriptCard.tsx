@@ -82,6 +82,7 @@ import type { StudentExamGoalWithType } from '@/lib/api/progress';
 import type { TargetSchoolRow } from '@/lib/api/targetSchools';
 import {
   computeStoryTone,
+  takenTestSubjects,
   formatKoushuEnrollment,
   formatRegularEnrollment,
   formatTestPrepEnrollment,
@@ -988,11 +989,16 @@ export function InterviewScriptCard({
    * AIにはこの行を渡し、言いたいこと・道筋・各場面の文をこの向きにそろえさせる（story.ts の注記）。
    * ★宿題・遅刻は授業のあった直近2か月で比べる。3か月分あれば今月が0日でも先月と先々月で比べられる
    */
-  const storyTone = useMemo(
-    () =>
-      computeStoryTone(assessments, computeDisciplineMonthly(disciplineSessions, 3, new Date())),
-    [assessments, disciplineSessions]
-  );
+  const storyTone = useMemo(() => {
+    const today = new Date();
+    const ymd = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    // ★定期テストの札は塾で受けている科目だけで見る（story.ts の takenTestSubjects）
+    return computeStoryTone(
+      assessments,
+      computeDisciplineMonthly(disciplineSessions, 3, today),
+      takenTestSubjects(regularPatterns, subjectNames, ymd)
+    );
+  }, [assessments, disciplineSessions, regularPatterns, subjectNames]);
 
   const apply = (next: ScriptView | null) => {
     setView(next);
