@@ -11,6 +11,7 @@ import {
 import { createStudent } from '@/lib/api/students';
 import { getSubjects } from '@/lib/api/subjects';
 import type { Subject, StudentInsert } from '@/types/database';
+import { GENDER_LABELS } from '@/types/database';
 
 type Step = 'upload' | 'preview' | 'importing' | 'done';
 
@@ -138,6 +139,7 @@ export function StudentCsvImportModal({
           school_name: row.school_name,
           class_name: row.class_name,
           club: row.club,
+          gender: row.gender,
         };
 
         await createStudent(studentData, subjectIds.length > 0 ? subjectIds : undefined);
@@ -229,6 +231,7 @@ export function StudentCsvImportModal({
                     ['クラス', '—', ''],
                     ['部活', '—', ''],
                     ['受講科目', '—', '科目名を「/」区切り（例: 英語/数学）'],
+                    ['性別', '—', '女 / 男（空欄は未設定）'],
                   ].map(([col, req, note]) => (
                     <tr key={col}>
                       <td className="pr-4 py-1 font-medium text-[#1f2937]">{col}</td>
@@ -308,6 +311,7 @@ export function StudentCsvImportModal({
                       '学年',
                       '在籍状況',
                       '受講科目',
+                      '性別',
                     ].map((h) => (
                       <th
                         key={h}
@@ -329,6 +333,7 @@ export function StudentCsvImportModal({
                       <td className="px-3 py-2">{r.grade}</td>
                       <td className="px-3 py-2">{r.status}</td>
                       <td className="px-3 py-2">{r.subject_names.join('/')}</td>
+                      <td className="px-3 py-2">{r.gender ? GENDER_LABELS[r.gender] : '—'}</td>
                     </tr>
                   ))}
                 </tbody>

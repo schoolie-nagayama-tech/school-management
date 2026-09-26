@@ -67,7 +67,12 @@ interface ScoreListTableProps {
   canEdit: boolean;
   editingCell: { assessmentId: string; subject: string } | null;
   cellValue: string;
-  onCellClick: (assessmentId: string, subject: string, value: number | null) => void;
+  onCellClick: (
+    assessmentId: string,
+    subject: string,
+    value: number | null,
+    noTest?: boolean
+  ) => void;
   onCellChange: (value: string) => void;
   onCellBlur: (assessmentId: string, subject: string) => void;
   onCancelEdit: () => void;
@@ -180,7 +185,12 @@ function StudentGroup({
   canEdit: boolean;
   editingCell: { assessmentId: string; subject: string } | null;
   cellValue: string;
-  onCellClick: (assessmentId: string, subject: string, value: number | null) => void;
+  onCellClick: (
+    assessmentId: string,
+    subject: string,
+    value: number | null,
+    noTest?: boolean
+  ) => void;
   onCellChange: (value: string) => void;
   onCellBlur: (assessmentId: string, subject: string) => void;
   onCancelEdit: () => void;
@@ -290,6 +300,7 @@ function StudentGroup({
                 <ScoreListCell
                   key={col.key}
                   value={row.scores[col.key] ?? null}
+                  noTest={row.noTest[col.key] === true}
                   diff={row.diffs[col.key] ?? null}
                   assessmentId={row.assessmentId}
                   subject={col.key}

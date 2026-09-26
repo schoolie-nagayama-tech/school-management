@@ -5,6 +5,8 @@ import { Search, X, SlidersHorizontal, ArrowUpDown, Save } from 'lucide-react';
 import { InlineLoading } from '@/components/ui';
 import { listAssessmentsBySchool } from '@/lib/api/assessments';
 import { updateScore } from '@/lib/api/assessments';
+import { parseScoreInput, parsedToScoreState, scoreEditText } from '@/lib/scores/scoreInput';
+import { NoTestHint } from '@/components/scores/NoTestMark';
 import { transformToScoreList } from '@/lib/utils/scoreListTransform';
 import type { ScoreListCategory, ScoreListStudent } from '@/lib/utils/scoreListTransform';
 import { ASSESSMENT_NAME_OPTIONS, GRADE_LABELS } from '@/types/database';
@@ -173,7 +175,7 @@ export function ScoreListView({ category, students, schoolIds }: ScoreListViewPr
 
   // 未保存の変更を追跡
   const [pendingChanges, setPendingChanges] = useState<
-    Map<string, { assessmentId: string; subject: string; value: number | null }>
+    Map<string, { assessmentId: string; subject: string; value: number | null; noTest: boolean }>
   >(new Map());
   const [isSaving, setIsSaving] = useState(false);
   const [saveResult, setSaveResult] = useState<{ success: number; failed: number } | null>(null);
@@ -308,10 +310,11 @@ export function ScoreListView({ category, students, schoolIds }: ScoreListViewPr
   // ── インライン編集ハンドラ ──
 
   const handleCellClick = useCallback(
-    (assessmentId: string, subject: string, value: number | null) => {
+    (assessmentId: string, subject: string, value: number | null, noTest?: boolean) => {
       if (!canEdit) return;
       setEditingCell({ assessmentId, subject });
-      setCellValue(value != null ? String(value) : '');
+      // テストなしのセルは × を入れた状態で開く（消せば未入力、数値を打てば値に戻る）
+      setCellValue(scoreEditText({ value, no_test: noTest }));
     },
     [canEdit]
   );
@@ -324,10 +327,10 @@ export function ScoreListView({ category, students, schoolIds }: ScoreListViewPr
   const handleCellBlur = useCallback(
     (assessmentId: string, subject: string) => {
       setEditingCell(null);
-      const trimmed = cellValue.trim();
-      const newValue = trimmed === '' ? null : Number(trimmed);
-
-      if (trimmed !== '' && isNaN(newValue as number)) return;
+      const next = parsedToScoreState(parseScoreInput(cellValue));
+      if (!next) return;
+      const newValue = next.value;
+      const noTest = next.no_test;
 
       // ローカルで即座に更新
       setAssessmentsByStudent((prev) => {
@@ -340,11 +343,22 @@ export function ScoreListView({ category, students, schoolIds }: ScoreListViewPr
             const scoreIdx = assessment.scores.findIndex((s) => s.subject === subject);
             if (scoreIdx !== -1) {
               assessment.scores = [...assessment.scores];
-              assessment.scores[scoreIdx] = { ...assessment.scores[scoreIdx], value: newValue };
-            } else if (newValue != null) {
+              assessment.scores[scoreIdx] = {
+                ...assessment.scores[scoreIdx],
+                value: newValue,
+                no_test: noTest,
+              };
+            } else if (newValue != null || noTest) {
               assessment.scores = [
                 ...assessment.scores,
-                { id: '', assessment_id: assessmentId, subject, value: newValue, created_at: '' },
+                {
+                  id: '',
+                  assessment_id: assessmentId,
+                  subject,
+                  value: newValue,
+                  no_test: noTest,
+                  created_at: '',
+                },
               ];
             }
             const newAssessments = [...assessments];
@@ -359,7 +373,12 @@ export function ScoreListView({ category, students, schoolIds }: ScoreListViewPr
       // 未保存変更として記録
       setPendingChanges((prev) => {
         const next = new Map(prev);
-        next.set(changeKey(assessmentId, subject), { assessmentId, subject, value: newValue });
+        next.set(changeKey(assessmentId, subject), {
+          assessmentId,
+          subject,
+          value: newValue,
+          noTest,
+        });
         return next;
       });
 
@@ -384,9 +403,9 @@ export function ScoreListView({ category, students, schoolIds }: ScoreListViewPr
     let failed = 0;
 
     const changes = Array.from(pendingChanges.values());
-    for (const { assessmentId, subject, value } of changes) {
+    for (const { assessmentId, subject, value, noTest } of changes) {
       try {
-        await updateScore(assessmentId, subject, value);
+        await updateScore(assessmentId, subject, value, { noTest });
         success++;
       } catch (e) {
         console.error('Save failed:', assessmentId, subject, e);
@@ -620,7 +639,8 @@ export function ScoreListView({ category, students, schoolIds }: ScoreListViewPr
         </div>
       )}
 
-      {/* テーブル */}
+      {/* テーブル（模試は全科目受ける前提なので、テストなしのヒントは出さない） */}
+      {canEdit && category !== 'mock' && <NoTestHint className="mb-1" />}
       <ScoreListTable
         students={paginatedStudents}
         category={category}

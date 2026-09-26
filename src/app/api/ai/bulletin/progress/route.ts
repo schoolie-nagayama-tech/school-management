@@ -16,6 +16,7 @@ import {
   REPORT_CARD_SUBJECTS,
   TASK_KIND_LABELS,
   TASK_SCOPE_LABELS,
+  isScoreEntered,
   isTeacherSelfKind,
   needsTargetPeriod,
   type TaskKind,
@@ -67,7 +68,7 @@ async function loadReportCardSubjects(
 
   const { data, error } = await supabase
     .from('assessments')
-    .select('student_id, assessment_scores(subject, value)')
+    .select('student_id, assessment_scores(subject, value, no_test)')
     .eq('category', 'report_card')
     .eq('name_code', namePeriod)
     .in('student_id', studentIds)
@@ -81,11 +82,16 @@ async function loadReportCardSubjects(
   const core = new Set<string>(REPORT_CARD_SUBJECTS);
   for (const row of data ?? []) {
     const sid = row.student_id as string;
-    const scores = (row.assessment_scores ?? []) as { subject: string; value: number | null }[];
+    const scores = (row.assessment_scores ?? []) as {
+      subject: string;
+      value: number | null;
+      no_test?: boolean;
+    }[];
     const got = byStudent.get(sid) ?? [];
     for (const s of scores) {
       // ★換算内申（conv_*）は科目ではない。数に入れると9科の判定が水増しされる
-      if (s.value != null && core.has(s.subject) && !got.includes(s.subject)) got.push(s.subject);
+      // 「テストなし」の科目も入力済みに数える（値は空だが、入れようがない科目なので）
+      if (isScoreEntered(s) && core.has(s.subject) && !got.includes(s.subject)) got.push(s.subject);
     }
     byStudent.set(sid, got);
   }
@@ -108,7 +114,7 @@ async function loadTestEntered(
 
   const { data, error } = await supabase
     .from('assessments')
-    .select('student_id, assessment_scores(value)')
+    .select('student_id, assessment_scores(value, no_test)')
     .eq('category', 'regular_test')
     .eq('name_code', namePeriod)
     .in('student_id', studentIds)
@@ -120,8 +126,9 @@ async function loadTestEntered(
   }
 
   for (const row of data ?? []) {
-    const scores = (row.assessment_scores ?? []) as { value: number | null }[];
-    if (scores.some((s) => s.value != null)) entered.add(row.student_id as string);
+    const scores = (row.assessment_scores ?? []) as { value: number | null; no_test?: boolean }[];
+    // 「テストなし」の印も入力済みに数える（その科目の欄を教室が埋めた、という意味で同じ）
+    if (scores.some(isScoreEntered)) entered.add(row.student_id as string);
   }
   return entered;
 }

@@ -701,7 +701,14 @@ export function InterviewScriptCard({
    * ④「志望校と提案」。★AIを通さない（めやすとの差・距離はシステムが計算する）ので、
    *   AIが使えない日にも出る。表の行を押すと右の地図がその学校に寄る。
    */
-  const proposals = useTargetProposals(student.school_id, targetSchools, assessments);
+  // ★生徒の性別を渡す。私立の提案から入れない男子校・女子校を外し、偏差値を本人の側で出すため
+  //   （未設定なら従来どおり両方を出す）
+  const proposals = useTargetProposals(
+    student.school_id,
+    targetSchools,
+    assessments,
+    student.gender ?? null
+  );
   const [selectedProposalId, setSelectedProposalId] = useState<string | null>(null);
   /**
    * 右で基準を比べている私立（押した順・3校まで）。★保存しない。生徒を切り替えたら消す
@@ -786,9 +793,16 @@ export function InterviewScriptCard({
   // 私立の推薦・併願優遇の判定に使う本人の通知表（中3の2学期を優先。無ければ仮判定）
   const reportCards = useMemo(() => buildStudentReportCards(assessments), [assessments]);
   // ★教室の都県を渡す。私立の「都神外生」向けの区分など、教室の生徒が受けられない基準で判定しないため
+  // ★性別も渡す。男女別の基準がある私立は本人の側で判定する（④の表とそろえる）
   const targetSchoolGap = useMemo(
-    () => buildTargetSchoolGapLines(targetSchools, assessments, regionOfSchool(student.school_id)),
-    [targetSchools, assessments, student.school_id]
+    () =>
+      buildTargetSchoolGapLines(
+        targetSchools,
+        assessments,
+        regionOfSchool(student.school_id),
+        student.gender ?? null
+      ),
+    [targetSchools, assessments, student.school_id, student.gender]
   );
   // ④現状の確認「直近の模試」。合格可能性と、登録に無い公立校（あれば聞く）
   const mockSchoolLines = useMemo(
@@ -831,9 +845,11 @@ export function InterviewScriptCard({
         // 神奈川県立（135点満点）と比べる本人の内申。どちらを使うかは学校の満点で決まる
         latestOwnKanagawaNaishin(assessments),
         // 私立の推薦・併願優遇の判定に使う本人の通知表
-        reportCards
+        reportCards,
+        // 男女別の基準は本人の側で判定する（右の「志望校」の行とそろえる）
+        student.gender ?? null
       ),
-    [targetSchools, assessments, region, reportCards]
+    [targetSchools, assessments, region, reportCards, student.gender]
   );
 
   /**
@@ -1314,6 +1330,7 @@ export function InterviewScriptCard({
               targetSchools={targetSchools}
               cards={reportCards}
               region={region}
+              gender={student.gender ?? null}
             />,
             // 直近の模試の合格可能性（前回との比較つき）と、登録に無い公立校の指摘
             ...mockSchoolLines.tell.map((t, i) => <TellLine key={`mock-school-${i}`} text={t} />),

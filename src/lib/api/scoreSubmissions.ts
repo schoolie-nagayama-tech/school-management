@@ -277,10 +277,14 @@ export async function approveScoreSubmission(
   }
 
   // 2. 申請に含まれる科目だけ upsert（空欄・未申請の科目は触らない＝§7-5）。
+  // no_test=false も一緒に書く。教室側で「テストなし」にしてあった科目に保護者が点数を
+  // 申請してきた場合、印が残ったままだと DB の check（テストなしなら値は空）で転記が落ちるため。
+  // 点数が届いた＝その科目のテストはあった、と読む。
   const scoreRows = Object.entries(submission.scores).map(([subject, value]) => ({
     assessment_id: assessmentId,
     subject,
     value,
+    no_test: false,
   }));
   const { error: upsertError } = await svc
     .from('assessment_scores')

@@ -8,6 +8,7 @@ import { ASSESSMENT_NAME_LABELS, GRADE_LABELS } from '@/types/database';
 import { SUBJECT_CODES } from '@/types/database';
 import { calcNaishin } from '@/lib/utils/convertedNaishin';
 import type { NaishinType } from '@/lib/utils/convertedNaishin';
+import { NoTestMark } from './NoTestMark';
 
 const FIVE_SUBJECTS = [
   SUBJECT_CODES.ENGLISH,
@@ -36,7 +37,12 @@ interface ScoreTableRowProps {
   category: Category;
   editingCell: { assessmentId: string; subject: string } | null;
   cellValue: string;
-  onCellClick: (assessmentId: string, subject: string, value: number | null) => void;
+  onCellClick: (
+    assessmentId: string,
+    subject: string,
+    value: number | null,
+    noTest?: boolean
+  ) => void;
   onCellBlur: (assessmentId: string, subject: string) => void;
   onCellChange: (value: string) => void;
   onCancelEdit: () => void;
@@ -80,10 +86,13 @@ export function ScoreTableRow({
   onDragEnd,
 }: ScoreTableRowProps) {
   const scoreMap = new Map(assessment.scores.map((s) => [s.subject, s.value]));
+  // テストなしの科目。value は NULL なので合計・内申には入らない（0として数えない）
+  const noTestSubjects = new Set(assessment.scores.filter((s) => s.no_test).map((s) => s.subject));
   const tabTriggeredRef = useRef(false);
 
   const renderCell = (subject: string) => {
     const value = scoreMap.get(subject) ?? null;
+    const noTest = noTestSubjects.has(subject);
     const isEditing =
       editingCell?.assessmentId === assessment.id && editingCell?.subject === subject;
 
@@ -120,9 +129,9 @@ export function ScoreTableRow({
         ) : (
           <div
             className="min-h-[28px] flex items-center justify-center text-sm text-[var(--paragraph)] cursor-pointer hover:bg-[var(--surface)] rounded transition-colors duration-150"
-            onClick={() => onCellClick(assessment.id, subject, value)}
+            onClick={() => onCellClick(assessment.id, subject, value, noTest)}
           >
-            {value !== null && value !== undefined ? value : '—'}
+            {noTest ? <NoTestMark /> : value !== null && value !== undefined ? value : '—'}
           </div>
         )}
       </td>

@@ -23,6 +23,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useConfirm } from '@/hooks/useConfirm';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 import { getAssessmentSubjects, type AssessmentSubject } from '@/lib/api/assessmentSubjects';
+import { parseScoreInput, parsedToScoreState, scoreEditText } from '@/lib/scores/scoreInput';
+import { NoTestHint, NoTestMark } from '@/components/scores/NoTestMark';
 
 interface StudentScoresProps {
   student: Student;
@@ -171,24 +173,30 @@ export function StudentScores({ student, isOpen, onClose }: StudentScoresProps) 
   };
 
   // セル編集開始
-  const handleCellClick = (assessmentId: string, subject: string, currentValue: number | null) => {
+  const handleCellClick = (
+    assessmentId: string,
+    subject: string,
+    currentValue: number | null,
+    noTest: boolean
+  ) => {
     setEditingCell({ assessmentId, subject });
-    setCellValue(currentValue?.toString() || '');
+    // テストなしのセルは × を入れた状態で開く（消せば未入力、数値を打てば値に戻る）
+    setCellValue(scoreEditText({ value: currentValue, no_test: noTest }));
   };
 
   // セル編集確定（onBlur）
   const handleCellBlur = async (assessmentId: string, subject: string) => {
     if (!editingCell) return;
 
-    const numValue = cellValue.trim() === '' ? null : parseFloat(cellValue);
-    if (cellValue.trim() !== '' && isNaN(numValue!)) {
-      // 数値でない場合は元に戻す
+    const next = parsedToScoreState(parseScoreInput(cellValue));
+    if (!next) {
+      // 数値でも × でもない場合は元に戻す
       setEditingCell(null);
       return;
     }
 
     try {
-      await updateScore(assessmentId, subject, numValue);
+      await updateScore(assessmentId, subject, next.value, { noTest: next.no_test });
       await fetchAssessments();
     } catch (error) {
       console.error('Error updating score:', error);
@@ -402,6 +410,8 @@ export function StudentScores({ student, isOpen, onClose }: StudentScoresProps) 
           </div>
         )}
 
+        {/* 模試は全科目受ける前提なので、ヒントは定期テスト・通知表だけに出す */}
+        {category !== 'mock' && <NoTestHint className="mb-1" />}
         <div className="overflow-x-auto">
           <table className="w-full border-collapse border border-border bg-surface-raised">
             <thead>
@@ -495,6 +505,7 @@ export function StudentScores({ student, isOpen, onClose }: StudentScoresProps) 
                     {subjects.map((subj) => {
                       const score = assessment.scores.find((s) => s.subject === subj);
                       const value = score?.value ?? null;
+                      const noTest = score?.no_test === true;
                       const isEditing =
                         editingCell?.assessmentId === assessment.id &&
                         editingCell?.subject === subj;
@@ -520,9 +531,9 @@ export function StudentScores({ student, isOpen, onClose }: StudentScoresProps) 
                           ) : (
                             <div
                               className="px-2 py-1 cursor-pointer hover:bg-surface-hover rounded min-h-[32px] flex items-center justify-center transition-colors duration-150"
-                              onClick={() => handleCellClick(assessment.id, subj, value)}
+                              onClick={() => handleCellClick(assessment.id, subj, value, noTest)}
                             >
-                              {value !== null ? value.toString() : '-'}
+                              {noTest ? <NoTestMark /> : value !== null ? value.toString() : '-'}
                             </div>
                           )}
                         </td>

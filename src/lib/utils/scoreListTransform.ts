@@ -20,6 +20,11 @@ export interface ScoreListRow {
   grade: number;
   examMonth: string | null;
   scores: Record<string, number | null>;
+  /**
+   * 「テストなし」の科目（true のものだけ入る）。scores 側の値は null のままなので、
+   * 合計・前回比・換算内申には入らない（0として数えない）。表示で × を出すためだけに持つ。
+   */
+  noTest: Record<string, boolean>;
   diffs: Record<string, number | null>;
   fiveSum: number | null;
   nineSum: number | null;
@@ -169,8 +174,10 @@ export function transformToScoreList(
 
     for (const assessment of sorted) {
       const scoreMap: Record<string, number | null> = {};
+      const noTest: Record<string, boolean> = {};
       for (const s of assessment.scores) {
         scoreMap[s.subject] = s.value;
+        if (s.no_test) noTest[s.subject] = true;
       }
 
       const fiveSum = sumSubjects(scoreMap, FIVE_SUBJECTS);
@@ -204,6 +211,7 @@ export function transformToScoreList(
         grade: assessment.grade,
         examMonth: assessment.exam_month,
         scores: scoreMap,
+        noTest,
         diffs,
         fiveSum,
         nineSum,

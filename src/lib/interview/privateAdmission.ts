@@ -728,12 +728,17 @@ export function scopeApplies(scope: string | null, region: Region | null): boole
  * ★既定は併願優遇（公私）。面談で一番よく使う（都立が第1志望の生徒の滑り止め）ため。
  *   （公）だけの区分は、公私が無いときに使う。併願が無い学校（推薦のみ・単願のみ）は推薦→単願。
  * ★教室の生徒が受けられない区分（都神外生など）は候補から外す。
+ * ★生徒の性別（students.gender）が分かっていれば、もう一方の性別の基準（男女別に基準がある学校の
+ *   「女子」の区分を男子生徒に、など）は候補から外す。未設定なら従来どおり外さない。
  */
 export function pickPrimaryRule(
   rules: readonly AdmissionRule[],
-  region: Region | null
+  region: Region | null,
+  gender: 'male' | 'female' | null = null
 ): AdmissionRule | null {
-  const usable = rules.filter((r) => scopeApplies(r.applicantScope, region));
+  const usable = rules.filter(
+    (r) => scopeApplies(r.applicantScope, region) && ruleGenderApplies(r, gender)
+  );
   const order: Array<(r: AdmissionRule) => boolean> = [
     (r) => r.kind === '併願' && !r.publicOnly,
     (r) => r.kind === '併願',
@@ -745,6 +750,18 @@ export function pickPrimaryRule(
     if (hit) return hit;
   }
   return null;
+}
+
+/**
+ * 区分の性別（rule.gender＝'男子'|'女子'|null）が生徒に当てはまるか。
+ * 区分に性別が無い、または生徒の性別が未設定なら当てはまるとみなす（外しすぎないため）。
+ */
+export function ruleGenderApplies(
+  rule: Pick<AdmissionRule, 'gender'>,
+  gender: 'male' | 'female' | null
+): boolean {
+  if (!rule.gender || !gender) return true;
+  return rule.gender === (gender === 'male' ? '男子' : '女子');
 }
 
 export const ADMISSION_STATUS_LABEL: Record<AdmissionStatus, string> = {

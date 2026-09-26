@@ -1,18 +1,27 @@
 'use client';
 
+import { NoTestMark } from '@/components/scores/NoTestMark';
+
 function formatScore(n: number): string {
   return Number.isInteger(n) ? String(n) : String(Math.round(n * 10) / 10);
 }
 
 interface ScoreListCellProps {
   value: number | null;
+  /** テストなし（value は null）。× を出す */
+  noTest?: boolean;
   diff: number | null;
   assessmentId: string;
   subject: string;
   canEdit: boolean;
   isEditing: boolean;
   editValue: string;
-  onCellClick: (assessmentId: string, subject: string, value: number | null) => void;
+  onCellClick: (
+    assessmentId: string,
+    subject: string,
+    value: number | null,
+    noTest?: boolean
+  ) => void;
   onCellChange: (value: string) => void;
   onCellBlur: (assessmentId: string, subject: string) => void;
   onCancelEdit: () => void;
@@ -20,6 +29,7 @@ interface ScoreListCellProps {
 
 export function ScoreListCell({
   value,
+  noTest = false,
   diff,
   assessmentId,
   subject,
@@ -56,9 +66,11 @@ export function ScoreListCell({
         className={`min-h-[24px] flex items-center justify-center text-xs ${
           canEdit ? 'cursor-pointer hover:bg-surface-hover rounded' : ''
         }`}
-        onClick={canEdit ? () => onCellClick(assessmentId, subject, value) : undefined}
+        onClick={canEdit ? () => onCellClick(assessmentId, subject, value, noTest) : undefined}
       >
-        {value != null ? (
+        {noTest ? (
+          <NoTestMark />
+        ) : value != null ? (
           <span>
             {formatScore(value)}
             <DiffBadge diff={diff} />

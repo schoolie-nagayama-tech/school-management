@@ -37,6 +37,7 @@ import AccessDenied from '@/components/AccessDenied';
 import { exportProgressToPDF } from '@/lib/utils/pdfExport';
 import { MockCsvImportModal } from '@/components/scores/MockCsvImportModal';
 import { ScoreSubmissionQueue } from '@/components/scores/ScoreSubmissionQueue';
+import { parseScoreInput, parsedToScoreState, scoreEditText } from '@/lib/scores/scoreInput';
 
 type Category = 'regular_test' | 'report_card' | 'mock';
 
@@ -165,18 +166,26 @@ export default function StudentScoresPage() {
     [assessmentsByCategory.mock]
   );
 
-  const handleCellClick = (assessmentId: string, subject: string, value: number | null) => {
+  const handleCellClick = (
+    assessmentId: string,
+    subject: string,
+    value: number | null,
+    noTest?: boolean
+  ) => {
     setEditingCell({ assessmentId, subject });
-    setCellValue(value !== null ? String(value) : '');
+    // テストなしのセルは × を入れた状態で開く（消せば未入力、数値を打てば値に戻る）
+    setCellValue(scoreEditText({ value, no_test: noTest }));
   };
 
   const handleCellBlur = (assessmentId: string, subject: string) => {
     if (!editingCell) return;
-    const numValue = cellValue.trim() === '' ? null : parseFloat(cellValue);
-    if (cellValue.trim() !== '' && (numValue === null || isNaN(numValue))) {
+    const next = parsedToScoreState(parseScoreInput(cellValue));
+    if (!next) {
       setEditingCell(null);
       return;
     }
+    const numValue = next.value;
+    const noTest = next.no_test;
 
     // オプティミスティック更新（再フェッチなしでスクロール位置を保持）
     setAssessmentsByCategory((prev) => {
@@ -187,11 +196,11 @@ export default function StudentScoresPage() {
         const assessment = next[cat][aIdx];
         const scoreIdx = assessment.scores.findIndex((s) => s.subject === subject);
         let newScores: AssessmentScore[];
-        if (numValue === null) {
+        if (numValue === null && !noTest) {
           newScores = assessment.scores.filter((s) => s.subject !== subject);
         } else if (scoreIdx >= 0) {
           newScores = assessment.scores.map((s) =>
-            s.subject === subject ? { ...s, value: numValue } : s
+            s.subject === subject ? { ...s, value: numValue, no_test: noTest } : s
           );
         } else {
           newScores = [
@@ -201,6 +210,7 @@ export default function StudentScoresPage() {
               assessment_id: assessmentId,
               subject,
               value: numValue,
+              no_test: noTest,
               created_at: new Date().toISOString(),
             },
           ];
@@ -214,7 +224,7 @@ export default function StudentScoresPage() {
     });
     setEditingCell(null);
 
-    updateScore(assessmentId, subject, numValue).catch((e) => {
+    updateScore(assessmentId, subject, numValue, { noTest }).catch((e) => {
       console.error(e);
       toastError('スコアの更新に失敗しました');
       fetchAllAssessments();

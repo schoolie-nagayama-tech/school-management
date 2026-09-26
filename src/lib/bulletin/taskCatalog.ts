@@ -147,6 +147,16 @@ export function isReportCardTarget(grade: number | null | undefined): boolean {
 }
 
 /**
+ * 成績1科目が「入力済み」か。点数が入っているか、「テストなし」（no_test）の印があれば済。
+ *
+ * ★テストなし＝その回にその科目のテストが無かった（2026-09-27 追加）。値は空のままなので、
+ *   値だけを見ると「未入力」に数えてしまい、督促に永久に残る。
+ */
+export function isScoreEntered(score: { value: number | null; no_test?: boolean | null }): boolean {
+  return score.value != null || score.no_test === true;
+}
+
+/**
  * その生徒の内申が入力済みか。★9科すべてそろって初めて済（2026-09-04 決定）。
  *
  * ★本番で確かめたところ、途中まで入力の生徒は0名で、「1科目でも入力」と結果が
@@ -154,6 +164,7 @@ export function isReportCardTarget(grade: number | null | undefined): boolean {
  *   厳しい基準を選んでも誰も未済に落ちない。
  *
  * @param enteredSubjects その生徒の通知表に点数が入っている科目コード
+ *   （「テストなし」の科目も入れる。呼び出し側で isScoreEntered を使って集める）
  */
 export function isReportCardEntered(enteredSubjects: readonly string[]): boolean {
   const entered = new Set(enteredSubjects);

@@ -19,6 +19,7 @@ import { computeTaskProgress, isJudgeable, type StudentRow } from '@/lib/bulleti
 import {
   REPORT_CARD_SUBJECTS,
   TASK_KIND_LABELS,
+  isScoreEntered,
   isTeacherSelfKind,
   type TaskKind,
   type TaskScope,
@@ -76,7 +77,7 @@ async function loadReportCardSubjects(
 ): Promise<string[]> {
   const { data } = await supabase
     .from('assessments')
-    .select('assessment_scores(subject, value)')
+    .select('assessment_scores(subject, value, no_test)')
     .eq('category', 'report_card')
     .eq('name_code', 'term1')
     .eq('student_id', studentId);
@@ -84,9 +85,14 @@ async function loadReportCardSubjects(
   const core = new Set<string>(REPORT_CARD_SUBJECTS);
   const got: string[] = [];
   for (const row of data ?? []) {
-    const scores = (row.assessment_scores ?? []) as { subject: string; value: number | null }[];
+    const scores = (row.assessment_scores ?? []) as {
+      subject: string;
+      value: number | null;
+      no_test?: boolean;
+    }[];
     for (const s of scores) {
-      if (s.value != null && core.has(s.subject) && !got.includes(s.subject)) got.push(s.subject);
+      // 「テストなし」の科目も入力済みに数える（progress/route.ts と同じ判定）
+      if (isScoreEntered(s) && core.has(s.subject) && !got.includes(s.subject)) got.push(s.subject);
     }
   }
   return got;

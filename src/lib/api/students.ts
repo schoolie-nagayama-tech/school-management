@@ -17,9 +17,9 @@ import { fetchAllPaged } from '@/lib/utils/supabasePaging';
 // 講師希望3列（preferred_teacher_gender / fixed_teacher_ids / excluded_teacher_ids）も含める。
 // これらは座席表D&D・マッチングが読むだけでなく、生徒編集フォームの初期表示にも必要（getStudent がこの列集合で取得するため）。
 // withdrawal_date（退塾予定日）も同様。ここに無いと保存はできても編集フォームを開き直すと空欄に戻り、
-// 「登録しても反映されない」ように見える。
+// 「登録しても反映されない」ように見える。gender（生徒の性別）も同じ理由で入れる。
 const STUDENT_LIST_COLUMNS =
-  'id,school_id,student_code,last_name,first_name,last_name_kana,first_name_kana,grade,status,school_name,class_name,club,subject_other,is_programming,is_sibling,is_test,withdrawal_date,preferred_teacher_gender,fixed_teacher_ids,excluded_teacher_ids,deleted_at,created_at,updated_at';
+  'id,school_id,student_code,last_name,first_name,last_name_kana,first_name_kana,grade,status,school_name,class_name,club,subject_other,is_programming,is_sibling,is_test,withdrawal_date,preferred_teacher_gender,gender,fixed_teacher_ids,excluded_teacher_ids,deleted_at,created_at,updated_at';
 
 const SUBJECT_LIST_COLUMNS = 'id,name,grade_category,sort_order,duration_minutes,created_at';
 
