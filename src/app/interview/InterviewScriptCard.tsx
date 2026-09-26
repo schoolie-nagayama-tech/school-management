@@ -89,7 +89,12 @@ import {
   type EnrollmentView,
 } from '@/lib/interview/story';
 import { EnrollmentStrip, StoryPanel } from './InterviewStory';
-import { StudyTipCards, TargetProposalTable, useTargetProposals } from './TargetProposals';
+import {
+  PrivateComparePanel,
+  StudyTipCards,
+  TargetProposalTable,
+  useTargetProposals,
+} from './TargetProposals';
 import { TargetSchoolMap } from './TargetSchoolMap';
 import type { MockSchoolRecord } from '@/lib/api/mockTargetSchools';
 import { SEASON_LABELS } from '@/types/database';
@@ -698,10 +703,19 @@ export function InterviewScriptCard({
    */
   const proposals = useTargetProposals(student.school_id, targetSchools, assessments);
   const [selectedProposalId, setSelectedProposalId] = useState<string | null>(null);
+  /**
+   * 右で基準を比べている私立（押した順・3校まで）。★保存しない。生徒を切り替えたら消す
+   */
+  const [compareIds, setCompareIds] = useState<string[]>([]);
+  const toggleCompare = (id: string) =>
+    setCompareIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id].slice(-3)
+    );
 
   // 生徒を切り替えたら結果を捨てる（前の生徒の内容が残ると読み違える）
   useEffect(() => {
     setSelectedProposalId(null);
+    setCompareIds([]);
     setView(null);
     setMadeAt(null);
     setMessage(null);
@@ -1242,17 +1256,30 @@ export function InterviewScriptCard({
               state={proposals}
               selectedId={selectedProposalId}
               onSelect={setSelectedProposalId}
+              compareIds={compareIds}
+              onToggleCompare={toggleCompare}
             />,
             <StudyTipCards key="status:study-tips" tips={view?.studyTips ?? []} />,
             ...aiSeenLines('status'),
             ...showLines,
           ],
+          // ★私立の基準を比べるパネルは地図の上（押した学校の中身を、地図より先に読むため）
           aside: (
-            <TargetSchoolMap
-              rows={proposals.rows}
-              origin={proposals.origin}
-              selectedId={selectedProposalId}
-            />
+            <div className="flex flex-col gap-3">
+              <PrivateComparePanel
+                items={compareIds
+                  .map((id) => proposals.compareById.get(id))
+                  .filter((p): p is NonNullable<typeof p> => Boolean(p))}
+                onRemove={toggleCompare}
+                onClear={() => setCompareIds([])}
+              />
+              <TargetSchoolMap
+                rows={proposals.rows}
+                privateRows={proposals.privateRows}
+                origin={proposals.origin}
+                selectedId={selectedProposalId}
+              />
+            </div>
           ),
           ask: [
             ...targetSchoolTalk

@@ -323,6 +323,8 @@ export interface ClauseResult {
   reason?: string;
   /** 加点の対象になる合計か（sum だけ） */
   sumKey?: string;
+  /** 基準の値（sum だけ）。本人との差（±1）を出すのに使う */
+  need?: number;
 }
 
 function yearsLabel(years: readonly YearWeight[] | undefined): string {
@@ -383,8 +385,8 @@ function evaluateClauseInner(c: Clause, cards: StudentReportCards): Omit<ClauseR
     if (c.t === 'sum') {
       const gap = c.min - total;
       return gap <= 0
-        ? { state: 'met', label, have: total, sumKey: sumKeyOf(c.s) }
-        : { state: 'short', label, have: total, gap, sumKey: sumKeyOf(c.s) };
+        ? { state: 'met', label, have: total, sumKey: sumKeyOf(c.s), need: c.min }
+        : { state: 'short', label, have: total, gap, sumKey: sumKeyOf(c.s), need: c.min };
     }
     const avg = round1(total / (weight * countOf(c.s)));
     const gap = round1(c.min - avg);
@@ -768,4 +770,74 @@ export function provisionalNote(p: StudentReportCards['provisional']): string | 
   if (p === '1学期') return '中3の1学期の評定で仮に判定';
   if (p === '2年学年末') return '中3の評定が無いので中2の学年末で仮に判定';
   return null;
+}
+
+/* ============================================================
+ * ④「志望校と提案」の私立（併願優遇）で使う読み
+ * ========================================================== */
+
+/**
+ * 本人の内申と基準の差（本人 − 基準）。合計（sum）の条件だけで見る。
+ * - 満たしている選択肢は、その中で一番きつい合計の余り（0＝ちょうど）
+ * - 満たしていない選択肢は、足りない合計のうち一番大きい不足をマイナスで
+ * - 選択肢のうち、本人に一番有利なもの（最大）を採る（①②③のいずれか、なので）
+ * ★平均（avg）の条件を含む選択肢は使わない。平均の±1は合計の±1と重さがまるで違う。
+ * ★前提で落ちる（不可）・基準が無い・評定が未入力なら null（±1で並べる対象にしない）。
+ * ★「加点込みで届いている」は届いている扱い（0未満にしない）。本人の評定で分かる加点なので確か。
+ */
+export function admissionMargin(j: AdmissionJudgment): number | null {
+  if (j.status === 'ng' || j.status === 'na' || j.status === 'nodata') return null;
+  let best: number | null = null;
+  for (const alt of j.alternatives) {
+    if (alt.gap == null) continue;
+    if (alt.clauses.some((c) => c.type === 'avg')) continue;
+    const sums = alt.clauses.filter((c) => c.type === 'sum' && c.have != null && c.need != null);
+    if (sums.length === 0) continue;
+    const m = Math.min(...sums.map((c) => (c.have as number) - (c.need as number)));
+    if (best == null || m > best) best = m;
+  }
+  if (best == null) return null;
+  return j.status === 'ok_with_bonus' ? Math.max(best, 0) : best;
+}
+
+/**
+ * 区分の前提・条件を短い札に（「第2志望のみ」「公立併願のみ」「9科に2は不可」「英4」「英検準2級」）。
+ * ★行に小さく並べる用なので、長い原文は出さない（原文は根拠の「推薦・併願の条件」で見る）。
+ */
+export function ruleConditionChips(rule: AdmissionRule): string[] {
+  const chips: string[] = [];
+  if (/第2志望/.test(rule.examLabel)) chips.push('第2志望のみ');
+  if (rule.publicOnly) chips.push('公立併願のみ');
+  for (const g of rule.body.gates) {
+    if (g.t === 'none_le') chips.push(`${subjectSetLabel(g.s)}に${g.grade}は不可`);
+    else if (g.t === 'each') chips.push(`${subjectSetLabel(g.s)}各${g.min}`);
+    else if (g.t === 'any_ge') chips.push(`${subjectSetLabel(g.s)}に${g.grade}以上`);
+    else if (g.t === 'cert') chips.push(g.name);
+    else if (g.t === 'sum' || g.t === 'avg') chips.push(clauseLabel(g).replace(/\s/g, ''));
+  }
+  // 選択肢の中の検定（「英検2級かつ5科20」）も前提として見せる
+  for (const alt of rule.body.any)
+    for (const c of alt) if (c.t === 'cert' && !chips.includes(c.name)) chips.push(c.name);
+  return chips;
+}
+
+/** 内申の基準の読み（「5科21または9科38」）。選択肢の合計・平均だけをつなぐ */
+export function ruleCriterionText(rule: AdmissionRule): string {
+  if (rule.body.no_criterion) return rule.body.no_criterion;
+  const alts = rule.body.any
+    .map((alt) =>
+      alt
+        .filter((c) => c.t === 'sum' || c.t === 'avg')
+        .map((c) =>
+          clauseLabel(c)
+            .replace(/\s以上$/, '')
+            .replace(/\s/g, '')
+        )
+        .join('かつ')
+    )
+    .filter(Boolean);
+  // ★検定・各教科の条件だけが違う選択肢（「3科13かつ英4」「3科13かつ英検準2級」）は、
+  //   合計だけを見ると同じ文になる。重ねて出さない
+  const unique = Array.from(new Set(alts));
+  return unique.length > 0 ? unique.join('または') : '基準は原文を確認';
 }

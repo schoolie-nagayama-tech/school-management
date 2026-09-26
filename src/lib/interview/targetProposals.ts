@@ -117,6 +117,16 @@ function formatKm(km: number): string {
 }
 
 /**
+ * 沿線を短く。★私立の沿線は「東日本旅客鉄道 中央線」「東京地下鉄 4号線丸ノ内線」のように
+ * 会社名と番号付きで入っている（公立は路線名だけ）。会社名と「◯号線」を外して「中央線」「丸ノ内線」にする。
+ * ただし「京浜急行電鉄 本線」は「本線」だけでは何線か分からないので、元の書き方のまま残す。
+ */
+export function shortLineName(line: string): string {
+  const name = (line.split(/\s+/).pop() ?? line).replace(/^\d+号線/, '');
+  return !name || name === '本線' ? line : name;
+}
+
+/**
  * 通学の目安の文。
  * ★「直線」を必ず添える（道のりは直線の1.2〜1.4倍になる。distance.ts の注記）。
  */
@@ -124,7 +134,9 @@ export function commuteText(km: number, accessLines: readonly string[]): string 
   if (km <= BIKE_MAX_KM) {
     return `自転車 約${estimateBikeMinutes(km)}分（直線${formatKm(km)}km）`;
   }
-  const lines = accessLines.slice(0, 2).join('・');
+  const lines = Array.from(new Set(accessLines.map(shortLineName)))
+    .slice(0, 2)
+    .join('・');
   return lines ? `電車 直線${formatKm(km)}km・${lines}` : `電車 直線${formatKm(km)}km`;
 }
 

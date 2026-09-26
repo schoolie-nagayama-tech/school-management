@@ -16,6 +16,21 @@ import 'leaflet/dist/leaflet.css';
 import type { Map as LeafletMap, CircleMarker } from 'leaflet';
 import type { ProposalOrigin, ProposalRow } from '@/lib/interview/targetProposals';
 import { PROPOSAL_BAND_LABEL } from '@/lib/interview/targetProposals';
+import {
+  PRIVATE_BAND_LABEL,
+  type PrivateBand,
+  type PrivateProposalRow,
+} from '@/lib/interview/privateProposals';
+
+/**
+ * 私立（併願優遇）のピン。★白抜きの丸で、枠の色が差（あと1／ちょうど／1余裕）。
+ *   塗りつぶしの公立（挑戦・順当・安全）と、色が似ていても形で見分けられるようにする。
+ */
+const PRIVATE_PIN_CLASS: Record<PrivateBand, string> = {
+  near: 'fill-surface stroke-warning',
+  even: 'fill-surface stroke-info',
+  over: 'fill-surface stroke-success',
+};
 
 const PIN_CLASS = {
   challenge: 'fill-danger stroke-surface',
@@ -31,10 +46,13 @@ function esc(s: string): string {
 
 export function TargetSchoolMap({
   rows,
+  privateRows = [],
   origin,
   selectedId,
 }: {
   rows: ProposalRow[];
+  /** 私立（併願優遇）の提案。表の私立の段と同じ並び */
+  privateRows?: PrivateProposalRow[];
   origin: ProposalOrigin | null;
   selectedId: string | null;
 }) {
@@ -45,14 +63,17 @@ export function TargetSchoolMap({
   const touchedRef = useRef(false);
 
   const withPos = rows.filter((r) => r.school.lat != null && r.school.lon != null);
+  const privatePos = privateRows.filter((r) => r.school.lat != null && r.school.lon != null);
   // 行の中身が同じなら地図を作り直さない（親の再描画のたびにピンを立て直すと、開いた吹き出しが閉じる）
   const key =
     (origin ? `${origin.lat},${origin.lon}|` : '') +
-    withPos.map((r) => `${r.school.id}:${r.band ?? ''}:${r.rank ?? ''}`).join(',');
+    withPos.map((r) => `${r.school.id}:${r.band ?? ''}:${r.rank ?? ''}`).join(',') +
+    '|' +
+    privatePos.map((r) => `${r.school.id}:${r.band}`).join(',');
 
   useEffect(() => {
     const node = el.current;
-    if (!node || withPos.length === 0) return;
+    if (!node || withPos.length + privatePos.length === 0) return;
     let disposed = false;
     let observer: ResizeObserver | null = null;
 
@@ -116,6 +137,26 @@ export function TargetSchoolMap({
           .addTo(map);
         markers.set(r.school.id, m);
       }
+      for (const r of privatePos) {
+        const latlng: [number, number] = [r.school.lat as number, r.school.lon as number];
+        points.push(latlng);
+        const name = r.school.course
+          ? `${r.school.schoolName}（${r.school.course}）`
+          : r.school.schoolName;
+        const m = L.circleMarker(latlng, {
+          radius: 6,
+          weight: 3,
+          fillOpacity: 1,
+          className: PRIVATE_PIN_CLASS[r.band],
+        })
+          .bindTooltip(esc(name), { direction: 'top', offset: [0, -5] })
+          .bindPopup(
+            `<b>${esc(name)}</b> 私立・${esc(PRIVATE_BAND_LABEL[r.band])}<br>` +
+              `${esc(r.compare.heading)} ${esc(r.judgmentText)}<br>${esc(r.commute)}`
+          )
+          .addTo(map);
+        markers.set(r.school.id, m);
+      }
       markersRef.current = markers;
       map.on('dragstart', () => {
         touchedRef.current = true;
@@ -155,7 +196,7 @@ export function TargetSchoolMap({
     m.openPopup();
   }, [selectedId]);
 
-  if (withPos.length === 0) return null;
+  if (withPos.length + privatePos.length === 0) return null;
 
   return (
     <div className="flex flex-col gap-1">
@@ -188,6 +229,12 @@ export function TargetSchoolMap({
           <i className="inline-block h-2 w-2 rounded-full border-2 border-text-heading" />
           志望校
         </span>
+        {privatePos.length > 0 && (
+          <span className="inline-flex items-center gap-1">
+            <i className="inline-block h-2 w-2 rounded-full border-2 border-success bg-surface" />
+            私立（白抜き・枠の色＝差）
+          </span>
+        )}
       </div>
     </div>
   );
