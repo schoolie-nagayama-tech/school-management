@@ -25,6 +25,8 @@ import {
   MAX_CURRENT_LINE_LENGTH,
   type BriefEpisode,
   type BriefStudyTip,
+  type BriefRoadmapStep,
+  sanitizeStoryTone,
   type BriefFollowUp,
   type BriefSectionInput,
   type BriefSectionKey,
@@ -85,6 +87,10 @@ interface BriefResponse {
   episodes: BriefEpisode[];
   /** ④勉強の仕方の引き出しから選んだもの（id と理由）。中身は画面が studyTips.ts から出す */
   studyTips: BriefStudyTip[];
+  /** 面談の筋（今日いちばん言いたいこと・道筋・締めの1文）。AIが書けなければ空 */
+  thesis: string;
+  roadmap: BriefRoadmapStep[];
+  closing: string;
   /** AIを呼べなかった・読めなかった。故障側（現状の行は返しているので画面は成立する） */
   degraded: boolean;
   /** この教室ではAIに送らない設定。故障ではなく意図した停止 */
@@ -243,6 +249,8 @@ export async function POST(request: NextRequest) {
     sections?: unknown;
     followUpItems?: unknown;
     lessonNotes?: unknown;
+    /** システムが決めた見立ての行（story.ts の storyToneLine）。sanitizeStoryTone で検める */
+    storyTone?: unknown;
     model?: unknown;
   };
   try {
@@ -280,6 +288,9 @@ export async function POST(request: NextRequest) {
     openers: {},
     episodes: [],
     studyTips: [],
+    thesis: '',
+    roadmap: [],
+    closing: '',
     degraded: false,
     disabled: false,
     model,
@@ -433,6 +444,7 @@ export async function POST(request: NextRequest) {
       userText: briefUserText(sections, followUpItems, regionOfSchool(schoolId), {
         givenName: (student as { first_name?: string | null }).first_name ?? null,
         followUpActors,
+        storyTone: sanitizeStoryTone(body.storyTone),
       }),
       // ★長く書かせるようにしたので、出力の上限も広げる（seen 180字×7＋thread＋bridge＋followUps）。
       //   Opus 5.5 は思考が常に入り、その分も max_tokens から引かれる。4000 だと思考で食われて
@@ -462,7 +474,8 @@ export async function POST(request: NextRequest) {
       parsed.sections.every((s) => !s.seen) &&
       parsed.followUps.length === 0 &&
       Object.keys(parsed.openers).length === 0 &&
-      parsed.episodes.length === 0;
+      parsed.episodes.length === 0 &&
+      !parsed.thesis;
 
     return NextResponse.json({
       sections: withCurrent(seenByKey),
@@ -472,6 +485,9 @@ export async function POST(request: NextRequest) {
       openers: parsed.openers,
       episodes: parsed.episodes,
       studyTips: parsed.studyTips,
+      thesis: parsed.thesis,
+      roadmap: parsed.roadmap,
+      closing: parsed.closing,
       degraded: nothing,
       disabled: false,
       model,

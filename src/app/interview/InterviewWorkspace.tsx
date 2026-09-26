@@ -39,6 +39,7 @@ import {
 import { getRegularPatterns } from '@/lib/api/schedule';
 import { getKoushuEnrollmentsByStudent, type KoushuEnrollment } from '@/lib/api/seasonalCourses';
 import { getStudentTargetSchools, type TargetSchoolRow } from '@/lib/api/targetSchools';
+import { treatZeroScoresAsMissing } from '@/lib/interview/story';
 import { getStudentMockSchools, type MockSchoolRecord } from '@/lib/api/mockTargetSchools';
 import { getSubjects } from '@/lib/api/subjects';
 import {
@@ -357,7 +358,9 @@ export function InterviewWorkspace() {
         ]);
         if (cancelled) return;
         setInterviews(iv);
-        setAssessments(asm);
+        // ★0点は未入力として扱う（テストが無かった回に0を入れる運用のため）。面談の画面だけの読み替えで、
+        //   保存されている値は変えない（story.ts の treatZeroScoresAsMissing）
+        setAssessments(treatZeroScoresAsMissing(asm));
         setRegularPatterns(patterns);
         setKoushuEnrollments(koushu);
         setKoushuSummaries(koushuProposals);

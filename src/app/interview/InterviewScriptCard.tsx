@@ -66,6 +66,7 @@ import {
   followUpItemKey,
   type BriefEpisode,
   type BriefStudyTip,
+  type BriefRoadmapStep,
   type BriefFollowUp,
   type BriefSectionKey,
   type BriefSign,
@@ -79,6 +80,15 @@ import type { SeasonalProposalSeasonSummary } from '@/lib/api/seasonalProposalSu
 import type { ScheduleRegularPattern } from '@/types/schedule';
 import type { StudentExamGoalWithType } from '@/lib/api/progress';
 import type { TargetSchoolRow } from '@/lib/api/targetSchools';
+import {
+  computeStoryTone,
+  formatKoushuEnrollment,
+  formatRegularEnrollment,
+  formatTestPrepEnrollment,
+  storyToneLine,
+  type EnrollmentView,
+} from '@/lib/interview/story';
+import { EnrollmentStrip, StoryPanel } from './InterviewStory';
 import { StudyTipCards, TargetProposalTable, useTargetProposals } from './TargetProposals';
 import { TargetSchoolMap } from './TargetSchoolMap';
 import type { MockSchoolRecord } from '@/lib/api/mockTargetSchools';
@@ -113,6 +123,7 @@ import {
   type MockApplicationForInterview,
   type ShukaisuChangeForInterview,
   type TestPrepProposalForInterview,
+  computeDisciplineMonthly,
 } from './interview.shared';
 import {
   SCENE_KEYS,
@@ -167,6 +178,10 @@ export interface ScriptView {
   episodes: BriefEpisode[];
   /** ④勉強の仕方（AIが引き出しから選んだ id と理由）。AIが使えない日は空 */
   studyTips: BriefStudyTip[];
+  /** 面談の筋（AI）。今日いちばん言いたいこと・道筋・⑦の締め。AIが使えない日は空 */
+  thesis: string;
+  roadmap: BriefRoadmapStep[];
+  closing: string;
 }
 
 interface ScriptResponse extends ScriptView {
@@ -912,6 +927,43 @@ export function InterviewScriptCard({
     [koushuBuckets, fiscalYear, seasonKey]
   );
 
+  /**
+   * 受講の枠（台本の一番上）。通常授業・今期の講習・直近のテスト対策を1か所にまとめる。
+   * ★2026-09-25 教室長「受講科目とコマ数はわかりやすく表示して」。それまでは⑤と④の根拠（畳まれている）に分かれていた
+   */
+  const koushuSeasonHeading = `${SEASON_LABELS[seasonKey] ?? seasonKey} ${fiscalYear}`;
+  const enrollment: EnrollmentView = useMemo(() => {
+    const today = new Date();
+    const ymd = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    return {
+      regular: formatRegularEnrollment(regularPatterns, subjectNames, ymd),
+      koushu: formatKoushuEnrollment(
+        koushuBuckets.find((b) => b.year === fiscalYear && b.season === seasonKey),
+        koushuSeasonHeading
+      ),
+      testPrep: formatTestPrepEnrollment(testPrep),
+    };
+  }, [
+    regularPatterns,
+    subjectNames,
+    koushuBuckets,
+    fiscalYear,
+    seasonKey,
+    koushuSeasonHeading,
+    testPrep,
+  ]);
+
+  /**
+   * 見立て（面談の空気）。★システムが成績・宿題・遅刻の上下から決める（AIに決めさせない）。
+   * AIにはこの行を渡し、言いたいこと・道筋・各場面の文をこの向きにそろえさせる（story.ts の注記）。
+   * ★宿題・遅刻は授業のあった直近2か月で比べる。3か月分あれば今月が0日でも先月と先々月で比べられる
+   */
+  const storyTone = useMemo(
+    () =>
+      computeStoryTone(assessments, computeDisciplineMonthly(disciplineSessions, 3, new Date())),
+    [assessments, disciplineSessions]
+  );
+
   const apply = (next: ScriptView | null) => {
     setView(next);
     onResult(next);
@@ -939,6 +991,8 @@ export function InterviewScriptCard({
           // ★週回数変更は授業の様子（lessons＝サーバーが組む）に足す行なので、別の口で送る
           //   （サーバーは「週回数変更:」で始まる行しか通さない。sanitizeLessonNotes）
           lessonNotes: shukaisuLines.aiLine ? [shukaisuLines.aiLine] : [],
+          // ★見立て（システムが決めたもの）。AIはこれを変えずに、この向きで筋を立てる
+          storyTone: storyToneLine(storyTone),
           // ★admin/owner 以外は切り替えUIを出していないので modelKey は常に既定値（best）のまま。
           //   送ってもサーバー側で権限外なら無視されるだけなので、ここで出し分けなくてよい。
           model: modelKey,
@@ -971,6 +1025,9 @@ export function InterviewScriptCard({
         openers: json.degraded ? {} : (json.openers ?? {}),
         episodes: json.degraded ? [] : (json.episodes ?? []),
         studyTips: json.degraded ? [] : (json.studyTips ?? []),
+        thesis: json.degraded ? '' : (json.thesis ?? ''),
+        roadmap: json.degraded ? [] : (json.roadmap ?? []),
+        closing: json.degraded ? '' : (json.closing ?? ''),
       });
       setMadeAt(new Date().toISOString().slice(0, 10));
       setRated(false);
@@ -1292,6 +1349,8 @@ export function InterviewScriptCard({
 
       case 'closing':
         return {
+          // ★締めの1文（AI）を定型の前に置く。面談の最後に「結局何が言いたかったのか」を言い切るため
+          opener: view?.closing || undefined,
           talk: CLOSING_LINES.map((t, i) => <SayLine key={i} text={t} />),
           ask: [],
           facts: [],
@@ -1533,6 +1592,24 @@ export function InterviewScriptCard({
             保存されません
           </span>
         </div>
+
+        {/* 受講の枠と面談の筋。★AIで作る前から出す（受講・見立て・札はシステムが組むもの） */}
+        <EnrollmentStrip enrollment={enrollment} koushuSeasonHeading={koushuSeasonHeading} />
+        <StoryPanel
+          tone={storyTone}
+          thesis={view?.thesis ?? ''}
+          roadmap={view?.roadmap ?? []}
+          goalLabel={
+            isExamGrade(student.grade)
+              ? `入試${examCountdown ? ` ―― ${examCountdown}` : ''}`
+              : '学年の終わり'
+          }
+          koushuText={
+            enrollment.koushu
+              ? `${SEASON_LABELS[seasonKey] ?? seasonKey}講習 ${enrollment.koushu.body}`
+              : null
+          }
+        />
 
         {!view && (
           <div className="mt-2 flex flex-wrap items-center gap-2">

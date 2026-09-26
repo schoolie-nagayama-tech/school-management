@@ -2613,7 +2613,7 @@ export function buildProgressFactLines(textbookData: readonly TextbookProgressDa
 const MAX_KOUSHU_HISTORY = 4;
 
 /** 期の状態の言い方。⑤の行・⑥のバッジ・ヘッダー帯で同じ言葉を使う */
-const KOUSHU_STATUS_LABEL: Record<SeasonalProposalStatus, string> = {
+export const KOUSHU_STATUS_LABEL: Record<SeasonalProposalStatus, string> = {
   approved: '申込済',
   sent: '提案中',
   draft: '下書き',
@@ -2717,7 +2717,7 @@ function sortKoushuSeasonsDesc(buckets: readonly KoushuSeasonBucket[]): KoushuSe
 }
 
 /** 「数学 8コマ・英語 6コマ」。0コマの科目は出さない。1つも残らなければ null */
-function komaBySubjectText(komaBySubject: Record<string, number>): string | null {
+export function komaBySubjectText(komaBySubject: Record<string, number>): string | null {
   const parts = Object.entries(komaBySubject)
     .filter(([, koma]) => koma > 0)
     .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
