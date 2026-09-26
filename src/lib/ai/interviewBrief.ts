@@ -147,6 +147,17 @@ export interface BriefEpisode {
   text: string;
 }
 
+/**
+ * ⑤プラン提示の「なぜ」（科目ごと・AI）。
+ * ★subject は渡したプランの科目名（planSubjectsFromSections）と1字も違わないものだけを残す。
+ *   画面は科目名で科目カードに突き合わせるので、言い換えた科目名は置き場所が無い。
+ */
+export interface BriefPlanReason {
+  subject: string;
+  /** その科目の課題と、なぜこの教材・単元・コマ数になるのか（数字なし） */
+  text: string;
+}
+
 export interface BriefResult {
   /** 渡したセクションぶん必ず並ぶ（読めなかったときは seen が全部空になる） */
   sections: BriefSectionResult[];
@@ -181,6 +192,11 @@ export interface BriefResult {
   roadmap: BriefRoadmapStep[];
   /** ⑦クロージングで保護者にそのまま言う締めの1文（話し言葉） */
   closing: string;
+  /**
+   * ⑤プラン提示の科目ごとの「なぜ」。★koushu セクションにプランの行（PLAN_AI_PREFIX）を
+   * 渡していなければ常に空（bridge と同じく、渡していない材料の話をさせない）
+   */
+  planReasons: BriefPlanReason[];
 }
 
 /**
@@ -224,6 +240,12 @@ export const MAX_THESIS_LENGTH = 110;
 export const MAX_ROADMAP_FIELD_LENGTH = 60;
 /** 締めの1文（保護者にそのまま言う） */
 export const MAX_CLOSING_LENGTH = 120;
+/**
+ * ⑤プラン提示の「なぜ」1科目ぶんの上限。★科目カードの中に出すので、1〜2文で言い切れる長さに抑える
+ */
+export const MAX_PLAN_REASON_LENGTH = 120;
+/** プランの科目の上限（AIに渡す科目・返させる件数の両方）。講習で9科目以上取ることはまず無い */
+export const MAX_PLAN_SUBJECTS = 8;
 /** AIへ渡す約束・要望の件数の上限（MAX_PREVIOUS_PROMISES ＋ MAX_PREVIOUS_REQUESTS ぶん） */
 export const MAX_FOLLOW_UP_ITEMS = 10;
 /**
@@ -249,6 +271,36 @@ export const TEST_PREP_AI_PREFIX = 'テスト対策:';
  *   別の口（lessonNotes）で受け取り、この書き出しで始まる行だけを通す（sanitizeLessonNotes）。
  */
 export const SHUKAISU_AI_PREFIX = '週回数変更:';
+
+/**
+ * koushu（講習）の現状に足す「今期のプランの中身」（科目ごと1行）の書き出し。
+ * 形は「プラン: 英語 10コマ：教材「…」／テーマ：…／単元：不定詞・比較」（lib/interview/planExplain.ts が組む）。
+ * ★AIに科目ごとの「なぜ」（planReasons）を書かせる材料。画面・紙では⑤の科目カードに別の形で出すので、
+ *   表示側はこの書き出しの行を外す（interview.shared.ts の stripTargetSchoolFactLines）。
+ * ★科目名は書き出しの直後から最初の空白まで。科目名に空白を含めない決まり（planExplain.ts で詰める）。
+ */
+export const PLAN_AI_PREFIX = 'プラン:';
+
+/**
+ * AIへ渡したセクションから、プランの科目名（渡した順・重複なし）を取り出す。
+ * ★planReasons の subject はここに無い名前を捨てる（parseBriefResult）。briefUserText にも
+ *   同じ並びを「この名前をそのまま使う」として渡すので、送る側と検める側で必ずこれを通す。
+ * ★koushu 以外のセクションに紛れた行は見ない（プランの話は講習の材料からしかさせない）。
+ */
+export function planSubjectsFromSections(sections: readonly BriefSectionInput[]): string[] {
+  const out: string[] = [];
+  for (const s of sections) {
+    if (s.key !== 'koushu') continue;
+    for (const line of s.current) {
+      if (!line.startsWith(PLAN_AI_PREFIX)) continue;
+      const subject = line.slice(PLAN_AI_PREFIX.length).trim().split(/\s/)[0] ?? '';
+      if (!subject || out.indexOf(subject) !== -1) continue;
+      if (out.length >= MAX_PLAN_SUBJECTS) break;
+      out.push(subject);
+    }
+  }
+  return out;
+}
 
 /** lessonNotes の件数の上限。週回数変更は最新の1件しか組まないので、余裕を見て2 */
 export const MAX_LESSON_NOTES = 2;
@@ -567,7 +619,7 @@ export function briefSystemPrompt(): string {
     '  koushu は講習の提案（koushu セクション）がこの段の中身なら true。講習の提案を渡していなければ false。',
     `- closing：⑦の締めに教室長が保護者へそのまま言う1文を ${MAX_CLOSING_LENGTH}字まで（丁寧語・数字なし）。`,
     '  thesis を話し言葉にして、次に何をするかで終える。',
-    '- ★この下の sections・followUps・thread・bridge・openers・episodes・studyTips は、すべて thesis と',
+    '- ★この下の sections・followUps・thread・bridge・planReasons・openers・episodes・studyTips は、すべて thesis と',
     '  同じ方向を向けてください。1つずつ別々の課題に答えるのではなく、筋のどこに当たる話かを意識して書く。',
     '  面談の最後に「結局何が言いたかったのか」が保護者に残るようにするためです。',
     '',
@@ -637,6 +689,17 @@ export function briefSystemPrompt(): string {
     '- ★つながりが見えなければ空文字にする。無理にこじつけない。',
     '- koushu セクションを渡していないときは、この項目は使われないので考えなくてよい。',
     '',
+    // ★2026-09-27 追加（⑤プラン提示の説明）。bridge がプラン全体の1文なのに対し、こちらは科目ごと。
+    //   画面は科目カードの「なぜ」の欄に、システムが出す定期テストの上下の札と並べて出す
+    '■ planReasons（⑤プランの科目ごとの「なぜ」）',
+    `- 【現状】の koushu に「${PLAN_AI_PREFIX}」の行と【プランの科目】を渡したときだけ書く。渡していなければ空配列。`,
+    '- 【プランの科目】の科目ごとに1件。subject は【プランの科目】の名前を**そのまま**書く',
+    '  （言い換えた科目名・渡していない科目は捨てられます）。',
+    `- text は1〜2文・${MAX_PLAN_REASON_LENGTH}字まで。その科目の課題（score・lessons・progress・テスト対策の材料から`,
+    '  読めること）と、だからこの教材・この単元・このコマ数になる、を書く。thesis・roadmap と同じ向きで。',
+    '- ★数字は書かない（コマ数・点数も。数字が入った文は捨てられます）。「コマを厚めに取った」のように言葉で。',
+    '- 材料から課題が読めない科目は省く。こじつけない。',
+    '',
     // ★2026-09-23 追加。ここから下（openers・episodes）は内部の下書きではなく、
     //   教室長が保護者に向かってそのまま口に出す文。上の「保護者向けの言い回しにしなくてよい」は当てはまらない
     '■ openers（ひとこと＝場面の頭で、教室長が保護者にそのまま言う1文）',
@@ -695,7 +758,9 @@ export function briefSystemPrompt(): string {
       '"roadmap":[{"key":"now","goal":"英語だけが崩れている","juku":"長文ではなく語彙で落としている","home":"","koushu":false},' +
       '{"key":"next","goal":"英語の語彙を戻す","juku":"授業の頭で単語の確認テストを毎回行う","home":"宿題の時間と場所を決める","koushu":true},' +
       '{"key":"goal","goal":"当日点で内申の不足を取り返す","juku":"過去問で当日点の型を作る","home":"併願の私立を決める","koushu":false}],' +
-      '"closing":"原因は英語の単語です。塾は毎回の確認テストで支えますので、冬で土台を戻して次の模試で一緒に確かめましょう"}',
+      '"closing":"原因は英語の単語です。塾は毎回の確認テストで支えますので、冬で土台を戻して次の模試で一緒に確かめましょう",' +
+      '"planReasons":[{"subject":"英語","text":"定期テストの失点は文法の抜けで、長文の前に土台を戻したい。' +
+      'だから不定詞と比較の単元にコマを厚めに取った"}]}',
   ].join('\n');
 }
 
@@ -726,6 +791,11 @@ export function briefUserText(
      * 呼び出し側で sanitizeStoryTone を通したものを渡す
      */
     storyTone?: string | null;
+    /**
+     * プランの科目名（planSubjectsFromSections の戻り）。★planReasons の subject はこの名前だけ。
+     * parseBriefResult にも同じ並びを渡すこと（片方だけ違うと、正しく書いた理由が捨てられる）
+     */
+    planSubjects?: readonly string[];
   } = {}
 ): string {
   const blocks = sections.map((s) => {
@@ -752,6 +822,16 @@ export function briefUserText(
     '【現状】',
     ...blocks,
   ];
+  // ★プランの科目は現状の行とは別枠で渡す。planReasons の subject はこの名前と1字も違えられないため
+  //  （約束・要望と同じ流儀）。koushu を送っていないときは planSubjects も空になる
+  const planSubjects = extra.planSubjects ?? [];
+  if (planSubjects.length > 0) {
+    body.push(
+      '',
+      '【プランの科目】（planReasons の subject はこの名前をそのまま使う）',
+      ...planSubjects.map((s) => `- ${s}`)
+    );
+  }
   // ★約束・要望は現状の行とは別枠で渡す。followUps の item はこの文と1字も違えられないため、
   //   セクションの行に混ぜず「この文をそのまま使う」と見出しで明示する
   if (followUpItems.length > 0) {
@@ -806,7 +886,12 @@ export function parseBriefResult(
    * AIに番号付きで渡した引継ぎの行（briefUserText の【lessons】と同じ並び）。
    * ★場面（episodes）の lesson 番号はここで引く。渡していない番号は捨てる。
    */
-  sentLessonLines: readonly string[] = []
+  sentLessonLines: readonly string[] = [],
+  /**
+   * AIに【プランの科目】として渡した科目名（planSubjectsFromSections の戻り）。
+   * ★planReasons の subject はここで引く。渡していない科目名は捨てる。
+   */
+  sentPlanSubjects: readonly string[] = []
 ): BriefResult {
   const keys = uniqueKeys(sentKeys);
   const empty: BriefResult = {
@@ -820,6 +905,7 @@ export function parseBriefResult(
     thesis: '',
     roadmap: [],
     closing: '',
+    planReasons: [],
   };
   if (!raw || typeof raw !== 'object') return empty;
 
@@ -834,6 +920,7 @@ export function parseBriefResult(
     thesis?: unknown;
     roadmap?: unknown;
     closing?: unknown;
+    planReasons?: unknown;
   };
 
   // 渡した key ごとに1件だけ拾う（同じ key を2回返してきたら先に来たほうを採る）
@@ -1014,6 +1101,29 @@ export function parseBriefResult(
     (st): st is BriefRoadmapStep => Boolean(st)
   );
 
+  /**
+   * ⑤プランの科目ごとの「なぜ」。
+   * - koushu を渡していなければ空（bridge と同じ。講習の材料が無いのにプランを語らせない）
+   * - 渡していない科目名・同じ科目の2件目は捨てる（科目カードに突き合わせられないため）
+   * - 数字入り・上限超えは捨てる（切り詰めない・数字を直さない。ほかの項目と同じ）
+   */
+  const planReasons: BriefPlanReason[] = [];
+  const planRows =
+    keys.indexOf('koushu') !== -1 && Array.isArray(obj.planReasons)
+      ? (obj.planReasons as unknown[])
+      : [];
+  for (const row of planRows) {
+    if (planReasons.length >= MAX_PLAN_SUBJECTS) break;
+    if (!row || typeof row !== 'object') continue;
+    const r = row as { subject?: unknown; text?: unknown };
+    const subject = typeof r.subject === 'string' ? r.subject.trim() : '';
+    if (!subject || sentPlanSubjects.indexOf(subject) === -1) continue;
+    if (planReasons.some((p) => p.subject === subject)) continue;
+    const text = cleanText(r.text, MAX_PLAN_REASON_LENGTH);
+    if (!text) continue;
+    planReasons.push({ subject, text });
+  }
+
   return {
     sections,
     followUps,
@@ -1025,6 +1135,7 @@ export function parseBriefResult(
     thesis,
     roadmap,
     closing,
+    planReasons,
   };
 }
 

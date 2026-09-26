@@ -21,7 +21,7 @@ import type {
 } from '@/lib/api/seasonalProposalSummary';
 import { normalizeKomaBySubject } from '@/lib/utils/komaBySubject';
 import type { BriefSectionKey, FollowUpActor } from '@/lib/ai/interviewBrief';
-import { SHUKAISU_AI_PREFIX, TEST_PREP_AI_PREFIX } from '@/lib/ai/interviewBrief';
+import { PLAN_AI_PREFIX, SHUKAISU_AI_PREFIX, TEST_PREP_AI_PREFIX } from '@/lib/ai/interviewBrief';
 import { zoukomaKomaCount } from '@/lib/utils/zoukomaKoma';
 import type { TextbookProgressData } from './ProgressPanel';
 import type { DisciplineSessionRow } from '@/lib/api/progress-sessions';
@@ -1280,8 +1280,13 @@ export function isTargetSchoolFactLine(line: string): boolean {
  */
 export function stripTargetSchoolFactLines(lines: readonly string[]): string[] {
   // ★「テスト対策:」の行も同じ扱い（AIには score に混ぜて渡し、画面・紙は④に別の形で出す）
+  // ★「プラン:」の行（koushu に混ぜて渡す今期のプランの中身）も外す。⑤の科目カードが別の形で出す
   return lines.filter(
-    (l) => !isTargetSchoolFactLine(l) && !isMockSchoolFactLine(l) && !isTestPrepAiLine(l)
+    (l) =>
+      !isTargetSchoolFactLine(l) &&
+      !isMockSchoolFactLine(l) &&
+      !isTestPrepAiLine(l) &&
+      !l.startsWith(PLAN_AI_PREFIX)
   );
 }
 
