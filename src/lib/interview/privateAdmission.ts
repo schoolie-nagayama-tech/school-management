@@ -730,6 +730,10 @@ export function scopeApplies(scope: string | null, region: Region | null): boole
  * ★教室の生徒が受けられない区分（都神外生など）は候補から外す。
  * ★生徒の性別（students.gender）が分かっていれば、もう一方の性別の基準（男女別に基準がある学校の
  *   「女子」の区分を男子生徒に、など）は候補から外す。未設定なら従来どおり外さない。
+ * ★志望校の「併願」の印（student_target_schools.is_heigan）では選び方を変えない。
+ *   併願の区分はもともと最優先なので、印の付いた私立も付いていない私立も同じ区分が出る
+ *   （印で変わるのは表と材料の「併願」の添え書きだけ）。印の無い学校で推薦・単願を先に
+ *   したくなったら、ここに引数を足す。
  */
 export function pickPrimaryRule(
   rules: readonly AdmissionRule[],

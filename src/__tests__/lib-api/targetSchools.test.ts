@@ -37,9 +37,9 @@ describe('saveStudentTargetSchools', () => {
     const { saveStudentTargetSchools } = await import('@/lib/api/targetSchools');
 
     await saveStudentTargetSchools('student-1', 'school-1', [
-      { rank: 1, schoolName: '清瀬', highSchoolId: 'h1', reason: '' },
-      { rank: 2, schoolName: '   ', highSchoolId: null, reason: '' },
-      { rank: 3, schoolName: '', highSchoolId: null, reason: '' },
+      { rank: 1, schoolName: '清瀬', highSchoolId: 'h1', reason: '', isHeigan: false },
+      { rank: 2, schoolName: '   ', highSchoolId: null, reason: '', isHeigan: false },
+      { rank: 3, schoolName: '', highSchoolId: null, reason: '', isHeigan: false },
     ]);
 
     // rank 2・3（空欄）は削除、rank 1（入力あり）だけ upsert される
@@ -55,6 +55,7 @@ describe('saveStudentTargetSchools', () => {
       rank: 1,
       school_name: '清瀬',
       high_school_id: 'h1',
+      is_heigan: false,
     });
     expect(upsertOptions).toEqual({ onConflict: 'student_id,rank' });
   });
@@ -67,7 +68,13 @@ describe('saveStudentTargetSchools', () => {
 
     // 私立・国立・他県はマスタ（都立のみ）に無いため、候補を選ばず自由記述のまま保存できる必要がある
     await saveStudentTargetSchools('student-1', 'school-1', [
-      { rank: 3, schoolName: '錦城高校', highSchoolId: null, reason: '家から近い' },
+      {
+        rank: 3,
+        schoolName: '錦城高校',
+        highSchoolId: null,
+        reason: '家から近い',
+        isHeigan: false,
+      },
     ]);
 
     expect(chain.delete).not.toHaveBeenCalled();

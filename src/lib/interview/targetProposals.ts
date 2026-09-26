@@ -4,6 +4,14 @@
  * 本人のいまの偏差値（直近の模試の5科）から、教室の最寄り駅の近くの公立高校を
  * 挑戦／順当／安全に分けて並べる。登録済みの志望校は区分の範囲外でも必ず並べる。
  *
+ * ★1区分は「志望校を含めて」3校（最大9校）。その区分に入る登録済みの公立の志望校が枠を先に使い、
+ *   残りを近くの候補で埋める（2026-09-27 教室長）。志望校に候補3校を足すと1区分に最大6校並び、
+ *   面談で読み切れない。
+ *   - 登録済みが3校を超えても削らない（志望校を表から消すと、面談でその学校の話ができない）。
+ *   - 登録済みの私立は数えない。私立は偏差値で区分に入って公立の表に並ぶが、提案の枠は公立の話で、
+ *     私立の提案は別の欄（privateProposals.ts「私立（併願優遇）」）が持つ。
+ *   - 偏差値が引けない登録済み（区分なし）はどの枠も使わず、従来どおり最後に並べる。
+ *
  * ★区分は偏差値の差だけで機械的に決める（本人 − めやす）。
  *   - 挑戦 … あと3〜5足りない
  *   - 順当 … ±2
@@ -31,7 +39,7 @@ export const PROPOSAL_BAND_LABEL: Record<ProposalBand, string> = {
 /** 提案に並べる範囲（本人 − めやす）。登録済みの志望校はこの範囲外でも並べる */
 const PROPOSAL_MIN_DIFF = -5;
 const PROPOSAL_MAX_DIFF = 6;
-/** 1区分に並べる数。★多いと面談で読み切れない。近い順に切る */
+/** 1区分に並べる数（登録済みの公立の志望校を含む）。★多いと面談で読み切れない。近い順に切る */
 export const PROPOSALS_PER_BAND = 3;
 /** 提案に入れる直線距離の上限（km）。通学60分に収まるおおよその範囲 */
 export const PROPOSAL_MAX_KM = 15;
@@ -78,6 +86,8 @@ export interface ProposalRow {
   commute: string | null;
   /** 登録済みの志望校なら志望順位（1〜3） */
   rank: number | null;
+  /** 登録済みの志望校で「併願」の印が付いているか。提案の行は常に false */
+  heigan: boolean;
 }
 
 export interface BuildProposalsInput {
@@ -86,7 +96,7 @@ export interface BuildProposalsInput {
   ownHensachi: number | null;
   origin: ProposalOrigin | null;
   /** 登録済みの志望校（マスタに当たったものだけ） */
-  registered: readonly { highSchoolId: string; rank: number }[];
+  registered: readonly { highSchoolId: string; rank: number; isHeigan?: boolean }[];
 }
 
 /** 偏差値の差（本人 − めやす）から区分を決める。範囲の外は一番近い区分に寄せる */
@@ -150,6 +160,7 @@ const BAND_ORDER: Record<ProposalBand, number> = { challenge: 0, fit: 1, safe: 2
 export function buildTargetProposals(input: BuildProposalsInput): ProposalRow[] {
   const { schools, own, ownHensachi, origin, registered } = input;
   const rankById = new Map(registered.map((r) => [r.highSchoolId, r.rank]));
+  const heiganIds = new Set(registered.filter((r) => r.isHeigan).map((r) => r.highSchoolId));
 
   const toRow = (s: ProposalSchool): ProposalRow => {
     const { hensachiDiff, naishinDiff } = targetSchoolDiffs(toMaster(s), own, ownHensachi);
@@ -165,6 +176,7 @@ export function buildTargetProposals(input: BuildProposalsInput): ProposalRow[] 
       km,
       commute: km != null ? commuteText(km, s.accessLines) : null,
       rank: rankById.get(s.id) ?? null,
+      heigan: heiganIds.has(s.id),
     };
   };
 
@@ -191,11 +203,16 @@ export function buildTargetProposals(input: BuildProposalsInput): ProposalRow[] 
   const byDistance = (a: ProposalRow, b: ProposalRow) => (a.km ?? Infinity) - (b.km ?? Infinity);
   const picked: ProposalRow[] = [];
   for (const band of ['challenge', 'fit', 'safe'] as const) {
+    // ★登録済みの公立の志望校がこの区分の枠を先に使う（冒頭の注記）。私立は数えない。
+    //   establishment 省略＝公立（ProposalSchool の注記）
+    const used = registeredRows.filter(
+      (r) => r.band === band && (r.school.establishment ?? '公立') === '公立'
+    ).length;
     picked.push(
       ...candidates
         .filter((r) => r.band === band)
         .sort(byDistance)
-        .slice(0, PROPOSALS_PER_BAND)
+        .slice(0, Math.max(0, PROPOSALS_PER_BAND - used))
     );
   }
 

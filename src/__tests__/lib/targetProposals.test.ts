@@ -3,7 +3,8 @@
  *
  * ★守りたいのは次の点:
  *  - 区分は偏差値の差（本人 − めやす）だけで決まる（挑戦 −5〜−3／順当 ±2／安全 +3〜+6）
- *  - 提案は普通科の本体・直線15km以内・区分ごとに近い順3校。登録済みの志望校は範囲外でも必ず並ぶ
+ *  - 提案は普通科の本体・直線15km以内・区分ごとに近い順。1区分は登録済みの公立の志望校を含めて3校
+ *    （私立の志望校は数えない）。登録済みの志望校は範囲外でも・3校を超えても必ず並ぶ
  *  - 偏差値が無い・起点が無いときは提案を作らない（登録済みだけ）
  *  - 通学は 8km まで自転車の分、遠ければ電車として直線距離と沿線だけ（所要時間は作らない）
  *  - 勉強の仕方は一覧に無い id を捨て、数字入り・長すぎの理由は理由だけ落とす
@@ -112,6 +113,58 @@ describe('buildTargetProposals', () => {
       ['第2志望', 'fit', 2],
       ['近い順当', 'fit', null],
     ]);
+  });
+
+  it('★登録済みの公立の志望校はその区分の3校に数え、候補は残りの枠だけ埋める', () => {
+    const near = [0.01, 0.02, 0.03, 0.04].map((d, i) =>
+      school({ id: `順当${i}`, hensachi: 54, lat: ORIGIN.lat + d })
+    );
+    const rows = buildTargetProposals({
+      schools: [
+        ...near,
+        school({ id: '第1志望', hensachi: 55, lat: ORIGIN.lat + 0.05 }),
+        school({ id: '第2志望', hensachi: 53, lat: ORIGIN.lat + 0.06 }),
+      ],
+      own,
+      ownHensachi: 54,
+      origin: ORIGIN,
+      registered: [
+        { highSchoolId: '第1志望', rank: 1 },
+        { highSchoolId: '第2志望', rank: 2, isHeigan: true },
+      ],
+    });
+    expect(rows.map((r) => r.school.id)).toEqual(['第1志望', '第2志望', '順当0']);
+    expect(rows.map((r) => r.heigan)).toEqual([false, true, false]);
+  });
+
+  it('★登録済みが3校を超えても削らず、その区分の候補は出さない', () => {
+    const rows = buildTargetProposals({
+      schools: [
+        school({ id: '近い順当', hensachi: 54 }),
+        ...[1, 2, 3, 4].map((i) =>
+          school({ id: `志望${i}`, hensachi: 54, lat: ORIGIN.lat + 0.02 * i })
+        ),
+      ],
+      own,
+      ownHensachi: 54,
+      origin: ORIGIN,
+      registered: [1, 2, 3, 4].map((i) => ({ highSchoolId: `志望${i}`, rank: i })),
+    });
+    expect(rows.map((r) => r.school.id)).toEqual(['志望1', '志望2', '志望3', '志望4']);
+  });
+
+  it('★登録済みの私立は公立の枠を使わない（私立の提案は別の欄）', () => {
+    const near = [0.01, 0.02, 0.03].map((d, i) =>
+      school({ id: `順当${i}`, hensachi: 54, lat: ORIGIN.lat + d })
+    );
+    const rows = buildTargetProposals({
+      schools: [...near, school({ id: '私立', hensachi: 54, establishment: '私立' })],
+      own,
+      ownHensachi: 54,
+      origin: ORIGIN,
+      registered: [{ highSchoolId: '私立', rank: 2, isHeigan: true }],
+    });
+    expect(rows.map((r) => r.school.id)).toEqual(['私立', '順当0', '順当1', '順当2']);
   });
 
   it('偏差値が無ければ提案は作らず、登録済みだけを区分なしで返す', () => {

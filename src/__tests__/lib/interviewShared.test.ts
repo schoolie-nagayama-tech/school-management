@@ -928,6 +928,7 @@ describe('buildTargetSchoolGapLines', () => {
       schoolName: '清瀬',
       highSchoolId: 'hs-1',
       reason: null,
+      isHeigan: false,
       updatedAt: '2026-09-01T00:00:00Z',
       master: {
         prefecture: '東京都',
@@ -1022,6 +1023,7 @@ describe('buildTargetSchoolGapLines', () => {
         schoolName: '私立A高校',
         highSchoolId: null,
         reason: null,
+        isHeigan: false,
         updatedAt: '2026-09-01T00:00:00Z',
         master: null,
       },
@@ -1033,6 +1035,12 @@ describe('buildTargetSchoolGapLines', () => {
     // 登録されている志望校は必ず1行出す。めやすはマスタに当たったときだけ添える
     expect(tell).toEqual(['第1 私立A高校']);
     expect(ask).toEqual([]);
+  });
+
+  it('★「併願」の印が付いた志望校は学校名の後に（併願）を添える（AIの材料・印刷シート）', () => {
+    const schools = [{ ...targetSchool({}), isHeigan: true }];
+    const { tell } = buildTargetSchoolGapLines(schools, []);
+    expect(tell[0].startsWith('第1 清瀬（併願） ／ ')).toBe(true);
   });
 
   it('★本人の内申・偏差値が取れないときは、めやすだけを出して差は出さない', () => {
@@ -1066,6 +1074,7 @@ describe('★満点が違う学校と差を取らない', () => {
       schoolName: '駒場',
       highSchoolId: 'h1',
       reason: null,
+      isHeigan: false,
       updatedAt: '2026-09-01',
       master: {
         prefecture: '東京都',
@@ -1649,6 +1658,7 @@ describe('buildTellSections（AIへ渡す現状の行）', () => {
     schoolName: '清瀬',
     highSchoolId: 'hs1',
     reason: null,
+    isHeigan: false,
     updatedAt: '2026-09-01T00:00:00Z',
     master: {
       prefecture: '東京都',
@@ -1807,6 +1817,7 @@ describe('buildTargetSchoolTalkLines（④の左・志望校について話す�
       schoolName: name,
       highSchoolId: master ? 'hs-1' : null,
       reason: null,
+      isHeigan: false,
       updatedAt: '2026-09-01T00:00:00Z',
       master: master
         ? {
@@ -1952,6 +1963,7 @@ describe('神奈川県立の志望校（基準内申 n/135）', () => {
       schoolName: '光陵',
       highSchoolId: 'hs-k',
       reason: null,
+      isHeigan: false,
       updatedAt: '2026-09-01T00:00:00Z',
       master: {
         prefecture: '神奈川県',
@@ -1975,6 +1987,7 @@ describe('神奈川県立の志望校（基準内申 n/135）', () => {
       schoolName: '狛江',
       highSchoolId: 'hs-t',
       reason: null,
+      isHeigan: false,
       updatedAt: '2026-09-01T00:00:00Z',
       master: {
         prefecture: '東京都',

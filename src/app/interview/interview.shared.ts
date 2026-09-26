@@ -1609,7 +1609,10 @@ export function buildTargetSchoolGapLines(
     const name = master?.schoolName ?? school.schoolName;
     // ★course の空文字は「普通科の本体」。学科名が無いのではないので、括弧ごと出さない
     const course = master?.course ? `（${master.course}）` : '';
-    const blocks: string[] = [`第${school.rank} ${name}${course}`];
+    // ★併願の印（TargetSchoolsPanel の「併願」ボタン）はAIの材料にも添える。
+    //   印が無いと、併願で押さえる私立を第2志望＝本命の1つとして話を組まれる
+    const heigan = school.isHeigan ? '（併願）' : '';
+    const blocks: string[] = [`第${school.rank} ${name}${course}${heigan}`];
 
     if (master) {
       const parts = targetSchoolStandardParts(master, own, ownHensachi);

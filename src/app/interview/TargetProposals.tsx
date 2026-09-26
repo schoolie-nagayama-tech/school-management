@@ -114,7 +114,11 @@ export function useTargetProposals(
     () =>
       targetSchools
         .filter((t) => t.highSchoolId)
-        .map((t) => ({ highSchoolId: t.highSchoolId as string, rank: t.rank })),
+        .map((t) => ({
+          highSchoolId: t.highSchoolId as string,
+          rank: t.rank,
+          isHeigan: t.isHeigan,
+        })),
     [targetSchools]
   );
   const registeredKey = registered.map((r) => r.highSchoolId).join(',');
@@ -374,6 +378,12 @@ export function TargetProposalTable({
                         第{r.rank}志望
                       </span>
                     )}
+                    {/* 志望パネルの「併願」ボタンの印。ボタンと同じ info の色で対応を見せる */}
+                    {r.heigan && (
+                      <span className="ml-1 rounded-full border border-info bg-info-subtle px-1.5 text-[10px] text-info">
+                        併願
+                      </span>
+                    )}
                   </td>
                   <td className="whitespace-nowrap py-1 pr-3 tabular-nums">
                     {r.school.hensachi ?? '—'}
@@ -473,7 +483,7 @@ export function TargetProposalTable({
         </table>
       </div>
       <p className="text-[10.5px] leading-snug text-text-faint">
-        挑戦＝偏差値あと3〜5／順当＝±2／安全＝3〜6余裕（普通科・直線15km以内から近い順に3校ずつ）。
+        挑戦＝偏差値あと3〜5／順当＝±2／安全＝3〜6余裕（志望校を含めて3校ずつ。残りを普通科・直線15km以内から近い順に）。
         私立＝併願優遇の内申の基準がいまの内申±1（直線20km以内・差ごとに偏差値の高い順に3校まで）。
         自転車は直線距離からの目安
       </p>

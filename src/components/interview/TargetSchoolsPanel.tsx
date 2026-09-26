@@ -39,11 +39,12 @@ interface FormRow {
   schoolName: string;
   highSchoolId: string | null;
   reason: string;
+  isHeigan: boolean;
   master: TargetSchoolRow['master'];
 }
 
 function emptyRow(rank: number): FormRow {
-  return { rank, schoolName: '', highSchoolId: null, reason: '', master: null };
+  return { rank, schoolName: '', highSchoolId: null, reason: '', isHeigan: false, master: null };
 }
 
 /** 候補に添える都県の短い名前（「東京」「神奈川」「埼玉」…） */
@@ -78,6 +79,7 @@ function toFormRows(rows: TargetSchoolRow[]): FormRow[] {
       schoolName: found.schoolName,
       highSchoolId: found.highSchoolId,
       reason: found.reason ?? '',
+      isHeigan: found.isHeigan,
       master: found.master,
     };
   });
@@ -180,6 +182,13 @@ export function TargetSchoolsPanel({ studentId, schoolId, onSaved }: Props) {
     setRows((prev) => prev.map((r) => (r.rank === rank ? { ...r, reason: value } : r)));
   };
 
+  // ★併願の印は学校名を打ち直しても残す。印は「この順位の学校を併願で押さえる」という
+  //   面談での決めごとで、候補を選び直すたびに付け直させるとクリックが増えるだけになる。
+  const handleToggleHeigan = (rank: number) => {
+    setSavedMessage(null);
+    setRows((prev) => prev.map((r) => (r.rank === rank ? { ...r, isHeigan: !r.isHeigan } : r)));
+  };
+
   const handleSelectCandidate = (rank: number, candidate: HighSchoolSearchResult) => {
     setSavedMessage(null);
     setRows((prev) =>
@@ -227,6 +236,8 @@ export function TargetSchoolsPanel({ studentId, schoolId, onSaved }: Props) {
           schoolName: r.schoolName,
           highSchoolId: r.highSchoolId,
           reason: r.reason,
+          // 学校名が空の行は削除されるので、印が残っていても保存されない
+          isHeigan: r.isHeigan,
         }))
       );
       const data = await getStudentTargetSchools(studentId);
@@ -258,12 +269,30 @@ export function TargetSchoolsPanel({ studentId, schoolId, onSaved }: Props) {
           <div className="flex flex-col gap-4">
             {rows.map((row) => (
               <div key={row.rank} className="flex flex-col gap-1.5">
-                <label
-                  htmlFor={`target-school-${row.rank}`}
-                  className="text-xs font-medium text-text-muted"
-                >
-                  {RANK_LABEL[row.rank as (typeof RANKS)[number]]}
-                </label>
+                <div className="flex items-center justify-between gap-2">
+                  <label
+                    htmlFor={`target-school-${row.rank}`}
+                    className="text-xs font-medium text-text-muted"
+                  >
+                    {RANK_LABEL[row.rank as (typeof RANKS)[number]]}
+                  </label>
+                  {/* ★入力欄は増やさずボタン1つで付け外しする（教室長の要望）。志望順位とは別の印で、
+                      私立なら④の判定が併願の基準になる。学校名が空の行には付けられない */}
+                  <button
+                    type="button"
+                    aria-pressed={row.isHeigan}
+                    disabled={!row.schoolName.trim()}
+                    onClick={() => handleToggleHeigan(row.rank)}
+                    title="併願で押さえる学校として印を付ける"
+                    className={`rounded-full border px-2 py-0.5 text-xs transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-40 ${
+                      row.isHeigan
+                        ? 'border-info bg-info-subtle font-medium text-info'
+                        : 'border-border text-text-muted hover:bg-surface'
+                    }`}
+                  >
+                    併願
+                  </button>
+                </div>
                 <div className="relative">
                   <input
                     id={`target-school-${row.rank}`}

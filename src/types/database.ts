@@ -3851,6 +3851,8 @@ export type Database = {
           // ★NULL可。私立・国立・他県はhigh_schoolsマスタに無いため、必須にすると入力できなくなる。
           high_school_id: string | null;
           reason: string | null;
+          // 併願で押さえる学校の印（志望順位とは別）。20260927130000_student_target_schools_heigan.sql
+          is_heigan: boolean;
           updated_by: string | null;
           created_at: string;
           updated_at: string;
@@ -3863,6 +3865,7 @@ export type Database = {
           school_name: string;
           high_school_id?: string | null;
           reason?: string | null;
+          is_heigan?: boolean;
           updated_by?: string | null;
           created_at?: string;
           updated_at?: string;
@@ -3875,6 +3878,7 @@ export type Database = {
           school_name?: string;
           high_school_id?: string | null;
           reason?: string | null;
+          is_heigan?: boolean;
           updated_by?: string | null;
           created_at?: string;
           updated_at?: string;
