@@ -57,6 +57,7 @@ function privateSchool(
     schoolName: '八王子実践',
     highSchoolId: 'h1',
     reason: null,
+    isHeigan: false,
     updatedAt: '2026-09-25T00:00:00Z',
     master: {
       prefecture: '東京都',

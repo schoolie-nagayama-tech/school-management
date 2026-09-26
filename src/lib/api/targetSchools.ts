@@ -59,6 +59,11 @@ export interface TargetSchoolRow {
   // ★null可。私立・国立・他県はマスタに無いので、自由記述のまま残る。
   highSchoolId: string | null;
   reason: string | null;
+  /**
+   * 併願で押さえる学校の印。★志望順位とは別に持つ（第2志望でも単願で行きたい学校はありうる）。
+   * 私立なら④の判定を併願の基準で出す。
+   */
+  isHeigan: boolean;
   updatedAt: string;
   // マスタに当たったときだけ入る。当たらなければ null（＝自由記述のまま）。
   master: TargetSchoolMaster | null;
@@ -70,6 +75,7 @@ export interface TargetSchoolInput {
   schoolName: string;
   highSchoolId: string | null;
   reason: string | null;
+  isHeigan: boolean;
 }
 
 /** 高校マスタの検索結果（最新年度のめやすを添えたもの） */
@@ -268,6 +274,8 @@ export async function getStudentTargetSchools(studentId: string): Promise<Target
       schoolName: row.school_name,
       highSchoolId: row.high_school_id,
       reason: row.reason,
+      // ★列を足す前の行・マイグレーション未適用の環境では undefined になりうるので false に寄せる
+      isHeigan: row.is_heigan ?? false,
       updatedAt: row.updated_at,
       master: toMaster(school, latest, rules),
     };
@@ -299,6 +307,7 @@ export async function saveStudentTargetSchools(
       // ★マスタに当たらなくてもnullのまま保存できる（私立・国立・他県を塞がないため）
       high_school_id: r.highSchoolId,
       reason: r.reason?.trim() || null,
+      is_heigan: r.isHeigan,
     }));
 
   if (ranksToDelete.length > 0) {

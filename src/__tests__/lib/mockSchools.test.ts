@@ -288,6 +288,7 @@ describe('④ 直近の模試の行（buildMockSchoolLines）', () => {
       schoolName,
       highSchoolId,
       reason: null,
+      isHeigan: false,
       updatedAt: '',
       master: null,
     };
