@@ -113,6 +113,25 @@ export function isOpenerKey(value: unknown): value is OpenerKey {
  * 「勉強の仕方」の引き出しから選んだ1件（④現状の確認）。
  * ★AIは中身を書かない。studyTips.ts の id で選び、選んだ理由を1文書くだけ。
  */
+/** 道筋の段。いま → 次の区切り（次の定期テスト・次の模試）→ 入試（中3以外は学年の終わり） */
+export const ROADMAP_STEP_KEYS = ['now', 'next', 'goal'] as const;
+export type RoadmapStepKey = (typeof ROADMAP_STEP_KEYS)[number];
+
+/**
+ * 道筋の1段（AI）。★数字は書かせない（差の数字は画面の札・志望校の表が出す）。
+ * koushu は「今期の講習はこの段の中身」の印。講習の提案（koushu セクション）を渡していなければ常に false。
+ */
+export interface BriefRoadmapStep {
+  key: RoadmapStepKey;
+  /** この段で目指すこと（「英語で落としている分を戻す」） */
+  goal: string;
+  /** 塾がやること。いま の段は「根拠」（記録から読めること）として出す */
+  juku: string;
+  /** 家庭でやること。いま の段は空でよい */
+  home: string;
+  koushu: boolean;
+}
+
 export interface BriefStudyTip {
   id: string;
   /** 選んだ理由（数字なし）。「挑戦校まで偏差値が少し足りず、失点は数学に多い」など */
@@ -153,6 +172,15 @@ export interface BriefResult {
   episodes: BriefEpisode[];
   /** 勉強の仕方の引き出しから選んだもの。最大 MAX_STUDY_TIPS 件 */
   studyTips: BriefStudyTip[];
+  /**
+   * 今日いちばん言いたいこと（面談の筋の1文）。★ほかの項目はすべてこれと同じ向きで書かせる。
+   * 読めなければ空文字（画面は見立ての札だけを出す）
+   */
+  thesis: string;
+  /** 道筋（いま・次の区切り・入試の3段）。渡した key の順に並べ直したもの。読めなければ空 */
+  roadmap: BriefRoadmapStep[];
+  /** ⑦クロージングで保護者にそのまま言う締めの1文（話し言葉） */
+  closing: string;
 }
 
 /**
@@ -190,6 +218,12 @@ export const MAX_EPISODES = 2;
 export const MAX_STUDY_TIPS = 2;
 /** 勉強の仕方を選んだ理由の上限 */
 export const MAX_STUDY_TIP_REASON_LENGTH = 60;
+/** 今日いちばん言いたいこと。★面談の筋なので1〜2文で言い切れる長さに抑える */
+export const MAX_THESIS_LENGTH = 110;
+/** 道筋の1段の各欄 */
+export const MAX_ROADMAP_FIELD_LENGTH = 60;
+/** 締めの1文（保護者にそのまま言う） */
+export const MAX_CLOSING_LENGTH = 120;
 /** AIへ渡す約束・要望の件数の上限（MAX_PREVIOUS_PROMISES ＋ MAX_PREVIOUS_REQUESTS ぶん） */
 export const MAX_FOLLOW_UP_ITEMS = 10;
 /**
@@ -519,6 +553,24 @@ export function briefSystemPrompt(): string {
     '  文章が事実と違えば読む側が気づきますが、**数字の1字違いは面談の場で誰も気づけません。**',
     '  「英語が2回続けて下がっている」のように、数字そのものではなく、そこから読めることを書きます。',
     '',
+    '■ ★まず面談の筋を決める（thesis・roadmap・closing）',
+    '- 【見立て】はシステムが成績・宿題・遅刻の上下から決めたものです。変えずに、この向きで書きます。',
+    '  追い風＝認めて上を狙う／踏ん張りどころ＝良いところを伸ばし、崩れたところを1つに絞って手を打つ／',
+    '  立て直し＝原因と塾がする対策を先に話し、講習はその対策の一部として出す。',
+    '  【見立て】が無いときは、【現状】から筋を立ててよい。',
+    `- thesis：今日の面談でいちばん言いたいことを ${MAX_THESIS_LENGTH}字まで（数字なし）。`,
+    '  「何が起きているか・なぜか・だから何をするか」が1つにつながった形で。',
+    '- roadmap：志望校（または次の目標）までの道筋を3段で。key は now（いま）／next（次の区切り＝',
+    '  次の定期テスト・次の模試）／goal（入試。中3以外は学年の終わり）。',
+    `  各段に goal（この段で目指すこと）・juku（塾がやること。now は記録から読める根拠）・home（家庭でやること）を`,
+    `  それぞれ ${MAX_ROADMAP_FIELD_LENGTH}字まで（数字なし）。書けない欄は空文字。`,
+    '  koushu は講習の提案（koushu セクション）がこの段の中身なら true。講習の提案を渡していなければ false。',
+    `- closing：⑦の締めに教室長が保護者へそのまま言う1文を ${MAX_CLOSING_LENGTH}字まで（丁寧語・数字なし）。`,
+    '  thesis を話し言葉にして、次に何をするかで終える。',
+    '- ★この下の sections・followUps・thread・bridge・openers・episodes・studyTips は、すべて thesis と',
+    '  同じ方向を向けてください。1つずつ別々の課題に答えるのではなく、筋のどこに当たる話かを意識して書く。',
+    '  面談の最後に「結局何が言いたかったのか」が保護者に残るようにするためです。',
+    '',
     '■ sections（セクションごとに話すこと）',
     '- 渡されたセクションだけを返す。渡していない key を作らない。',
     `- seen は ${MAX_SEEN_LENGTH}字まで。1文に収める必要はありません。2〜3文で、`,
@@ -638,7 +690,12 @@ export function briefSystemPrompt(): string {
       '"openers":{"intro":"今日はお忙しいところありがとうございます。律さんの最近の様子からお話しさせてください",' +
       '"juku":"塾では毎回、自分から机に向かってくれていますよ"},' +
       '"episodes":[{"lesson":3,"text":"英語で、分からない文法を自分から質問してきたそうです"}],' +
-      '"studyTips":[{"id":"recall","reason":"英語の失点は単語の抜けで、覚えたつもりで抜けている"}]}',
+      '"studyTips":[{"id":"recall","reason":"英語の失点は単語の抜けで、覚えたつもりで抜けている"}],' +
+      '"thesis":"英語の失点は単語の抜けから来ている。冬に語彙を固めれば、志望校の当日点に間に合う",' +
+      '"roadmap":[{"key":"now","goal":"英語だけが崩れている","juku":"長文ではなく語彙で落としている","home":"","koushu":false},' +
+      '{"key":"next","goal":"英語の語彙を戻す","juku":"授業の頭で単語の確認テストを毎回行う","home":"宿題の時間と場所を決める","koushu":true},' +
+      '{"key":"goal","goal":"当日点で内申の不足を取り返す","juku":"過去問で当日点の型を作る","home":"併願の私立を決める","koushu":false}],' +
+      '"closing":"原因は英語の単語です。塾は毎回の確認テストで支えますので、冬で土台を戻して次の模試で一緒に確かめましょう"}',
   ].join('\n');
 }
 
@@ -664,6 +721,11 @@ export function briefUserText(
     givenName?: string | null;
     /** 約束・要望ごとの「誰が動くか」（sanitizeFollowUpActors の戻り） */
     followUpActors?: Readonly<Record<string, FollowUpActor>>;
+    /**
+     * システムが決めた見立て（story.ts の storyToneLine）。★AIに変えさせない。
+     * 呼び出し側で sanitizeStoryTone を通したものを渡す
+     */
+    storyTone?: string | null;
   } = {}
 ): string {
   const blocks = sections.map((s) => {
@@ -686,6 +748,7 @@ export function briefUserText(
         ? ['【教室の都県】東京都', '']
         : []),
     ...(givenName ? [`【生徒の呼び名】${givenName}さん`, ''] : []),
+    ...(extra.storyTone ? [`【見立て】${extra.storyTone}`, ''] : []),
     '【現状】',
     ...blocks,
   ];
@@ -754,6 +817,9 @@ export function parseBriefResult(
     openers: {},
     episodes: [],
     studyTips: [],
+    thesis: '',
+    roadmap: [],
+    closing: '',
   };
   if (!raw || typeof raw !== 'object') return empty;
 
@@ -765,6 +831,9 @@ export function parseBriefResult(
     openers?: unknown;
     episodes?: unknown;
     studyTips?: unknown;
+    thesis?: unknown;
+    roadmap?: unknown;
+    closing?: unknown;
   };
 
   // 渡した key ごとに1件だけ拾う（同じ key を2回返してきたら先に来たほうを採る）
@@ -899,5 +968,78 @@ export function parseBriefResult(
     studyTips.push({ id, reason });
   }
 
-  return { sections, followUps, thread, bridge, openers, episodes, studyTips };
+  /**
+   * 面談の筋。★ひとことと同じく、数字入り・長すぎは捨てる（切り詰めない）。
+   * - thesis・closing は数字入り・上限超えなら空
+   * - roadmap は知らない key・同じ key の2件目を捨て、now→next→goal の順に並べ直す。
+   *   欄ごとに数字入り・上限超えを空にし、goal が空の段は捨てる。
+   *   koushu は講習の提案を渡していなければ false（bridge と同じ理由）
+   */
+  const cleanText = (v: unknown, max: number) => {
+    const t =
+      typeof v === 'string'
+        ? v
+            .trim()
+            .replace(/^「([^「」]*)」$/, '$1')
+            .trim()
+        : '';
+    return t && t.length <= max && !containsDigit(t) ? t : '';
+  };
+  const thesis = cleanText(obj.thesis, MAX_THESIS_LENGTH);
+  const closing = cleanText(obj.closing, MAX_CLOSING_LENGTH);
+  const stepByKey = new Map<RoadmapStepKey, BriefRoadmapStep>();
+  const stepRows = Array.isArray(obj.roadmap) ? (obj.roadmap as unknown[]) : [];
+  for (const row of stepRows) {
+    if (!row || typeof row !== 'object') continue;
+    const r = row as {
+      key?: unknown;
+      goal?: unknown;
+      juku?: unknown;
+      home?: unknown;
+      koushu?: unknown;
+    };
+    const key = ROADMAP_STEP_KEYS.find((k) => k === r.key);
+    if (!key || stepByKey.has(key)) continue;
+    const goal = cleanText(r.goal, MAX_ROADMAP_FIELD_LENGTH);
+    if (!goal) continue;
+    stepByKey.set(key, {
+      key,
+      goal,
+      juku: cleanText(r.juku, MAX_ROADMAP_FIELD_LENGTH),
+      home: cleanText(r.home, MAX_ROADMAP_FIELD_LENGTH),
+      koushu: r.koushu === true && keys.indexOf('koushu') !== -1,
+    });
+  }
+  const roadmap = ROADMAP_STEP_KEYS.map((k) => stepByKey.get(k)).filter(
+    (st): st is BriefRoadmapStep => Boolean(st)
+  );
+
+  return {
+    sections,
+    followUps,
+    thread,
+    bridge,
+    openers,
+    episodes,
+    studyTips,
+    thesis,
+    roadmap,
+    closing,
+  };
+}
+
+/** 見立ての行の上限。★札5枚と話し方が入る長さ */
+export const MAX_STORY_TONE_LENGTH = 400;
+
+/**
+ * クライアントから来た見立ての行を検める。★見立ての呼び名（追い風／踏ん張りどころ／立て直し）で
+ * 始まる行だけを通す。任意の文をプロンプトの【見立て】に差し込ませないため。
+ */
+export function sanitizeStoryTone(raw: unknown): string | null {
+  if (typeof raw !== 'string') return null;
+  const t = raw.trim();
+  if (!t || t.length > MAX_STORY_TONE_LENGTH) return null;
+  if (!/^(追い風|踏ん張りどころ|立て直し)（/.test(t)) return null;
+  // 改行はプロンプトの見出しを作れてしまうので外す
+  return t.replace(/[\r\n]+/g, ' ');
 }
