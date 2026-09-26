@@ -61,7 +61,25 @@ export const STUDENT_CSV_HEADERS = [
   'クラス',
   '部活',
   '受講科目',
+  // ★性別は後から足した列なので末尾に置く。取り込みは列の位置で読むため、途中に挟むと
+  //   既に配っているテンプレート（11列）の受講科目がずれて読まれてしまう。
+  '性別',
 ] as const;
+
+/** 生徒CSVの性別の書き方（出力）。未設定は空欄 */
+const GENDER_CSV_LABELS: Record<'male' | 'female', string> = { female: '女', male: '男' };
+
+/**
+ * 生徒CSVの性別の読み方（取り込み）。女/男/female/male/F/M を大文字小文字を問わず受ける。
+ * 空欄・読めない値は未設定（null）にする。性別は必須ではないので、読めない値で行ごと
+ * 弾くより未設定で登録して後から画面で直せるほうが手戻りが少ない。
+ */
+export function parseGenderCell(raw: string | null | undefined): 'male' | 'female' | null {
+  const v = (raw ?? '').normalize('NFKC').trim().toLowerCase();
+  if (v === '女' || v === 'female' || v === 'f') return 'female';
+  if (v === '男' || v === 'male' || v === 'm') return 'male';
+  return null;
+}
 
 const STATUS_LABELS: Record<string, string> = {
   active: '在籍中',
@@ -98,6 +116,7 @@ export function generateStudentCSV(students: (Student & { subjects?: Subject[] }
         s.class_name,
         s.club,
         subjectNames,
+        s.gender ? GENDER_CSV_LABELS[s.gender] : '',
       ]);
     }),
   ];
@@ -126,6 +145,7 @@ export interface StudentCSVRow {
   class_name: string | null;
   club: string | null;
   subject_names: string[]; // 「/」区切りで分割された科目名
+  gender: 'male' | 'female' | null; // 12列目（無い古いCSVは未設定）
   errors: string[]; // バリデーションエラー一覧
 }
 
@@ -163,6 +183,8 @@ export function parseStudentCSV(file: File): Promise<StudentCSVRow[]> {
           const class_name = cols[8]?.trim() || null;
           const club = cols[9]?.trim() || null;
           const subjectsRaw = cols[10]?.trim() ?? '';
+          // 12列目。性別の列が無い古いテンプレートでも読めるよう、無ければ未設定
+          const gender = parseGenderCell(cols[11]);
 
           // 必須チェック
           if (!last_name) errors.push('姓が空です');
@@ -208,6 +230,7 @@ export function parseStudentCSV(file: File): Promise<StudentCSVRow[]> {
             class_name,
             club,
             subject_names,
+            gender,
             errors,
           };
         });
@@ -460,6 +483,8 @@ export function generateAssessmentCSV(
       const scoreMap = new Map<string, number | null>(
         assessment.scores.map((s) => [s.subject, s.value])
       );
+      // 「テストなし」の科目。値は空なので、未入力の空欄と区別できるよう「なし」と書き出す
+      const noTestCodes = new Set(assessment.scores.filter((s) => s.no_test).map((s) => s.subject));
 
       const categoryLabel = ASSESSMENT_CATEGORY_LABELS[assessment.category] ?? assessment.category;
       const testNameLabel = ASSESSMENT_NAME_LABELS[assessment.name_code] ?? assessment.name_code;
@@ -468,6 +493,7 @@ export function generateAssessmentCSV(
         : '';
 
       const subjectValues = ASSESSMENT_SUBJECT_COLUMNS.map((s) => {
+        if (noTestCodes.has(s.code)) return 'なし';
         const v = scoreMap.get(s.code);
         return v !== undefined && v !== null ? v : '';
       });

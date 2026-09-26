@@ -194,16 +194,20 @@ function SchoolBlock({
   target,
   cards,
   region,
+  gender,
 }: {
   target: TargetSchoolRow;
   cards: StudentReportCards;
   region: Region | null;
+  gender: 'male' | 'female' | null;
 }) {
   const master = target.master;
   const rules = (master?.admissionRules ?? []).filter((r) =>
     scopeApplies(r.applicantScope, region)
   );
-  const primary = master ? pickPrimaryRule(master.admissionRules ?? [], region) : null;
+  // ★最初に開く区分は④の「志望校」の行と同じ（性別が分かれば本人の側の基準）。
+  //   もう一方の性別の区分もタブには残す（比べたいときがあるため。外すのは代表選びだけ）
+  const primary = master ? pickPrimaryRule(master.admissionRules ?? [], region, gender) : null;
   const [selectedId, setSelectedId] = useState<string | null>(primary?.id ?? null);
   if (!master || rules.length === 0) return null;
 
@@ -261,16 +265,18 @@ interface Props {
   targetSchools: readonly TargetSchoolRow[];
   cards: StudentReportCards;
   region: Region | null;
+  /** 生徒の性別。未設定は null */
+  gender?: 'male' | 'female' | null;
 }
 
 /** 志望校のうち、推薦・併願優遇の基準を持つ学校（私立・国立）だけを並べる。無ければ何も出さない */
-export function PrivateAdmissionDetails({ targetSchools, cards, region }: Props) {
+export function PrivateAdmissionDetails({ targetSchools, cards, region, gender = null }: Props) {
   const withRules = targetSchools.filter((t) => (t.master?.admissionRules?.length ?? 0) > 0);
   if (withRules.length === 0) return null;
   return (
     <div className="flex flex-col gap-1.5">
       {withRules.map((t) => (
-        <SchoolBlock key={t.id} target={t} cards={cards} region={region} />
+        <SchoolBlock key={t.id} target={t} cards={cards} region={region} gender={gender} />
       ))}
     </div>
   );

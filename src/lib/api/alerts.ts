@@ -559,7 +559,10 @@ function buildScoreMissingCandidates(sources: AlertSources): Alert[] {
       const missingSubjects: string[] = [];
       for (const subj of expectedSubjects) {
         const score = latest.scores.find((s) => s.subject === subj);
-        if (!score || score.value == null) missingSubjects.push(subj);
+        // 「テストなし」（その回にその科目のテストが無かった）は入力済みと数える。
+        // 以前はアラートを消すために 0 を入れていたが、それが本当の0点として前回比などに
+        // 混ざっていたため、印で持つようにした（2026-09-27）。
+        if (!score || (score.value == null && !score.no_test)) missingSubjects.push(subj);
       }
       // 全科目が未入力＝空の未使用レコード → 偽陽性なのでスキップ
       if (missingSubjects.length === expectedSubjects.length) continue;

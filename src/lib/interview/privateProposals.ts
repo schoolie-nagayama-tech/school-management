@@ -10,7 +10,9 @@
  *   ここには出さない（「併願で押さえる私立」の話なので）。登録済みの志望校なら公立と同じ表に並ぶ。
  * ★差（±1）は admissionMargin（合計の基準だけで見る）。平均の基準しか無い学校は出さない。
  * ★距離は教室の最寄り駅から直線20km以内（公立の15kmより広い。私立は遠くから通う生徒が多い）。
- * ★本人の性別を NEST は持っていない。男子校・女子校も外さず、学校名の横に出して教室長が判断する。
+ * ★本人の性別（students.gender・2026-09-27〜）が入っていれば、入れない学校（女子生徒に男子校、
+ *   男子生徒に女子校）を外し、偏差値は本人の性別の表の値だけを出す。区分も男女別の基準なら本人の側を使う。
+ *   未設定なら従来どおり男子校・女子校も外さず、学校名の横に出して教室長が判断する（偏差値も男女両方）。
  */
 import { commuteText, type ProposalOrigin, type ProposalSchool } from './targetProposals';
 import { haversineKm } from '@/lib/geo/distance';
@@ -85,14 +87,21 @@ export interface PrivateProposalRow {
   compare: PrivateCompareItem;
 }
 
-/** 偏差値の見せ方。男女で違えば両方（NEST は生徒の性別を持っていない） */
+/**
+ * 偏差値の見せ方。
+ * - 生徒の性別が分かっていて、その性別の値があればそれだけ（男女別の表の学校で、関係ない側を出さない）
+ * - 未設定なら、男女で違えば両方
+ */
 export function privateHensachiText(
   hensachi: number | null,
-  byGender: { 男子?: number; 女子?: number }
+  byGender: { 男子?: number; 女子?: number },
+  gender: 'male' | 'female' | null = null
 ): string {
   if (hensachi != null) return String(hensachi);
   const m = byGender['男子'];
   const f = byGender['女子'];
+  const own = gender === 'male' ? m : gender === 'female' ? f : undefined;
+  if (own != null) return String(own);
   // ★男子表・女子表で同じ値なら1つにまとめる（違うときだけ両方を並べる）
   if (m != null && f != null) return m === f ? String(m) : `男${m}／女${f}`;
   if (m != null) return `男${m}`;
@@ -160,6 +169,7 @@ export function buildPrivateCompareItem(args: {
  * 近くの私立から「いまの内申±1」の学校を並べる。
  * 並び: あと1 → ちょうど → 1余裕、同じ差の中は偏差値の高い順（男女で違えば高いほう）→ 近い順。
  * ★登録済みの志望校（registeredIds）は公立と同じ表に並ぶので、ここからは外す（同じ学校を2行出さない）。
+ * ★gender（生徒の性別）が分かれば、入れない男子校・女子校を外し、偏差値は本人の性別の値で並べる。
  */
 export function buildPrivateProposals(input: {
   candidates: readonly NearbyPrivateSchool[];
@@ -167,17 +177,23 @@ export function buildPrivateProposals(input: {
   region: Region | null;
   origin: ProposalOrigin | null;
   registeredIds: ReadonlySet<string>;
+  /** 生徒の性別。null（未設定）なら男子校・女子校も外さない */
+  gender?: 'male' | 'female' | null;
 }): PrivateProposalRow[] {
   const { candidates, cards, region, origin, registeredIds } = input;
+  const gender = input.gender ?? null;
   if (!origin || !cards.grade3) return [];
+  // 本人が入れない学校の gender_type（'男子'|'女子'|'共学'）
+  const closedType = gender === 'female' ? '男子' : gender === 'male' ? '女子' : null;
 
   const rows: PrivateProposalRow[] = [];
   for (const c of candidates) {
     const s = c.school;
     if (registeredIds.has(s.id) || s.lat == null || s.lon == null) continue;
+    if (closedType && c.genderType === closedType) continue;
     const km = haversineKm(origin.lat, origin.lon, s.lat, s.lon);
     if (km > PRIVATE_MAX_KM) continue;
-    const rule = pickPrimaryRule(c.rules, region);
+    const rule = pickPrimaryRule(c.rules, region, gender);
     if (!rule || rule.kind !== '併願') continue;
     const judgment = evaluateRule(rule, cards);
     const margin = admissionMargin(judgment);
@@ -191,7 +207,7 @@ export function buildPrivateProposals(input: {
         : band === 'even'
           ? `${sumLabel} ちょうど`
           : `${sumLabel} ${margin}余裕`;
-    const hensachiText = privateHensachiText(s.hensachi, c.hensachiByGender);
+    const hensachiText = privateHensachiText(s.hensachi, c.hensachiByGender, gender);
     const commute = commuteText(km, s.accessLines);
     rows.push({
       school: s,

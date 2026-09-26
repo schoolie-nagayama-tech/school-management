@@ -9,6 +9,7 @@ import { ScoreTableRow, getCalculatedValue } from './ScoreTableRow';
 import type { NaishinType } from '@/lib/utils/convertedNaishin';
 import { Button } from '@/components/ui';
 import { getAssessmentSubjects, type AssessmentSubject } from '@/lib/api/assessmentSubjects';
+import { NoTestHint, NoTestMark } from './NoTestMark';
 
 const FIVE_SUBJECTS = [
   SUBJECT_CODES.ENGLISH,
@@ -25,7 +26,12 @@ interface ScoreTableProps {
   assessments: AssessmentWithScores[];
   editingCell: { assessmentId: string; subject: string } | null;
   cellValue: string;
-  onCellClick: (assessmentId: string, subject: string, value: number | null) => void;
+  onCellClick: (
+    assessmentId: string,
+    subject: string,
+    value: number | null,
+    noTest?: boolean
+  ) => void;
   onCellBlur: (assessmentId: string, subject: string) => void;
   onCellChange: (value: string) => void;
   onCancelEdit: () => void;
@@ -119,10 +125,8 @@ export function ScoreTable({
       onCellBlur(assessmentId, subject);
       if (nextSubj !== null) {
         const nextAssessment = assessments.find((a) => a.id === nextId)!;
-        const scoreMap = new Map(
-          (nextAssessment.scores ?? []).map((s) => [s.subject, s.value ?? null])
-        );
-        onCellClick(nextId, nextSubj, scoreMap.get(nextSubj) ?? null);
+        const nextScore = (nextAssessment.scores ?? []).find((s) => s.subject === nextSubj);
+        onCellClick(nextId, nextSubj, nextScore?.value ?? null, nextScore?.no_test === true);
       }
     },
     [assessments, onCellBlur, onCellClick]
@@ -138,162 +142,175 @@ export function ScoreTable({
   if (isHighSchool) {
     const totalCols = 2 + (category !== 'mock' ? 0 : 1) + hsAllCodes.length + (canEdit ? 1 : 0);
     return (
-      <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
-        <table className="w-full border-collapse text-sm">
-          <thead>
-            <tr className="bg-[var(--surface)] border-b border-gray-200">
-              <th className="px-2 py-2 text-left font-semibold text-[var(--headline)] whitespace-nowrap">
-                学年
-              </th>
-              <th className="px-2 py-2 text-left font-semibold text-[var(--headline)] whitespace-nowrap">
-                テスト名
-              </th>
-              {category === 'mock' && (
+      <>
+        {canEdit && category !== 'mock' && <NoTestHint className="mb-1" />}
+        <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
+          <table className="w-full border-collapse text-sm">
+            <thead>
+              <tr className="bg-[var(--surface)] border-b border-gray-200">
                 <th className="px-2 py-2 text-left font-semibold text-[var(--headline)] whitespace-nowrap">
-                  実施月
+                  学年
                 </th>
-              )}
-              {hsAllCodes.map((code) => {
-                const isCustom = !hsSubjects.some((s) => s.code === code);
-                return (
-                  <th
-                    key={code}
-                    className={`px-2 py-2 text-center font-semibold whitespace-nowrap min-w-[58px] ${isCustom ? 'text-amber-700 italic' : 'text-[var(--headline)]'}`}
-                    title={isCustom ? '（マスタ外の科目／旧データ）' : labelOfHs(code)}
-                  >
-                    {labelOfHs(code)}
+                <th className="px-2 py-2 text-left font-semibold text-[var(--headline)] whitespace-nowrap">
+                  テスト名
+                </th>
+                {category === 'mock' && (
+                  <th className="px-2 py-2 text-left font-semibold text-[var(--headline)] whitespace-nowrap">
+                    実施月
                   </th>
-                );
-              })}
-              {canEdit && (
-                <th className="px-2 py-2 text-center font-semibold text-[var(--headline)] w-20">
-                  操作
-                </th>
-              )}
-            </tr>
-          </thead>
-          <tbody>
-            {assessments.length === 0 ? (
-              <tr>
-                <td colSpan={totalCols} className="px-4 py-8 text-center text-[var(--paragraph)]">
-                  データがありません。上の「行を追加」から登録してください。
-                </td>
+                )}
+                {hsAllCodes.map((code) => {
+                  const isCustom = !hsSubjects.some((s) => s.code === code);
+                  return (
+                    <th
+                      key={code}
+                      className={`px-2 py-2 text-center font-semibold whitespace-nowrap min-w-[58px] ${isCustom ? 'text-amber-700 italic' : 'text-[var(--headline)]'}`}
+                      title={isCustom ? '（マスタ外の科目／旧データ）' : labelOfHs(code)}
+                    >
+                      {labelOfHs(code)}
+                    </th>
+                  );
+                })}
+                {canEdit && (
+                  <th className="px-2 py-2 text-center font-semibold text-[var(--headline)] w-20">
+                    操作
+                  </th>
+                )}
               </tr>
-            ) : (
-              assessments.map((a, idx) => {
-                const scoreMap = new Map<string, number | null>(
-                  (a.scores ?? []).map((s) => [s.subject, s.value ?? null])
-                );
-                const examMonthLabel = a.exam_month
-                  ? `${new Date(a.exam_month).getFullYear()}-${String(new Date(a.exam_month).getMonth() + 1).padStart(2, '0')}`
-                  : '—';
-                const isDraggingRow = dragIdx === idx;
-                const isDragOverRow = dragOverIdx === idx && dragIdx !== idx;
-                return (
-                  <tr
-                    key={a.id}
-                    className={`transition-colors duration-150 ${isDragOverRow ? 'bg-blue-50 border-t-2 border-blue-300' : 'hover:bg-[var(--surface)]'} ${isDraggingRow ? 'opacity-40' : ''}`}
-                    draggable={canEdit && !!onReorder}
-                    onDragStart={() => setDragIdx(idx)}
-                    onDragOver={(e) => {
-                      e.preventDefault();
-                      setDragOverIdx(idx);
-                    }}
-                    onDrop={() => {
-                      if (dragIdx !== null && dragIdx !== idx) onReorder?.(dragIdx, idx);
-                      setDragIdx(null);
-                      setDragOverIdx(null);
-                    }}
-                    onDragEnd={() => {
-                      setDragIdx(null);
-                      setDragOverIdx(null);
-                    }}
-                  >
-                    <td className="border border-gray-200 px-2 py-1.5 text-sm text-[var(--headline)] whitespace-nowrap">
-                      {GRADE_LABELS[a.grade] ?? a.grade}
-                    </td>
-                    <td className="border border-gray-200 px-2 py-1.5 text-sm text-[var(--paragraph)] whitespace-nowrap">
-                      {ASSESSMENT_NAME_LABELS[a.name_code] || a.name_code}
-                    </td>
-                    {category === 'mock' && (
+            </thead>
+            <tbody>
+              {assessments.length === 0 ? (
+                <tr>
+                  <td colSpan={totalCols} className="px-4 py-8 text-center text-[var(--paragraph)]">
+                    データがありません。上の「行を追加」から登録してください。
+                  </td>
+                </tr>
+              ) : (
+                assessments.map((a, idx) => {
+                  const scoreMap = new Map<string, number | null>(
+                    (a.scores ?? []).map((s) => [s.subject, s.value ?? null])
+                  );
+                  const noTestCodes = new Set(
+                    (a.scores ?? []).filter((s) => s.no_test).map((s) => s.subject)
+                  );
+                  const examMonthLabel = a.exam_month
+                    ? `${new Date(a.exam_month).getFullYear()}-${String(new Date(a.exam_month).getMonth() + 1).padStart(2, '0')}`
+                    : '—';
+                  const isDraggingRow = dragIdx === idx;
+                  const isDragOverRow = dragOverIdx === idx && dragIdx !== idx;
+                  return (
+                    <tr
+                      key={a.id}
+                      className={`transition-colors duration-150 ${isDragOverRow ? 'bg-blue-50 border-t-2 border-blue-300' : 'hover:bg-[var(--surface)]'} ${isDraggingRow ? 'opacity-40' : ''}`}
+                      draggable={canEdit && !!onReorder}
+                      onDragStart={() => setDragIdx(idx)}
+                      onDragOver={(e) => {
+                        e.preventDefault();
+                        setDragOverIdx(idx);
+                      }}
+                      onDrop={() => {
+                        if (dragIdx !== null && dragIdx !== idx) onReorder?.(dragIdx, idx);
+                        setDragIdx(null);
+                        setDragOverIdx(null);
+                      }}
+                      onDragEnd={() => {
+                        setDragIdx(null);
+                        setDragOverIdx(null);
+                      }}
+                    >
+                      <td className="border border-gray-200 px-2 py-1.5 text-sm text-[var(--headline)] whitespace-nowrap">
+                        {GRADE_LABELS[a.grade] ?? a.grade}
+                      </td>
                       <td className="border border-gray-200 px-2 py-1.5 text-sm text-[var(--paragraph)] whitespace-nowrap">
-                        {examMonthLabel}
+                        {ASSESSMENT_NAME_LABELS[a.name_code] || a.name_code}
                       </td>
-                    )}
-                    {hsAllCodes.map((code) => {
-                      const value = scoreMap.get(code) ?? null;
-                      const isEditing =
-                        editingCell?.assessmentId === a.id && editingCell?.subject === code;
-                      return (
-                        <td
-                          key={code}
-                          className="border border-gray-200 px-1 py-1 text-center min-w-[52px]"
-                        >
-                          {isEditing ? (
-                            <input
-                              type="text"
-                              value={cellValue}
-                              onChange={(e) => onCellChange(e.target.value)}
-                              onFocus={() => {
-                                tabTriggeredRef.current = false;
-                              }}
-                              onBlur={() => {
-                                if (tabTriggeredRef.current) {
-                                  tabTriggeredRef.current = false;
-                                  return;
-                                }
-                                onCellBlur(a.id, code);
-                              }}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Tab') {
-                                  e.preventDefault();
-                                  tabTriggeredRef.current = true;
-                                  handleCellTabForRow(a.id, code, hsAllCodes);
-                                  return;
-                                }
-                                if (e.key === 'Enter') onCellBlur(a.id, code);
-                                if (e.key === 'Escape') onCancelEdit();
-                              }}
-                              autoFocus
-                              className="w-full px-1 py-0.5 text-center text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#1e3a5f]"
-                            />
-                          ) : (
-                            <div
-                              className="min-h-[28px] flex items-center justify-center text-sm text-[var(--paragraph)] cursor-pointer hover:bg-[var(--surface)] rounded transition-colors duration-150"
-                              onClick={() => canEdit && onCellClick(a.id, code, value)}
-                            >
-                              {value !== null && value !== undefined ? value : '—'}
-                            </div>
-                          )}
+                      {category === 'mock' && (
+                        <td className="border border-gray-200 px-2 py-1.5 text-sm text-[var(--paragraph)] whitespace-nowrap">
+                          {examMonthLabel}
                         </td>
-                      );
-                    })}
-                    {canEdit && (
-                      <td className="border border-gray-200 px-2 py-1.5 text-center">
-                        <div className="flex items-center justify-center gap-1.5">
-                          {canDelete && (
-                            <Button variant="danger" size="sm" onClick={() => onDelete(a.id)}>
-                              削除
-                            </Button>
-                          )}
-                          {onReorder && (
-                            <span
-                              className="text-gray-300 hover:text-gray-500 cursor-grab transition-colors"
-                              title="ドラッグして並び替え"
-                            >
-                              <GripVertical className="w-4 h-4" />
-                            </span>
-                          )}
-                        </div>
-                      </td>
-                    )}
-                  </tr>
-                );
-              })
-            )}
-          </tbody>
-        </table>
-      </div>
+                      )}
+                      {hsAllCodes.map((code) => {
+                        const value = scoreMap.get(code) ?? null;
+                        const noTest = noTestCodes.has(code);
+                        const isEditing =
+                          editingCell?.assessmentId === a.id && editingCell?.subject === code;
+                        return (
+                          <td
+                            key={code}
+                            className="border border-gray-200 px-1 py-1 text-center min-w-[52px]"
+                          >
+                            {isEditing ? (
+                              <input
+                                type="text"
+                                value={cellValue}
+                                onChange={(e) => onCellChange(e.target.value)}
+                                onFocus={() => {
+                                  tabTriggeredRef.current = false;
+                                }}
+                                onBlur={() => {
+                                  if (tabTriggeredRef.current) {
+                                    tabTriggeredRef.current = false;
+                                    return;
+                                  }
+                                  onCellBlur(a.id, code);
+                                }}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Tab') {
+                                    e.preventDefault();
+                                    tabTriggeredRef.current = true;
+                                    handleCellTabForRow(a.id, code, hsAllCodes);
+                                    return;
+                                  }
+                                  if (e.key === 'Enter') onCellBlur(a.id, code);
+                                  if (e.key === 'Escape') onCancelEdit();
+                                }}
+                                autoFocus
+                                className="w-full px-1 py-0.5 text-center text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#1e3a5f]"
+                              />
+                            ) : (
+                              <div
+                                className="min-h-[28px] flex items-center justify-center text-sm text-[var(--paragraph)] cursor-pointer hover:bg-[var(--surface)] rounded transition-colors duration-150"
+                                onClick={() => canEdit && onCellClick(a.id, code, value, noTest)}
+                              >
+                                {noTest ? (
+                                  <NoTestMark />
+                                ) : value !== null && value !== undefined ? (
+                                  value
+                                ) : (
+                                  '—'
+                                )}
+                              </div>
+                            )}
+                          </td>
+                        );
+                      })}
+                      {canEdit && (
+                        <td className="border border-gray-200 px-2 py-1.5 text-center">
+                          <div className="flex items-center justify-center gap-1.5">
+                            {canDelete && (
+                              <Button variant="danger" size="sm" onClick={() => onDelete(a.id)}>
+                                削除
+                              </Button>
+                            )}
+                            {onReorder && (
+                              <span
+                                className="text-gray-300 hover:text-gray-500 cursor-grab transition-colors"
+                                title="ドラッグして並び替え"
+                              >
+                                <GripVertical className="w-4 h-4" />
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                      )}
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+      </>
     );
   }
 
@@ -408,132 +425,140 @@ export function ScoreTable({
   const colSpanBase = 2 + 5 + 1 + 4 + 1;
   const totalColSpan = colSpanBase + (isReportCard ? 1 : 0) + (canEdit ? 1 : 0);
 
+  // 模試には「テストなし」のヒントを出さない（模試は全科目受ける前提で、0 の扱いも運用が別）。
+  // 入力自体はどの表でも同じルールで受け付ける。
   return (
-    <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
-      <table className="w-full border-collapse text-sm">
-        <thead>
-          <tr className="bg-[var(--surface)] border-b border-gray-200">
-            <th className="px-2 py-2 text-left font-semibold text-[var(--headline)] whitespace-nowrap">
-              学年
-            </th>
-            <th className="px-2 py-2 text-left font-semibold text-[var(--headline)] whitespace-nowrap">
-              テスト名
-            </th>
-            {FIVE_SUBJECTS.map((subj) => (
-              <th
-                key={subj}
-                className="px-2 py-2 text-center font-semibold text-[var(--headline)] min-w-[52px]"
-              >
-                {SUBJECT_LABELS[subj]}
+    <>
+      {canEdit && <NoTestHint className="mb-1" />}
+      <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
+        <table className="w-full border-collapse text-sm">
+          <thead>
+            <tr className="bg-[var(--surface)] border-b border-gray-200">
+              <th className="px-2 py-2 text-left font-semibold text-[var(--headline)] whitespace-nowrap">
+                学年
               </th>
-            ))}
-            <th className="px-2 py-2 text-center font-semibold text-[var(--headline)]">5科計</th>
-            {nineSubjects.map((subj) => (
-              <th
-                key={subj}
-                className="px-2 py-2 text-center font-semibold text-[var(--headline)] min-w-[52px]"
-              >
-                {SUBJECT_LABELS[subj]}
+              <th className="px-2 py-2 text-left font-semibold text-[var(--headline)] whitespace-nowrap">
+                テスト名
               </th>
-            ))}
-            <th className="px-2 py-2 text-center font-semibold text-[var(--headline)]">9科計</th>
-            {isReportCard && (
-              <th className="px-2 py-2 text-center font-semibold text-[var(--headline)] min-w-[80px]">
-                <div className="flex flex-col items-center gap-0.5">
-                  <span>換算内申</span>
-                  <div className="flex gap-1">
-                    <button
-                      type="button"
-                      onClick={() => setNaishinType('tokyo')}
-                      className={`px-1.5 py-0.5 text-[10px] rounded transition-[background-color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97] ${
-                        naishinType === 'tokyo'
-                          ? 'bg-[#1e3a5f] text-white'
-                          : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
-                      }`}
-                    >
-                      都立
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setNaishinType('kanagawa')}
-                      className={`px-1.5 py-0.5 text-[10px] rounded transition-[background-color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97] ${
-                        naishinType === 'kanagawa'
-                          ? 'bg-[#1e3a5f] text-white'
-                          : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
-                      }`}
-                    >
-                      神奈川
-                    </button>
+              {FIVE_SUBJECTS.map((subj) => (
+                <th
+                  key={subj}
+                  className="px-2 py-2 text-center font-semibold text-[var(--headline)] min-w-[52px]"
+                >
+                  {SUBJECT_LABELS[subj]}
+                </th>
+              ))}
+              <th className="px-2 py-2 text-center font-semibold text-[var(--headline)]">5科計</th>
+              {nineSubjects.map((subj) => (
+                <th
+                  key={subj}
+                  className="px-2 py-2 text-center font-semibold text-[var(--headline)] min-w-[52px]"
+                >
+                  {SUBJECT_LABELS[subj]}
+                </th>
+              ))}
+              <th className="px-2 py-2 text-center font-semibold text-[var(--headline)]">9科計</th>
+              {isReportCard && (
+                <th className="px-2 py-2 text-center font-semibold text-[var(--headline)] min-w-[80px]">
+                  <div className="flex flex-col items-center gap-0.5">
+                    <span>換算内申</span>
+                    <div className="flex gap-1">
+                      <button
+                        type="button"
+                        onClick={() => setNaishinType('tokyo')}
+                        className={`px-1.5 py-0.5 text-[10px] rounded transition-[background-color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97] ${
+                          naishinType === 'tokyo'
+                            ? 'bg-[#1e3a5f] text-white'
+                            : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
+                        }`}
+                      >
+                        都立
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setNaishinType('kanagawa')}
+                        className={`px-1.5 py-0.5 text-[10px] rounded transition-[background-color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97] ${
+                          naishinType === 'kanagawa'
+                            ? 'bg-[#1e3a5f] text-white'
+                            : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
+                        }`}
+                      >
+                        神奈川
+                      </button>
+                    </div>
                   </div>
-                </div>
-              </th>
-            )}
-            {canEdit && (
-              <th className="px-2 py-2 text-center font-semibold text-[var(--headline)] w-20">
-                操作
-              </th>
-            )}
-          </tr>
-        </thead>
-        <tbody>
-          {assessments.length === 0 ? (
-            <tr>
-              <td colSpan={totalColSpan} className="px-4 py-8 text-center text-[var(--paragraph)]">
-                データがありません。上の「行を追加」から登録してください。
-              </td>
+                </th>
+              )}
+              {canEdit && (
+                <th className="px-2 py-2 text-center font-semibold text-[var(--headline)] w-20">
+                  操作
+                </th>
+              )}
             </tr>
-          ) : (
-            assessments.map((a, idx) => (
-              <ScoreTableRow
-                key={a.id}
-                assessment={a}
-                category={category}
-                editingCell={editingCell}
-                cellValue={cellValue}
-                onCellClick={onCellClick}
-                onCellBlur={onCellBlur}
-                onCellChange={onCellChange}
-                onCancelEdit={onCancelEdit}
-                onDelete={onDelete}
-                getCalculatedValue={getCalculatedValue}
-                canEdit={canEdit}
-                canDelete={canDelete}
-                naishinType={isReportCard ? naishinType : undefined}
-                onCellTab={(aId, subj) =>
-                  handleCellTabForRow(aId, subj, [
-                    'english',
-                    'math',
-                    'japanese',
-                    'social',
-                    'science',
-                    'music',
-                    'art',
-                    'tech_home',
-                    'pe',
-                  ])
-                }
-                showDragHandle={canEdit && !!onReorder}
-                isDragging={dragIdx === idx}
-                isDragOver={dragOverIdx === idx && dragIdx !== idx}
-                onDragStart={() => setDragIdx(idx)}
-                onDragOver={(e) => {
-                  e.preventDefault();
-                  setDragOverIdx(idx);
-                }}
-                onDrop={() => {
-                  if (dragIdx !== null && dragIdx !== idx) onReorder?.(dragIdx, idx);
-                  setDragIdx(null);
-                  setDragOverIdx(null);
-                }}
-                onDragEnd={() => {
-                  setDragIdx(null);
-                  setDragOverIdx(null);
-                }}
-              />
-            ))
-          )}
-        </tbody>
-      </table>
-    </div>
+          </thead>
+          <tbody>
+            {assessments.length === 0 ? (
+              <tr>
+                <td
+                  colSpan={totalColSpan}
+                  className="px-4 py-8 text-center text-[var(--paragraph)]"
+                >
+                  データがありません。上の「行を追加」から登録してください。
+                </td>
+              </tr>
+            ) : (
+              assessments.map((a, idx) => (
+                <ScoreTableRow
+                  key={a.id}
+                  assessment={a}
+                  category={category}
+                  editingCell={editingCell}
+                  cellValue={cellValue}
+                  onCellClick={onCellClick}
+                  onCellBlur={onCellBlur}
+                  onCellChange={onCellChange}
+                  onCancelEdit={onCancelEdit}
+                  onDelete={onDelete}
+                  getCalculatedValue={getCalculatedValue}
+                  canEdit={canEdit}
+                  canDelete={canDelete}
+                  naishinType={isReportCard ? naishinType : undefined}
+                  onCellTab={(aId, subj) =>
+                    handleCellTabForRow(aId, subj, [
+                      'english',
+                      'math',
+                      'japanese',
+                      'social',
+                      'science',
+                      'music',
+                      'art',
+                      'tech_home',
+                      'pe',
+                    ])
+                  }
+                  showDragHandle={canEdit && !!onReorder}
+                  isDragging={dragIdx === idx}
+                  isDragOver={dragOverIdx === idx && dragIdx !== idx}
+                  onDragStart={() => setDragIdx(idx)}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    setDragOverIdx(idx);
+                  }}
+                  onDrop={() => {
+                    if (dragIdx !== null && dragIdx !== idx) onReorder?.(dragIdx, idx);
+                    setDragIdx(null);
+                    setDragOverIdx(null);
+                  }}
+                  onDragEnd={() => {
+                    setDragIdx(null);
+                    setDragOverIdx(null);
+                  }}
+                />
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+    </>
   );
 }

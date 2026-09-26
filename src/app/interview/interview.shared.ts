@@ -1537,15 +1537,17 @@ export function targetSchoolDiffs(
  * ★基準が紙と未照合（verified_at=NULL）なら必ず添える。AIの書き起こしのままの数字で
  *   「届いている」と言い切って、読み違いだったときに保護者の併願が崩れる。
  * ★仮判定（中3の1学期・中2の学年末）なら添える。
+ * ★gender（生徒の性別）が分かれば、男女別の基準は本人の側を代表に選ぶ（pickPrimaryRule）。
  */
 export function privateAdmissionBlock(
   master: TargetSchoolMaster,
   cards: StudentReportCards,
-  region: Region | null
+  region: Region | null,
+  gender: 'male' | 'female' | null = null
 ): { text: string; rule: AdmissionRule; judgment: AdmissionJudgment } | null {
   const rules = master.admissionRules ?? [];
   if (rules.length === 0) return null;
-  const rule = pickPrimaryRule(rules, region);
+  const rule = pickPrimaryRule(rules, region, gender);
   if (!rule) return null;
   const judgment = evaluateRule(rule, cards);
   const notes: string[] = [];
@@ -1584,7 +1586,9 @@ export function privateAdmissionBlock(
 export function buildTargetSchoolGapLines(
   targetSchools: readonly TargetSchoolRow[],
   assessments: AssessmentWithScores[],
-  region: Region | null = null
+  region: Region | null = null,
+  /** 生徒の性別（私立の男女別の基準を本人の側で判定する）。未設定は null */
+  gender: 'male' | 'female' | null = null
 ): TargetSchoolGapLines {
   if (targetSchools.length === 0) {
     return { tell: [], ask: ['志望校を聞いて入れる'] };
@@ -1626,7 +1630,7 @@ export function buildTargetSchoolGapLines(
       }
 
       // 私立・国立: 推薦・併願優遇の基準を本人の通知表に当てた判定
-      const privateBlock = privateAdmissionBlock(master, cards, region);
+      const privateBlock = privateAdmissionBlock(master, cards, region, gender);
       if (privateBlock) blocks.push(privateBlock.text);
 
       /**
@@ -1654,9 +1658,10 @@ function privateAdmissionTalkLines(
   name: string,
   master: TargetSchoolMaster,
   cards: StudentReportCards,
-  region: Region | null
+  region: Region | null,
+  gender: 'male' | 'female' | null
 ): TargetSchoolTalkLine[] {
-  const block = privateAdmissionBlock(master, cards, region);
+  const block = privateAdmissionBlock(master, cards, region, gender);
   if (!block) return [];
   const { rule, judgment } = block;
   const heading = ruleHeading(rule);
@@ -1743,7 +1748,9 @@ export function buildTargetSchoolTalkLines(
   region: Region | null,
   ownKanagawaNaishin: KanagawaNaishin135Result | null = null,
   /** 私立の推薦・併願優遇を判定するための本人の通知表（buildStudentReportCards） */
-  reportCards: StudentReportCards | null = null
+  reportCards: StudentReportCards | null = null,
+  /** 生徒の性別（私立の男女別の基準を本人の側で判定する。右の「志望校」の行とそろえる） */
+  gender: 'male' | 'female' | null = null
 ): TargetSchoolTalkLine[] {
   const own: OwnNaishinByScale = { tokyo: ownNaishin, kanagawa: ownKanagawaNaishin };
   const lines: TargetSchoolTalkLine[] = [];
@@ -1761,7 +1768,7 @@ export function buildTargetSchoolTalkLines(
     // --- 私立・国立: 推薦・併願優遇の判定 ---
     const privateLines =
       school.master && reportCards
-        ? privateAdmissionTalkLines(name, school.master, reportCards, region)
+        ? privateAdmissionTalkLines(name, school.master, reportCards, region, gender)
         : [];
     lines.push(...privateLines);
 

@@ -248,12 +248,20 @@ export async function createAssessmentRow(
 
 /**
  * スコアを更新（1セル更新）
+ *
+ * options.noTest=true で「テストなし」にする（value は無視して NULL で保存）。
+ * 値を入れる・空にするときは no_test を必ず false に戻す。前の状態が「テストなし」だった
+ * セルに数値を入れたとき、印が残ったままだと DB の check（no_test なら value は NULL）で落ちるため。
+ * 既存の呼び出し（第4引数なし）は従来どおり値の保存＝テストなしの解除になる。
  */
 export async function updateScore(
   assessmentId: string,
   subject: string,
-  value: number | null
+  value: number | null,
+  options: { noTest?: boolean } = {}
 ): Promise<AssessmentScore> {
+  const noTest = options.noTest === true;
+  const fields = noTest ? { value: null, no_test: true } : { value, no_test: false };
   // 既存のスコアを確認
   const { data: existingScore, error: fetchError } = await supabase
     .from('assessment_scores')
@@ -273,7 +281,7 @@ export async function updateScore(
     // 更新
     const { data: updatedScore, error: updateError } = await supabase
       .from('assessment_scores')
-      .update({ value })
+      .update(fields)
       .eq('id', existing.id)
       .select()
       .single();
@@ -291,7 +299,7 @@ export async function updateScore(
       .insert({
         assessment_id: assessmentId,
         subject,
-        value,
+        ...fields,
       })
       .select()
       .single();

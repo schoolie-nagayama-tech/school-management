@@ -21,6 +21,7 @@ import type { StudentTextbook as DistributedMaterial } from '@/lib/api/ordering'
 import { listAssessments } from '@/lib/api/assessments';
 import type { Student, Textbook, AssessmentWithScores } from '@/types/database';
 import {
+  GENDER_LABELS,
   GRADE_LABELS,
   STATUS_LABELS,
   STATUS_COLORS,
@@ -503,6 +504,16 @@ export function StudentDetailModal({
                   <label className="text-xs text-[#4b5563]">学年</label>
                   <p className="mt-1 text-sm text-[#1f2937]">
                     {GRADE_LABELS[student.grade] || student.grade}
+                  </p>
+                </div>
+                <div>
+                  <label className="text-xs text-[#4b5563]">性別</label>
+                  <p className="mt-1 text-sm text-[#1f2937]">
+                    {student.gender ? (
+                      GENDER_LABELS[student.gender]
+                    ) : (
+                      <span className="text-text-faint">未設定</span>
+                    )}
                   </p>
                 </div>
               </div>

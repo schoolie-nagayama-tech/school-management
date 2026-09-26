@@ -207,7 +207,9 @@ export function InterviewPrintSheet({
   const targetSchoolGap = buildTargetSchoolGapLines(
     targetSchools,
     assessments,
-    regionOfSchool(student.school_id)
+    regionOfSchool(student.school_id),
+    // 男女別の基準がある私立は本人の側で判定する（画面と同じ）
+    student.gender ?? null
   );
   // 直近の模試の合格可能性と、登録に無い公立校（画面の④と同じ関数）
   const mockSchoolLines = buildMockSchoolLines(mockSchools, assessments, targetSchools);
@@ -280,7 +282,8 @@ export function InterviewPrintSheet({
     // 神奈川県立（135点満点）と比べる本人の内申。どちらを使うかは学校の満点で決まる
     latestOwnKanagawaNaishin(assessments),
     // 私立の推薦・併願優遇の判定に使う本人の通知表（画面と同じ）
-    buildStudentReportCards(assessments)
+    buildStudentReportCards(assessments),
+    student.gender ?? null
   );
   const examCountdown = examCountdownLine(new Date(), student.grade, region);
   const examApplication = examApplicationLine(new Date(), student.grade, region);

@@ -5,10 +5,12 @@ import {
   generateTeacherCSV,
   getTeacherCSVTemplate,
   getMockCSVTemplate,
+  generateAssessmentCSV,
+  parseGenderCell,
   STUDENT_CSV_HEADERS,
   TEACHER_CSV_HEADERS,
 } from '@/lib/utils/csvUtils';
-import type { Student, Subject } from '@/types/database';
+import type { AssessmentWithScores, Student, Subject } from '@/types/database';
 
 // テスト用の最低限のStudentオブジェクト
 function makeStudent(
@@ -216,8 +218,71 @@ describe('getMockCSVTemplate', () => {
 });
 
 describe('STUDENT_CSV_HEADERS', () => {
-  it('11カラム定義されている', () => {
-    expect(STUDENT_CSV_HEADERS.length).toBe(11);
+  it('12カラム定義されている（性別は後から足したので末尾）', () => {
+    expect(STUDENT_CSV_HEADERS.length).toBe(12);
+    // ★取り込みは列の位置で読むので、既存の11列の並びは変えない
+    expect(STUDENT_CSV_HEADERS[10]).toBe('受講科目');
+    expect(STUDENT_CSV_HEADERS[11]).toBe('性別');
+  });
+});
+
+describe('生徒CSVの性別', () => {
+  it('女/男で末尾の列に書き出し、未設定は空欄', () => {
+    const f = generateStudentCSV([makeStudent({ gender: 'female' })]).split('\r\n')[1];
+    expect(f.endsWith(',女')).toBe(true);
+    const m = generateStudentCSV([makeStudent({ gender: 'male' })]).split('\r\n')[1];
+    expect(m.endsWith(',男')).toBe(true);
+    const n = generateStudentCSV([makeStudent({ gender: null })]).split('\r\n')[1];
+    expect(n.endsWith(',')).toBe(true);
+  });
+
+  it('取り込みは 女/男/female/male/F/M を大文字小文字を問わず読む', () => {
+    for (const v of ['女', 'female', 'Female', 'F', 'f', 'Ｆ']) {
+      expect(parseGenderCell(v)).toBe('female');
+    }
+    for (const v of ['男', 'male', 'MALE', 'M', 'm']) {
+      expect(parseGenderCell(v)).toBe('male');
+    }
+  });
+
+  it('空欄・読めない値・列が無いときは未設定', () => {
+    expect(parseGenderCell('')).toBeNull();
+    expect(parseGenderCell('  ')).toBeNull();
+    expect(parseGenderCell('その他')).toBeNull();
+    expect(parseGenderCell(undefined)).toBeNull();
+  });
+});
+
+describe('成績CSVのテストなし', () => {
+  it('テストなしの科目は「なし」、未入力は空欄で書き出す', () => {
+    const student = makeStudent();
+    const assessment = {
+      id: 'a-1',
+      student_id: student.id,
+      category: 'regular_test',
+      name_code: 'term2_final',
+      exam_month: '2026-12-01',
+      grade: 8,
+      scores: [
+        { id: 's1', assessment_id: 'a-1', subject: 'english', value: 80, created_at: '' },
+        {
+          id: 's2',
+          assessment_id: 'a-1',
+          subject: 'art',
+          value: null,
+          no_test: true,
+          created_at: '',
+        },
+        { id: 's3', assessment_id: 'a-1', subject: 'music', value: null, created_at: '' },
+      ],
+    } as unknown as AssessmentWithScores;
+    const csv = generateAssessmentCSV([student], new Map([[student.id, [assessment]]]));
+    const [header, row] = csv.split('\r\n');
+    const cols = header.split(',');
+    const cells = row.split(',');
+    expect(cells[cols.indexOf('英語')]).toBe('80');
+    expect(cells[cols.indexOf('美術')]).toBe('なし');
+    expect(cells[cols.indexOf('音楽')]).toBe('');
   });
 });
 

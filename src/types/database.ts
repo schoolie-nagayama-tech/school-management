@@ -414,6 +414,11 @@ export type Database = {
           // 講師希望（マッチング/手動配置のフィルタ用）
           /** 希望講師性別。NULL=指定なし、'male'|'female' */
           preferred_teacher_gender: 'male' | 'female' | null;
+          /**
+           * 生徒本人の性別。NULL=未設定。面談の私立の提案（男子校・女子校の除外、男女別の偏差値・基準）に使う。
+           * ★preferred_teacher_gender（希望する講師の性別）とは別物。
+           */
+          gender: 'male' | 'female' | null;
           /** 担当固定講師IDの配列。マッチングで優先 */
           fixed_teacher_ids: string[];
           /** 指名NG講師IDの配列。マッチングで除外 */
@@ -441,6 +446,7 @@ export type Database = {
           is_test?: boolean;
           withdrawal_date?: string | null;
           preferred_teacher_gender?: 'male' | 'female' | null;
+          gender?: 'male' | 'female' | null;
           fixed_teacher_ids?: string[];
           excluded_teacher_ids?: string[];
           deleted_at?: string | null;
@@ -466,6 +472,7 @@ export type Database = {
           is_test?: boolean;
           withdrawal_date?: string | null;
           preferred_teacher_gender?: 'male' | 'female' | null;
+          gender?: 'male' | 'female' | null;
           fixed_teacher_ids?: string[];
           excluded_teacher_ids?: string[];
           deleted_at?: string | null;
@@ -615,6 +622,12 @@ export type Database = {
           assessment_id: string;
           subject: string;
           value: number | null;
+          /**
+           * テストなし（その科目のテストが無かった）。true のとき value は必ず NULL（DBのcheck）。
+           * DB上は not null default false だが、型では省略可にしている。既存のテスト用データや
+           * 部分selectの行が no_test を持たなくても通るようにするため。undefined は false と読む。
+           */
+          no_test?: boolean;
           created_at: string;
         };
         Insert: {
@@ -622,6 +635,7 @@ export type Database = {
           assessment_id: string;
           subject: string;
           value?: number | null;
+          no_test?: boolean;
           created_at?: string;
         };
         Update: {
@@ -629,6 +643,7 @@ export type Database = {
           assessment_id?: string;
           subject?: string;
           value?: number | null;
+          no_test?: boolean;
           created_at?: string;
         };
         Relationships: [
@@ -4223,6 +4238,13 @@ export const STATUS_LABELS: Record<Student['status'], string> = {
   active: '在籍中',
   inactive: '休会',
   withdrawn: '退会',
+};
+
+// 生徒の性別の表示用マッピング（NULL=未設定は呼び出し側で扱う）。
+// 並びは画面の選択肢（未設定／女／男）と同じ順にしてある。
+export const GENDER_LABELS: Record<'male' | 'female', string> = {
+  female: '女',
+  male: '男',
 };
 
 // 在籍状況の色マッピング

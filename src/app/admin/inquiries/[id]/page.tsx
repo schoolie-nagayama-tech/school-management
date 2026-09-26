@@ -657,6 +657,15 @@ export default function InquiryDetailPage() {
         grade: Number.isFinite(gradeNum) ? gradeNum : 7, // 不明時は中1を仮置き（編集モーダルで修正）
         status: 'active',
         school_name: inquiry.school_name ?? null, // 在籍校
+        // 問合せの性別（'男'/'女'/'不明' などの自由な文字）を生徒の性別へ引き継ぐ。
+        // 男・女以外（不明・空）は未設定にする。面談の私立の提案で男子校・女子校を分けるのに使うため、
+        // 入会時に取れている情報は捨てない。
+        gender:
+          inquiry.gender === '男' || inquiry.gender === '男性'
+            ? 'male'
+            : inquiry.gender === '女' || inquiry.gender === '女性'
+              ? 'female'
+              : null,
       };
 
       const created = await createStudent(studentData);

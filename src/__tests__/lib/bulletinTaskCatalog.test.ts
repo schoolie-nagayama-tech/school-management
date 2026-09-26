@@ -15,6 +15,7 @@ import {
   REPORT_CARD_SUBJECTS,
   isReportCardEntered,
   isReportCardTarget,
+  isScoreEntered,
   isTeacherSelfKind,
   missingReportCardSubjects,
 } from '@/lib/bulletin/taskCatalog';
@@ -75,6 +76,28 @@ describe('内申入力の済判定', () => {
   it('足りない科目を返せる（督促の文面に使う）', () => {
     expect(missingReportCardSubjects(all9)).toEqual([]);
     expect(missingReportCardSubjects(all9.slice(0, 8))).toEqual(['pe']);
+  });
+
+  /**
+   * ★「テストなし」（その回にその科目のテストが無かった）は値が空だが、入力済みに数える。
+   *   値だけ見て集めると、美術のテストが無い回の生徒が永久に未済に残る。
+   */
+  it('テストなしの科目は入力済みに数える', () => {
+    const scores = all9.map((subject) =>
+      subject === 'art'
+        ? { subject, value: null, no_test: true }
+        : { subject, value: 3, no_test: false }
+    );
+    const entered = scores.filter(isScoreEntered).map((s) => s.subject);
+    expect(isReportCardEntered(entered)).toBe(true);
+    expect(missingReportCardSubjects(entered)).toEqual([]);
+  });
+
+  it('値もテストなしも無い科目は未入力のまま', () => {
+    expect(isScoreEntered({ value: null, no_test: false })).toBe(false);
+    expect(isScoreEntered({ value: null })).toBe(false);
+    expect(isScoreEntered({ value: 0 })).toBe(true);
+    expect(isScoreEntered({ value: null, no_test: true })).toBe(true);
   });
 });
 

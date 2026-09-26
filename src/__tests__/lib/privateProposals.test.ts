@@ -20,6 +20,7 @@ import {
 import {
   admissionMargin,
   evaluateRule,
+  pickPrimaryRule,
   ruleConditionChips,
   ruleCriterionText,
   type AdmissionRule,
@@ -63,7 +64,13 @@ function rule(
 function school(
   id: string,
   rules: AdmissionRule[],
-  over: { hensachi?: number | null; lat?: number; course?: string } = {}
+  over: {
+    hensachi?: number | null;
+    lat?: number;
+    course?: string;
+    genderType?: string | null;
+    byGender?: { 男子?: number; 女子?: number };
+  } = {}
 ): NearbyPrivateSchool {
   return {
     school: {
@@ -82,8 +89,8 @@ function school(
       sourceLabel: '',
       verifiedAt: null,
     },
-    hensachiByGender: {},
-    genderType: '共学',
+    hensachiByGender: over.byGender ?? {},
+    genderType: over.genderType === undefined ? '共学' : over.genderType,
     rules,
   };
 }
@@ -91,13 +98,18 @@ function school(
 const sum5 = (min: number) => ({ t: 'sum' as const, s: '5科' as const, min });
 const sum9 = (min: number) => ({ t: 'sum' as const, s: '9科' as const, min });
 
-function build(candidates: NearbyPrivateSchool[], registered: string[] = []): PrivateProposalRow[] {
+function build(
+  candidates: NearbyPrivateSchool[],
+  registered: string[] = [],
+  gender: 'male' | 'female' | null = null
+): PrivateProposalRow[] {
   return buildPrivateProposals({
     candidates,
     cards: CARDS,
     region: 'tokyo',
     origin: ORIGIN,
     registeredIds: new Set(registered),
+    gender,
   });
 }
 
@@ -205,6 +217,68 @@ describe('buildPrivateProposals', () => {
   });
 });
 
+describe('生徒の性別（students.gender）', () => {
+  const candidates = () => [
+    school('共学', [rule({ body: { any: [[sum5(22)]] } })], { hensachi: 55 }),
+    school('男子校', [rule({ body: { any: [[sum5(22)]] } })], {
+      hensachi: null,
+      genderType: '男子',
+      byGender: { 男子: 58 },
+    }),
+    school('女子校', [rule({ body: { any: [[sum5(22)]] } })], {
+      hensachi: null,
+      genderType: '女子',
+      byGender: { 女子: 57 },
+    }),
+    school('男女別', [rule({ body: { any: [[sum5(22)]] } })], {
+      hensachi: null,
+      byGender: { 男子: 52, 女子: 60 },
+    }),
+  ];
+
+  it('未設定なら男子校・女子校も外さず、偏差値は男女両方（従来どおり）', () => {
+    const rows = build(candidates());
+    // 同じ「ちょうど」に4校並ぶので、偏差値の高い順に3校（男女別60・男子校58・女子校57）
+    expect(rows.map((r) => r.school.id)).toEqual(['男女別', '男子校', '女子校']);
+    expect(rows.find((r) => r.school.id === '男女別')?.hensachiText).toBe('男52／女60');
+  });
+
+  it('女子なら男子校を外し、偏差値は女子の値で出して並べる', () => {
+    const rows = build(candidates(), [], 'female');
+    expect(rows.map((r) => r.school.id)).not.toContain('男子校');
+    expect(rows.map((r) => r.school.id)).toContain('女子校');
+    const mixed = rows.find((r) => r.school.id === '男女別');
+    expect(mixed?.hensachiText).toBe('60');
+    expect(mixed?.compare.hensachi).toBe('60');
+    // 並びは本人の性別の偏差値の高い順（男女別60 → 女子校57 → 共学55。同じ「ちょうど」なので3校まで）
+    expect(rows.map((r) => r.school.id)).toEqual(['男女別', '女子校', '共学']);
+  });
+
+  it('男子なら女子校を外し、偏差値は男子の値で出す', () => {
+    const rows = build(candidates(), [], 'male');
+    expect(rows.map((r) => r.school.id)).not.toContain('女子校');
+    expect(rows.find((r) => r.school.id === '男女別')?.hensachiText).toBe('52');
+    expect(rows.map((r) => r.school.id)).toEqual(['男子校', '共学', '男女別']);
+  });
+
+  it('区分が男女別なら、本人の側の区分を代表に選ぶ', () => {
+    const boys = rule({ id: 'boys', gender: '男子', sortOrder: 0, body: { any: [[sum5(23)]] } });
+    const girls = rule({ id: 'girls', gender: '女子', sortOrder: 1, body: { any: [[sum5(21)]] } });
+    expect(pickPrimaryRule([boys, girls], 'tokyo', 'female')?.id).toBe('girls');
+    expect(pickPrimaryRule([boys, girls], 'tokyo', 'male')?.id).toBe('boys');
+    // 未設定なら従来どおり（並び順の先頭）
+    expect(pickPrimaryRule([boys, girls], 'tokyo')?.id).toBe('boys');
+    // 性別の無い区分は誰にでも使う
+    const common = rule({ id: 'common', sortOrder: 2, body: { any: [[sum5(22)]] } });
+    expect(pickPrimaryRule([boys, common], 'tokyo', 'female')?.id).toBe('common');
+
+    // 提案でも本人の側の基準で判定する（女子は5科21＝1余裕、男子は5科23＝あと1）
+    const c = [school('男女別基準', [boys, girls])];
+    expect(build(c, [], 'female')[0]?.band).toBe('over');
+    expect(build(c, [], 'male')[0]?.band).toBe('near');
+  });
+});
+
 describe('札と偏差値の見せ方', () => {
   it('検定は札に出す', () => {
     expect(
@@ -252,5 +326,11 @@ describe('沿線と基準の見せ方（本番データで見つけた崩れ）'
   });
   it('男女で同じ偏差値は1つにまとめる', () => {
     expect(privateHensachiText(null, { 男子: 64, 女子: 64 })).toBe('64');
+  });
+  it('性別が分かれば、その性別の偏差値だけ（無ければ従来どおり）', () => {
+    expect(privateHensachiText(null, { 男子: 57, 女子: 56 }, 'female')).toBe('56');
+    expect(privateHensachiText(null, { 男子: 57, 女子: 56 }, 'male')).toBe('57');
+    expect(privateHensachiText(null, { 男子: 57 }, 'female')).toBe('男57');
+    expect(privateHensachiText(60, { 男子: 57, 女子: 56 }, 'female')).toBe('60');
   });
 });

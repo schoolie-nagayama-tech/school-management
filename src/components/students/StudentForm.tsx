@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Button, Input, Select, Loading } from '@/components/ui';
 import type { Student, StudentInsert, StudentUpdate } from '@/types/database';
 import { X, UserX, UserCheck } from 'lucide-react';
-import { GRADE_LABELS, STATUS_LABELS, ORDER_STATUS_LABELS } from '@/types/database';
+import { GENDER_LABELS, GRADE_LABELS, STATUS_LABELS, ORDER_STATUS_LABELS } from '@/types/database';
 import { getStudentTextbooks, deleteOrder } from '@/lib/api/ordering';
 import type { StudentTextbook } from '@/lib/api/ordering';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
@@ -20,6 +20,16 @@ interface PrefTeacher {
   // どの教室に所属するかで絞り込むため user_schools を参照する
   user_schools?: Array<{ school_id?: string | null }> | null;
 }
+
+/**
+ * 生徒の性別の選択肢（未設定／女／男の順）。
+ * ドロップダウンにしないのは、講師がクリック1回で選べるようにするため（入力の手数を減らす決まり）。
+ */
+const STUDENT_GENDER_CHOICES: Array<{ value: '' | 'male' | 'female'; label: string }> = [
+  { value: '', label: '未設定' },
+  { value: 'female', label: GENDER_LABELS.female },
+  { value: 'male', label: GENDER_LABELS.male },
+];
 
 /** 講師の表示名（display_name 優先 → 姓名 → メール）。 */
 function teacherLabel(t: PrefTeacher): string {
@@ -82,6 +92,8 @@ export function StudentForm({
     is_programming: student?.is_programming ?? false,
     is_sibling: student?.is_sibling ?? false,
     withdrawal_date: student?.withdrawal_date || '',
+    // 生徒本人の性別。未設定は空文字で持ち、送信時に null へ正規化する。
+    gender: (student?.gender ?? '') as '' | 'male' | 'female',
     // 講師希望3列。gender は select 用に空文字を許容し、送信時に null へ正規化する。
     preferred_teacher_gender: (student?.preferred_teacher_gender ?? '') as '' | 'male' | 'female',
     fixed_teacher_ids: (student?.fixed_teacher_ids ?? []) as string[],
@@ -119,6 +131,7 @@ export function StudentForm({
         is_programming: student.is_programming ?? false,
         is_sibling: student.is_sibling ?? false,
         withdrawal_date: student.withdrawal_date || '',
+        gender: (student.gender ?? '') as '' | 'male' | 'female',
         preferred_teacher_gender: (student.preferred_teacher_gender ?? '') as
           | ''
           | 'male'
@@ -279,10 +292,12 @@ export function StudentForm({
     }
 
     // withdrawal_date は空欄を null として送る（DB の DATE 型は空文字を許容しない）。
-    // preferred_teacher_gender も空文字（指定なし）は null で保存する。
+    // preferred_teacher_gender・gender も空文字（指定なし／未設定）は null で保存する
+    // （DB の check が male/female/NULL しか受けないため）。
     const normalized = {
       ...formData,
       withdrawal_date: formData.withdrawal_date || null,
+      gender: formData.gender || null,
       preferred_teacher_gender: formData.preferred_teacher_gender || null,
     };
     const submitData = isEdit
@@ -357,6 +372,38 @@ export function StudentForm({
         options={gradeOptions}
         required
       />
+
+      {/* 性別（面談の私立の提案で、男子校・女子校や男女別の基準を分けるのに使う） */}
+      <div>
+        <span id="student-gender-label" className="block text-sm font-medium text-[#1f2937] mb-1">
+          性別
+        </span>
+        <div
+          className="inline-flex items-center gap-1 bg-surface-hover rounded-md p-0.5"
+          role="radiogroup"
+          aria-labelledby="student-gender-label"
+        >
+          {STUDENT_GENDER_CHOICES.map((c) => {
+            const selected = formData.gender === c.value;
+            return (
+              <button
+                key={c.value || 'unset'}
+                type="button"
+                role="radio"
+                aria-checked={selected}
+                onClick={() => setFormData((prev) => ({ ...prev, gender: c.value }))}
+                className={`px-4 py-1 text-sm rounded transition-[background-color,color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97] ${
+                  selected
+                    ? 'bg-surface-raised text-ink font-medium shadow-sm'
+                    : 'text-text-muted hover:text-text-body'
+                }`}
+              >
+                {c.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
 
       {/* 在籍状況（編集時のみ表示） */}
       {isEdit && (

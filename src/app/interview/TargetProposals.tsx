@@ -103,7 +103,12 @@ export interface TargetProposalsState {
 export function useTargetProposals(
   schoolId: string | null | undefined,
   targetSchools: TargetSchoolRow[],
-  assessments: AssessmentWithScores[]
+  assessments: AssessmentWithScores[],
+  /**
+   * 生徒の性別（students.gender）。分かれば私立の提案から入れない男子校・女子校を外し、
+   * 偏差値・男女別の基準を本人の側で出す。未設定（null）なら従来どおり両方。
+   */
+  gender: 'male' | 'female' | null = null
 ): TargetProposalsState {
   const registered = useMemo(
     () =>
@@ -181,7 +186,7 @@ export function useTargetProposals(
     const map = new Map<string, PrivateJudgmentCell>();
     for (const t of targetSchools) {
       if (!t.highSchoolId || !t.master) continue;
-      const block = privateAdmissionBlock(t.master, cards, region);
+      const block = privateAdmissionBlock(t.master, cards, region, gender);
       if (!block) continue;
       map.set(t.highSchoolId, {
         heading: block.rule.examLabel,
@@ -190,7 +195,7 @@ export function useTargetProposals(
       });
     }
     return map;
-  }, [targetSchools, assessments, schoolId]);
+  }, [targetSchools, assessments, schoolId, gender]);
 
   const cards = useMemo(() => buildStudentReportCards(assessments), [assessments]);
   const privateRows = useMemo(
@@ -201,8 +206,9 @@ export function useTargetProposals(
         region: schoolId ? regionOfSchool(schoolId) : null,
         origin,
         registeredIds: new Set(registered.map((r) => r.highSchoolId)),
+        gender,
       }),
-    [privates, cards, schoolId, origin, registered]
+    [privates, cards, schoolId, origin, registered, gender]
   );
 
   /**
@@ -215,7 +221,7 @@ export function useTargetProposals(
     const region = schoolId ? regionOfSchool(schoolId) : null;
     for (const t of targetSchools) {
       if (!t.highSchoolId || !t.master) continue;
-      const block = privateAdmissionBlock(t.master, cards, region);
+      const block = privateAdmissionBlock(t.master, cards, region, gender);
       if (!block) continue;
       const row = rows.find((r) => r.school.id === t.highSchoolId);
       map.set(
@@ -225,13 +231,17 @@ export function useTargetProposals(
           school: { schoolName: t.master.schoolName, course: t.master.course },
           rule: block.rule,
           judgment: block.judgment,
-          hensachiText: privateHensachiText(t.master.hensachi, t.master.hensachiByGender ?? {}),
+          hensachiText: privateHensachiText(
+            t.master.hensachi,
+            t.master.hensachiByGender ?? {},
+            gender
+          ),
           commute: row?.commute ?? null,
         })
       );
     }
     return map;
-  }, [privateRows, targetSchools, cards, schoolId, rows]);
+  }, [privateRows, targetSchools, cards, schoolId, rows, gender]);
 
   return {
     rows,
