@@ -37,7 +37,11 @@ const CARDS: StudentReportCards = {
   provisional: null,
 };
 
-function rule(over: Partial<AdmissionRule> & { body: Partial<AdmissionRuleBody> }): AdmissionRule {
+// ★body は一部だけ渡せるようにする。Partial<AdmissionRule> のままだと body が丸ごと必須になり型が通らない
+function rule(
+  over: Partial<Omit<AdmissionRule, 'body'>> & { body: Partial<AdmissionRuleBody> }
+): AdmissionRule {
+  const { body, ...rest } = over;
   return {
     id: 'r',
     kind: '併願',
@@ -51,8 +55,8 @@ function rule(over: Partial<AdmissionRule> & { body: Partial<AdmissionRuleBody> 
     sourceLabel: '',
     verifiedAt: '2026-09-25',
     sortOrder: 0,
-    ...over,
-    body: { any: [], gates: [], bonus: null, no_criterion: null, ...over.body },
+    ...rest,
+    body: { any: [], gates: [], bonus: null, no_criterion: null, ...body },
   };
 }
 
