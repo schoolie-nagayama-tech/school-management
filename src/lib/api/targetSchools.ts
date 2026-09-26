@@ -133,7 +133,7 @@ function hensachiOf(rows: HighSchoolStandardRow[]): {
 }
 
 /** DBの1行 → 判定ロジックの型。rule（jsonb）の中身は取込スクリプトで形を検めてある */
-function toAdmissionRule(row: AdmissionRuleDbRow): AdmissionRule {
+export function toAdmissionRule(row: AdmissionRuleDbRow): AdmissionRule {
   const body = row.rule as unknown as Partial<AdmissionRuleBody>;
   return {
     id: row.id,
@@ -158,7 +158,7 @@ function toAdmissionRule(row: AdmissionRuleDbRow): AdmissionRule {
 }
 
 /** 学校ごとに最新年度の基準だけを残す（古い年度は過去の面談の再現用に残してあるだけ） */
-function latestRulesBySchool(rows: AdmissionRuleDbRow[]): Map<string, AdmissionRule[]> {
+export function latestRulesBySchool(rows: AdmissionRuleDbRow[]): Map<string, AdmissionRule[]> {
   const latestYear = new Map<string, number>();
   for (const r of rows) {
     latestYear.set(
