@@ -28,6 +28,10 @@ import {
   MAX_THREAD_LENGTH,
   MAX_FOLLOW_UPS,
   MAX_FOLLOW_UP_ITEMS,
+  MAX_PLAN_REASON_LENGTH,
+  MAX_PLAN_SUBJECTS,
+  PLAN_AI_PREFIX,
+  planSubjectsFromSections,
   type BriefSectionKey,
 } from '@/lib/ai/interviewBrief';
 import { SCENE_OF_SECTION, SCENE_KEYS } from '@/lib/interview/scenes';
@@ -561,5 +565,118 @@ describe('parseBriefResult（followUps）', () => {
       sent
     );
     expect(got.followUps).toEqual([]);
+  });
+});
+
+describe('planReasons（⑤プランの科目ごとの「なぜ」）', () => {
+  const planSections = [
+    { key: 'score' as const, current: ['定期テスト: 英語 60（前回 68）'] },
+    {
+      key: 'koushu' as const,
+      current: [
+        '提案 英語 10コマ・数学 6コマ（提案中）',
+        `${PLAN_AI_PREFIX} 英語 10コマ：教材「中2英語」／単元：不定詞・比較`,
+        `${PLAN_AI_PREFIX} 数学 6コマ：教材「中2数学」`,
+      ],
+    },
+  ];
+  const subjects = planSubjectsFromSections(planSections);
+
+  it('プランの科目名は koushu の「プラン:」の行から、渡した順・重複なしで取る', () => {
+    expect(subjects).toEqual(['英語', '数学']);
+    // koushu 以外に紛れた行は見ない（プランの話は講習の材料からしかさせない）
+    expect(
+      planSubjectsFromSections([{ key: 'score', current: [`${PLAN_AI_PREFIX} 国語 4コマ`] }])
+    ).toEqual([]);
+  });
+
+  it('プロンプトに planReasons の決まり（数字なし・科目名はそのまま）がある', () => {
+    const prompt = briefSystemPrompt();
+    expect(prompt).toContain('■ planReasons');
+    expect(prompt).toContain('【プランの科目】');
+    expect(prompt).toContain(`${MAX_PLAN_REASON_LENGTH}字まで`);
+  });
+
+  it('【プランの科目】は科目があるときだけ渡す', () => {
+    const t = briefUserText(planSections, [], null, { planSubjects: subjects });
+    expect(t).toContain('【プランの科目】');
+    expect(t).toContain('- 英語');
+    expect(briefUserText(planSections)).not.toContain('【プランの科目】');
+  });
+
+  it('渡した科目だけ・1科目1件で残す', () => {
+    const got = parseBriefResult(
+      {
+        planReasons: [
+          { subject: '英語', text: '文法の抜けが失点に出ているので、不定詞から戻す' },
+          { subject: '英語', text: '2件目は捨てる' },
+          { subject: '国語', text: '渡していない科目' },
+          { subject: '数学 ', text: '計算の取りこぼしを先に止める' },
+        ],
+      },
+      ['score', 'koushu'],
+      [],
+      [],
+      subjects
+    );
+    expect(got.planReasons).toEqual([
+      { subject: '英語', text: '文法の抜けが失点に出ているので、不定詞から戻す' },
+      { subject: '数学', text: '計算の取りこぼしを先に止める' },
+    ]);
+  });
+
+  it('数字入り・上限超えは捨てる（切り詰めない）', () => {
+    const just = 'あ'.repeat(MAX_PLAN_REASON_LENGTH);
+    const got = parseBriefResult(
+      {
+        planReasons: [
+          { subject: '英語', text: '英語は10コマ取った' },
+          { subject: '数学', text: 'あ'.repeat(MAX_PLAN_REASON_LENGTH + 1) },
+        ],
+      },
+      ['koushu'],
+      [],
+      [],
+      subjects
+    );
+    expect(got.planReasons).toEqual([]);
+    expect(
+      parseBriefResult(
+        { planReasons: [{ subject: '英語', text: just }] },
+        ['koushu'],
+        [],
+        [],
+        subjects
+      ).planReasons
+    ).toEqual([{ subject: '英語', text: just }]);
+  });
+
+  it('koushu を渡していなければ、AIが書いてきても空', () => {
+    const got = parseBriefResult(
+      { planReasons: [{ subject: '英語', text: '文法から戻す' }] },
+      sent,
+      [],
+      [],
+      subjects
+    );
+    expect(got.planReasons).toEqual([]);
+  });
+
+  it(`多くても${MAX_PLAN_SUBJECTS}件・読めない出力でも空配列`, () => {
+    const many = Array.from(
+      { length: MAX_PLAN_SUBJECTS + 3 },
+      (_, i) => `科目${'あいうえおかきくけこさし'[i]}`
+    );
+    const got = parseBriefResult(
+      { planReasons: many.map((subject) => ({ subject, text: '理由' })) },
+      ['koushu'],
+      [],
+      [],
+      many
+    );
+    expect(got.planReasons).toHaveLength(MAX_PLAN_SUBJECTS);
+    for (const raw of [{}, { planReasons: 'ちがう' }, { planReasons: [null, 1] }, null]) {
+      expect(parseBriefResult(raw, ['koushu'], [], [], subjects).planReasons).toEqual([]);
+    }
   });
 });

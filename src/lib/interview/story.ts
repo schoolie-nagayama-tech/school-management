@@ -117,18 +117,23 @@ export function formatRegularEnrollment(
     .join('・');
 }
 
-/** 定期テストの科目コードの束（旧コードと中学コード）。社会は中学コードで3分野に分かれる */
-const TEST_SUBJECT_FAMILIES: ReadonlyArray<{ re: RegExp; label: string; codes: string[] }> = [
-  { re: /英/, label: '英', codes: ['english', 'jhs_english'] },
-  { re: /数|算/, label: '数', codes: ['math', 'jhs_math'] },
-  { re: /国/, label: '国', codes: ['japanese', 'jhs_japanese'] },
-  { re: /理/, label: '理', codes: ['science', 'jhs_science'] },
-  {
-    re: /社|地理|歴史|公民/,
-    label: '社',
-    codes: ['social', 'jhs_social_geo', 'jhs_social_history', 'jhs_social_civics'],
-  },
-];
+/**
+ * 定期テストの科目コードの束（旧コードと中学コード）。社会は中学コードで3分野に分かれる。
+ * ★⑤プラン提示の科目カード（planExplain.ts）も、講習の科目名をこの束で成績の科目に直す。
+ *   科目名→成績コードの読み替えを1か所にそろえるため export している。
+ */
+export const TEST_SUBJECT_FAMILIES: ReadonlyArray<{ re: RegExp; label: string; codes: string[] }> =
+  [
+    { re: /英/, label: '英', codes: ['english', 'jhs_english'] },
+    { re: /数|算/, label: '数', codes: ['math', 'jhs_math'] },
+    { re: /国/, label: '国', codes: ['japanese', 'jhs_japanese'] },
+    { re: /理/, label: '理', codes: ['science', 'jhs_science'] },
+    {
+      re: /社|地理|歴史|公民/,
+      label: '社',
+      codes: ['social', 'jhs_social_geo', 'jhs_social_history', 'jhs_social_civics'],
+    },
+  ];
 
 /**
  * 塾で受けている科目（今日有効な通常期の通塾日程）を、定期テストの科目コードに直す。

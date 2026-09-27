@@ -65,6 +65,7 @@ import {
   SELECTABLE_MODEL_KEY_LABELS as MODEL_LABELS,
   followUpItemKey,
   type BriefEpisode,
+  type BriefPlanReason,
   type BriefStudyTip,
   type BriefRoadmapStep,
   type BriefFollowUp,
@@ -77,6 +78,12 @@ import type { AssessmentWithScores, Student, StudentInterview } from '@/types/da
 import type { DisciplineSessionRow } from '@/lib/api/progress-sessions';
 import type { KoushuEnrollment } from '@/lib/api/seasonalCourses';
 import type { SeasonalProposalSeasonSummary } from '@/lib/api/seasonalProposalSummary';
+import {
+  buildPlanAiLines,
+  buildPlanExplanation,
+  type PlanExplanation,
+  type PlanProposalDetail,
+} from '@/lib/interview/planExplain';
 import type { ScheduleRegularPattern } from '@/types/schedule';
 import type { StudentExamGoalWithType } from '@/lib/api/progress';
 import type { TargetSchoolRow } from '@/lib/api/targetSchools';
@@ -123,6 +130,7 @@ import {
   formatRegularPatternsSchedule,
   koushuFiscalYear,
   mergeKoushuSeasons,
+  KOUSHU_STATUS_LABEL,
   stripTargetSchoolFactLines,
   summarizeCurrentKoushu,
   INTERVIEW_CARD_IDS,
@@ -188,6 +196,8 @@ export interface ScriptView {
   thesis: string;
   roadmap: BriefRoadmapStep[];
   closing: string;
+  /** ⑤プランの科目ごとの「なぜ」（AI）。AIが使えない日・今期の提案書が無い日は空 */
+  planReasons: BriefPlanReason[];
 }
 
 interface ScriptResponse extends ScriptView {
@@ -211,6 +221,8 @@ interface Props {
   koushuEnrollments: KoushuEnrollment[];
   /** 講習の提案書（期ごとのまとめ）。★⑤の主材料。koushu_enrollments は本番0行 */
   koushuSummaries: SeasonalProposalSeasonSummary[];
+  /** 今期の提案書の中身（科目・教材・単元）。⑤プラン提示の科目カードの材料 */
+  planDetail: PlanProposalDetail[];
   /** 通塾日程。⑤プラン提示の「通常授業との関係」に使う */
   regularPatterns: ScheduleRegularPattern[];
   /** 試験目標（②ヒアリング「目標の達成度」の材料） */
@@ -561,6 +573,112 @@ function PillLine({ pill, text }: { pill: string; text: string }) {
   );
 }
 
+/**
+ * ⑤プラン提示の説明（2026-09-27 教室長承認のモック）。
+ * 「このプランで目指すこと」→ 科目ごとのカード（なぜ／やる単元／テーマ）→ 合計と状態 → 話す順。
+ * ★「なぜ」はシステムの札（定期テストの上下）を先に、AIの文を後に置く。数字の根拠を見せてから
+ *   言葉で説明する順にするため。AIの文は着眼点と同じ ink の色で、AIが書いたものと分かるようにする。
+ * ★お金の話はここでしない（⑥申し込みで話す）。案内の行でそれを明示する。
+ */
+function PlanExplainBlock({
+  plan,
+  nextGoal,
+  reasons,
+}: {
+  plan: PlanExplanation;
+  nextGoal: string;
+  reasons: readonly BriefPlanReason[];
+}) {
+  const reasonBySubject = new Map(reasons.map((r) => [r.subject, r.text]));
+  return (
+    <div className="flex flex-col gap-2">
+      {nextGoal && (
+        <div className="flex flex-col gap-0.5 rounded-md bg-info-subtle px-3 py-2">
+          <span className="text-[11px] font-bold text-info">このプランで目指すこと</span>
+          <span className="text-[13px] leading-snug text-text-heading">{nextGoal}</span>
+        </div>
+      )}
+      {plan.subjects.map((s) => {
+        const reason = reasonBySubject.get(s.subject);
+        return (
+          <div
+            key={s.subject}
+            className="flex flex-col gap-1.5 rounded-md border border-border-subtle bg-surface px-3 py-2"
+          >
+            <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+              <span className="text-[14px] font-bold text-text-heading">{s.subject}</span>
+              <span className="text-[13px] font-bold text-text-heading">{s.koma}コマ</span>
+              {s.textbooks.length > 0 && (
+                <span className="text-[11px] text-text-muted">{s.textbooks.join('・')}</span>
+              )}
+            </div>
+            {(s.testChange || reason) && (
+              <PlanRow label="なぜ">
+                <div className="flex flex-col gap-1">
+                  {s.testChange && (
+                    <span className="w-fit rounded-full border border-border-subtle bg-surface-hover px-1.5 text-[11px] leading-[18px] text-text-body">
+                      {s.testChange.label}
+                    </span>
+                  )}
+                  {reason && (
+                    <div className="flex items-start gap-1.5 rounded-r-md border-l-[3px] border-ink bg-ink-subtle px-2 py-1">
+                      <Sparkles className="mt-0.5 h-3 w-3 shrink-0 text-ink" aria-hidden="true" />
+                      <span className="text-[12.5px] leading-snug text-text-heading">{reason}</span>
+                    </div>
+                  )}
+                </div>
+              </PlanRow>
+            )}
+            {s.units.length > 0 && (
+              <PlanRow label="やる単元">
+                <div className="flex flex-wrap gap-1">
+                  {s.units.map((u, i) => (
+                    <span
+                      key={`${u.name}-${i}`}
+                      className="rounded-full border border-border-subtle bg-surface-hover px-1.5 text-[11px] leading-[18px] text-text-body"
+                    >
+                      {u.name} {u.koma}
+                    </span>
+                  ))}
+                  {s.moreUnits > 0 && (
+                    <span className="px-1 text-[11px] leading-[18px] text-text-muted">
+                      ほか{s.moreUnits}
+                    </span>
+                  )}
+                </div>
+              </PlanRow>
+            )}
+            {s.theme && (
+              <PlanRow label="テーマ">
+                <span className="text-[12.5px] leading-snug text-text-body">{s.theme}</span>
+              </PlanRow>
+            )}
+          </div>
+        );
+      })}
+      <div className="flex flex-wrap items-baseline gap-x-2 text-[13px] text-text-heading">
+        <span className="font-bold">合計 {plan.totalKoma}コマ</span>
+        <span className="text-[11px] text-text-muted">{KOUSHU_STATUS_LABEL[plan.status]}</span>
+      </div>
+      <p className="text-[11px] leading-snug text-text-muted">
+        話す順：①目指すこと → ②科目ごとの「なぜ」 → ③合計のコマと日程。お金の話は⑥申し込みで
+      </p>
+    </div>
+  );
+}
+
+/** 科目カードの1段（左に小さな見出し、右に中身） */
+function PlanRow({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="flex items-start gap-2">
+      <span className="w-12 shrink-0 pt-px text-[10px] font-bold tracking-[0.08em] text-text-muted">
+        {label}
+      </span>
+      <div className="min-w-0 flex-1">{children}</div>
+    </div>
+  );
+}
+
 /** 聞くことの小見出し。★チェックの行はこの下にまとめ、話す行の間に混ぜない */
 function AskLabel() {
   return (
@@ -636,6 +754,7 @@ export function InterviewScriptCard({
   disciplineSessions,
   koushuEnrollments,
   koushuSummaries,
+  planDetail,
   regularPatterns,
   examGoals,
   targetSchools,
@@ -957,6 +1076,29 @@ export function InterviewScriptCard({
     () => summarizeCurrentKoushu(koushuBuckets, fiscalYear, seasonKey),
     [koushuBuckets, fiscalYear, seasonKey]
   );
+  /**
+   * ⑤プラン提示の科目カード（今期の提案書を科目ごとに「なぜ・何を・どれだけ」で）。
+   * ★数字（コマ・定期テストの上下）はシステムが組む。AIは科目ごとの「なぜ」の文だけ（planReasons）
+   */
+  const planExplanation = useMemo(
+    () => buildPlanExplanation(planDetail, assessments),
+    [planDetail, assessments]
+  );
+  /**
+   * AIへ送る材料。★プランの中身の行（「プラン:」）は buildTellSections には入れない。
+   *   印刷シートも buildTellSections を使うので、そこに混ぜると紙に出てしまう。送る直前にだけ足す
+   *  （サーバーが返す現状の行からは stripTargetSchoolFactLines が外す）。
+   */
+  const briefSections = useMemo(() => {
+    const planLines = buildPlanAiLines(planExplanation);
+    if (planLines.length === 0) return currentSections;
+    const hasKoushu = currentSections.some((s) => s.key === 'koushu');
+    return hasKoushu
+      ? currentSections.map((s) =>
+          s.key === 'koushu' ? { ...s, current: [...s.current, ...planLines] } : s
+        )
+      : [...currentSections, { key: 'koushu' as const, current: planLines }];
+  }, [currentSections, planExplanation]);
 
   /**
    * 受講の枠（台本の一番上）。通常授業・今期の講習・直近のテスト対策を1か所にまとめる。
@@ -1016,7 +1158,7 @@ export function InterviewScriptCard({
         body: JSON.stringify({
           schoolId: student.school_id,
           studentId: student.id,
-          sections: currentSections,
+          sections: briefSections,
           // ★前回の約束・要望。「報告する」か「聞く」かをAIに1件ずつ決めさせるため、
           //   本文をそのまま渡す（戻りの item はこの文と1字も違わないことが条件）
           //   新しいNottaの型で「誰が動くか」（塾：／家庭：…）が分かっているものは添えて送る
@@ -1064,6 +1206,7 @@ export function InterviewScriptCard({
         thesis: json.degraded ? '' : (json.thesis ?? ''),
         roadmap: json.degraded ? [] : (json.roadmap ?? []),
         closing: json.degraded ? '' : (json.closing ?? ''),
+        planReasons: json.degraded ? [] : (json.planReasons ?? []),
       });
       setMadeAt(new Date().toISOString().slice(0, 10));
       setRated(false);
@@ -1353,6 +1496,17 @@ export function InterviewScriptCard({
           talk: [
             // ★③で話した「なぜ今か」を、プラン表を開いた場でもう一度出す
             ...planRationale.map((t, i) => <SayLine key={`rationale-${i}`} text={t} />),
+            // ★今期のプランを科目ごとに説明する（今期の提案書が無ければ何も出ない）
+            ...(planExplanation
+              ? [
+                  <PlanExplainBlock
+                    key="plan-explain"
+                    plan={planExplanation}
+                    nextGoal={view?.roadmap.find((st) => st.key === 'next')?.goal ?? ''}
+                    reasons={view?.planReasons ?? []}
+                  />,
+                ]
+              : []),
             ...aiSeenLines('plan'),
             ...(view?.bridge
               ? [
@@ -1837,6 +1991,7 @@ export function InterviewScriptCard({
                 何を答えたのか分からない記録が溜まる。ひとこと・場面だけ書けた日も対象に入れる。 */}
             {(view.thread !== '' ||
               view.bridge !== '' ||
+              view.planReasons.length > 0 ||
               view.followUps.length > 0 ||
               hasAnyOpener ||
               hasAnyEpisode ||

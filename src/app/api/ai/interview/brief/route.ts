@@ -14,6 +14,7 @@ import {
   briefSystemPrompt,
   briefUserText,
   parseBriefResult,
+  planSubjectsFromSections,
   sanitizeBriefSections,
   sanitizeFollowUpItems,
   sanitizeFollowUpActors,
@@ -24,6 +25,7 @@ import {
   resolveInterviewBriefModelKey,
   MAX_CURRENT_LINE_LENGTH,
   type BriefEpisode,
+  type BriefPlanReason,
   type BriefStudyTip,
   type BriefRoadmapStep,
   sanitizeStoryTone,
@@ -91,6 +93,8 @@ interface BriefResponse {
   thesis: string;
   roadmap: BriefRoadmapStep[];
   closing: string;
+  /** ⑤プランの科目ごとの「なぜ」。koushu にプランの行を渡していなければ常に空 */
+  planReasons: BriefPlanReason[];
   /** AIを呼べなかった・読めなかった。故障側（現状の行は返しているので画面は成立する） */
   degraded: boolean;
   /** この教室ではAIに送らない設定。故障ではなく意図した停止 */
@@ -291,6 +295,7 @@ export async function POST(request: NextRequest) {
     thesis: '',
     roadmap: [],
     closing: '',
+    planReasons: [],
     degraded: false,
     disabled: false,
     model,
@@ -421,6 +426,8 @@ export async function POST(request: NextRequest) {
   }
 
   const sentKeys = sections.map((s) => s.key);
+  // ★プランの科目名。プロンプトの【プランの科目】と planReasons の突き合わせの両方に同じものを使う
+  const planSubjects = planSubjectsFromSections(sections);
 
   try {
     const raw = await callClaudeJson<unknown>({
@@ -445,6 +452,7 @@ export async function POST(request: NextRequest) {
         givenName: (student as { first_name?: string | null }).first_name ?? null,
         followUpActors,
         storyTone: sanitizeStoryTone(body.storyTone),
+        planSubjects,
       }),
       // ★長く書かせるようにしたので、出力の上限も広げる（seen 180字×7＋thread＋bridge＋followUps）。
       //   Opus 5.5 は思考が常に入り、その分も max_tokens から引かれる。4000 だと思考で食われて
@@ -457,7 +465,7 @@ export async function POST(request: NextRequest) {
     // ★場面の番号は、AIに番号付きで渡した引継ぎの行（sections の lessons）で引く。
     //   画面用に畳んだ viewCurrent の行ではない（番号がずれる）
     const lessonLinesSent = sections.find((s) => s.key === 'lessons')?.current ?? [];
-    const parsed = parseBriefResult(raw, sentKeys, followUpItems, lessonLinesSent);
+    const parsed = parseBriefResult(raw, sentKeys, followUpItems, lessonLinesSent, planSubjects);
     const seenByKey = new Map<BriefSectionKey, { seen: string; sign: BriefSign }>();
     for (const s of parsed.sections) seenByKey.set(s.key, { seen: s.seen, sign: s.sign });
 
@@ -475,6 +483,7 @@ export async function POST(request: NextRequest) {
       parsed.followUps.length === 0 &&
       Object.keys(parsed.openers).length === 0 &&
       parsed.episodes.length === 0 &&
+      parsed.planReasons.length === 0 &&
       !parsed.thesis;
 
     return NextResponse.json({
@@ -488,6 +497,7 @@ export async function POST(request: NextRequest) {
       thesis: parsed.thesis,
       roadmap: parsed.roadmap,
       closing: parsed.closing,
+      planReasons: parsed.planReasons,
       degraded: nothing,
       disabled: false,
       model,

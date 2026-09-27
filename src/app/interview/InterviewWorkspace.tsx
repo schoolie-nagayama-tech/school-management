@@ -48,9 +48,11 @@ import {
   getInterviewTestPrep,
 } from '@/lib/api/interviewApplications';
 import {
+  getCurrentPlanDetail,
   getSeasonalProposalSummaryByStudent,
   type SeasonalProposalSeasonSummary,
 } from '@/lib/api/seasonalProposalSummary';
+import type { PlanProposalDetail } from '@/lib/interview/planExplain';
 import type { AssessmentWithScores, Student, StudentInterview } from '@/types/database';
 import type { ScheduleRegularPattern } from '@/types/schedule';
 import { InterviewRecordsCard, InterviewTasksCard, type HandoverInfo } from './InterviewTimeline';
@@ -117,6 +119,8 @@ export function InterviewWorkspace() {
    *   これを読まないと全生徒が「講習: 申込なし」になる。
    */
   const [koushuSummaries, setKoushuSummaries] = useState<SeasonalProposalSeasonSummary[]>([]);
+  // 今期の提案書の中身（科目・教材・単元）。⑤プラン提示の科目カードの材料（lib/interview/planExplain.ts）
+  const [planDetail, setPlanDetail] = useState<PlanProposalDetail[]>([]);
   // 宿題・遅刻の月次集計（DisciplinePanel）用の生セッション行。集計自体は computeDisciplineMonthly に任せる
   const [disciplineSessions, setDisciplineSessions] = useState<DisciplineSessionRow[]>([]);
   // 試験目標（②ヒアリング「目標の達成度」の材料）
@@ -340,6 +344,7 @@ export function InterviewWorkspace() {
           prep,
           weekly,
           mockApps,
+          plan,
         ] = await Promise.all([
           getStudentInterviews(selectedStudentId).catch(() => []),
           listAssessments(selectedStudentId).catch(() => []),
@@ -355,6 +360,13 @@ export function InterviewWorkspace() {
           getInterviewTestPrep(selectedStudentId).catch(() => []),
           getInterviewShukaisu(selectedStudentId).catch(() => null),
           getInterviewMockApplications(selectedStudentId).catch(() => []),
+          // ★今期は台本（InterviewScriptCard）と同じ規則（4月始まりの年度・currentSeason）で決める。
+          //   読めなくても面談画面は開けるよう、失敗は空で受ける（⑤に科目カードが出ないだけ）
+          getCurrentPlanDetail(
+            selectedStudentId,
+            koushuFiscalYear(new Date()),
+            currentSeason(new Date())
+          ).catch(() => []),
         ]);
         if (cancelled) return;
         setInterviews(iv);
@@ -371,6 +383,7 @@ export function InterviewWorkspace() {
         setTestPrep(prep);
         setShukaisu(weekly);
         setMockApplications(mockApps);
+        setPlanDetail(plan);
       } finally {
         if (!cancelled) setLightLoading(false);
       }
@@ -565,6 +578,7 @@ export function InterviewWorkspace() {
               disciplineSessions={disciplineSessions}
               koushuEnrollments={koushuEnrollments}
               koushuSummaries={koushuSummaries}
+              planDetail={planDetail}
               regularPatterns={regularPatterns}
               examGoals={examGoals}
               targetSchools={targetSchools}
