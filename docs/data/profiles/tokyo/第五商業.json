@@ -1,0 +1,776 @@
+{
+  "prefecture": "東京都",
+  "school_name": "第五商業",
+  "official_url": "https://www.metro.ed.jp/daigosyogyo-h/",
+  "researched_at": "2026-09-27",
+  "stats": [
+    {
+      "metric": "club_join_rate",
+      "fiscal_year": 2024,
+      "value_num": 96.6,
+      "source_url": "https://www.metro.ed.jp/daigosyogyo-h/img_sub/R6_学校経営報告（06全).pdf",
+      "source_label": "令和6年度東京都立第五商業高等学校経営報告 5 特別活動・部活動",
+      "as_of": "2025-03",
+      "note": "令和6年度実績（前年度97.6%）。"
+    },
+    {
+      "metric": "satisfaction",
+      "item": "生徒:学校生活",
+      "fiscal_year": 2024,
+      "value_num": 86.2,
+      "source_url": "https://www.metro.ed.jp/daigosyogyo-h/img_sub/R6_学校経営報告（06全).pdf",
+      "source_label": "令和6年度東京都立第五商業高等学校経営報告 重点目標達成のための具体的方策",
+      "as_of": "2025-03",
+      "note": "「生徒の学校満足度」目標80%以上に対する令和6年度実績。"
+    },
+    {
+      "metric": "satisfaction",
+      "item": "生徒:進路指導",
+      "fiscal_year": 2024,
+      "value_num": 87.9,
+      "source_url": "https://www.metro.ed.jp/daigosyogyo-h/img_sub/R6_学校経営報告（06全).pdf",
+      "source_label": "令和6年度東京都立第五商業高等学校経営報告 重点目標達成のための具体的方策",
+      "as_of": "2025-03",
+      "note": "学校評価の「進路指導満足度」肯定的回答の割合。"
+    },
+    {
+      "metric": "satisfaction",
+      "item": "生徒:学校行事",
+      "fiscal_year": 2024,
+      "value_num": 72.9,
+      "source_url": "https://www.metro.ed.jp/daigosyogyo-h/img_sub/R6_学校経営報告（06全).pdf",
+      "source_label": "令和6年度東京都立第五商業高等学校経営報告 重点目標達成のための具体的方策",
+      "as_of": "2025-03",
+      "note": "生徒の学校行事への満足度。"
+    },
+    {
+      "metric": "satisfaction",
+      "item": "生徒:資格指導の体制",
+      "fiscal_year": 2024,
+      "value_num": 88.9,
+      "source_url": "https://www.metro.ed.jp/daigosyogyo-h/img_sub/R6_学校経営報告（06全).pdf",
+      "source_label": "令和6年度東京都立第五商業高等学校経営報告 2 学習指導",
+      "as_of": "2025-03",
+      "note": "生徒による授業評価「資格指導についての指導体制が充実」の肯定率。"
+    },
+    {
+      "metric": "exam_ratio",
+      "item": "推薦",
+      "fiscal_year": 2025,
+      "value_num": 2.01,
+      "source_url": "https://www.metro.ed.jp/daigosyogyo-h/img_sub/R6_学校経営報告（06全).pdf",
+      "source_label": "令和6年度東京都立第五商業高等学校経営報告 7 募集・広報活動",
+      "as_of": "2025-03",
+      "note": "令和7年度入学者選抜（前年度1.94倍）。応募/受検の別は原文に明記なし。"
+    },
+    {
+      "metric": "university_count",
+      "item": "合計",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 65,
+      "source_url": "https://www.metro.ed.jp/daigosyogyo-h/img_sub/令和８年3月大学・短期大学・進学先一覧.pdf",
+      "source_label": "令和8年3月卒業生 大学・短期大学 進学先一覧",
+      "as_of": "2026-09",
+      "note": "大学63名+短期大学2名（「進路状況　過去10年間の推移」の2025(R7)列とも整合）。国公立・早慶上理・GMARCH・成成明武への進学者は一覧上0名。"
+    },
+    {
+      "metric": "university_count",
+      "item": "東京経済大学",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 16,
+      "source_url": "https://www.metro.ed.jp/daigosyogyo-h/img_sub/令和８年3月大学・短期大学・進学先一覧.pdf",
+      "source_label": "令和8年3月卒業生 大学・短期大学 進学先一覧",
+      "as_of": "2026-09",
+      "note": "総合型選抜等13名＋指定校推薦3名を合算。"
+    },
+    {
+      "metric": "university_count",
+      "item": "明星大学",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 8,
+      "source_url": "https://www.metro.ed.jp/daigosyogyo-h/img_sub/令和８年3月大学・短期大学・進学先一覧.pdf",
+      "source_label": "令和8年3月卒業生 大学・短期大学 進学先一覧",
+      "as_of": "2026-09",
+      "note": "総合型選抜等5名＋指定校推薦3名を合算。"
+    },
+    {
+      "metric": "university_count",
+      "item": "杏林大学",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 4,
+      "source_url": "https://www.metro.ed.jp/daigosyogyo-h/img_sub/令和８年3月大学・短期大学・進学先一覧.pdf",
+      "source_label": "令和8年3月卒業生 大学・短期大学 進学先一覧",
+      "as_of": "2026-09",
+      "note": "総合型選抜等1名＋指定校推薦3名を合算。"
+    },
+    {
+      "metric": "university_count",
+      "item": "高千穂大学",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 4,
+      "source_url": "https://www.metro.ed.jp/daigosyogyo-h/img_sub/令和８年3月大学・短期大学・進学先一覧.pdf",
+      "source_label": "令和8年3月卒業生 大学・短期大学 進学先一覧",
+      "as_of": "2026-09",
+      "note": "総合型選抜等2名＋指定校推薦2名を合算。"
+    },
+    {
+      "metric": "university_count",
+      "item": "帝京大学",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 4,
+      "source_url": "https://www.metro.ed.jp/daigosyogyo-h/img_sub/令和８年3月大学・短期大学・進学先一覧.pdf",
+      "source_label": "令和8年3月卒業生 大学・短期大学 進学先一覧",
+      "as_of": "2026-09",
+      "note": "総合型選抜のみ（指定校推薦の利用なし）。大学別一覧から合算した進学者数の上位5校。"
+    },
+    {
+      "metric": "admission_route_share",
+      "item": "指定校推薦",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 40,
+      "source_url": "https://www.metro.ed.jp/daigosyogyo-h/img_sub/令和８年3月大学・短期大学・進学先一覧.pdf",
+      "source_label": "令和8年3月卒業生 大学・短期大学 進学先一覧",
+      "as_of": "2026-09",
+      "note": "大学・短期大学進学者65名中26名。大学別一覧から合算。"
+    },
+    {
+      "metric": "admission_route_share",
+      "item": "総合型",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 55.4,
+      "source_url": "https://www.metro.ed.jp/daigosyogyo-h/img_sub/令和８年3月大学・短期大学・進学先一覧.pdf",
+      "source_label": "令和8年3月卒業生 大学・短期大学 進学先一覧",
+      "as_of": "2026-09",
+      "note": "大学・短期大学進学者65名中36名（「総合型選抜等」39名のうち学校推薦型3名を除く）。大学別一覧から合算。"
+    },
+    {
+      "metric": "admission_route_share",
+      "item": "公募推薦",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 4.6,
+      "source_url": "https://www.metro.ed.jp/daigosyogyo-h/img_sub/令和８年3月大学・短期大学・進学先一覧.pdf",
+      "source_label": "令和8年3月卒業生 大学・短期大学 進学先一覧",
+      "as_of": "2026-09",
+      "note": "大学・短期大学進学者65名中3名（「総合型選抜等」内の学校推薦型）。大学別一覧から合算。"
+    },
+    {
+      "metric": "admission_route_share",
+      "item": "一般",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 0,
+      "source_url": "https://www.metro.ed.jp/daigosyogyo-h/img_sub/令和８年3月大学・短期大学・進学先一覧.pdf",
+      "source_label": "令和8年3月卒業生 大学・短期大学 進学先一覧",
+      "as_of": "2026-09",
+      "note": "一覧の「３．一般入試」区分は0名（計65名は総合型選抜等と指定校推薦のみ）。"
+    },
+    {
+      "metric": "uniform",
+      "fiscal_year": 2026,
+      "value_text": "男女ともロイヤルグレーベースのブレザー。女子スカートはさくら色チェック柄で、女子はスラックスも選択可。ウォッシャブル・撥水・防汚・ストレッチ素材。夏は紺の校章入りポロシャツも選択可（6/1〜9/30）。",
+      "source_url": "https://www.metro.ed.jp/daigosyogyo-h/school_life/symbols.html",
+      "source_label": "東京都立第五商業高等学校「制服・校章・校歌」",
+      "as_of": "2026-09",
+      "note": "服装細則（生活指導部規定集）による夏服・正装の規定も併せて確認。"
+    },
+    {
+      "metric": "rules_summary",
+      "fiscal_year": 2026,
+      "value_text": "頭髪の染色・脱色・パーマ・エクステ禁止。化粧・ピアス・マニキュア・指輪等禁止。スマホは授業中電源オフでカバンへ。登校8:30・下校17:00（部活動許可時17:50、完全下校18:00）。バイク・自動車通学禁止、自転車は届出制。アルバイトに関する規定は本資料に記載なし。",
+      "source_url": "https://www.metro.ed.jp/daigosyogyo-h/img_sub/R08生活指導部規定集.pdf",
+      "source_label": "令和8年度 生活指導部規定集（生徒心得・生活指導規定・服装規定）",
+      "as_of": "2026-04-01",
+      "note": "要約は100字を超えるが、規定の主要項目（頭髪・スマホ・登下校時刻・通学手段）を網羅するため長めに記載。"
+    }
+  ],
+  "clubs": [
+    {
+      "name": "男子サッカー部",
+      "kind": "運動",
+      "days_note": "火、木、土、日",
+      "days_per_week": 4,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2026年度 高円宮杯U-18サッカーリーグ東京 T1〜T5のいずれにも所属なし＝支部リーグ扱い（tleague-u18.com team.php?dy=2026&dt=1〜5で確認、該当なし）。",
+      "source_url": "https://www.metro.ed.jp/daigosyogyo-h/activities/club/index.html",
+      "as_of": "2026-07",
+      "results": []
+    },
+    {
+      "name": "女子サッカー部",
+      "kind": "運動",
+      "days_note": "火、水、木、金、土、日",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2026年4月 東京都高等学校総合体育大会 女子サッカー競技でベスト16（学校公式サイト）。直近3年でこの1回のみ確認、複数回のベスト16〜32には届かない。",
+      "source_url": "https://www.metro.ed.jp/daigosyogyo-h/activities/club_1/index.html",
+      "as_of": "2026-07",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "東京都高等学校総合体育大会 女子サッカー競技",
+          "level": "都県",
+          "result": "ベスト16",
+          "source_url": "https://www.metro.ed.jp/daigosyogyo-h/activities/club_1/index.html"
+        }
+      ]
+    },
+    {
+      "name": "女子バスケットボール部",
+      "kind": "運動",
+      "days_note": "月、水、木、土",
+      "days_per_week": 4,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "2026年度 春季大会・総体予選に出場（学校公式サイト）。勝ち上がりの記載はなし。",
+      "source_url": "https://www.metro.ed.jp/daigosyogyo-h/activities/club_3/index.html",
+      "as_of": "2026-07",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "春季大会",
+          "level": "都県",
+          "result": "出場",
+          "source_url": "https://www.metro.ed.jp/daigosyogyo-h/activities/club_3/index.html"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "総体予選",
+          "level": "都県",
+          "result": "出場",
+          "source_url": "https://www.metro.ed.jp/daigosyogyo-h/activities/club_3/index.html"
+        }
+      ]
+    },
+    {
+      "name": "硬式テニス部",
+      "kind": "運動",
+      "days_note": "火〜土",
+      "days_per_week": 5,
+      "weekend": "土",
+      "source_url": "https://www.metro.ed.jp/daigosyogyo-h/activities/club_4/index.html",
+      "as_of": "2026-09",
+      "results": []
+    },
+    {
+      "name": "バドミントン部",
+      "kind": "運動",
+      "days_note": "月、火、木、金、土",
+      "days_per_week": 5,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "2025年度 東京都春季大会で女子ベスト16（1回）。ベスト16〜32が複数回ではないため段階3（見直しで2→3）",
+      "source_url": "https://www.metro.ed.jp/daigosyogyo-h/activities/club_5/index.html",
+      "as_of": "2026-07",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "東京都春季高校バドミントン大会",
+          "level": "都県",
+          "result": "女子 東京都ベスト16（予選1位通過、決勝トーナメント敗退）",
+          "happened_on": "2025-04-29",
+          "source_url": "https://www.metro.ed.jp/daigosyogyo-h/activities/club_5/index.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "商高連大会 個人戦",
+          "level": "その他",
+          "result": "男女とも優勝",
+          "source_url": "https://www.metro.ed.jp/daigosyogyo-h/activities/club_5/index.html"
+        }
+      ]
+    },
+    {
+      "name": "弓道部",
+      "kind": "運動",
+      "days_note": "月、火、水、木、土",
+      "days_per_week": 5,
+      "weekend": "土",
+      "tier": 1,
+      "tier_basis": "2023年度・2024年度の2年連続で東京都個人選手権大会入賞（2023年度女子12位、2024年度男子6位）を経て関東個人選手権大会に出場（学校公式サイト部活動ニュース）。関東大会出場が2年連続=2回以上に該当。",
+      "source_url": "https://www.metro.ed.jp/daigosyogyo-h/activities/2024/09/clubentry_5.html",
+      "as_of": "2024-09-16",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "東京都個人選手権大会",
+          "level": "都県",
+          "result": "男子個人6位入賞、関東大会出場権を獲得",
+          "happened_on": "2024-08-23",
+          "source_url": "https://www.metro.ed.jp/daigosyogyo-h/activities/2024/09/clubentry_5.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "関東個人選手権大会",
+          "level": "関東",
+          "result": "予選敗退（4射2中）",
+          "happened_on": "2024-09-15",
+          "source_url": "https://www.metro.ed.jp/daigosyogyo-h/activities/2024/09/clubentry_5.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "東京都個人選手権大会",
+          "level": "都県",
+          "result": "女子個人12位入賞、関東大会出場権を獲得",
+          "happened_on": "2023-08-25",
+          "source_url": "https://www.metro.ed.jp/daigosyogyo-h/activities/2024/09/clubentry_5.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "関東個人選手権大会",
+          "level": "関東",
+          "result": "予選敗退",
+          "happened_on": "2023-09-10",
+          "source_url": "https://www.metro.ed.jp/daigosyogyo-h/activities/2024/09/clubentry_5.html"
+        }
+      ]
+    },
+    {
+      "name": "硬式野球部",
+      "kind": "運動",
+      "days_note": "月、火、水、木、金、土",
+      "days_per_week": 6,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "2025年夏 西東京大会で初戦敗退（0-23、コールド負け、対八王子北）。部員不足で他部（バドミントン部・軽音楽部・簿記部等）から助っ人を集めて出場（一球速報、高校野球ドットコム記事）。",
+      "source_url": "https://www.metro.ed.jp/daigosyogyo-h/activities/club_7/index.html",
+      "as_of": "2026-07",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "第107回全国高等学校野球選手権西東京大会",
+          "level": "都県",
+          "result": "初戦敗退（五商0-23八王子北、コールド）",
+          "happened_on": "2025-07-05",
+          "source_url": "https://baseball.omyutech.com/CupHomePageHistory.action?gameId=20252129973"
+        }
+      ]
+    },
+    {
+      "name": "男子バレーボール部",
+      "kind": "運動",
+      "days_note": "火、木、金、土、日",
+      "days_per_week": 5,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2026年度 インハイ予選大会で2回戦進出（学校公式サイト）。2024年度後期に同好会から部へ昇格したばかりで、それ以前の大会成績は確認できず。",
+      "source_url": "https://www.metro.ed.jp/daigosyogyo-h/activities/club_9/index.html",
+      "as_of": "2026-07",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "インハイ予選大会",
+          "level": "都県",
+          "result": "2回戦進出",
+          "source_url": "https://www.metro.ed.jp/daigosyogyo-h/activities/club_9/index.html"
+        }
+      ]
+    },
+    {
+      "name": "女子バレーボール部",
+      "kind": "運動",
+      "days_note": "火、水、木、土、日",
+      "days_per_week": 5,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2026年度 関東予選2部大会・インハイ予選大会に出場（学校公式サイト）。勝ち上がりの記載はなし。",
+      "source_url": "https://www.metro.ed.jp/daigosyogyo-h/activities/club_10/index.html",
+      "as_of": "2026-07",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "春季関東予選ブロック大会",
+          "level": "都県",
+          "result": "出場",
+          "source_url": "https://www.metro.ed.jp/daigosyogyo-h/activities/club_10/index.html"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "関東予選2部大会",
+          "level": "都県",
+          "result": "出場",
+          "source_url": "https://www.metro.ed.jp/daigosyogyo-h/activities/club_10/index.html"
+        }
+      ]
+    },
+    {
+      "name": "卓球部",
+      "kind": "運動",
+      "days_note": "火、金、日",
+      "days_per_week": 3,
+      "weekend": "日",
+      "tier": 3,
+      "tier_basis": "2023年度 高校総体予選で女子団体(Bクラス)ベスト16（学校公式サイト）。直近3年で都大会級のベスト16〜32はこの1回のみで、複数回には届かない。都国公立大会（都立・公立限定）のベスト16/32は一段低く扱い根拠に含めない。",
+      "source_url": "https://www.metro.ed.jp/daigosyogyo-h/activities/2024/04/2023.html",
+      "as_of": "2024-04-10",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "東京都高校総体予選（卓球競技）",
+          "level": "都県",
+          "result": "女子団体（Bクラス）ベスト16",
+          "source_url": "https://www.metro.ed.jp/daigosyogyo-h/activities/2024/04/2023.html"
+        }
+      ]
+    },
+    {
+      "name": "ダンス部",
+      "kind": "運動",
+      "days_note": "月、水、木、土",
+      "days_per_week": 4,
+      "weekend": "土",
+      "source_url": "https://www.metro.ed.jp/daigosyogyo-h/school_life/activities.html",
+      "as_of": "2026-09",
+      "results": []
+    },
+    {
+      "name": "イラスト部",
+      "kind": "文化",
+      "days_note": "月、水、金",
+      "days_per_week": 3,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日は週3日（月水金）で、大会・コンクール等の実績記載なし（部誌作成、体育祭・文化祭の表紙作成が活動の中心）。",
+      "source_url": "https://www.metro.ed.jp/daigosyogyo-h/activities/club_14/index.html",
+      "as_of": "2026-07",
+      "results": []
+    },
+    {
+      "name": "クッキング部",
+      "kind": "文化",
+      "days_note": "金",
+      "days_per_week": 1,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日は週1日（金）で、大会等の実績記載なし（菓子作りが活動の中心）。",
+      "source_url": "https://www.metro.ed.jp/daigosyogyo-h/activities/club_15/index.html",
+      "as_of": "2026-07",
+      "results": []
+    },
+    {
+      "name": "パソコン部",
+      "kind": "文化",
+      "days_note": "月、木",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日は週2日（月木）。「都大会にも参加」との記載（トップページ紹介文）はあるが年度・結果が不明のため実績として採用せず、確認できる範囲では目立つ実績なしとした。",
+      "source_url": "https://www.metro.ed.jp/daigosyogyo-h/activities/club_16/index.html",
+      "as_of": "2026-07",
+      "results": []
+    },
+    {
+      "name": "ボランティア部",
+      "kind": "文化",
+      "days_note": "木、土、日",
+      "days_per_week": 3,
+      "weekend": "土日",
+      "tier": 4,
+      "tier_basis": "活動日は週3日（木土日）で、地域行事の手伝い等が中心。大会・コンクールの実績は該当なし。",
+      "source_url": "https://www.metro.ed.jp/daigosyogyo-h/activities/club_17/index.html",
+      "as_of": "2026-07",
+      "results": []
+    },
+    {
+      "name": "英語同好会",
+      "kind": "同好会",
+      "days_note": "水",
+      "days_per_week": 1,
+      "weekend": "なし",
+      "tier": 3,
+      "tier_basis": "2026年度 全商英語スピーチコンテスト東京都大会でスピーチ部門・レシテーション部門ともに2位（学校公式サイト）。同コンテストは各都道府県の優勝者のみが全国大会に進出するため、2位は都代表選出には至らない。",
+      "source_url": "https://www.metro.ed.jp/daigosyogyo-h/activities/club_18/index.html",
+      "as_of": "2026-07",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "全国商業高等学校協会 英語スピーチコンテスト東京都大会",
+          "level": "都県",
+          "result": "スピーチ部門2位、レシテーション部門2位",
+          "source_url": "https://www.metro.ed.jp/daigosyogyo-h/activities/club_18/index.html"
+        }
+      ]
+    },
+    {
+      "name": "演劇部",
+      "kind": "文化",
+      "days_note": "水、金",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "tier": 3,
+      "tier_basis": "2026年度 東京都高等学校生徒商業研究発表大会で最優秀賞。商業科の研究発表の大会で1段低く読み、1回のため段階3（見直しで2→3）",
+      "source_url": "https://www.metro.ed.jp/daigosyogyo-h/activities/club_19/index.html",
+      "as_of": "2026-07",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "東京都高等学校生徒商業研究発表大会",
+          "level": "都県",
+          "result": "最優秀賞",
+          "source_url": "https://www.metro.ed.jp/daigosyogyo-h/activities/club_19/index.html"
+        }
+      ]
+    },
+    {
+      "name": "華道部",
+      "kind": "文化",
+      "days_note": "水",
+      "days_per_week": 1,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日は週1日（水）で、大会等の実績記載なし（草月流の師範によるお稽古が活動の中心）。",
+      "source_url": "https://www.metro.ed.jp/daigosyogyo-h/activities/club_20/index.html",
+      "as_of": "2026-07",
+      "results": []
+    },
+    {
+      "name": "軽音楽部",
+      "kind": "文化",
+      "days_note": "月、火、水、木、金",
+      "days_per_week": 5,
+      "weekend": "なし",
+      "source_url": "https://www.metro.ed.jp/daigosyogyo-h/activities/club_21/index.html",
+      "as_of": "2026-07",
+      "results": []
+    },
+    {
+      "name": "珠算部",
+      "kind": "文化",
+      "days_note": "火、金",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "tier": 3,
+      "tier_basis": "2024年度 全国大会出場（学校経営報告R6）。商業高校だけが出る競技会のため1段低く読み、1回のため段階3（見直しで2→3）",
+      "source_url": "https://www.metro.ed.jp/daigosyogyo-h/activities/club_22/index.html",
+      "as_of": "2026-07",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "全国大会（珠算・計算実務系）",
+          "level": "全国",
+          "result": "出場",
+          "source_url": "https://www.metro.ed.jp/daigosyogyo-h/img_sub/R6_学校経営報告（06全).pdf"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "東京都高等学校ビジネス計算競技大会",
+          "level": "都県",
+          "result": "出場（結果の記載なし）",
+          "source_url": "https://www.metro.ed.jp/daigosyogyo-h/activities/club_22/index.html"
+        }
+      ]
+    },
+    {
+      "name": "書道部",
+      "kind": "文化",
+      "days_note": "月、金",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "tier": 3,
+      "tier_basis": "2026年度 成田山全国競書大会（民間主催・誰でも応募できる競書会）で日輪賞・月輪賞。多数に出る賞で代表選出ではないため段階3（見直しで2→3）",
+      "source_url": "https://www.metro.ed.jp/daigosyogyo-h/activities/club_23/index.html",
+      "as_of": "2026-07",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "成田山全国競書大会",
+          "level": "その他",
+          "result": "日輪賞・月輪賞受賞",
+          "source_url": "https://www.metro.ed.jp/daigosyogyo-h/activities/club_23/index.html"
+        }
+      ]
+    },
+    {
+      "name": "吹奏楽部",
+      "kind": "文化",
+      "days_note": "火、水、木、金（コンクール・演奏会前は土も活動）",
+      "days_per_week": 4,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "2026年8月 第66回東京都高等学校吹奏楽コンクールに出場（学校公式サイト）。結果（賞・代表選出）の記載はなし。",
+      "source_url": "https://www.metro.ed.jp/daigosyogyo-h/activities/club_24/index.html",
+      "as_of": "2026-08-17",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "第66回東京都高等学校吹奏楽コンクール",
+          "level": "都県",
+          "result": "出場（結果の記載なし）",
+          "happened_on": "2026-08-15",
+          "source_url": "https://www.metro.ed.jp/daigosyogyo-h/activities/2026/08/66.html"
+        }
+      ]
+    },
+    {
+      "name": "茶道部",
+      "kind": "文化",
+      "days_note": "木",
+      "days_per_week": 1,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日は週1日（木）で、大会等の実績記載なし（お点前のお稽古が活動の中心）。",
+      "source_url": "https://www.metro.ed.jp/daigosyogyo-h/activities/club_25/index.html",
+      "as_of": "2026-07-28",
+      "results": []
+    },
+    {
+      "name": "簿記部",
+      "kind": "文化",
+      "days_note": "月、火、水、金、土",
+      "days_per_week": 5,
+      "weekend": "土",
+      "tier": 2,
+      "tier_basis": "2024年度 全国大会出場（学校経営報告R6）、2025・2026年度 東京都高等学校簿記競技大会で団体優勝し2026年度 全国高等学校簿記競技会に出場。商業高校だけが出る競技会のため1段低く読み段階2（見直しで1→2）",
+      "source_url": "https://www.metro.ed.jp/daigosyogyo-h/activities/club_26/index.html",
+      "as_of": "2026-07",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "全国大会（簿記競技）",
+          "level": "全国",
+          "result": "出場",
+          "source_url": "https://www.metro.ed.jp/daigosyogyo-h/img_sub/R6_学校経営報告（06全).pdf"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "第42回東京都高等学校簿記競技大会",
+          "level": "都県",
+          "result": "団体優勝（2年連続）。個人第2等・第3等2名・佳良賞",
+          "happened_on": "2026-06-13",
+          "source_url": "https://www.metro.ed.jp/daigosyogyo-h/activities/2026/06/clubentry_15.html"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "第42回全国高等学校簿記競技会",
+          "level": "全国",
+          "result": "出場",
+          "happened_on": "2026-07-24",
+          "source_url": "https://www.metro.ed.jp/daigosyogyo-h/activities/2026/07/clubentry_18.html"
+        }
+      ]
+    }
+  ],
+  "designated_universities": [
+    {
+      "university": "杏林大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/daigosyogyo-h/img_sub/令和８年3月大学・短期大学・進学先一覧.pdf",
+      "note": "総合政策学部経済経営学科・指定校推薦・3名（令和8年3月卒業生の実進学実績）。"
+    },
+    {
+      "university": "國學院大學",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/daigosyogyo-h/img_sub/令和８年3月大学・短期大学・進学先一覧.pdf",
+      "note": "経済学部経営学科・指定校推薦・1名。"
+    },
+    {
+      "university": "実践女子大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/daigosyogyo-h/img_sub/令和８年3月大学・短期大学・進学先一覧.pdf",
+      "note": "国際学部国際学科・指定校推薦・1名。"
+    },
+    {
+      "university": "十文字学園女子大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/daigosyogyo-h/img_sub/令和８年3月大学・短期大学・進学先一覧.pdf",
+      "note": "教育人文学部児童教育学科・指定校推薦・1名。"
+    },
+    {
+      "university": "尚美学園大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/daigosyogyo-h/img_sub/令和８年3月大学・短期大学・進学先一覧.pdf",
+      "note": "スポーツマネジメント学部スポーツマネジメント学科・指定校推薦・1名。"
+    },
+    {
+      "university": "駿河台大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/daigosyogyo-h/img_sub/令和８年3月大学・短期大学・進学先一覧.pdf",
+      "note": "経済経営学部・指定校推薦・1名。"
+    },
+    {
+      "university": "成蹊大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/daigosyogyo-h/img_sub/令和８年3月大学・短期大学・進学先一覧.pdf",
+      "note": "経営学部総合経営学科・指定校推薦・1名。"
+    },
+    {
+      "university": "専修大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/daigosyogyo-h/img_sub/令和８年3月大学・短期大学・進学先一覧.pdf",
+      "note": "商学部マーケティング学科・指定校推薦・1名。"
+    },
+    {
+      "university": "高千穂大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/daigosyogyo-h/img_sub/令和８年3月大学・短期大学・進学先一覧.pdf",
+      "note": "商学部商学科・指定校推薦・2名。"
+    },
+    {
+      "university": "多摩大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/daigosyogyo-h/img_sub/令和８年3月大学・短期大学・進学先一覧.pdf",
+      "note": "経営情報学部・指定校推薦・1名。"
+    },
+    {
+      "university": "中央大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/daigosyogyo-h/img_sub/令和８年3月大学・短期大学・進学先一覧.pdf",
+      "note": "経済学部経済情報システム学科1名、商学部会計学科フレックス・コース1名の計2名。いずれも指定校推薦。"
+    },
+    {
+      "university": "東京経済大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/daigosyogyo-h/img_sub/令和８年3月大学・短期大学・進学先一覧.pdf",
+      "note": "経営学部2名、経済学部1名の計3名。いずれも指定校推薦。"
+    },
+    {
+      "university": "東京工科大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/daigosyogyo-h/img_sub/令和８年3月大学・短期大学・進学先一覧.pdf",
+      "note": "コンピュータサイエンス学科先進情報専攻・指定校推薦・1名。"
+    },
+    {
+      "university": "日本大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/daigosyogyo-h/img_sub/令和８年3月大学・短期大学・進学先一覧.pdf",
+      "note": "商学部会計学科1名、商学部商業学科2名の計3名。いずれも指定校推薦。"
+    },
+    {
+      "university": "明星大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/daigosyogyo-h/img_sub/令和８年3月大学・短期大学・進学先一覧.pdf",
+      "note": "経営学部経営学科2名、データサイエンス学環1名の計3名。いずれも指定校推薦。"
+    },
+    {
+      "university": "白梅学園短期大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/daigosyogyo-h/img_sub/令和８年3月大学・短期大学・進学先一覧.pdf",
+      "note": "保育科・指定校推薦・1名。"
+    }
+  ],
+  "events": [],
+  "unresolved": [
+    "全体の進路決定率（進学＋就職の合計）は資料に明記なし。就職希望者に対する内定率は「15年連続100%」と学校公式サイト特色ページに記載（就職希望者ベースで career_decided_rate の一般定義とは異なるため未採用）。",
+    "男女別の生徒数は学校サイト・学校案内パンフレットに公開なし（令和9年度用パンフレットの該当欄も空欄だった）。",
+    "硬式野球部の2023・2024年度の個別試合結果（スコア）は一球速報.comの該当ページを特定できず未確認（2025年度西東京大会初戦の結果のみ確認）。",
+    "パソコン部の「都大会にも参加」（学校サイト紹介文）の具体的な年度・結果は不明。",
+    "指定校推薦の大学一覧（パンフレットの「主な指定校推薦」形式のもの）は非公開。今回は令和8年3月卒業生の進学先一覧内の「指定校推薦」区分（実際の利用実績）を代わりに採用した。"
+  ],
+  "conflicts": [
+    "男子サッカー部の活動日：学校生活ページの紹介文は「月・火・水・金（土日は試合が入ることもある）」、令和8年度1学期活動報告は「火・木・土・日」で一致しない。",
+    "簿記部の活動日：学校生活ページの紹介文は「毎週(月)から(土)」、令和8年度1学期活動報告は「月・火・水・金・土」（木を含まない）で一致しない。",
+    "令和6年度の専門学校進学者数：学校経営報告R6本文は「専門学校57名」、「進路状況　過去10年間の推移」のR6(2024)列は「58」で1名食い違う。",
+    "英語同好会の呼称：学校生活ページの見出しは「英語部」だが本文は「英語同好会」と表記し、部活動細則上も同好会（club_18ページのタイトルは「英語部」、活動報告の見出しは「英語同好会」）。",
+    "華道部の活動日：学校生活ページの紹介文は「月3回のペースで…お稽古」、令和8年度1学期活動報告は「活動している曜日　水」（毎週）で一致しない。"
+  ]
+}

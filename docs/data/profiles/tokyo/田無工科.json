@@ -1,0 +1,592 @@
+{
+  "prefecture": "東京都",
+  "school_name": "田無工科",
+  "official_url": "https://www.metro.ed.jp/tanashikoka-h/",
+  "researched_at": "2026-09-27",
+  "stats": [
+    {
+      "metric": "designation",
+      "item": "デュアルシステム導入校",
+      "basis": "",
+      "fiscal_year": 2025,
+      "value_text": "東京都教育委員会の指定（2012年4月1日指定、令和7年度も継続）。企業と連携した長期就業訓練（デュアルシステム）を実施",
+      "source_url": "https://www.metro.ed.jp/tanashikoka-h/assets/filelink/filelink-pdffile-34769.pdf",
+      "source_label": "田無工科高等学校 令和7年度 学校経営報告",
+      "as_of": "2026-03-31",
+      "note": ""
+    },
+    {
+      "metric": "designation",
+      "item": "学力向上研究校",
+      "basis": "",
+      "fiscal_year": 2025,
+      "value_text": "東京都教育委員会の指定（令和7年度）",
+      "source_url": "https://www.metro.ed.jp/tanashikoka-h/assets/filelink/filelink-pdffile-34769.pdf",
+      "source_label": "田無工科高等学校 令和7年度 学校経営報告",
+      "as_of": "2026-03-31",
+      "note": ""
+    },
+    {
+      "metric": "designation",
+      "item": "ものづくり人材育成プログラム推進校",
+      "basis": "",
+      "fiscal_year": 2025,
+      "value_text": "講演会・講習会をとおしてものづくり人材の育成を推進する校の指定（令和7年度）",
+      "source_url": "https://www.metro.ed.jp/tanashikoka-h/assets/filelink/filelink-pdffile-34769.pdf",
+      "source_label": "田無工科高等学校 令和7年度 学校経営報告",
+      "as_of": "2026-03-31",
+      "note": ""
+    },
+    {
+      "metric": "satisfaction",
+      "item": "生徒:授業",
+      "basis": "",
+      "fiscal_year": 2025,
+      "value_num": 91,
+      "source_url": "https://www.metro.ed.jp/tanashikoka-h/assets/filelink/filelink-pdffile-34769.pdf",
+      "source_label": "田無工科高等学校 令和7年度 学校経営報告",
+      "as_of": "2026-03-31",
+      "note": "学校評価アンケート「生徒による授業満足度」の肯定回答率"
+    },
+    {
+      "metric": "exam_ratio",
+      "item": "一般",
+      "basis": "",
+      "fiscal_year": 2026,
+      "value_num": 0.77,
+      "source_url": "https://www.metro.ed.jp/tanashikoka-h/assets/filelink/filelink-pdffile-34769.pdf",
+      "source_label": "田無工科高等学校 令和7年度 学校経営報告",
+      "as_of": "2026-03-31",
+      "note": "応募倍率。「第1次学力検査に基づく選抜」（一般選抜）のもの。手引きの項目は「推薦」だが、本校は一般選抜の倍率のみ資料に記載があったため item を「一般」として記録。推薦選抜の倍率は unresolved 参照"
+    },
+    {
+      "metric": "exam_ratio",
+      "item": "一般",
+      "basis": "",
+      "fiscal_year": 2025,
+      "value_num": 0.83,
+      "source_url": "https://www.metro.ed.jp/tanashikoka-h/assets/filelink/filelink-pdffile-34769.pdf",
+      "source_label": "田無工科高等学校 令和7年度 学校経営報告",
+      "as_of": "2026-03-31",
+      "note": "応募倍率。前年度（令和7年度入学）分として同資料に記載"
+    },
+    {
+      "metric": "university_count",
+      "item": "合計",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 14,
+      "source_url": "https://www.metro.ed.jp/tanashikoka-h/assets/%E4%BB%A4%E5%92%8C7%E5%B9%B4%E5%BA%A6%EF%BC%88%E4%BB%A4%E5%92%8C8%E5%B9%B43%E6%9C%88%E5%8D%92%E6%A5%AD%EF%BC%89%E9%80%B2%E8%B7%AF%E4%B8%80%E8%A6%A7.pdf",
+      "source_label": "田無工科高等学校 令和7年度（令和8年3月卒業）進路一覧",
+      "as_of": "2026-04-01",
+      "note": "4年制大学・短期大学への進学者数（卒業者123名中）。国公立・早慶上理・GMARCH・成成明武・日東駒専に該当する大学への進学は0名"
+    },
+    {
+      "metric": "university_count",
+      "item": "日本工業大学",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 3,
+      "source_url": "https://www.metro.ed.jp/tanashikoka-h/assets/%E4%BB%A4%E5%92%8C7%E5%B9%B4%E5%BA%A6%EF%BC%88%E4%BB%A4%E5%92%8C8%E5%B9%B43%E6%9C%88%E5%8D%92%E6%A5%AD%EF%BC%89%E9%80%B2%E8%B7%AF%E4%B8%80%E8%A6%A7.pdf",
+      "source_label": "田無工科高等学校 令和7年度（令和8年3月卒業）進路一覧",
+      "as_of": "2026-04-01",
+      "note": "建築科2名・機械科相当分含む（建築学部建築学科、先進工学部ロボティクス学科、先進工学部情報メディア工学科）"
+    },
+    {
+      "metric": "university_count",
+      "item": "嘉悦大学",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 2,
+      "source_url": "https://www.metro.ed.jp/tanashikoka-h/assets/%E4%BB%A4%E5%92%8C7%E5%B9%B4%E5%BA%A6%EF%BC%88%E4%BB%A4%E5%92%8C8%E5%B9%B43%E6%9C%88%E5%8D%92%E6%A5%AD%EF%BC%89%E9%80%B2%E8%B7%AF%E4%B8%80%E8%A6%A7.pdf",
+      "source_label": "田無工科高等学校 令和7年度（令和8年3月卒業）進路一覧",
+      "as_of": "2026-04-01",
+      "note": "機械科1名・建築科1名"
+    },
+    {
+      "metric": "university_count",
+      "item": "明星大学",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 2,
+      "source_url": "https://www.metro.ed.jp/tanashikoka-h/assets/%E4%BB%A4%E5%92%8C7%E5%B9%B4%E5%BA%A6%EF%BC%88%E4%BB%A4%E5%92%8C8%E5%B9%B43%E6%9C%88%E5%8D%92%E6%A5%AD%EF%BC%89%E9%80%B2%E8%B7%AF%E4%B8%80%E8%A6%A7.pdf",
+      "source_label": "田無工科高等学校 令和7年度（令和8年3月卒業）進路一覧",
+      "as_of": "2026-04-01",
+      "note": "理工学部電気工学コース1名・経済学部経済学科1名。残り8校は各1名ずつのため上位5には含めず"
+    },
+    {
+      "metric": "uniform",
+      "item": "",
+      "basis": "",
+      "fiscal_year": 2026,
+      "value_text": "ブレザー。男子は冬服ブレザー・ズボン・ネクタイ必須、夏服は白ワイシャツ（可：ポロシャツ）＋指定ズボン。女子は冬服ブレザー・スカートまたはズボン・リボンかネクタイ必須、夏服は白ブラウス（可：ポロシャツ）＋指定スカートまたはズボン（スカート・ズボンは選択可）。パーカー着用禁止",
+      "source_url": "https://www.metro.ed.jp/tanashikoka-h/school_life/symbols.html",
+      "source_label": "田無工科高等学校 制服・校章・校歌",
+      "as_of": "2026-09-27",
+      "note": ""
+    }
+  ],
+  "clubs": [
+    {
+      "name": "ラグビー部",
+      "kind": "運動",
+      "days_note": "月・水・木・金・日",
+      "days_per_week": 5,
+      "weekend": "日",
+      "tier": 3,
+      "tier_basis": "2023〜2026年度の春季・秋季大会（関東大会予選）はいずれも1〜2回戦で敗退（部活動ページ）",
+      "source_url": "https://www.metro.ed.jp/tanashikoka-h/activities/club/index.html",
+      "as_of": "2026-09-27",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "秋季大会（関東大会予選）",
+          "level": "地区",
+          "result": "1回戦敗退",
+          "happened_on": "2023-09-29",
+          "source_url": "https://www.metro.ed.jp/tanashikoka-h/activities/2023/09/1_3.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "春季大会（関東大会予選）",
+          "level": "地区",
+          "result": "2回戦敗退",
+          "happened_on": "2024-04-22",
+          "source_url": "https://www.metro.ed.jp/tanashikoka-h/activities/2024/04/1_1_1.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "秋季大会（関東大会予選）",
+          "level": "地区",
+          "result": "1回戦敗退",
+          "happened_on": "2025-10-09",
+          "source_url": "https://www.metro.ed.jp/tanashikoka-h/activities/2025/10/7_1_1.html"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "春季大会（関東大会予選）",
+          "level": "地区",
+          "result": "2回戦敗退",
+          "happened_on": "2026-04-27",
+          "source_url": "https://www.metro.ed.jp/tanashikoka-h/activities/2026/04/8_2.html"
+        }
+      ]
+    },
+    {
+      "name": "卓球部",
+      "kind": "運動",
+      "days_note": "水・木・金・土（日曜は公式戦があれば）",
+      "days_per_week": 4,
+      "weekend": "土",
+      "tier": 2,
+      "tier_basis": "2025年度 工業高校大会で男子団体3位・女子個人準優勝（都立工業高校のみが出場する大会のため1段階低く読む＋1回のみの実績のため段階1にはしない）",
+      "source_url": "https://www.metro.ed.jp/tanashikoka-h/activities/club_1/index.html",
+      "as_of": "2026-09-27",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "工業高校大会",
+          "level": "都県",
+          "result": "男子団体3位・女子個人準優勝",
+          "source_url": "https://www.metro.ed.jp/tanashikoka-h/assets/filelink/filelink-pdffile-34769.pdf"
+        }
+      ]
+    },
+    {
+      "name": "ウェイトトレーニング部",
+      "kind": "運動",
+      "days_note": "月・火・水・金曜日",
+      "days_per_week": 4,
+      "weekend": "なし",
+      "source_url": "https://www.metro.ed.jp/tanashikoka-h/activities/club_2/index.html",
+      "as_of": "2026-09-27"
+    },
+    {
+      "name": "剣道部",
+      "kind": "運動",
+      "days_note": "毎週木曜日",
+      "days_per_week": 1,
+      "weekend": "なし",
+      "tier": 3,
+      "tier_basis": "2024年度 高体連剣道専門部第5支部大会に出場（結果の記載なし）",
+      "source_url": "https://www.metro.ed.jp/tanashikoka-h/activities/club_3/index.html",
+      "as_of": "2026-09-27",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "高体連剣道専門部第5支部大会",
+          "level": "地区",
+          "result": "出場（結果の記載なし）",
+          "happened_on": "2024-11-19",
+          "source_url": "https://www.metro.ed.jp/tanashikoka-h/activities/club_3/index.html"
+        }
+      ]
+    },
+    {
+      "name": "バドミントン部",
+      "kind": "運動",
+      "days_note": "火・（水）・木・金・土",
+      "days_per_week": 4.5,
+      "weekend": "土",
+      "source_url": "https://www.metro.ed.jp/tanashikoka-h/activities/club_4/index.html",
+      "as_of": "2026-09-27"
+    },
+    {
+      "name": "硬式テニス部",
+      "kind": "運動",
+      "days_note": "月・火・木・金・土曜日（日・祝は公式戦や大会参加をすることがある）",
+      "days_per_week": 5,
+      "weekend": "土",
+      "source_url": "https://www.metro.ed.jp/tanashikoka-h/activities/club_5/index.html",
+      "as_of": "2026-09-27"
+    },
+    {
+      "name": "バスケットボール部",
+      "kind": "運動",
+      "days_note": "月・水・金・土・（日）※大会や練習試合",
+      "days_per_week": 4.5,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2025〜2026年度のインターハイ予選・新人戦支部大会・都立工業高校生徒スポーツ大会はいずれも初戦〜2回戦で敗退（部活動ページ）",
+      "source_url": "https://www.metro.ed.jp/tanashikoka-h/activities/club_6/index.html",
+      "as_of": "2026-09-27",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "新人戦第4支部大会",
+          "level": "地区",
+          "result": "初戦敗退（63-66　対 豊南）",
+          "happened_on": "2025-11-03",
+          "source_url": "https://www.metro.ed.jp/tanashikoka-h/activities/2025/11/4_3.html"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "インターハイ予選",
+          "level": "都県",
+          "result": "2回戦敗退（64-86　対 広尾学園）",
+          "happened_on": "2026-06-01",
+          "source_url": "https://www.metro.ed.jp/tanashikoka-h/activities/2026/06/2.html"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "第37回東京都立工業高等学校生徒スポーツ大会",
+          "level": "その他",
+          "result": "初戦敗退（52-84　対 墨田工科A）",
+          "happened_on": "2026-09-12",
+          "source_url": "https://www.metro.ed.jp/tanashikoka-h/activities/2026/09/37.html"
+        }
+      ]
+    },
+    {
+      "name": "硬式野球部",
+      "kind": "運動",
+      "days_note": "授業がある日：練習（放課後〜19時頃解散）。土日祝日：3月〜11月は練習試合、12月〜2月は練習（8時集合・18時頃解散）",
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2023〜2026年度の春季・秋季一次予選、全国高校野球選手権西東京大会はいずれも初戦敗退（2026年夏は1回戦に勝利し7年ぶりの夏の勝利、2回戦で敗退）。一球速報.com",
+      "source_url": "https://www.metro.ed.jp/tanashikoka-h/activities/club_7/index.html",
+      "as_of": "2026-09-27",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "第105回全国高等学校野球選手権記念西東京大会",
+          "level": "都県",
+          "result": "初戦敗退",
+          "source_url": "https://baseball.omyutech.com/teamStats.action?teamId=11929&year=2023"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "第106回全国高等学校野球選手権西東京大会",
+          "level": "都県",
+          "result": "初戦敗退",
+          "source_url": "https://baseball.omyutech.com/teamStats.action?teamId=11929&year=2024"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第107回全国高等学校野球選手権西東京大会",
+          "level": "都県",
+          "result": "初戦敗退",
+          "source_url": "https://baseball.omyutech.com/teamStats.action?teamId=11929&year=2025"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "第108回全国高等学校野球選手権西東京大会",
+          "level": "都県",
+          "result": "1回戦に日野台に勝利（7年ぶりの夏の勝利）、2回戦で敗退",
+          "source_url": "https://baseball.omyutech.com/teamStats.action?teamId=11929"
+        }
+      ]
+    },
+    {
+      "name": "水泳部",
+      "kind": "運動",
+      "days_note": "夏季休業中",
+      "weekend": "なし",
+      "source_url": "https://www.metro.ed.jp/tanashikoka-h/activities/club_8/index.html",
+      "as_of": "2026-09-27"
+    },
+    {
+      "name": "陸上部",
+      "kind": "運動",
+      "days_note": "月・水・金（土・日に公式戦もあり）",
+      "days_per_week": 3,
+      "weekend": "なし",
+      "source_url": "https://www.metro.ed.jp/tanashikoka-h/activities/club_9/index.html",
+      "as_of": "2026-09-27"
+    },
+    {
+      "name": "バレーボール部",
+      "kind": "運動",
+      "days_note": "月・水・木・土",
+      "days_per_week": 4,
+      "weekend": "土",
+      "source_url": "https://www.metro.ed.jp/tanashikoka-h/activities/club_10/index.html",
+      "as_of": "2026-09-27"
+    },
+    {
+      "name": "サッカー部",
+      "kind": "運動",
+      "days_note": "月・水・金・土　試合が日曜日の場合もあり",
+      "days_per_week": 4,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "2026年度 高円宮杯U-18サッカーリーグ東京のT1〜T5いずれにも所属なし＝支部リーグ相当（tleague-u18.com team.php dt=1〜5で確認）",
+      "source_url": "https://www.metro.ed.jp/tanashikoka-h/activities/club_11/index.html",
+      "as_of": "2026-09-27"
+    },
+    {
+      "name": "合気道同好会",
+      "kind": "同好会",
+      "days_note": "火・水・土曜日",
+      "days_per_week": 3,
+      "weekend": "土",
+      "source_url": "https://www.metro.ed.jp/tanashikoka-h/activities/club_12/index.html",
+      "as_of": "2026-09-27"
+    },
+    {
+      "name": "カヌー＆ブリッジ同好会",
+      "kind": "同好会",
+      "source_url": "https://www.metro.ed.jp/tanashikoka-h/activities/club_14/index.html",
+      "as_of": "2026-09-27",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "コンクリートカヌー大会（第31回）",
+          "level": "その他",
+          "result": "参加（順位等の記載なし）",
+          "happened_on": "2026-09-14",
+          "source_url": "https://www.metro.ed.jp/tanashikoka-h/activities/2026/09/31.html"
+        }
+      ]
+    },
+    {
+      "name": "軽音楽部",
+      "kind": "文化",
+      "days_note": "月〜金",
+      "days_per_week": 5,
+      "weekend": "なし",
+      "source_url": "https://www.metro.ed.jp/tanashikoka-h/activities/club_15/index.html",
+      "as_of": "2026-09-27"
+    },
+    {
+      "name": "イラスト美術部",
+      "kind": "文化",
+      "days_note": "火",
+      "days_per_week": 1,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "週1日の活動で、大会・コンクール等の実績記載なし",
+      "source_url": "https://www.metro.ed.jp/tanashikoka-h/activities/club_16/index.html",
+      "as_of": "2026-09-27"
+    },
+    {
+      "name": "吹奏楽部",
+      "kind": "文化",
+      "days_note": "月・水・金",
+      "days_per_week": 3,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "週3日の活動。東京都高等学校アンサンブルコンテストに出場した記載はあるが結果（入賞・都県代表選出等）の記載なし",
+      "source_url": "https://www.metro.ed.jp/tanashikoka-h/activities/club_17/index.html",
+      "as_of": "2026-09-27"
+    },
+    {
+      "name": "測量部",
+      "kind": "文化",
+      "days_note": "月・水・金（変更可）",
+      "days_per_week": 3,
+      "weekend": "なし",
+      "tier": 2,
+      "tier_basis": "2023・2024年度 高校生ものづくりコンテスト（測量部門）東京都大会優勝・関東ブロック大会出場、2025年度も関東ブロック大会出場（部活動ページ・学校経営報告R7）。工業高校だけが出る大会のため1段低く読み段階2（見直しで1→2）",
+      "source_url": "https://www.metro.ed.jp/tanashikoka-h/activities/club_18/index.html",
+      "as_of": "2026-09-27",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "高校生ものづくりコンテスト（測量部門）",
+          "level": "関東",
+          "result": "東京都大会優勝、関東ブロック大会出場",
+          "happened_on": "2023-09-04",
+          "source_url": "https://www.metro.ed.jp/tanashikoka-h/activities/2023/09/5_1.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "高校生ものづくりコンテスト（測量部門）",
+          "level": "関東",
+          "result": "東京都大会優勝、関東ブロック大会出場",
+          "source_url": "https://www.metro.ed.jp/tanashikoka-h/activities/club_18/index.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "高校生ものづくりコンテスト（測量部門）",
+          "level": "関東",
+          "result": "関東ブロック大会出場（学校経営報告R7に記載）",
+          "happened_on": "2025-08-22",
+          "source_url": "https://www.metro.ed.jp/tanashikoka-h/activities/2025/08/5_1_1.html"
+        }
+      ]
+    },
+    {
+      "name": "家庭科部",
+      "kind": "文化",
+      "days_note": "月曜日（月曜日が活動できない時は火曜日）",
+      "days_per_week": 1,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "週1日の活動で、大会等の実績記載なし",
+      "source_url": "https://www.metro.ed.jp/tanashikoka-h/activities/club_19/index.html",
+      "as_of": "2026-09-27"
+    },
+    {
+      "name": "自動車部",
+      "kind": "文化",
+      "days_note": "毎週　月・木・金　の放課後、夏休み",
+      "days_per_week": 3,
+      "weekend": "なし",
+      "tier": 3,
+      "tier_basis": "本田宗一郎杯Hondaエコマイレッジチャレンジ全国大会に2023〜2025年度連続出場（2023年度Aチーム グループⅡ19位・デザイン賞）。申し込めば出られる民間主催の大会で、上位入賞ではないため段階3（見直しで1→3）",
+      "source_url": "https://www.metro.ed.jp/tanashikoka-h/activities/club_21/index.html",
+      "as_of": "2026-09-27",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "本田宗一郎杯Hondaエコマイレッジチャレンジ全国大会（第42回）",
+          "level": "全国",
+          "result": "Aチーム グループⅡ19位（都立参加校中2位）、デザイン賞受賞。Bチーム41位",
+          "source_url": "https://www.metro.ed.jp/tanashikoka-h/activities/club_21/index.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "本田宗一郎杯Hondaエコマイレッジチャレンジ全国大会（第43回）",
+          "level": "全国",
+          "result": "Aチーム グループⅡ21位（都立参加校中2位）。Bチーム36位",
+          "source_url": "https://www.metro.ed.jp/tanashikoka-h/activities/club_21/index.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "本田宗一郎杯Hondaエコマイレッジチャレンジ全国大会（第44回）",
+          "level": "全国",
+          "result": "Aチームはリタイヤ（ドライブチェーントラブル）。Bチーム グループⅡ23位（都立参加校中8位）",
+          "source_url": "https://www.metro.ed.jp/tanashikoka-h/activities/club_21/index.html"
+        }
+      ]
+    },
+    {
+      "name": "茶道部",
+      "kind": "文化",
+      "days_note": "毎週木曜日",
+      "days_per_week": 1,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "週1日の活動で、大会等の実績記載なし",
+      "source_url": "https://www.metro.ed.jp/tanashikoka-h/activities/club_22/index.html",
+      "as_of": "2026-09-27"
+    },
+    {
+      "name": "写真部",
+      "kind": "文化",
+      "days_note": "1カ月に1度撮影散策。",
+      "weekend": "なし",
+      "source_url": "https://www.metro.ed.jp/tanashikoka-h/activities/club_23/index.html",
+      "as_of": "2026-09-27"
+    },
+    {
+      "name": "ガジェット同好会",
+      "kind": "同好会",
+      "days_note": "火・木",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "週2日の活動で、大会等の実績記載なし",
+      "source_url": "https://www.metro.ed.jp/tanashikoka-h/activities/club_24/index.html",
+      "as_of": "2026-09-27"
+    },
+    {
+      "name": "歩く建築同好会",
+      "kind": "同好会",
+      "days_note": "火・木",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "週2日の活動。2025年度に民間企業連携事業のアイデアコンテストに応募した記載はあるが、結果（入賞等）の記載なし",
+      "source_url": "https://www.metro.ed.jp/tanashikoka-h/activities/club_20/index.html",
+      "as_of": "2026-09-27",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "民間企業連携事業のアイデアコンテスト",
+          "level": "その他",
+          "result": "応募（結果の記載なし）",
+          "source_url": "https://www.metro.ed.jp/tanashikoka-h/assets/filelink/filelink-pdffile-34769.pdf"
+        }
+      ]
+    },
+    {
+      "name": "柔道部",
+      "kind": "運動",
+      "days_note": "火・木・金（トレーニング）　生徒の希望があれば随時、朝練を含めて追加します。",
+      "days_per_week": 3,
+      "weekend": "なし",
+      "tier": 3,
+      "tier_basis": "2025年5月に同好会から部に昇格。2026年度インターハイ個人戦は支部予選会でベスト8に進出し都大会出場権を得たが、都大会は初戦敗退。国公立柔道大会・新人柔道大会にも出場（部活動ページ）",
+      "source_url": "https://www.metro.ed.jp/tanashikoka-h/activities/club_25/index.html",
+      "as_of": "2026-09-27",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "インターハイ予選 個人戦",
+          "level": "都県",
+          "result": "第3支部予選会でベスト8進出・都大会出場権獲得、都大会本戦は初戦敗退",
+          "happened_on": "2026-05-27",
+          "source_url": "https://www.metro.ed.jp/tanashikoka-h/activities/2026/05/24_2_1.html"
+        }
+      ]
+    }
+  ],
+  "designated_universities": [],
+  "events": [
+    {
+      "kind": "その他",
+      "period_label": "2023年4月1日から",
+      "summary": "「東京都立田無工業高等学校」から「東京都立田無工科高等学校」に校名変更",
+      "happened_on": "2023-04-01",
+      "source_url": "https://www.metro.ed.jp/tanashikoka-h/our_school/history.html"
+    },
+    {
+      "kind": "施設",
+      "period_label": "令和7年度に完了",
+      "summary": "空調設備改修工事が2年間にわたり実施され、完了した",
+      "source_url": "https://www.metro.ed.jp/tanashikoka-h/assets/filelink/filelink-pdffile-34769.pdf"
+    }
+  ],
+  "unresolved": [
+    "男女別の生徒数：学校案内パンフレット（PDF）の文字コードが壊れており本文が読み取れず未確認（進路指導ページ等にも別掲載なし）",
+    "指定校推薦の大学一覧：学校案内パンフレット（PDF）の文字コードが壊れており未確認。進路指導ページにも別途の一覧なし",
+    "推薦に基づく選抜の応募倍率：学校サイトは都教育委員会サイトへのリンクのみで、当該ページ・PDFに本校分の推薦倍率を見つけられず未確認（学校経営報告R7には「第1次学力検査に基づく選抜」＝一般選抜の倍率のみ記載）",
+    "校則（頭髪・スマートフォン使用・アルバイトの可否）：公式サイト内に具体的な規定の記載箇所が見当たらず（生活指導の方針のみ記載）",
+    "部活動加入率の実績値：学校経営報告R7に記載なし。学校経営計画R8にある「80%以上」は次年度目標であり実績ではないため採用せず",
+    "「文化・スポーツ等特別推薦」の実施有無・対象部活動：東京都教育委員会「別表5-1 令和7年度文化・スポーツ等特別推薦実施校の選抜方法等一覧」PDFの文字コードが壊れており本校の記載箇所を確認できず（学校経営計画R8に同制度への言及はあるが、他校と共通の定型文の可能性があり実施校か断定できない）",
+    "進路決定率（全体）：令和7年度・進路一覧では卒業者123名に対し就職84名＋進学34名＝118名の内訳のみ記載され、残り5名（その他・家事従事等）の内訳・進路決定率の明示なし"
+  ],
+  "conflicts": []
+}

@@ -1,0 +1,709 @@
+{
+  "prefecture": "東京都",
+  "school_name": "石神井",
+  "official_url": "https://www.metro.ed.jp/shakujii-h/",
+  "researched_at": "2026-09-27",
+  "stats": [
+    {
+      "metric": "university_count",
+      "item": "国公立",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 10,
+      "source_url": "https://www.metro.ed.jp/shakujii-h/img_sub/令和７年度学校経営報告.pdf",
+      "source_label": "石神井高校 令和7年度学校経営報告",
+      "as_of": "2026-09-27",
+      "note": "学校が集計した数値目標欄の実績（目標20名以上）。"
+    },
+    {
+      "metric": "university_count",
+      "item": "早慶上理",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 16,
+      "source_url": "https://www.metro.ed.jp/shakujii-h/img_sub/令和７年度学校経営報告.pdf",
+      "source_label": "石神井高校 令和7年度学校経営報告",
+      "as_of": "2026-09-27",
+      "note": "資料表記は「難関位立私立大（早慶上理）」（目標30名以上）。"
+    },
+    {
+      "metric": "university_count",
+      "item": "GMARCH",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 153,
+      "source_url": "https://www.metro.ed.jp/shakujii-h/img_sub/令和７年度学校経営報告.pdf",
+      "source_label": "石神井高校 令和7年度学校経営報告",
+      "as_of": "2026-09-27",
+      "note": "資料表記は「上位私立大（GMARCH等）」（目標180名以上）。"
+    },
+    {
+      "metric": "university_count",
+      "item": "成成明國武",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 124,
+      "source_url": "https://www.metro.ed.jp/shakujii-h/img_sub/令和７年度学校経営報告.pdf",
+      "source_label": "石神井高校 令和7年度学校経営報告",
+      "as_of": "2026-09-27",
+      "note": "学校独自の括り（成蹊・成城・明治学院・國學院・武蔵の5大学とみられる）。手引きの「成成明武」とは対象大学が異なるため、そのままの表記で記載。"
+    },
+    {
+      "metric": "university_count",
+      "item": "日東駒専",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 225,
+      "source_url": "https://www.metro.ed.jp/shakujii-h/img_sub/令和７年度学校経営報告.pdf",
+      "source_label": "石神井高校 令和7年度学校経営報告",
+      "as_of": "2026-09-27",
+      "note": ""
+    },
+    {
+      "metric": "university_count",
+      "item": "東洋大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 122,
+      "source_url": "https://www.metro.ed.jp/shakujii-h/img_sub/主な合格大学2026.pdf",
+      "source_label": "石神井高校 進路状況「三月卒業生 主な合格大学」",
+      "as_of": "2026-07-14",
+      "note": "合格数の多い大学上位5校。大学別の表から。"
+    },
+    {
+      "metric": "university_count",
+      "item": "日本大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 91,
+      "source_url": "https://www.metro.ed.jp/shakujii-h/img_sub/主な合格大学2026.pdf",
+      "source_label": "石神井高校 進路状況「三月卒業生 主な合格大学」",
+      "as_of": "2026-07-14",
+      "note": "合格数の多い大学上位5校。大学別の表から。"
+    },
+    {
+      "metric": "university_count",
+      "item": "成蹊大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 50,
+      "source_url": "https://www.metro.ed.jp/shakujii-h/img_sub/主な合格大学2026.pdf",
+      "source_label": "石神井高校 進路状況「三月卒業生 主な合格大学」",
+      "as_of": "2026-07-14",
+      "note": "合格数の多い大学上位5校。大学別の表から。"
+    },
+    {
+      "metric": "university_count",
+      "item": "武蔵大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 43,
+      "source_url": "https://www.metro.ed.jp/shakujii-h/img_sub/主な合格大学2026.pdf",
+      "source_label": "石神井高校 進路状況「三月卒業生 主な合格大学」",
+      "as_of": "2026-07-14",
+      "note": "合格数の多い大学上位5校。大学別の表から。"
+    },
+    {
+      "metric": "university_count",
+      "item": "立教大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 36,
+      "source_url": "https://www.metro.ed.jp/shakujii-h/img_sub/主な合格大学2026.pdf",
+      "source_label": "石神井高校 進路状況「三月卒業生 主な合格大学」",
+      "as_of": "2026-07-14",
+      "note": "合格数の多い大学上位5校。大学別の表から。"
+    },
+    {
+      "metric": "exam_ratio",
+      "item": "推薦",
+      "fiscal_year": 2026,
+      "value_num": 2.69,
+      "source_url": "https://www.metro.ed.jp/shakujii-h/img_sub/令和７年度学校経営報告.pdf",
+      "source_label": "石神井高校 令和7年度学校経営報告",
+      "as_of": "2026-09-27",
+      "note": "応募倍率。令和8年4月入学者選抜（推薦）の入選推薦募集倍率。一般入試の倍率は全校まとめ資料で取込済みのためここでは扱わない。"
+    },
+    {
+      "metric": "uniform",
+      "fiscal_year": 2026,
+      "value_text": "平成25年度入学生から現行の標準服を制服として着用義務化。冬服はブレザーにリボン・ネクタイ（エンジ・紺の2色、正装はエンジ）。夏服はリボン・ネクタイ着脱可、シャツは半袖・長袖選択可。夏服代用に紺・水色・白・エンジの4色のポロシャツも可。女子はスラックス着用も可能。",
+      "source_url": "https://www.metro.ed.jp/shakujii-h/school_life/symbols.html",
+      "source_label": "石神井高校 制服・校章・校歌ページ",
+      "as_of": "2026-09-27",
+      "note": ""
+    },
+    {
+      "metric": "rules_summary",
+      "fiscal_year": 2026,
+      "value_text": "頭髪の染色・脱色を禁止。アルバイトは原則禁止。昼休みの校外外出も禁止。スマートフォンの校内利用規定は公式サイトに記載なし。",
+      "source_url": "https://www.metro.ed.jp/shakujii-h/school_life/symbols.html",
+      "source_label": "石神井高校 制服・校章・校歌ページ／入試案内Q&A",
+      "as_of": "2026-09-27",
+      "note": ""
+    },
+    {
+      "metric": "designation",
+      "item": "海外学校間交流推進校",
+      "fiscal_year": 2025,
+      "value_text": "国際人材育成のため国際研修プログラム・海外派遣事業等を推進する東京都指定。令和7年度はイギリス・オーストラリア・台湾に生徒25名を派遣。",
+      "source_url": "https://www.metro.ed.jp/shakujii-h/img_sub/令和７年度学校経営報告.pdf",
+      "source_label": "石神井高校 令和7年度学校経営報告",
+      "as_of": "2026-09-27",
+      "note": ""
+    }
+  ],
+  "clubs": [
+    {
+      "name": "サッカー部",
+      "kind": "運動",
+      "days_note": "平日（火曜日以外）、土日祝（練習試合・公式戦など）",
+      "weekend": "土日",
+      "tier": 2,
+      "tier_basis": "2026年度 高円宮杯U-18サッカーリーグ東京 T3 Bブロックに「都立石神井高等学校」として所属を確認（https://www.tleague-u18.com/team.php?dy=2026&dt=3）。T1・T2の参加チーム一覧には石神井の記載なし。文化・スポーツ等特別推薦の実施部（学校案内パンフレット）。",
+      "source_url": "https://www.metro.ed.jp/shakujii-h/school_life/activities.html",
+      "as_of": "2026-09-27",
+      "results": []
+    },
+    {
+      "name": "男子バスケットボール部",
+      "kind": "運動",
+      "days_note": "月、火、水、金、（土）、（日）",
+      "days_per_week": 5,
+      "weekend": "土日",
+      "source_url": "https://www.metro.ed.jp/shakujii-h/school_life/activities.html",
+      "as_of": "2026-09-27",
+      "results": []
+    },
+    {
+      "name": "女子バスケットボール部",
+      "kind": "運動",
+      "days_note": "月・火・水・金・土・(日)（不定期に休日あり）",
+      "days_per_week": 5.5,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "令和5年度インターハイ予選3回戦進出・東京都U18ブロックリーグ3位。令和6年度は関東予選・インターハイ予選3回戦進出、東京都U18ブロックリーグT3-Division GroupC優勝、新人大会4回戦進出（東京都ベスト56シード獲得）。都県大会ベスト8には届いていない。",
+      "source_url": "https://www.metro.ed.jp/shakujii-h/school_life/activities.html",
+      "as_of": "2026-09-27",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "関東大会予選・インターハイ予選",
+          "level": "都県",
+          "result": "3回戦進出",
+          "source_url": "https://www.metro.ed.jp/shakujii-h/school_life/activities.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "東京都U18ブロックリーグ",
+          "level": "都県",
+          "result": "T3-Division GroupC優勝",
+          "source_url": "https://www.metro.ed.jp/shakujii-h/school_life/activities.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "インターハイ予選",
+          "level": "都県",
+          "result": "3回戦進出",
+          "source_url": "https://www.metro.ed.jp/shakujii-h/school_life/activities.html"
+        }
+      ]
+    },
+    {
+      "name": "ラグビー部",
+      "kind": "運動",
+      "days_note": "火・水・金・土・(日)",
+      "days_per_week": 4.5,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2023年度（R5）関東大会東京都予選でベスト16（1回のみで複数回ではないため段階2の基準に届かず段階3）。",
+      "source_url": "https://www.metro.ed.jp/shakujii-h/school_life/activities.html",
+      "as_of": "2026-09-27",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "関東大会東京都予選",
+          "level": "都県",
+          "result": "ベスト16",
+          "source_url": "https://www.metro.ed.jp/shakujii-h/school_life/activities.html"
+        }
+      ]
+    },
+    {
+      "name": "バドミントン部",
+      "kind": "運動",
+      "days_note": "月・水・木・土・日【(日)には大会・練習試合もあり】",
+      "days_per_week": 5,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2023年度（R5）関東大会予選団体男子でベスト32（1回のみ）。総体予選団体男子は西ブロックでベスト16（R3〜R5、地区レベル）。都県大会ベスト8には届いていない。",
+      "source_url": "https://www.metro.ed.jp/shakujii-h/school_life/activities.html",
+      "as_of": "2026-09-27",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "関東大会予選（団体・男子）",
+          "level": "都県",
+          "result": "ベスト32",
+          "source_url": "https://www.metro.ed.jp/shakujii-h/school_life/activities.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "総体予選（団体・男子・西ブロック）",
+          "level": "地区",
+          "result": "ベスト16",
+          "source_url": "https://www.metro.ed.jp/shakujii-h/school_life/activities.html"
+        }
+      ]
+    },
+    {
+      "name": "野球部",
+      "kind": "運動",
+      "days_note": "月・火・水・金(土日祝は主に練習試合)",
+      "days_per_week": 4,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "直近3年の西東京大会（夏）はいずれも2〜4回戦で敗退（2023年度2回戦、2024年度2回戦、2025年度4回戦、2026年度1回戦）。秋・春の都大会一次予選も1〜2回戦での敗退が続き、上位進出はない（一球速報.com、直接確認）。",
+      "source_url": "https://baseball.omyutech.com/teamTop.action?teamId=11884",
+      "as_of": "2026-09-27",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "秋季東京都高等学校野球大会一次予選",
+          "level": "都県",
+          "result": "1回戦敗退（啓明学園にサヨナラ0-1）",
+          "happened_on": "2026-09-22",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=11884&year=2026"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "第108回全国高等学校野球選手権西東京大会",
+          "level": "都県",
+          "result": "1回戦敗退（府中工科に2-12）",
+          "happened_on": "2026-07-10",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=11884&year=2026"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "春季東京都高等学校野球大会一次予選",
+          "level": "都県",
+          "result": "1回戦敗退（日大一に1-6）",
+          "happened_on": "2026-03-14",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=11884&year=2026"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "秋季東京都高等学校野球大会一次予選",
+          "level": "都県",
+          "result": "1勝（学芸大付に7-0）して2回戦敗退（江戸川に0-7）",
+          "happened_on": "2025-09-20",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=11884&year=2025"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第107回全国高等学校野球選手権西東京大会",
+          "level": "都県",
+          "result": "2勝（東村山西に6-2、明大明治に9-2）して4回戦敗退（早稲田実に0-23、5回コールド）",
+          "happened_on": "2025-07-19",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=11884&year=2025"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "春季東京都高等学校野球大会一次予選",
+          "level": "都県",
+          "result": "1回戦は町田工科に15-0で勝利、代表決定戦で大山に7-9で敗退",
+          "happened_on": "2025-03-22",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=11884&year=2025"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "秋季東京都高等学校野球大会一次予選",
+          "level": "都県",
+          "result": "1勝（八丈に16-8）して2回戦敗退（昭和一学園に2-9）",
+          "happened_on": "2024-09-14",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=11884&year=2024"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "第106回全国高等学校野球選手権西東京大会",
+          "level": "都県",
+          "result": "2回戦敗退（日大桜丘に3-4）",
+          "happened_on": "2024-07-07",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=11884&year=2024"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "第105回全国高等学校野球選手権記念西東京大会",
+          "level": "都県",
+          "result": "2回戦敗退（国分寺に0-10）",
+          "happened_on": "2023-07-11",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=11884&year=2023"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "春季東京都高等学校野球大会",
+          "level": "都県",
+          "result": "1回戦敗退（片倉に0-10、5回コールド）",
+          "happened_on": "2023-04-01",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=11884&year=2023"
+        }
+      ]
+    },
+    {
+      "name": "男子硬式テニス部",
+      "kind": "運動",
+      "days_note": "月・火・水・木・金・土・(日)（土・日は不定期）",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2023年度（R5）総体予選団体でベスト32（1回のみ）。都県大会ベスト8には届いていない。",
+      "source_url": "https://www.metro.ed.jp/shakujii-h/school_life/activities.html",
+      "as_of": "2026-09-27",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "総体予選（団体）",
+          "level": "都県",
+          "result": "ベスト32",
+          "source_url": "https://www.metro.ed.jp/shakujii-h/school_life/activities.html"
+        }
+      ]
+    },
+    {
+      "name": "女子硬式テニス部",
+      "kind": "運動",
+      "days_note": "火・水・木・金　＋　土曜授業日　＋　試合日",
+      "days_per_week": 4.5,
+      "weekend": "土",
+      "source_url": "https://www.metro.ed.jp/shakujii-h/school_life/activities.html",
+      "as_of": "2026-09-27",
+      "results": []
+    },
+    {
+      "name": "女子バレーボール部",
+      "kind": "運動",
+      "days_note": "火・水・木・金・土・(日)（遠征）",
+      "days_per_week": 5.5,
+      "weekend": "土日",
+      "source_url": "https://www.metro.ed.jp/shakujii-h/school_life/activities.html",
+      "as_of": "2026-09-27",
+      "results": []
+    },
+    {
+      "name": "男子ハンドボール部",
+      "kind": "運動",
+      "days_note": "火・水・木・金・土・(日) で先輩・後輩仲良く練習に励んでいます。",
+      "days_per_week": 5.5,
+      "weekend": "土日",
+      "source_url": "https://www.metro.ed.jp/shakujii-h/school_life/activities.html",
+      "as_of": "2026-09-27",
+      "results": []
+    },
+    {
+      "name": "女子ハンドボール部",
+      "kind": "運動",
+      "days_note": "火・木・金・土・(日)",
+      "days_per_week": 4.5,
+      "weekend": "土日",
+      "source_url": "https://www.metro.ed.jp/shakujii-h/school_life/activities.html",
+      "as_of": "2026-09-27",
+      "results": []
+    },
+    {
+      "name": "女子ソフトボール部",
+      "kind": "運動",
+      "days_note": "月：オフ／火・水・木・金・土（日）",
+      "days_per_week": 5.5,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "令和5年度インターハイ予選で都大会に出場（それ以上の順位の記載なし）。「都大会出場」を目標に活動中と明記。",
+      "source_url": "https://www.metro.ed.jp/shakujii-h/school_life/activities.html",
+      "as_of": "2026-09-27",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "インターハイ予選",
+          "level": "都県",
+          "result": "都大会に出場",
+          "source_url": "https://www.metro.ed.jp/shakujii-h/school_life/activities.html"
+        }
+      ]
+    },
+    {
+      "name": "柔道部",
+      "kind": "運動",
+      "days_note": "火・水・木・金・土（日）",
+      "days_per_week": 5.5,
+      "weekend": "土日",
+      "source_url": "https://www.metro.ed.jp/shakujii-h/school_life/activities.html",
+      "as_of": "2026-09-27",
+      "results": []
+    },
+    {
+      "name": "水泳部",
+      "kind": "運動",
+      "days_note": "月・火・水・金・土（４〜９月）",
+      "days_per_week": 5,
+      "weekend": "土",
+      "source_url": "https://www.metro.ed.jp/shakujii-h/school_life/activities.html",
+      "as_of": "2026-09-27",
+      "results": []
+    },
+    {
+      "name": "陸上競技部",
+      "kind": "運動",
+      "days_note": "月、火、水、金、土、(日)",
+      "days_per_week": 5.5,
+      "weekend": "土日",
+      "tier": 2,
+      "tier_basis": "2025年度（R7）男子400mで全国高等学校総合体育大会（広島インターハイ）に出場。全国大会出場は1回のため段階2。",
+      "source_url": "https://www.metro.ed.jp/shakujii-h/school_life/activities.html",
+      "as_of": "2026-09-27",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "全国高等学校総合体育大会陸上競技（広島インターハイ）",
+          "level": "全国",
+          "result": "男子400m出場",
+          "source_url": "https://www.metro.ed.jp/shakujii-h/school_life/activities.html"
+        }
+      ]
+    },
+    {
+      "name": "剣道部",
+      "kind": "運動",
+      "days_note": "月・火・木・(土・日　公式戦などのある場合)",
+      "days_per_week": 3,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "月・火・木を中心に活動し、大会には出場している（2026年4月26日の春季東京都高等学校剣道大会に出場し初戦敗退）が、上位進出の記録はない。",
+      "source_url": "https://www.metro.ed.jp/shakujii-h/school_life/activities.html",
+      "as_of": "2026-09-27",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "春季東京都高等学校剣道大会",
+          "level": "都県",
+          "result": "出場・敗退",
+          "happened_on": "2026-04-26",
+          "source_url": "https://www.metro.ed.jp/shakujii-h/activities/2026/09/clubentry_183.html"
+        }
+      ]
+    },
+    {
+      "name": "ダンス部",
+      "kind": "運動",
+      "days_note": "月・火・水・金　（イベント前は土日もあり）",
+      "days_per_week": 4,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2026年9月、民間主催のダンスコンテスト「Dance Time Boom!」で特別審査員賞（部活動ニュース）。2017年のMUSICDAYS東京大会JSDA賞受賞は直近3年の実績ではないため根拠にしていない。",
+      "source_url": "https://www.metro.ed.jp/shakujii-h/school_life/activities.html",
+      "as_of": "2026-09-27",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "Dance Time Boom!（民間主催コンテスト）",
+          "level": "その他",
+          "result": "特別審査員賞（「ジェニり隊」）",
+          "happened_on": "2026-09-06",
+          "source_url": "https://www.metro.ed.jp/shakujii-h/activities/2026/09/dance_time_boom.html"
+        }
+      ]
+    },
+    {
+      "name": "軽音楽部",
+      "kind": "文化",
+      "days_note": "月、火、水、金、土",
+      "days_per_week": 5,
+      "weekend": "土",
+      "source_url": "https://www.metro.ed.jp/shakujii-h/school_life/activities.html",
+      "as_of": "2026-09-27",
+      "results": []
+    },
+    {
+      "name": "ファッション部",
+      "kind": "文化",
+      "days_note": "火・木・金",
+      "days_per_week": 3,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "文化祭でのファッションショーが活動の中心で、コンクール等への参加実績の記載はない。活動日は週3日。",
+      "source_url": "https://www.metro.ed.jp/shakujii-h/school_life/activities.html",
+      "as_of": "2026-09-27",
+      "results": []
+    },
+    {
+      "name": "吹奏楽部",
+      "kind": "文化",
+      "days_note": "月・火・水・金、土曜授業日",
+      "days_per_week": 4.5,
+      "weekend": "土",
+      "source_url": "https://www.metro.ed.jp/shakujii-h/school_life/activities.html",
+      "as_of": "2026-09-27",
+      "results": []
+    },
+    {
+      "name": "美術部",
+      "kind": "文化",
+      "days_note": "月・水・金",
+      "days_per_week": 3,
+      "weekend": "なし",
+      "source_url": "https://www.metro.ed.jp/shakujii-h/school_life/activities.html",
+      "as_of": "2026-09-27",
+      "results": []
+    },
+    {
+      "name": "演劇部",
+      "kind": "文化",
+      "days_note": "月・火・木",
+      "days_per_week": 3,
+      "weekend": "なし",
+      "source_url": "https://www.metro.ed.jp/shakujii-h/school_life/activities.html",
+      "as_of": "2026-09-27",
+      "results": []
+    },
+    {
+      "name": "茶道部",
+      "kind": "文化",
+      "days_note": "水（外部指導員による指導）・木（前日のおさらい）",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "裏千家のお点前の習得が活動の中心で、コンクール等への参加実績の記載はない。活動日は週2日。",
+      "source_url": "https://www.metro.ed.jp/shakujii-h/school_life/activities.html",
+      "as_of": "2026-09-27",
+      "results": []
+    },
+    {
+      "name": "写真部",
+      "kind": "文化",
+      "days_note": "不定期",
+      "weekend": "なし",
+      "source_url": "https://www.metro.ed.jp/shakujii-h/school_life/activities.html",
+      "as_of": "2026-09-27",
+      "results": []
+    },
+    {
+      "name": "生物部",
+      "kind": "文化",
+      "days_note": "週３回程度。曜日は年度ごとに部員と顧問の相談の上決める（今年は月・木と、金か土曜授業の土）。",
+      "days_per_week": 3,
+      "weekend": "土",
+      "tier": 4,
+      "tier_basis": "週3回程度の活動で、動植物の飼育・栽培や校外観察が中心。コンクール等への参加実績の記載はない。",
+      "source_url": "https://www.metro.ed.jp/shakujii-h/school_life/activities.html",
+      "as_of": "2026-09-27",
+      "results": []
+    },
+    {
+      "name": "漫画研究部",
+      "kind": "文化",
+      "days_note": "毎週火曜日",
+      "days_per_week": 1,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "部誌の制作・発行と文化祭展示が中心で、コンクール等への参加実績の記載はない。活動日は週1日。",
+      "source_url": "https://www.metro.ed.jp/shakujii-h/school_life/activities.html",
+      "as_of": "2026-09-27",
+      "results": []
+    },
+    {
+      "name": "物理化学部",
+      "kind": "文化",
+      "days_note": "火曜日・木曜日",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "各部員のテーマに沿った実験・製作と文化祭発表が中心で、コンクール等への参加実績の記載はない。活動日は週2日。",
+      "source_url": "https://www.metro.ed.jp/shakujii-h/school_life/activities.html",
+      "as_of": "2026-09-27",
+      "results": []
+    },
+    {
+      "name": "英語部",
+      "kind": "文化",
+      "days_note": "水曜日の昼休み、木曜日の放課後",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "ALTとの英会話やゲーム、映画鑑賞など活動中心で、コンクール等への参加実績の記載はない。活動は週2回程度。",
+      "source_url": "https://www.metro.ed.jp/shakujii-h/school_life/activities.html",
+      "as_of": "2026-09-27",
+      "results": []
+    },
+    {
+      "name": "デジタルクリエイト同好会",
+      "kind": "同好会",
+      "days_note": "毎週水・金曜日",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "ゲーム開発と文化祭発表が中心で、コンクール等への参加実績の記載はない。活動日は週2日。",
+      "source_url": "https://www.metro.ed.jp/shakujii-h/school_life/activities.html",
+      "as_of": "2026-09-27",
+      "results": []
+    },
+    {
+      "name": "ジャズ同好会",
+      "kind": "同好会",
+      "days_note": "毎週水曜日",
+      "days_per_week": 1,
+      "weekend": "なし",
+      "source_url": "https://www.metro.ed.jp/shakujii-h/school_life/activities.html",
+      "as_of": "2026-09-27",
+      "results": []
+    },
+    {
+      "name": "福祉同好会",
+      "kind": "同好会",
+      "days_note": "毎週月曜日",
+      "days_per_week": 1,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "古本回収の寄付活動や絵本への言語シール貼付など地域貢献活動が中心で、大会実績にあたるものはない。活動日は週1日。",
+      "source_url": "https://www.metro.ed.jp/shakujii-h/school_life/activities.html",
+      "as_of": "2026-09-27",
+      "results": []
+    },
+    {
+      "name": "料理同好会",
+      "kind": "同好会",
+      "days_note": "隔週月曜日",
+      "days_per_week": 0.5,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "隔週での調理活動が中心で、コンクール等への参加実績の記載はない。活動日は週3日以下（隔週1日）。",
+      "source_url": "https://www.metro.ed.jp/shakujii-h/school_life/activities.html",
+      "as_of": "2026-09-27",
+      "results": []
+    }
+  ],
+  "designated_universities": [],
+  "events": [
+    {
+      "kind": "学級増減",
+      "period_label": "令和8年度入学生から",
+      "summary": "普通科が7学級から8学級に増えた（都内公立中学校卒業予定者数等を踏まえた東京都教育委員会の募集学級増減の決定）。",
+      "source_url": "https://www.kyoiku.metro.tokyo.lg.jp/documents/d/kyoiku/2025-10-24-174019-341"
+    }
+  ],
+  "unresolved": [
+    "club_join_rate：学校経営報告に目標「生徒部活動加入率95％以上」の記載はあるが、実績の数値は公表されていない（成果欄は「陸上部がインターハイ及び関東大会に出場」等の文章のみ）",
+    "career_decided_rate（卒業後の進路決定率）・admission_route_share（一般・指定校推薦・公募推薦・総合型の実進学割合）：学校経営報告・進路指導ページに該当する数値の記載なし",
+    "satisfaction（学校評価アンケートの満足度）：学校運営方針ページに学校評価アンケート報告の掲載がなく、数値を確認できず",
+    "students（男女別生徒数）：学校経営報告・パンフレットいずれにも記載なし",
+    "designated_universities（指定校推薦の大学名一覧）：学校サイト・パンフレットに公開の一覧なし。入試案内Q&Aによれば「指定校推薦は、２学期の初めに募集がある大学の学部学科一覧を公表」とあり、公開時期が受験生向けでない",
+    "男子バスケットボール部：文化・スポーツ等特別推薦の実施部（パンフレット記載）だが、部活動ページの実績はH25〜H31年度のみで直近3年（2023年度以降）の記載がない",
+    "女子バレーボール部：文化・スポーツ等特別推薦の実施部（パンフレット記載）だが、部活動ページは「公立戦ベスト64を目指す」という目標のみで実績の記載がない",
+    "柔道部：文化・スポーツ等特別推薦の実施部（パンフレット記載）。都予選優勝・関東大会予選3位等の実績はあるが、部活動ページに年度の記載が無く根拠として使用できず",
+    "吹奏楽部：部活動ページにコンクール等の具体的な成績・年度の記載がない",
+    "美術部：「高文連主催中央展3年連続奨励賞」「全国大会出展・学校賞受賞」の記載はあるが年度が不明で根拠として使用できず",
+    "2023年度秋季大会・2024年度春季大会（野球部）：一球速報.comに試合記録が見当たらず"
+  ],
+  "conflicts": [
+    "部活動数：現行の部活動ページ（school_life/activities.html）は運動部17・文化部11・同好会4の計32部（ジャズ同好会を含む）だが、学校案内パンフレット「School Guide 2027」（2026年7月時点）の部活動一覧は運動部17・文化部/同好会14の計31部で、ジャズ同好会の記載がない。",
+    "サッカー部（男子）の所属リーグ：部活動ページは「2部昇格、現在T2リーグ所属」と記載するが、高円宮杯U-18サッカーリーグ東京の公式サイト（2026年度）ではT3 Bブロックに「都立石神井高等学校」として掲載され、T1・T2の参加チーム一覧には石神井の記載がない。",
+    "大学合格実績の集計：学校経営報告・経営計画が公表する現役合格者数（国公立10名・早慶上理16名・GMARCH153名・成成明國武124名・日東駒専225名、いずれもR7年度=2025年度卒業生）と、パンフレット／「主な合格大学2026」に掲載の大学別合格数を単純合算した数（国公立12・早慶上理17・GMARCH163・日東駒専268など）は一致しない。集計基準（現役／延べ）の違いによるとみられるため、学校公表値を採用した。"
+  ]
+}
