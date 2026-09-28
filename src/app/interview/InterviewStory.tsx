@@ -32,11 +32,11 @@ const SIGNAL_TEXT = { up: 'text-success', down: 'text-danger', flat: 'text-text-
 
 export function EnrollmentStrip({
   enrollment,
-  koushuSeasonHeading,
+  fiscalYear,
 }: {
   enrollment: EnrollmentView;
-  /** 今期の見出し（「冬期 2026」）。今期の提案書が無いときに「冬期 2026 の提案なし」と出す */
-  koushuSeasonHeading: string;
+  /** 講習の行の見出しに使う年度（「2026年度」） */
+  fiscalYear: number;
 }) {
   const { regular, koushu, testPrep } = enrollment;
   return (
@@ -55,13 +55,15 @@ export function EnrollmentStrip({
 
       <span className="text-[11.5px] text-text-muted">講習</span>
       <span className="text-text-body">
-        {koushu ? (
-          <>
-            {koushu.season} <span className="font-bold text-text-heading">{koushu.body}</span>
-            <StatusChip label={koushu.status} tone={koushu.status === '申込済' ? 'done' : 'wait'} />
-          </>
+        {koushu.length > 0 ? (
+          koushu.map((k, i) => (
+            <span key={k.season}>
+              {i > 0 && <span className="mx-1.5 text-text-faint">／</span>}
+              {k.season} <span className="font-bold text-text-heading">{k.body}</span>
+            </span>
+          ))
         ) : (
-          <span className="text-text-faint">{koushuSeasonHeading} の提案なし</span>
+          <span className="text-text-faint">{fiscalYear}年度の受講なし</span>
         )}
       </span>
 
@@ -79,18 +81,6 @@ export function EnrollmentStrip({
         )}
       </span>
     </div>
-  );
-}
-
-function StatusChip({ label, tone }: { label: string; tone: 'done' | 'wait' }) {
-  return (
-    <span
-      className={`ml-1.5 rounded px-1.5 text-[10.5px] ${
-        tone === 'done' ? 'bg-success-subtle text-success' : 'bg-warning-subtle text-warning'
-      }`}
-    >
-      {label}
-    </span>
   );
 }
 

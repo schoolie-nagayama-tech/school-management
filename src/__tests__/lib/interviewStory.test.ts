@@ -17,6 +17,7 @@ import type { AssessmentWithScores } from '@/types/database';
 import type { ScheduleRegularPattern } from '@/types/schedule';
 import {
   computeStoryTone,
+  formatKoushuEnrollment,
   formatRegularEnrollment,
   takenTestSubjects,
   formatTestPrepEnrollment,
@@ -211,6 +212,31 @@ describe('受講の枠', () => {
     ]);
     expect(t).toEqual({ exam: '2学期期末', body: '理科 2コマ', zoukoma: '増コマ 2' });
     expect(formatTestPrepEnrollment([])).toBeNull();
+  });
+
+  it('講習は今年度の申込済の期を古い順に。今期・前年度・申込まで行かなかった期は出さない', () => {
+    const b = (year: number, season: string, status: 'draft' | 'sent' | 'approved') => ({
+      year,
+      season,
+      status,
+      komaBySubject: { 英語: 8, 数学: 4 },
+      totalKoma: 12,
+    });
+    const rows = formatKoushuEnrollment(
+      [
+        b(2026, 'winter', 'sent'), // 今期
+        b(2026, 'summer', 'approved'),
+        b(2026, 'spring', 'approved'),
+        b(2025, 'winter', 'approved'), // 前年度
+      ],
+      2026,
+      'winter'
+    );
+    expect(rows).toEqual([
+      { season: '春期', body: '英語 8コマ・数学 4コマ' },
+      { season: '夏期', body: '英語 8コマ・数学 4コマ' },
+    ]);
+    expect(formatKoushuEnrollment([b(2026, 'summer', 'sent')], 2026, 'winter')).toEqual([]);
   });
 });
 

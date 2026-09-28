@@ -129,6 +129,7 @@ import {
   previousFollowUpReportLine,
   formatRegularPatternsSchedule,
   koushuFiscalYear,
+  komaBySubjectText,
   mergeKoushuSeasons,
   KOUSHU_STATUS_LABEL,
   stripTargetSchoolFactLines,
@@ -1104,27 +1105,26 @@ export function InterviewScriptCard({
    * 受講の枠（台本の一番上）。通常授業・今期の講習・直近のテスト対策を1か所にまとめる。
    * ★2026-09-25 教室長「受講科目とコマ数はわかりやすく表示して」。それまでは⑤と④の根拠（畳まれている）に分かれていた
    */
-  const koushuSeasonHeading = `${SEASON_LABELS[seasonKey] ?? seasonKey} ${fiscalYear}`;
   const enrollment: EnrollmentView = useMemo(() => {
     const today = new Date();
     const ymd = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
     return {
       regular: formatRegularEnrollment(regularPatterns, subjectNames, ymd),
-      koushu: formatKoushuEnrollment(
-        koushuBuckets.find((b) => b.year === fiscalYear && b.season === seasonKey),
-        koushuSeasonHeading
-      ),
+      // ★講習は今年度の受講履歴（今期の状態はヘッダー帯・⑤で分かる。story.ts の注記）
+      koushu: formatKoushuEnrollment(koushuBuckets, fiscalYear, seasonKey),
       testPrep: formatTestPrepEnrollment(testPrep),
     };
-  }, [
-    regularPatterns,
-    subjectNames,
-    koushuBuckets,
-    fiscalYear,
-    seasonKey,
-    koushuSeasonHeading,
-    testPrep,
-  ]);
+  }, [regularPatterns, subjectNames, koushuBuckets, fiscalYear, seasonKey, testPrep]);
+  /**
+   * 道筋の「講習はここ」の印に添える今期の講習（「冬期講習 数学 8コマ」）。今期の提案書が無ければ null。
+   * ★受講の枠の講習の行（今年度の履歴）とは別。印は今期のプランが道筋のどこに効くかを示す
+   */
+  const currentKoushuText = useMemo(() => {
+    const current = koushuBuckets.find((b) => b.year === fiscalYear && b.season === seasonKey);
+    if (!current) return null;
+    const body = komaBySubjectText(current.komaBySubject) ?? `${current.totalKoma}コマ`;
+    return `${SEASON_LABELS[seasonKey] ?? seasonKey}講習 ${body}`;
+  }, [koushuBuckets, fiscalYear, seasonKey]);
 
   /**
    * 見立て（面談の空気）。★システムが成績・宿題・遅刻の上下から決める（AIに決めさせない）。
@@ -1798,7 +1798,7 @@ export function InterviewScriptCard({
         </div>
 
         {/* 受講の枠と面談の筋。★AIで作る前から出す（受講・見立て・札はシステムが組むもの） */}
-        <EnrollmentStrip enrollment={enrollment} koushuSeasonHeading={koushuSeasonHeading} />
+        <EnrollmentStrip enrollment={enrollment} fiscalYear={fiscalYear} />
         <StoryPanel
           tone={storyTone}
           thesis={view?.thesis ?? ''}
@@ -1808,11 +1808,7 @@ export function InterviewScriptCard({
               ? `入試${examCountdown ? ` ―― ${examCountdown}` : ''}`
               : '学年の終わり'
           }
-          koushuText={
-            enrollment.koushu
-              ? `${SEASON_LABELS[seasonKey] ?? seasonKey}講習 ${enrollment.koushu.body}`
-              : null
-          }
+          koushuText={currentKoushuText}
         />
 
         {!view && (

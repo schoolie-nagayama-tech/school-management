@@ -14,11 +14,10 @@
  *
  * 正典: docs/interview-workspace-layout-2026-09.md「面談の筋（2026-09-25）」
  */
-import type { AssessmentWithScores } from '@/types/database';
+import { SEASON_LABELS, type AssessmentWithScores } from '@/types/database';
 import type { ScheduleRegularPattern } from '@/types/schedule';
 import { DAY_OF_WEEK_LABELS } from '@/types/schedule';
 import {
-  KOUSHU_STATUS_LABEL,
   komaBySubjectText,
   type KoushuSeasonBucket,
   type TestPrepProposalForInterview,
@@ -58,8 +57,8 @@ export function treatZeroScoresAsMissing(
 export interface EnrollmentView {
   /** 通常授業。「数学・英語（週2・火木）」。通塾日程が無ければ null */
   regular: string | null;
-  /** 今期の講習。見出し（「冬期 2026」）・科目とコマ・状態。今期の提案書が無ければ null */
-  koushu: { season: string; body: string; status: string } | null;
+  /** 今年度これまでに受講した講習（期の古い順）。1期も無ければ空配列 */
+  koushu: { season: string; body: string }[];
   /** 直近のテスト対策（公開済みの提案書1件）。無ければ null */
   testPrep: { exam: string; body: string; zoukoma: string | null } | null;
 }
@@ -384,17 +383,27 @@ export function storyToneLine(result: StoryToneResult): string | null {
  * 受講の枠（講習・テスト対策を足して1つにまとめる）
  * ========================================================== */
 
-/** 今期の講習の行。★科目とコマは提案書（seasonal_proposals）の期のまとめ。今期が無ければ null */
+/** 年度の中の期の並び（春期→夏期→冬期） */
+const SEASON_ORDER: Record<string, number> = { spring: 0, summer: 1, winter: 2 };
+
+/**
+ * 講習の行＝今年度これまでの受講履歴（春期・夏期…）。科目とコマは提案書（seasonal_proposals）の期のまとめ。
+ * ★今期は出さない（2026-09-28 教室長「今の講習のステータスはわかってるからね」）。
+ *   以前は今期の提案の状態を出しており、提案前の時期は「冬期 2026 の提案なし」としか出なかった。
+ * ★申込済（approved）の期だけ＝実際に受講した期。提案中・下書きのまま終わった期は受講していない。
+ */
 export function formatKoushuEnrollment(
-  bucket: KoushuSeasonBucket | undefined,
-  seasonHeading: string
+  buckets: readonly KoushuSeasonBucket[],
+  fiscalYear: number,
+  currentSeason: string
 ): EnrollmentView['koushu'] {
-  if (!bucket) return null;
-  return {
-    season: seasonHeading,
-    body: komaBySubjectText(bucket.komaBySubject) ?? `${bucket.totalKoma}コマ`,
-    status: KOUSHU_STATUS_LABEL[bucket.status],
-  };
+  return buckets
+    .filter((b) => b.year === fiscalYear && b.season !== currentSeason && b.status === 'approved')
+    .sort((a, b) => (SEASON_ORDER[a.season] ?? 9) - (SEASON_ORDER[b.season] ?? 9))
+    .map((b) => ({
+      season: SEASON_LABELS[b.season as keyof typeof SEASON_LABELS] ?? b.season,
+      body: komaBySubjectText(b.komaBySubject) ?? `${b.totalKoma}コマ`,
+    }));
 }
 
 /**
