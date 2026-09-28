@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { InlineLoading } from '@/components/ui';
 import { AlertItem } from '@/components/alerts/AlertItem';
 import { useAuth } from '@/contexts/AuthContext';
-import { getStudentInterviews } from '@/lib/api/interviews';
 import {
   dismissAlert,
   getAlertsHeavy,
@@ -18,6 +17,7 @@ import type { Alert, StudentAlerts } from '@/types/alerts';
 import { DISMISSABLE_ALERT_TYPES } from '@/types/alerts';
 import type { StudentInterview } from '@/types/database';
 import { HubSection } from './HubSection';
+import { useHubInterviews } from './HubDataContext';
 
 interface AttentionSectionProps {
   studentId: string;
@@ -26,7 +26,7 @@ interface AttentionSectionProps {
 }
 
 /**
- * 気にすること（上部の左カラム）。「注意すること」と「未完了の約束」を並べる。
+ * 気にすること（上部の左カラム、今の状態の下）。「注意すること」と「未完了の約束」を並べる。
  *
  * 注意すること＝生徒一覧のアラート欄（AlertBoard）と同じアラートを、この生徒1人分だけ出す
  * （2026-09-28 ユーザー決定の A案: 既存の教室単位の計算を流用し、生徒1人分を抜き出す）。
@@ -36,26 +36,50 @@ interface AttentionSectionProps {
  * ★面談更新（講師向けの良い知らせ）と未完了タスク（下の「未完了の約束」と二重）は出さない。
  *
  * 約束は面談記録に interview_type='task' として保存されている（期日の列は無い。日付は登録日）。
+ * 面談記録は「今の状態」（前回の面談）と1回の取得を共有する（HubDataContext）。
  * ★完了の操作はここに置かず、下の面談欄（InterviewList）に任せる。完了操作を2か所に持つと、
  *   片方で完了しても片方が古いまま残る。
  * 保護者との連絡は、生徒単位で連絡スレッドを引く関数がまだ無いので出していない。
+ *
+ * ★両方とも空なら2列の枠をやめて1行に畳む。注意も約束も無い生徒で「ありません」が2行並び、
+ *   左カラムの下が大きく空くのを避けるため（2026-09-28 ユーザー指摘）。
  */
 export function AttentionSection({ studentId, schoolId }: AttentionSectionProps) {
+  const a = useStudentAttentionAlerts(studentId, schoolId);
+  const { interviews, loading: tasksLoading, failed: tasksFailed } = useHubInterviews();
+  const tasks = useMemo(
+    () => interviews.filter((r) => r.interview_type === 'task' && !r.is_completed),
+    [interviews]
+  );
+
+  // 「ありません」と言い切れるのは、Light・Heavy の両方と約束が読めて、どれも0件のときだけ
+  const alertsEmpty = a.allLoaded && a.alerts !== null && a.alerts.length === 0;
+  const tasksEmpty = !tasksLoading && !tasksFailed && tasks.length === 0;
+  const collapsed = alertsEmpty && tasksEmpty && !a.dismissFailed;
+
   return (
     <HubSection id="sec-attention" title="気にすること">
-      {/* 1100px 以上は左右2列（左=注意すること / 右=未完了の約束）。
-          上部の左カラムは基本情報（300px）を除いても横に広く、縦1列だと注意することが多い生徒で
-          約束が画面の下へ押し出される。狭い画面では縦に 注意すること → 未完了の約束 の順。 */}
-      <div className="grid gap-x-6 gap-y-5 min-[1100px]:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
-        <AlertsBlock studentId={studentId} schoolId={schoolId} />
-        <TasksBlock studentId={studentId} />
-      </div>
+      {collapsed ? (
+        <p className="m-0 text-[13px] text-text-muted">注意すること・未完了の約束はありません</p>
+      ) : (
+        // 1100px 以上は左右2列（左=注意すること / 右=未完了の約束）。
+        // 縦1列だと注意することが多い生徒で約束が画面の下へ押し出される。狭い画面では縦に並ぶ。
+        <div className="grid gap-x-6 gap-y-5 min-[1100px]:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+          <AlertsBlock state={a} />
+          <TasksBlock tasks={tasks} loading={tasksLoading} failed={tasksFailed} />
+        </div>
+      )}
     </HubSection>
   );
 }
 
-/** 注意すること（生徒一覧のアラートの、この生徒の分） */
-function AlertsBlock({ studentId, schoolId }: AttentionSectionProps) {
+type AttentionAlertsState = ReturnType<typeof useStudentAttentionAlerts>;
+
+/**
+ * 注意すること（生徒一覧のアラートの、この生徒の分）の取得と対応済み。
+ * 表示（AlertsBlock）から切り離したのは、「約束も注意も無ければ1行に畳む」判定を親で持つため。
+ */
+function useStudentAttentionAlerts(studentId: string, schoolId: string) {
   const { profile } = useAuth();
   // AlertBoard と同じ判定（対応済みは教室長以上だけ・講師はマスク）。
   // ハブは教室長以上しか開けないが、条件をここだけ変えると一覧とハブで挙動がずれるので揃えておく。
@@ -191,10 +215,24 @@ function AlertsBlock({ studentId, schoolId }: AttentionSectionProps) {
     [studentAlerts, studentId, isTeacher, dismissedKeys]
   );
 
-  // 「ありません」と言い切れるのは Light・Heavy の両方が読めたときだけ。
-  // 片方でも失敗・待ちなら、その旨を出す（黙って空にしない）。
-  const allLoaded = lightState === 'done' && heavyState === 'done';
+  return {
+    alerts,
+    lightState,
+    heavyState,
+    // 「ありません」と言い切れるのは Light・Heavy の両方が読めたときだけ。
+    // 片方でも失敗・待ちなら、その旨を出す（黙って空にしない）。
+    allLoaded: lightState === 'done' && heavyState === 'done',
+    dismissFailed,
+    canDismiss,
+    isTeacher,
+    retryHeavy,
+    handleDismiss,
+  };
+}
 
+/** 注意すること（表示だけ） */
+function AlertsBlock({ state }: { state: AttentionAlertsState }) {
+  const { alerts, lightState, heavyState, allLoaded, dismissFailed, canDismiss, isTeacher } = state;
   return (
     <div className="min-w-0">
       <h3 className="mb-2 text-sm font-bold text-text-heading">注意すること</h3>
@@ -206,7 +244,7 @@ function AlertsBlock({ studentId, schoolId }: AttentionSectionProps) {
               alert={a}
               masked={isTeacher}
               canDismiss={canDismiss}
-              onDismiss={handleDismiss}
+              onDismiss={state.handleDismiss}
             />
           ))}
         </div>
@@ -222,7 +260,11 @@ function AlertsBlock({ studentId, schoolId }: AttentionSectionProps) {
       {heavyState === 'error' && (
         <p className="mb-1 text-[13px] text-danger">
           成績・宿題・遅刻などの注意を読み込めませんでした
-          <button type="button" onClick={retryHeavy} className="ml-2 text-primary hover:underline">
+          <button
+            type="button"
+            onClick={state.retryHeavy}
+            className="ml-2 text-primary hover:underline"
+          >
             再読み込み
           </button>
         </p>
@@ -231,9 +273,11 @@ function AlertsBlock({ studentId, schoolId }: AttentionSectionProps) {
         <p className="text-[13px] text-text-muted">注意することはありません</p>
       )}
       {dismissFailed && <p className="text-[13px] text-danger">対応済みの記録に失敗しました</p>}
-      <p className="mb-0 mt-2 text-xs text-text-muted">
-        生徒一覧のアラートと同じものです。文言を押すと、入力する画面へ移ります。
-      </p>
+      {alerts && alerts.length > 0 && (
+        <p className="mb-0 mt-2 text-xs text-text-muted">
+          生徒一覧のアラートと同じものです。文言を押すと、入力する画面へ移ります。
+        </p>
+      )}
     </div>
   );
 }
@@ -243,59 +287,52 @@ function dismissKey(a: Alert): string {
   return `${a.student_id}:${a.alert_type}:${a.alert_key}`;
 }
 
-/** 未完了の約束（面談記録の task のうち未完了のもの） */
-function TasksBlock({ studentId }: { studentId: string }) {
-  const [tasks, setTasks] = useState<StudentInterview[] | null>(null);
-  const [failed, setFailed] = useState(false);
-
-  useEffect(() => {
-    let cancelled = false;
-    getStudentInterviews(studentId)
-      .then((rows) => {
-        if (cancelled) return;
-        setTasks(rows.filter((r) => r.interview_type === 'task' && !r.is_completed));
-      })
-      .catch(() => {
-        if (!cancelled) setFailed(true);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [studentId]);
-
+/** 未完了の約束（面談記録の task のうち未完了のもの。表示だけ） */
+function TasksBlock({
+  tasks,
+  loading,
+  failed,
+}: {
+  tasks: StudentInterview[];
+  loading: boolean;
+  failed: boolean;
+}) {
   return (
     <div className="min-w-0">
       <h3 className="mb-2 text-sm font-bold text-text-heading">未完了の約束</h3>
       {failed ? (
         <p className="text-[13px] text-danger">約束の取得に失敗しました</p>
-      ) : tasks === null ? (
+      ) : loading ? (
         <InlineLoading label="読み込み中…" />
       ) : tasks.length === 0 ? (
         <p className="text-[13px] text-text-muted">未完了の約束はありません</p>
       ) : (
-        <ul className="m-0 list-none p-0">
-          {tasks.map((t) => (
-            <li
-              key={t.id}
-              className="flex items-baseline gap-2 border-b border-border-subtle py-1.5 text-[13px] last:border-0"
-            >
-              <span className="min-w-0 flex-1 text-text-body [overflow-wrap:anywhere]">
-                {t.title || t.content}
-              </span>
-              <span className="shrink-0 font-mono text-[11px] text-text-faint">
-                {t.interview_date}
-              </span>
-            </li>
-          ))}
-        </ul>
+        <>
+          <ul className="m-0 list-none p-0">
+            {tasks.map((t) => (
+              <li
+                key={t.id}
+                className="flex items-baseline gap-2 border-b border-border-subtle py-1.5 text-[13px] last:border-0"
+              >
+                <span className="min-w-0 flex-1 text-text-body [overflow-wrap:anywhere]">
+                  {t.title || t.content}
+                </span>
+                <span className="shrink-0 font-mono text-[11px] text-text-faint">
+                  {t.interview_date}
+                </span>
+              </li>
+            ))}
+          </ul>
+          {/* 案内は約束が1件以上あるときだけ（0件で操作の案内を出しても読む理由が無い） */}
+          <p className="mb-0 mt-2 text-xs text-text-muted">
+            約束の追加・完了は下の
+            <a href="#sec-interview" className="mx-0.5 text-primary hover:underline">
+              面談
+            </a>
+            欄から行います。
+          </p>
+        </>
       )}
-      <p className="mb-0 mt-2 text-xs text-text-muted">
-        約束の追加・完了は下の
-        <a href="#sec-interview" className="mx-0.5 text-primary hover:underline">
-          面談
-        </a>
-        欄から行います。
-      </p>
     </div>
   );
 }

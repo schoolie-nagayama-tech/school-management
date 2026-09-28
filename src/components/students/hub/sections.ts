@@ -2,10 +2,11 @@
  * 生徒ハブのセクション一覧（目次と並び順の正典）。
  *
  * 並びはモック（public/student-hub-mock.html）どおり。第1段で中身があるものだけを載せる
- * （今の状態・教材・請求・履歴は第2段。docs/student-hub-plan.md §3）。
+ * （教材・請求・履歴は第2段。docs/student-hub-plan.md §3）。
  * ★目次・ページ本文・スクロール追従の3か所がこの配列を見るので、足すときはここだけ直す。
  */
 export const HUB_SECTIONS = [
+  { id: 'sec-status', label: '今の状態' },
   { id: 'sec-basic', label: '基本情報' },
   { id: 'sec-attention', label: '気にすること' },
   { id: 'sec-schedule', label: '通塾日程' },

@@ -30,6 +30,7 @@ import { HubHeader } from '@/components/students/hub/HubHeader';
 import { HubSection } from '@/components/students/hub/HubSection';
 import { BasicInfoCard } from '@/components/students/hub/BasicInfoCard';
 import { AttentionSection } from '@/components/students/hub/AttentionSection';
+import { StatusSection } from '@/components/students/hub/StatusSection';
 import { FormResponsesSection } from '@/components/students/hub/FormResponsesSection';
 import { LessonReportsSection } from '@/components/students/hub/LessonReportsSection';
 import {
@@ -127,14 +128,20 @@ export default function StudentHubPage() {
     <AdminLayout headerTitle={HEADER_TITLE} documentTitle={fullName}>
       <HubHeader student={student} schoolName={schoolName} />
 
-      {/* 成績・志望校・模試の志望校は複数セクションで使うので、生徒ごとに1回だけ取る（HubDataContext）。
+      {/* 成績・志望校・面談記録・宿題遅刻・進行表は複数セクションで使うので、生徒ごとに1回だけ取る（HubDataContext）。
           ★key で生徒が変わったら作り直す（前の生徒のデータを残さない） */}
       <HubDataProvider key={student.id} studentId={student.id}>
         <div className="flex flex-col gap-3 pb-16">
-          {/* 上部だけ2カラム（左=気にすること / 右=基本情報 約300px）。1100px 未満で右が下に落ちる。
+          {/* 上部だけ2カラム（左=今の状態→気にすること の縦積み / 右=基本情報 約300px）。
+            1100px 未満で右が下に落ちる（DOM順どおり左が先）。
+            ★左に今の状態を置くのは、一番目に入る左上を使うため。気にすることだけだと、注意も約束も無い
+              生徒で左が短く、右の基本情報の横が大きく空いていた（2026-09-28 ユーザー指摘）。
             ★sticky にしない。右カラムを追従させたら本文とスクロールが連動しないと不評だった */}
           <div className="grid items-start gap-3 min-[1100px]:grid-cols-[minmax(0,1fr)_300px]">
-            <AttentionSection studentId={student.id} schoolId={student.school_id} />
+            <div className="flex min-w-0 flex-col gap-3">
+              <StatusSection studentId={student.id} />
+              <AttentionSection studentId={student.id} schoolId={student.school_id} />
+            </div>
             <BasicInfoCard student={student} />
           </div>
 
@@ -209,7 +216,7 @@ export default function StudentHubPage() {
             placeholderHeight={280}
             flush
           >
-            <HubProgressPanel studentId={student.id} />
+            <HubProgressPanel />
           </HubSection>
 
           <HubSection
@@ -230,7 +237,7 @@ export default function StudentHubPage() {
             placeholderHeight={240}
             flush
           >
-            <HubDisciplinePanel studentId={student.id} />
+            <HubDisciplinePanel />
           </HubSection>
 
           <HubSection
@@ -241,7 +248,9 @@ export default function StudentHubPage() {
             lazy
             placeholderHeight={320}
           >
-            {/* 面談記録の追加・Notta取込・約束の完了はこの部品が持っている */}
+            {/* 面談記録の追加・Notta取込・約束の完了はこの部品が持っている。
+                ★面談記録は今の状態・気にすることと共有の取得（HubDataContext）とは別に、この部品が自分で取る
+                （部品の中を変えないため、ここだけ二重になるのは承知のうえ。見えてから読み込むので開いた直後は重ならない） */}
             <InterviewList studentId={student.id} schoolId={student.school_id} />
           </HubSection>
 
