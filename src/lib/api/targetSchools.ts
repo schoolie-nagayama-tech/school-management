@@ -1,7 +1,11 @@
 import { supabase } from '../supabase';
 import type { Database } from '@/types/database';
 import { REGION_LABEL, type Region } from '@/lib/interview/region';
-import type { AdmissionRule, AdmissionRuleBody } from '@/lib/interview/privateAdmission';
+import type { AdmissionRule } from '@/lib/interview/privateAdmission';
+import { latestRulesBySchool } from '@/lib/interview/admissionRuleRow';
+
+// ★変換はサーバー（AIヘルプ）からも使うので admissionRuleRow.ts へ移した。既存の呼び出し元のために再輸出する
+export { toAdmissionRule, latestRulesBySchool } from '@/lib/interview/admissionRuleRow';
 
 /**
  * 志望校・高校マスタの読み書き。
@@ -146,51 +150,6 @@ function hensachiOf(rows: HighSchoolStandardRow[]): {
   if (common != null) return { hensachi: common, byGender };
   const values = Array.from(new Set(Object.values(byGender)));
   return { hensachi: values.length === 1 ? values[0] : null, byGender };
-}
-
-/** DBの1行 → 判定ロジックの型。rule（jsonb）の中身は取込スクリプトで形を検めてある */
-export function toAdmissionRule(row: AdmissionRuleDbRow): AdmissionRule {
-  const body = row.rule as unknown as Partial<AdmissionRuleBody>;
-  return {
-    id: row.id,
-    kind: row.kind,
-    examLabel: row.exam_label,
-    publicOnly: row.public_only,
-    applicantScope: row.applicant_scope,
-    gender: row.gender,
-    strength: row.strength,
-    body: {
-      any: body.any ?? [],
-      gates: body.gates ?? [],
-      bonus: body.bonus ?? null,
-      no_criterion: body.no_criterion ?? null,
-    },
-    checks: row.checks ?? [],
-    rawText: row.raw_text,
-    sourceLabel: row.source_label,
-    verifiedAt: row.verified_at,
-    sortOrder: row.sort_order,
-  };
-}
-
-/** 学校ごとに最新年度の基準だけを残す（古い年度は過去の面談の再現用に残してあるだけ） */
-export function latestRulesBySchool(rows: AdmissionRuleDbRow[]): Map<string, AdmissionRule[]> {
-  const latestYear = new Map<string, number>();
-  for (const r of rows) {
-    latestYear.set(
-      r.high_school_id,
-      Math.max(latestYear.get(r.high_school_id) ?? 0, r.source_year)
-    );
-  }
-  const out = new Map<string, AdmissionRule[]>();
-  for (const r of rows) {
-    if (r.source_year !== latestYear.get(r.high_school_id)) continue;
-    const list = out.get(r.high_school_id) ?? [];
-    list.push(toAdmissionRule(r));
-    out.set(r.high_school_id, list);
-  }
-  for (const list of Array.from(out.values())) list.sort((a, b) => a.sortOrder - b.sortOrder);
-  return out;
 }
 
 function toMaster(

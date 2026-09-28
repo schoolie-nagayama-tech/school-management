@@ -62,7 +62,9 @@
 - ④根拠の下: 学校ごとに畳んだ「推薦・併願の条件」（`PrivateAdmissionDetails`）。区分の切り替え・条件ごとの達成・加点・確認事項・原文。
 - ④の話すこと: 「◯◯：併願（公私）の内申の基準は届いている」など（`privateAdmissionTalkLines`）。
 - ④の表（志望校と提案）: 私立の行は「内申めやす」の欄に代表の区分の判定を出す。
-- AIヘルプには私立を載せない（`src/lib/ai/schoolMaster.ts` で公立に絞っている）。プロンプトが「都立・神奈川県立」前提のため。
+- AIヘルプ: 2026-09-28 から私立・国立も答える（区分・コース・男女別偏差値・基準の文）。★基準を示すだけで判定はしない
+  （生徒の情報を送らないため）。決まりは [ai-help-school-lookup.md](ai-help-school-lookup.md) の「私立・国立」。
+  それまでは `schoolMaster.ts` で公立に絞っていた（プロンプトが「都立・神奈川県立」前提だったため）。
 
 モック: `docs/mockups/private-school-judgment.html`
 

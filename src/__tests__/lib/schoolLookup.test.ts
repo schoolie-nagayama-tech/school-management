@@ -5,9 +5,12 @@
  * ★ここで固定しているのは「誤爆しない」「満点の違う数字を混ぜない」「県で語を変える」
  * 「場所で引いても遠い学校を近いと言わない」の4つ。
  *   どれも壊れると、AIが自信たっぷりに間違った数字を案内する。
+ * ★私立・国立（末尾の describe）では「区分を取り違えない」「男女の偏差値を片方に寄せない」
+ *   「基準は示すだけで判定しない」「受けられない区分（都神外生）を渡さない」を固定している。
  */
 import { describe, expect, it } from 'vitest';
 import {
+  establishmentHint,
   findByName,
   findByRange,
   lineAliases,
@@ -15,13 +18,20 @@ import {
   parseAccessStations,
   prefectureHint,
   renderSchools,
+  summarizeHensachi,
+  toAdmissionTexts,
   type SchoolMatch,
 } from '@/lib/ai/schoolLookup';
+import type { AdmissionRule } from '@/lib/interview/privateAdmission';
 
 function school(
   p: Partial<SchoolMatch> & Pick<SchoolMatch, 'prefecture' | 'schoolName'>
 ): SchoolMatch {
   return {
+    establishment: '公立',
+    genderType: null,
+    hensachiByGender: null,
+    admission: [],
     course: '',
     category: '普通科',
     region: null,
@@ -455,7 +465,8 @@ describe('場所で引く（都立だけ）', () => {
   it('神奈川を場所で聞かれたら、データが無いことを伝える本文を渡す（黙らない）', () => {
     const r = matchSchools('横浜駅から近い県立', [...ALL, ...PLACES]);
     expect(r.rows).toEqual([]);
-    expect(renderSchools(r)).toContain('所在地・最寄駅・沿線のデータがまだ');
+    // 神奈川は所在地のデータが後から入ったが、引き当てはまだ東京だけ（schoolLookup.ts 冒頭）
+    expect(renderSchools(r)).toContain('場所の条件（市区町村・駅・沿線）で探せない');
   });
 });
 
@@ -533,5 +544,295 @@ describe('ふだんの言い方で聞かれても引ける（本番の質問ロ�
     expect(lineAliases('東京地下鉄 4号線丸ノ内線')).toContain('丸の内線');
     expect(lineAliases('東日本旅客鉄道 東北線')).toContain('京浜東北線');
     expect(lineAliases('東日本旅客鉄道 赤羽線')).toContain('埼京線');
+  });
+});
+
+// ─────────────────────────────────────────────────────────────
+// 私立・国立（2026-09-28）
+// ─────────────────────────────────────────────────────────────
+
+function rule(
+  p: Partial<AdmissionRule> & Pick<AdmissionRule, 'kind' | 'examLabel'>
+): AdmissionRule {
+  return {
+    id: `r-${p.examLabel}`,
+    publicOnly: false,
+    applicantScope: null,
+    gender: null,
+    strength: null,
+    body: { any: [], gates: [], bonus: null, no_criterion: null },
+    checks: [],
+    rawText: '',
+    sourceLabel: '私立 推薦・一般入試の基準表 テスト版',
+    verifiedAt: null,
+    sortOrder: 0,
+    ...p,
+  };
+}
+
+/** 本番の淑徳巣鴨（特進）の形をもとにした基準（数値はテスト用） */
+const TOKUSHIN_RULES: AdmissionRule[] = [
+  rule({
+    kind: '推薦',
+    examLabel: 'A推薦',
+    body: {
+      any: [[{ t: 'sum', s: '5科', min: 19 }]],
+      gates: [{ t: 'none_le', s: '9科', grade: 1 }],
+      bonus: {
+        max: 3,
+        items: [{ label: '英・漢・数検準2級（各）', points: 1 }],
+      },
+      no_criterion: null,
+    },
+    checks: ['推薦基礎力検査（3科）'],
+    sortOrder: 1,
+  }),
+  // ★東京・神奈川の生徒は受けられない区分。AIに渡してはいけない
+  rule({
+    kind: '併願',
+    examLabel: 'B推薦（併願，都神外生）',
+    applicantScope: '都神外生',
+    body: { any: [[{ t: 'sum', s: '5科', min: 22 }]], gates: [], bonus: null, no_criterion: null },
+    sortOrder: 2,
+  }),
+  rule({
+    kind: '併願',
+    examLabel: '併願（公私）',
+    body: {
+      any: [[{ t: 'sum', s: '5科', min: 22 }], [{ t: 'sum', s: '9科', min: 38 }]],
+      gates: [{ t: 'none_le', s: '9科', grade: 1 }],
+      bonus: null,
+      no_criterion: null,
+    },
+    checks: ['3年次の欠席 各9回以内'],
+    sortOrder: 3,
+  }),
+];
+
+const PRIVATE: SchoolMatch[] = [
+  school({
+    prefecture: '東京都',
+    schoolName: '淑徳巣鴨',
+    establishment: '私立',
+    genderType: '共学',
+    course: '特進',
+    municipality: '豊島区',
+    sourceLabel: 'Vもぎ 私立 テスト版',
+    hensachi: null,
+    hensachiByGender: { 男子: 57, 女子: 60 },
+    verifiedAt: null,
+    admission: toAdmissionTexts(TOKUSHIN_RULES),
+  }),
+  school({
+    prefecture: '東京都',
+    schoolName: '淑徳巣鴨',
+    establishment: '私立',
+    genderType: '共学',
+    course: '選抜',
+    municipality: '豊島区',
+    sourceLabel: 'Vもぎ 私立 テスト版',
+    hensachi: 59,
+    hensachiByGender: { 男子: 59, 女子: 59 },
+    verifiedAt: null,
+    admission: toAdmissionTexts(TOKUSHIN_RULES),
+  }),
+  // 県名と同じ名前の私立（「東京の私立は」で当ててはいけない）
+  school({
+    prefecture: '東京都',
+    schoolName: '東京',
+    establishment: '私立',
+    genderType: '共学',
+    sourceLabel: 'Vもぎ 私立 テスト版',
+    hensachi: 50,
+    hensachiByGender: { 男子: 50, 女子: 50 },
+    verifiedAt: null,
+  }),
+  // 名前に「東京」を含む埼玉の私立（県のヒントで自分自身を落とさない）
+  school({
+    prefecture: '埼玉県',
+    schoolName: '東京農大三',
+    establishment: '私立',
+    genderType: '共学',
+    sourceLabel: 'Vもぎ 私立 テスト版',
+    hensachi: 55,
+    verifiedAt: null,
+  }),
+  // ★架空。公立と同じ名前の私立（両方を区分つきで出すことを確かめる）
+  school({
+    prefecture: '東京都',
+    schoolName: '上野',
+    establishment: '私立',
+    genderType: '女子',
+    course: '普通',
+    sourceLabel: 'Vもぎ 私立 テスト版',
+    hensachi: 52,
+    hensachiByGender: { 女子: 52 },
+    verifiedAt: null,
+  }),
+  // 清瀬駅の近くの私立（架空）。駅の距離は単位なしで入っている
+  school({
+    prefecture: '東京都',
+    schoolName: '清瀬学園',
+    establishment: '私立',
+    genderType: '共学',
+    municipality: '清瀬市',
+    lat: 35.772,
+    lon: 139.52,
+    accessLines: [IKEBUKURO],
+    accessStations: parseAccessStations(['清瀬(300)']),
+    sourceLabel: 'Vもぎ 私立 テスト版',
+    hensachi: 45,
+    verifiedAt: null,
+  }),
+  // 国立（めやすの行が無く、推薦の基準だけがある）
+  school({
+    prefecture: '東京都',
+    schoolName: '筑波大附属',
+    establishment: '国立',
+    sourceLabel: '',
+    sourceYear: 0,
+    verifiedAt: null,
+    admission: toAdmissionTexts([
+      rule({
+        kind: '推薦',
+        examLabel: '推薦',
+        strength: '出願資格',
+        body: {
+          any: [[{ t: 'sum', s: '9科', min: 40 }]],
+          gates: [],
+          bonus: null,
+          no_criterion: null,
+        },
+        verifiedAt: '2026-09-25T00:00:00Z',
+      }),
+    ]),
+  }),
+];
+
+describe('私立・国立', () => {
+  const all = [...ALL, ...PLACES, ...PRIVATE];
+  const rows = (q: string) =>
+    matchSchools(q, all).rows.map(
+      (s) => `${s.establishment} ${s.schoolName}${s.course ? `（${s.course}）` : ''}`
+    );
+
+  it('私立の駅の距離（単位なし「矢部(617)」）もメートルとして読む', () => {
+    expect(parseAccessStations(['矢部(617)', '清瀬(850m)'])).toEqual([
+      { name: '矢部', m: 617 },
+      { name: '清瀬', m: 850 },
+    ]);
+  });
+
+  it('★男女で偏差値が違えば1つに寄せない。同じなら1つ。片方の表だけならその値', () => {
+    expect(
+      summarizeHensachi([
+        { gender: '男子', hensachi: 57 },
+        { gender: '女子', hensachi: 60 },
+      ])
+    ).toEqual({ hensachi: null, byGender: { 男子: 57, 女子: 60 } });
+    expect(
+      summarizeHensachi([
+        { gender: '男子', hensachi: 59 },
+        { gender: '女子', hensachi: 59 },
+      ]).hensachi
+    ).toBe(59);
+    expect(summarizeHensachi([{ gender: '男子', hensachi: 65 }]).hensachi).toBe(65);
+    expect(summarizeHensachi([{ gender: null, hensachi: 69 }])).toEqual({
+      hensachi: 69,
+      byGender: null,
+    });
+  });
+
+  it('★東京・神奈川の生徒が受けられない区分（都神外生）は基準から外す', () => {
+    const texts = toAdmissionTexts(TOKUSHIN_RULES);
+    expect(texts.map((t) => t.heading)).toEqual(['A推薦', '併願（公私）']);
+    expect(texts[1].criterion).toBe('5科22または9科38');
+    expect(texts[1].conditions).toContain('9科に1は不可');
+    expect(texts[1].verified).toBe(false);
+  });
+
+  it('設置区分のヒント。「国立」だけでは区分とみなさない（都立国立・国立市）', () => {
+    expect(establishmentHint('私立で偏差値60')).toEqual(['私立']);
+    expect(establishmentHint('八王子にある都立')).toEqual(['公立']);
+    expect(establishmentHint('国立大附属の推薦')).toEqual(['国立']);
+    expect(establishmentHint('国立の偏差値')).toBe(null);
+  });
+
+  it('学校名で引くと、コースごとの行が全部出る', () => {
+    expect(rows('淑徳巣鴨の偏差値')).toEqual(['私立 淑徳巣鴨（特進）', '私立 淑徳巣鴨（選抜）']);
+  });
+
+  it('★同じ名前の公立と私立は両方出す。「私立」「都立」と言われたらそれだけ', () => {
+    expect(rows('上野の偏差値')).toEqual(['公立 上野', '私立 上野（普通）']);
+    expect(rows('私立の上野の偏差値')).toEqual(['私立 上野（普通）']);
+    expect(rows('都立上野の偏差値')).toEqual(['公立 上野']);
+  });
+
+  it('★県名と同じ名前の私立は「◯◯高」「私立◯◯」の形のときだけ当てる', () => {
+    expect(findByName('東京の私立の入試相談っていつ', all)).toEqual([]);
+    expect(findByName('東京高校の偏差値', all).map((s) => s.schoolName)).toEqual(['東京']);
+  });
+
+  it('★名前に「東京」を含む他県の私立を、県のヒントで落とさない', () => {
+    expect(rows('東京農大三の偏差値')).toEqual(['私立 東京農大三']);
+  });
+
+  it('偏差値の範囲で私立も引く。男女で違う学校はどちらかの表で帯に入れば出す', () => {
+    const r = matchSchools('偏差値60くらいの私立', all);
+    expect(r.rows.map((s) => s.course)).toEqual(['特進', '選抜']);
+    expect(r.conditions.join('／')).toContain('設置区分が 私立');
+    // 都立と言われたら私立を混ぜない
+    expect(findByRange('偏差値57くらいの都立', all).every((s) => s.establishment === '公立')).toBe(
+      true
+    );
+  });
+
+  it('★私立を内申の数字で探そうとしたら、探せないと伝える本文を渡す', () => {
+    const r = matchSchools('内申30で行ける私立は？', all);
+    expect(r.rows).toEqual([]);
+    expect(renderSchools(r)).toContain('私立高校は内申の数字では探せない');
+  });
+
+  it('場所で引くと東京の私立も入る。「都立」と言われたら私立を混ぜない', () => {
+    expect(rows('清瀬駅から近い私立')).toEqual(['私立 清瀬学園']);
+    expect(rows('清瀬駅から近い都立')).not.toContain('私立 清瀬学園');
+    const text = renderSchools(matchSchools('清瀬駅から近い私立', all));
+    expect(text).toContain('清瀬駅まで直線300m');
+  });
+
+  it('★本文: 区分・コース・男女別の偏差値・基準・未突合を書き、受けられない区分は書かない', () => {
+    const t = renderSchools(matchSchools('淑徳巣鴨の併願優遇', all));
+    expect(t).toContain('東京都 私立 淑徳巣鴨（特進）');
+    expect(t).toContain('偏差値 男子57・女子60');
+    expect(t).toContain('偏差値 59');
+    expect(t).toContain('併願（公私）: 内申 5科22または9科38');
+    expect(t).toContain('条件 9科に1は不可');
+    expect(t).toContain('加点 英・漢・数検準2級（各）+1（上限+3）');
+    expect(t).toContain('ほかに確認 3年次の欠席 各9回以内');
+    expect(t).toContain('紙と未突合');
+    expect(t).not.toContain('都神外生');
+    // 判定はしない（生徒の内申は渡していない）
+    expect(t).toContain('判定しない');
+    expect(t).not.toMatch(/届いている|届かない/);
+  });
+
+  it('片方の表しかない学校は、どちらの表かを書く', () => {
+    expect(renderSchools(matchSchools('私立の上野', all))).toContain('偏差値 52（女子の表）');
+  });
+
+  it('公立の行にも区分を書く（従来の数字はそのまま）', () => {
+    const t = renderSchools(matchSchools('日比谷の偏差値', all));
+    expect(t).toContain('東京都 公立 日比谷');
+    expect(t).toContain('換算内申 61/65');
+    // 私立が混ざらないときは私立の読み方の注意を足さない（プロンプトを膨らませない）
+    expect(t).not.toContain('推薦・併願優遇');
+  });
+
+  it('国立はめやすが無くても基準で答える。資料が無いことを書く', () => {
+    const t = renderSchools(matchSchools('筑波大附属の推薦', all));
+    expect(t).toContain('東京都 国立 筑波大附属 偏差値 資料なし');
+    expect(t).toContain('出典: めやすの資料なし');
+    expect(t).toContain('推薦: 内申 9科40（出願資格）');
+    expect(t).not.toMatch(/推薦: .*紙と未突合/);
   });
 });
