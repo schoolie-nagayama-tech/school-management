@@ -28,6 +28,7 @@ import { supabase } from '@/lib/supabase';
 import type { ClassReport } from '@/types/class-report';
 import { ChevronLeft, ChevronRight, FileText } from 'lucide-react';
 import { formatGradeLabel } from '@/lib/utils/gradeLabel';
+import { attachSubjectNames } from '@/lib/lesson-reports/reportSubjectNames';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = supabase as any;
@@ -37,38 +38,6 @@ interface StudentInfo {
   last_name: string;
   first_name: string;
   grade: number;
-}
-
-/** subject_ids から最初の科目名を取得するための補助マップ生成 */
-async function fetchSubjectsMap(subjectIds: string[]): Promise<Map<string, string>> {
-  if (subjectIds.length === 0) return new Map();
-  const { data } = await db.from('subjects').select('id, name').in('id', subjectIds);
-  const m = new Map<string, string>();
-  for (const s of (data || []) as { id: string; name: string }[]) m.set(s.id, s.name);
-  return m;
-}
-
-/** schedule_entries の subject_ids を一括取得して報告書ごとに科目名を引けるようにする */
-async function attachSubjectNames(reports: ClassReport[]): Promise<Map<string, string>> {
-  if (reports.length === 0) return new Map();
-  const entryIds = reports.map((r) => r.schedule_entry_id);
-  const { data } = await db.from('schedule_entries').select('id, subject_ids').in('id', entryIds);
-  type EntryRow = { id: string; subject_ids: string[] };
-  const entryMap = new Map<string, string[]>();
-  for (const e of (data || []) as EntryRow[]) {
-    entryMap.set(e.id, e.subject_ids || []);
-  }
-  // 全 subject_id を集める
-  const allSubjectIds = Array.from(new Set(Array.from(entryMap.values()).flat()));
-  const subjectsMap = await fetchSubjectsMap(allSubjectIds);
-  // 報告書ID → 科目名一覧
-  const result = new Map<string, string>();
-  for (const r of reports) {
-    const subIds = entryMap.get(r.schedule_entry_id) ?? [];
-    const names = subIds.map((id) => subjectsMap.get(id)).filter((n): n is string => !!n);
-    result.set(r.id, names.join('・') || 'その他');
-  }
-  return result;
 }
 
 export default function StudentLessonReportsPage() {

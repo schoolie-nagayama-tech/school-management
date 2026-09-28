@@ -186,6 +186,35 @@ export async function getRecentUnprocessedResponses(
   return (data || []) as FormResponseWithStudent[];
 }
 
+/**
+ * 生徒1人に紐付いたフォーム回答（申込の履歴）を新しい順に取得する。生徒ハブの「申込状況」用。
+ *
+ * ★教室では絞らない。回答の school_id は申込時の教室なので、転籍した生徒の過去の申込も
+ *   その生徒の履歴として出す（予定表を教室で絞らないのと同じ判断）。
+ * ★必ず linked_student_id で絞る。getFormResponses のように教室全体を引くと、
+ *   未ページングの .select() が1000行で静かに切れる範囲に入る。生徒1人なら数十行に収まるので、
+ *   ここはページングせず上限だけ付ける。
+ * アーカイブ済みは申込一覧の既定表示と同じく外す。
+ */
+export async function getFormResponsesByStudent(
+  studentId: string,
+  limit = 100
+): Promise<FormResponse[]> {
+  const { data, error } = await supabase
+    .from('form_responses')
+    .select('*')
+    .eq('linked_student_id', studentId)
+    .eq('is_archived', false)
+    .order('created_at', { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    throw new Error(`申込の履歴の取得に失敗しました: ${error.message}`);
+  }
+
+  return (data || []) as FormResponse[];
+}
+
 // 以下は既存のコードと同じ
 /**
  * フォーム回答を1件取得
