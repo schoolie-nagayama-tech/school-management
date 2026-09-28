@@ -156,6 +156,74 @@ export function mastersForSlot(
   return masterRows.filter((r) => ((r.establishment ?? '公立') === '公立') === isPublic);
 }
 
+/** 旧字体→新字体（学校名に出てくるものだけ） */
+const OLD_KANJI: Record<string, string> = {
+  國: '国',
+  學: '学',
+  應: '応',
+  澤: '沢',
+  櫻: '桜',
+  濱: '浜',
+  廣: '広',
+  邊: '辺',
+  齋: '斎',
+  髙: '高',
+  會: '会',
+  眞: '真',
+};
+const KANJI_DIGIT: Record<string, string> = {
+  '1': '一',
+  '2': '二',
+  '3': '三',
+  '4': '四',
+  '5': '五',
+};
+/**
+ * 大学名の略し方。★長い書き方→短い書き方の向きにだけ寄せる（マスタにも模試にも両方の書き方がある）。
+ *   「大学」は先に「大」にしてあるので、ここでは「◯◯大」で書く。
+ */
+const UNIVERSITY_ABBR: readonly [string, string][] = [
+  ['日本女子体育大', '日女体大'],
+  ['日本体育大', '日体大'],
+  ['日本大', '日大'],
+  ['早稲田大', '早大'],
+  ['明治大', '明大'],
+  ['中央大', '中大'],
+  ['東京農業大', '東京農大'],
+  ['芝浦工業大', '芝浦工大'],
+  ['日本工業大', '日本工大'],
+];
+
+/**
+ * 学校名の表記ゆれをならした「当てるための鍵」。画面には出さない。
+ *
+ * ★マスタ自体が「附属／付属／附」「慶応／慶應」「日体大／日本体育大」「國學院／国学院」と
+ *   書き方がそろっていない（冊子ごとに書き方が違うのをそのまま入れたため）。模試の書き方も分からない。
+ *   なので、完全一致で当たらなかったときだけこの鍵で当てる。
+ * ★ならすのは「同じ学校の別の書き方」と言い切れるものだけ。「学園」「女子」など、
+ *   外すと別の学校と同じになりうる語は触らない。
+ */
+export function schoolNameKey(name: string): string {
+  let s = normalizeText(name)
+    .trim()
+    // 「明大付属世田谷（日本学園）」の旧校名など、括弧の中は外す
+    .replace(/[（(][^）)]*[）)]/g, '')
+    .replace(/\s+/g, '')
+    .replace(/[國學應澤櫻濱廣邊齋髙會眞]/g, (c) => OLD_KANJI[c] ?? c)
+    .replace(/第([1-5])/g, (_, d: string) => `第${KANJI_DIGIT[d]}`)
+    .replace(/大学/g, '大')
+    .replace(/附属|付属|付/g, '附');
+  for (const [long, short] of UNIVERSITY_ABBR) s = s.split(long).join(short);
+  return s;
+}
+
+/** 学科・コースの鍵。末尾の「科」「コース」を外す（「特進コース」と「特進」を同じにする） */
+function courseKey(course: string): string {
+  return normalizeText(course)
+    .trim()
+    .replace(/(コース|科)$/, '');
+}
+
 export interface MockSchoolMatch {
   /** マスタに当たればマスタの学校名、当たらなければ模試の学校名（冠・「高校」を外したもの） */
   schoolName: string;
@@ -189,11 +257,17 @@ export function matchMockSchoolName(
   };
   if (!school) return fallback;
 
-  const sameName = masterRows.filter((r) => normalizeText(r.school_name).trim() === school);
+  // ★まず書かれたままの名前で当てる。当たらなければ表記ゆれをならした名前で当てる（schoolNameKey）
+  let sameName = masterRows.filter((r) => normalizeText(r.school_name).trim() === school);
+  if (sameName.length === 0) {
+    const key = schoolNameKey(school);
+    sameName = masterRows.filter((r) => schoolNameKey(r.school_name) === key);
+  }
   if (sameName.length === 0) return fallback;
 
-  const courseOf = (r: HighSchoolKeyRow) => normalizeText(r.course).trim().replace(/科$/, '');
-  let candidates = sameName.filter((r) => courseOf(r) === dept);
+  const courseOf = (r: HighSchoolKeyRow) => courseKey(r.course);
+  const deptKey = courseKey(dept);
+  let candidates = sameName.filter((r) => courseOf(r) === deptKey);
   if (candidates.length === 0 && dept === '') {
     // 学科を書いていない。その学校（都県ごと）の行が1つしか無いときだけ当てる
     const home = sameName.filter((r) => r.prefecture === preferPrefecture);
