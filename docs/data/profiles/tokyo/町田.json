@@ -1,0 +1,675 @@
+{
+  "prefecture": "東京都",
+  "school_name": "町田",
+  "official_url": "https://www.metro.ed.jp/machida-h/",
+  "researched_at": "2026-09-28",
+  "stats": [
+    {
+      "metric": "designation",
+      "item": "進学指導特別推進校",
+      "fiscal_year": 2025,
+      "value_text": "東京都教育委員会指定",
+      "source_url": "https://www.metro.ed.jp/machida-h/assets/filelink/filelink-pdffile-34721.pdf",
+      "source_label": "町田高校 令和7年度 学校経営報告",
+      "as_of": "2026-03-31",
+      "note": ""
+    },
+    {
+      "metric": "designation",
+      "item": "東京都国際交流リーディング校",
+      "fiscal_year": 2025,
+      "value_text": "東京都教育委員会指定",
+      "source_url": "https://www.metro.ed.jp/machida-h/assets/filelink/filelink-pdffile-34721.pdf",
+      "source_label": "町田高校 令和7年度 学校経営報告",
+      "as_of": "2026-03-31",
+      "note": ""
+    },
+    {
+      "metric": "designation",
+      "item": "海外学校間交流推進校",
+      "fiscal_year": 2025,
+      "value_text": "東京都教育委員会指定",
+      "source_url": "https://www.metro.ed.jp/machida-h/our_school/pamphlet.html",
+      "source_label": "町田高校 令和9年度学校案内パンフレット",
+      "as_of": "2026-09",
+      "note": ""
+    },
+    {
+      "metric": "designation",
+      "item": "体育健康教育推進校",
+      "fiscal_year": 2025,
+      "value_text": "東京都教育委員会指定",
+      "source_url": "https://www.metro.ed.jp/machida-h/our_school/pamphlet.html",
+      "source_label": "町田高校 令和9年度学校案内パンフレット",
+      "as_of": "2026-09",
+      "note": ""
+    },
+    {
+      "metric": "designation",
+      "item": "Tokyo Metropolitan Global Education Network School for English Education（GE-NET EE）",
+      "fiscal_year": 2025,
+      "value_text": "東京都教育委員会指定",
+      "source_url": "https://www.metro.ed.jp/machida-h/assets/filelink/filelink-pdffile-34721.pdf",
+      "source_label": "町田高校 令和7年度 学校経営報告",
+      "as_of": "2026-03-31",
+      "note": ""
+    },
+    {
+      "metric": "designation",
+      "item": "AIを活用した英語教育の充実事業",
+      "fiscal_year": 2025,
+      "value_text": "実施校",
+      "source_url": "https://www.metro.ed.jp/machida-h/our_school/pamphlet.html",
+      "source_label": "町田高校 令和9年度学校案内パンフレット",
+      "as_of": "2026-09",
+      "note": ""
+    },
+    {
+      "metric": "designation",
+      "item": "理数研究拠点校",
+      "fiscal_year": 2025,
+      "value_text": "東京都教育委員会指定",
+      "source_url": "https://www.metro.ed.jp/machida-h/our_school/pamphlet.html",
+      "source_label": "町田高校 令和9年度学校案内パンフレット",
+      "as_of": "2026-09",
+      "note": ""
+    },
+    {
+      "metric": "designation",
+      "item": "高等学校DX加速化推進事業",
+      "fiscal_year": 2025,
+      "value_text": "文部科学省指定（DXハイスクール実施校）",
+      "source_url": "https://www.metro.ed.jp/machida-h/our_school/pamphlet.html",
+      "source_label": "町田高校 令和9年度学校案内パンフレット",
+      "as_of": "2026-09",
+      "note": ""
+    },
+    {
+      "metric": "university_count",
+      "item": "国公立",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 49,
+      "source_url": "https://www.metro.ed.jp/machida-h/assets/filelink/filelink-pdffile-34721.pdf",
+      "source_label": "町田高校 令和7年度 学校経営報告",
+      "as_of": "2026-03-31",
+      "note": "学校が集計した数値を採用。大学別合格者数表（2026集計）の国立現役29名＋公立現役21名＝50名とは1名の差があり、conflictsに記載"
+    },
+    {
+      "metric": "university_count",
+      "item": "早慶上理",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 52,
+      "source_url": "https://www.metro.ed.jp/machida-h/assets/filelink/filelink-pdffile-34721.pdf",
+      "source_label": "町田高校 令和7年度 学校経営報告",
+      "as_of": "2026-03-31",
+      "note": "大学別合格者数表（2026集計、現役合計）の早稲田18・慶應14・上智13・東京理科7＝52名と一致"
+    },
+    {
+      "metric": "university_count",
+      "item": "GMARCH",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 203,
+      "source_url": "https://www.metro.ed.jp/machida-h/assets/filelink/filelink-pdffile-34721.pdf",
+      "source_label": "町田高校 令和7年度 学校経営報告",
+      "as_of": "2026-03-31",
+      "note": "学校が集計した数値を採用。大学別合格者数表（2026集計）の学習院7＋明治55＋青山学院22＋立教26＋中央60＋法政34＝204名とは1名の差があり、conflictsに記載"
+    },
+    {
+      "metric": "university_count",
+      "item": "成成明武",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 69,
+      "source_url": "https://www.metro.ed.jp/machida-h/assets/filelink/filelink-pdffile-24965.pdf",
+      "source_label": "町田高校 過去3年間の大学・短大・大学校合格者数（2026集計）",
+      "as_of": "2026-09",
+      "note": "大学別の表から合算（成蹊20＋成城22＋明治学院21＋武蔵6、現役）"
+    },
+    {
+      "metric": "university_count",
+      "item": "日東駒専",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 143,
+      "source_url": "https://www.metro.ed.jp/machida-h/assets/filelink/filelink-pdffile-24965.pdf",
+      "source_label": "町田高校 過去3年間の大学・短大・大学校合格者数（2026集計）",
+      "as_of": "2026-09",
+      "note": "大学別の表から合算（日本43＋東洋36＋駒澤31＋専修33、現役）"
+    },
+    {
+      "metric": "university_count",
+      "item": "合計",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 835,
+      "source_url": "https://www.metro.ed.jp/machida-h/assets/filelink/filelink-pdffile-24965.pdf",
+      "source_label": "町田高校 過去3年間の大学・短大・大学校合格者数（2026集計）",
+      "as_of": "2026-09",
+      "note": "大学別合格者数表（2026集計）の総計・現役の値（延べ人数、既卒89名を含まず）"
+    },
+    {
+      "metric": "university_count",
+      "item": "中央",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 64,
+      "source_url": "https://www.metro.ed.jp/machida-h/assets/filelink/filelink-pdffile-24965.pdf",
+      "source_label": "町田高校 過去3年間の大学・短大・大学校合格者数（2026集計）",
+      "as_of": "2026-09",
+      "note": "現役60・既卒4の合計。大学別合格者数上位のため掲載"
+    },
+    {
+      "metric": "university_count",
+      "item": "明治",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 60,
+      "source_url": "https://www.metro.ed.jp/machida-h/assets/filelink/filelink-pdffile-24965.pdf",
+      "source_label": "町田高校 過去3年間の大学・短大・大学校合格者数（2026集計）",
+      "as_of": "2026-09",
+      "note": "現役55・既卒5の合計。大学別合格者数上位のため掲載"
+    },
+    {
+      "metric": "university_count",
+      "item": "日本",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 50,
+      "source_url": "https://www.metro.ed.jp/machida-h/assets/filelink/filelink-pdffile-24965.pdf",
+      "source_label": "町田高校 過去3年間の大学・短大・大学校合格者数（2026集計）",
+      "as_of": "2026-09",
+      "note": "現役43・既卒7の合計。大学別合格者数上位のため掲載"
+    },
+    {
+      "metric": "university_count",
+      "item": "法政",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 39,
+      "source_url": "https://www.metro.ed.jp/machida-h/assets/filelink/filelink-pdffile-24965.pdf",
+      "source_label": "町田高校 過去3年間の大学・短大・大学校合格者数（2026集計）",
+      "as_of": "2026-09",
+      "note": "現役34・既卒5の合計。大学別合格者数上位のため掲載"
+    },
+    {
+      "metric": "university_count",
+      "item": "東洋",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 37,
+      "source_url": "https://www.metro.ed.jp/machida-h/assets/filelink/filelink-pdffile-24965.pdf",
+      "source_label": "町田高校 過去3年間の大学・短大・大学校合格者数（2026集計）",
+      "as_of": "2026-09",
+      "note": "現役36・既卒1の合計。大学別合格者数上位のため掲載"
+    },
+    {
+      "metric": "club_join_rate",
+      "fiscal_year": 2025,
+      "value_num": 93.5,
+      "source_url": "https://www.metro.ed.jp/machida-h/assets/filelink/filelink-pdffile-34721.pdf",
+      "source_label": "町田高校 令和7年度 学校経営報告",
+      "as_of": "2026-03-31",
+      "note": "前年度92.0%"
+    },
+    {
+      "metric": "satisfaction",
+      "item": "生徒:学校生活",
+      "fiscal_year": 2025,
+      "value_num": 91.1,
+      "source_url": "https://www.metro.ed.jp/machida-h/assets/filelink/filelink-pdffile-34721.pdf",
+      "source_label": "町田高校 令和7年度 学校経営報告",
+      "as_of": "2026-03-31",
+      "note": "学校評価アンケート「入学満足度」の肯定的評価。前年度88.1%"
+    },
+    {
+      "metric": "satisfaction",
+      "item": "保護者:学校生活",
+      "fiscal_year": 2025,
+      "value_num": 96,
+      "source_url": "https://www.metro.ed.jp/machida-h/assets/filelink/filelink-pdffile-34721.pdf",
+      "source_label": "町田高校 令和7年度 学校経営報告",
+      "as_of": "2026-03-31",
+      "note": "学校評価アンケート「入学満足度」の肯定的評価。前年度97.0%"
+    },
+    {
+      "metric": "satisfaction",
+      "item": "生徒:授業",
+      "fiscal_year": 2025,
+      "value_num": 74.6,
+      "source_url": "https://www.metro.ed.jp/machida-h/assets/filelink/filelink-pdffile-34721.pdf",
+      "source_label": "町田高校 令和7年度 学校経営報告",
+      "as_of": "2026-03-31",
+      "note": "生徒による授業評価アンケートの満足度肯定的評価。前年度72.7%"
+    },
+    {
+      "metric": "exam_ratio",
+      "item": "推薦",
+      "fiscal_year": 2026,
+      "value_num": 1.78,
+      "source_url": "https://www.metro.ed.jp/machida-h/assets/filelink/filelink-pdffile-34721.pdf",
+      "source_label": "町田高校 令和7年度 学校経営報告",
+      "as_of": "2026-03-31",
+      "note": "資料の表記は「推薦に基づく選抜募集倍率」（応募倍率を指すとみられるが明記なし）。前年度1.80倍"
+    },
+    {
+      "metric": "uniform",
+      "fiscal_year": 2025,
+      "value_text": "制服なし（自由な服装で登校）",
+      "source_url": "https://www.metro.ed.jp/machida-h/school_life/symbols.html",
+      "source_label": "町田高校 制服・校章・校歌",
+      "as_of": "2026-09",
+      "note": ""
+    },
+    {
+      "metric": "rules_summary",
+      "fiscal_year": 2025,
+      "value_text": "アルバイトは原則禁止（家庭の事情等やむを得ない場合のみ保護者同伴で確認し担任に相談）。自転車通学はヘルメット着用必須・町田駅からの自転車通学は不可。自動車・オートバイ通学禁止。頭髪規定は2025年度に撤廃。スマートフォンの校内利用に関する規定は記載なし。",
+      "source_url": "https://www.metro.ed.jp/machida-h/assets/2025生徒心得_.pdf",
+      "source_label": "町田高校 2025生徒心得",
+      "as_of": "2025-04",
+      "note": "頭髪規定撤廃は学校経営報告（生活指導）にも記載"
+    }
+  ],
+  "clubs": [
+    {
+      "name": "硬式野球部",
+      "kind": "運動",
+      "tier": 3,
+      "tier_basis": "直近3年の西東京大会で最も勝ち進んだのは2023年夏の4回戦敗退（2・3回戦は勝利）。2024・2025年夏はいずれも3回戦敗退（2回戦は勝利）。春・秋は初戦〜2回戦での敗退が続く（一球速報）",
+      "source_url": "https://www.metro.ed.jp/machida-h/activities/club_01/index.html",
+      "as_of": "2026-09-28",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "第105回全国高等学校野球選手権記念西東京大会",
+          "level": "都県",
+          "result": "3勝して4回戦敗退（4-8明大中野八王子）",
+          "happened_on": "2023-07-18",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=12035&year=2023"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "第106回全国高等学校野球選手権西東京大会",
+          "level": "都県",
+          "result": "2勝して3回戦敗退（1-13府中工）",
+          "happened_on": "2024-07-14",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=12035&year=2024"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第107回全国高等学校野球選手権西東京大会",
+          "level": "都県",
+          "result": "2勝して3回戦敗退（2-8武蔵野北）",
+          "happened_on": "2025-07-18",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=12035&year=2025"
+        }
+      ]
+    },
+    {
+      "name": "サッカー部",
+      "kind": "運動",
+      "days_note": "火・水・木・金　原則土日どちらか",
+      "days_per_week": 5,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "サッカー部は所属リーグで判定。2026年度 高円宮杯U-18東京リーグ T1〜T5のいずれにも町田高校の登録がなく、支部リーグ所属",
+      "source_url": "https://www.tleague-u18.com/team.php?dy=2026&dt=1",
+      "as_of": "2026-09-28"
+    },
+    {
+      "name": "硬式テニス部",
+      "kind": "運動",
+      "days_note": "週５日",
+      "days_per_week": 5,
+      "tier": 2,
+      "tier_basis": "2024年度 第13回関東公立高等学校テニス選手権大会（男子）でベスト8（公立限定大会のため1段低く判定）。2025年度 第69回都立対抗テニス大会（女子）でベスト8（都立限定大会のため1段低く判定）",
+      "source_url": "https://www.metro.ed.jp/machida-h/activities/club_03/index.html",
+      "as_of": "2026-09-28",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "第13回関東公立高等学校テニス選手権大会（男子）",
+          "level": "関東",
+          "result": "ベスト8（2位リーグで3敗）",
+          "happened_on": "2024-08-13",
+          "source_url": "https://www.metro.ed.jp/machida-h/activities/2024/09/13.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第69回都立対抗テニス大会（女子）",
+          "level": "都県",
+          "result": "都立全94チーム中ベスト8（準々決勝で0-5国立）",
+          "happened_on": "2025-07-21",
+          "source_url": "https://www.metro.ed.jp/machida-h/activities/2025/09/16_1.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第69回都立対抗テニス大会（男子）",
+          "level": "都県",
+          "result": "都立全119チーム中ベスト16（4回戦で2-3国立）",
+          "happened_on": "2025-07-21",
+          "source_url": "https://www.metro.ed.jp/machida-h/activities/2025/09/16_1.html"
+        }
+      ]
+    },
+    {
+      "name": "男子バスケットボール部",
+      "kind": "運動",
+      "days_note": "月曜日トレーニング・火曜日トレーニング・水曜日off・木曜日体育館(18:00まで)・金曜日体育館・土曜日または日曜日練習や試合、大会など",
+      "days_per_week": 5,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2025年度 春季関東大会東京都予選でベスト32（5回戦で64-91世田谷学園）。町田市総合大会（市内大会）は優勝",
+      "source_url": "https://www.metro.ed.jp/machida-h/activities/club_04/index.html",
+      "as_of": "2026-09-28",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "春季東京都高等学校バスケットボール大会（関東大会東京都予選）",
+          "level": "都県",
+          "result": "都ベスト32（5回戦で45-91世田谷学園）",
+          "happened_on": "2025-04-29",
+          "source_url": "https://www.metro.ed.jp/machida-h/activities/2025/06/16.html"
+        }
+      ]
+    },
+    {
+      "name": "女子バスケットボール部",
+      "kind": "運動",
+      "days_note": "月曜日外コート・火曜日体育館・水曜日OFF・木曜日外コート・金曜日体育館・土曜日練習/練習試合・日曜日大会orOFF",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "総体予選・関東大会都予選とも初戦〜2回戦で敗退（都大会上位進出の記載なし）",
+      "source_url": "https://www.metro.ed.jp/machida-h/activities/club_05/index.html",
+      "as_of": "2026-09-28",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "春季東京都高等学校女子バスケットボール大会（関東大会東京都予選）",
+          "level": "都県",
+          "result": "2回戦敗退（64-81国士舘）",
+          "happened_on": "2024-05-01",
+          "source_url": "https://www.metro.ed.jp/machida-h/activities/2024/05/clubentry_4.html"
+        }
+      ]
+    },
+    {
+      "name": "バドミントン部",
+      "kind": "運動",
+      "days_note": "月曜日17:00まで(体育館)・火曜日オフ・水曜日18:00まで(体育館)・木曜日17:00まで(外練、ミーティング)・金曜日17:00まで(外練、ミーティング)・休日は体育館割で決定",
+      "days_per_week": 5,
+      "weekend": "土日",
+      "tier": 2,
+      "tier_basis": "2025年度 国公立大会（都内公立限定、公立限定のため1段低く判定）で男子団体がベスト8。関東公立大会（男子団体）に東京都代表として本大会出場",
+      "source_url": "https://www.metro.ed.jp/machida-h/activities/club_06/index.html",
+      "as_of": "2026-09-28",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "国公立大会（男子団体）",
+          "level": "都県",
+          "result": "ベスト8（予選リーグ2位通過後、決勝トーナメント進出）",
+          "happened_on": "2026-02-16",
+          "source_url": "https://www.metro.ed.jp/machida-h/activities/2026/02/16_2.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "国公立大会（女子団体）",
+          "level": "都県",
+          "result": "ベスト16",
+          "happened_on": "2026-02-16",
+          "source_url": "https://www.metro.ed.jp/machida-h/activities/2026/02/16_2.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "関東公立大会（男子団体）",
+          "level": "関東",
+          "result": "東京都代表として本大会に出場、1回戦敗退（25位決定戦へ）",
+          "source_url": "https://www.metro.ed.jp/machida-h/activities/2026/01/clubentry_73.html"
+        }
+      ]
+    },
+    {
+      "name": "男子バレーボール部",
+      "kind": "運動",
+      "days_note": "月・火・水・木　原則土日どちらか",
+      "days_per_week": 5,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "夏季都立大会（都立限定）は1勝1敗で敗退。インターハイ予選・関東大会予選とも都大会上位進出の記載なし",
+      "source_url": "https://www.metro.ed.jp/machida-h/activities/club_07/index.html",
+      "as_of": "2026-09-28"
+    },
+    {
+      "name": "女子バレーボール部",
+      "kind": "運動",
+      "days_note": "週６日。月曜日トレーニング・火曜日体育館(18時まで)・水曜日off・木曜日体育館・金曜日トレーニング・土日曜日体育館割により決定",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "都総体・国体都予選・新人戦・春季大会予選に出場（上位進出の記載なし）",
+      "source_url": "https://www.metro.ed.jp/machida-h/activities/club_08/index.html",
+      "as_of": "2026-09-28"
+    },
+    {
+      "name": "卓球部",
+      "kind": "運動",
+      "days_note": "週５日",
+      "days_per_week": 5,
+      "tier": 3,
+      "tier_basis": "2026年度国公立大会で男子シングルス5回戦進出（最高）・女子シングルス3回戦進出が最高。都大会でのベスト8等の記載なし",
+      "source_url": "https://www.metro.ed.jp/machida-h/activities/club_09/index.html",
+      "as_of": "2026-09-28"
+    },
+    {
+      "name": "陸上競技部",
+      "kind": "運動",
+      "days_note": "月火金16時〜17時、木・日は休み、土は午前or午後",
+      "days_per_week": 4,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "令和7年度は東京都総合体育大会・東京都新人大会・東京都駅伝に出場（上位順位の記載なし）",
+      "source_url": "https://www.metro.ed.jp/machida-h/activities/club_10/index.html",
+      "as_of": "2026-09-28"
+    },
+    {
+      "name": "水泳部",
+      "kind": "運動",
+      "days_note": "月、火、木、金、（土日・・・各時期の大会に出場）",
+      "days_per_week": 4,
+      "weekend": "試合のみ",
+      "tier": 3,
+      "tier_basis": "三多摩大会・西東京国公立大会・都大会等に出場（上位順位の記載なし）",
+      "source_url": "https://www.metro.ed.jp/machida-h/activities/club_11/index.html",
+      "as_of": "2026-09-28"
+    },
+    {
+      "name": "剣道部",
+      "kind": "運動",
+      "days_note": "火・水・金・土（大会等があれば日曜日もあります。）",
+      "days_per_week": 4,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "令和6年度インターハイ予選第四支部大会に出場（上位進出の記載なし）",
+      "source_url": "https://www.metro.ed.jp/machida-h/activities/club_12/index.html",
+      "as_of": "2026-09-28"
+    },
+    {
+      "name": "バトントワリング部",
+      "kind": "運動",
+      "days_note": "月、火、水、金、土",
+      "days_per_week": 5,
+      "weekend": "土",
+      "tier": 2,
+      "tier_basis": "2024・2025年度 バトントワーリング関東大会に出場（2024年度26位、2025年度銀賞）。出場校の多い大会で上位の成績は2025年度の1回のため段階2（見直しで1→2）",
+      "source_url": "https://www.metro.ed.jp/machida-h/activities/club_13/index.html",
+      "as_of": "2026-09-28",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "第59回バトントワーリング関東大会",
+          "level": "関東",
+          "result": "26位",
+          "happened_on": "2024-10-19",
+          "source_url": "https://www.metro.ed.jp/machida-h/activities/2024/11/clubentry_34.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第60回バトントワーリング関東大会",
+          "level": "関東",
+          "result": "銀賞",
+          "happened_on": "2025-10-05",
+          "source_url": "https://www.metro.ed.jp/machida-h/activities/2025/10/clubentry_61.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第40回東京都高等学校バトン連盟新人戦大会",
+          "level": "都県",
+          "result": "2年生Aチーム9位（銀賞）、1年生Bチーム14位（銀賞）",
+          "happened_on": "2026-03-24",
+          "source_url": "https://www.metro.ed.jp/machida-h/activities/2026/04/clubentry_83.html"
+        }
+      ]
+    },
+    {
+      "name": "ダンス部",
+      "kind": "運動",
+      "days_note": "月・火・水・木　原則土日のどちらか",
+      "days_per_week": 5,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2026年3月、民間主催「日本高校ダンス部選手権」春の公式大会・新人戦（1年生のみの特別枠）で東日本大会に出場（順位の記載なし）",
+      "source_url": "https://www.metro.ed.jp/machida-h/activities/club_14/index.html",
+      "as_of": "2026-09-28"
+    },
+    {
+      "name": "山岳部",
+      "kind": "運動",
+      "days_note": "週２日",
+      "days_per_week": 2,
+      "source_url": "https://www.metro.ed.jp/machida-h/activities/club_15/index.html",
+      "as_of": "2026-09-28"
+    },
+    {
+      "name": "吹奏楽部",
+      "kind": "文化",
+      "days_note": "月・火・水・金・土",
+      "days_per_week": 5,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "コンクールを目標に活動（直近の受賞・代表選出の記載なし）",
+      "source_url": "https://www.metro.ed.jp/machida-h/activities/club_16/index.html",
+      "as_of": "2026-09-28"
+    },
+    {
+      "name": "管弦楽部",
+      "kind": "文化",
+      "days_note": "週５日",
+      "days_per_week": 5,
+      "tier": 3,
+      "tier_basis": "東京都高等学校文化祭音楽部門第6地区の秋の地区大会に出場（受賞・代表選出の記載なし）",
+      "source_url": "https://www.metro.ed.jp/machida-h/activities/club_17/index.html",
+      "as_of": "2026-09-28"
+    },
+    {
+      "name": "美術部",
+      "kind": "文化",
+      "days_note": "週４日",
+      "days_per_week": 4,
+      "tier": 3,
+      "tier_basis": "東京都高等学校文化祭美術・工芸部門の中央展に出品（展示型の都大会への出品のみで、上位受賞の記載なし）",
+      "source_url": "https://www.metro.ed.jp/machida-h/activities/club_18/index.html",
+      "as_of": "2026-09-28"
+    },
+    {
+      "name": "陶芸部",
+      "kind": "文化",
+      "days_note": "火曜日と木曜日",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日は週2日（火・木）で、大会出場・実績の記載なし",
+      "source_url": "https://www.metro.ed.jp/machida-h/activities/club_19/index.html",
+      "as_of": "2026-09-28"
+    },
+    {
+      "name": "演劇部",
+      "kind": "文化",
+      "days_note": "月・火・木・金(大会前は土日あり)",
+      "days_per_week": 4,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2024・2025年度とも東京都高等学校演劇連盟多摩南地区大会で奨励賞（地区大会の奨励賞のため段階3）",
+      "source_url": "https://www.metro.ed.jp/machida-h/activities/club_20/index.html",
+      "as_of": "2026-09-28"
+    },
+    {
+      "name": "茶生花部",
+      "kind": "文化",
+      "days_note": "月・水・金",
+      "days_per_week": 3,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日は週3日（月・水・金）で、大会出場・実績の記載なし",
+      "source_url": "https://www.metro.ed.jp/machida-h/activities/club_21/index.html",
+      "as_of": "2026-09-28"
+    },
+    {
+      "name": "和太鼓部",
+      "kind": "文化",
+      "days_note": "月・水・木・金・(土)・(日)",
+      "days_per_week": 5,
+      "weekend": "土日",
+      "source_url": "https://www.metro.ed.jp/machida-h/activities/club_22/index.html",
+      "as_of": "2026-09-28"
+    },
+    {
+      "name": "生物部",
+      "kind": "文化",
+      "days_note": "月・木",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "source_url": "https://www.metro.ed.jp/machida-h/activities/club_23/index.html",
+      "as_of": "2026-09-28"
+    },
+    {
+      "name": "軽音楽同好会",
+      "kind": "同好会",
+      "source_url": "https://www.metro.ed.jp/machida-h/activities/club_24/index.html",
+      "as_of": "2026-09-28"
+    },
+    {
+      "name": "パソコン同好会",
+      "kind": "同好会",
+      "days_note": "月・火・木・金",
+      "days_per_week": 4,
+      "weekend": "なし",
+      "source_url": "https://www.metro.ed.jp/machida-h/activities/club_25/index.html",
+      "as_of": "2026-09-28"
+    }
+  ],
+  "designated_universities": [],
+  "events": [
+    {
+      "kind": "その他",
+      "period_label": "2025年度から",
+      "summary": "校則の見直しにより頭髪規定を撤廃した",
+      "source_url": "https://www.metro.ed.jp/machida-h/assets/filelink/filelink-pdffile-34721.pdf"
+    }
+  ],
+  "unresolved": [
+    "指定校推薦の大学一覧：公式サイト・学校案内パンフレットに掲載なし（進路ページ・パンフレットを確認したが該当箇所なし）",
+    "career_decided_rate（進路決定率）：学校経営報告に単一の進路決定率の数値記載なし",
+    "students（男女別生徒数）：学校経営報告・パンフレットとも男女別人数の公表なし",
+    "学級増減（2020年度以降）：東京都教育委員会「第一学年生徒の募集人員等について」の発表内容を確認できず未記載",
+    "軽音楽同好会・パソコン同好会の詳しい活動日：公式サイトに具体的な曜日の記載がない、またはあっても年度による変動が大きく確認できず"
+  ],
+  "conflicts": [
+    "現役国公立大学合格者数：学校経営報告（令和7年度）は49名、パンフレット（令和9年度学校案内）は「令和8年国公立現役合格51名」、大学別合格者数表（2026集計）を国立29名＋公立21名で合算すると50名で、3資料とも異なる",
+    "現役GMARCH合格者数：学校経営報告は203名、大学別合格者数表（2026集計）を学習院・明治・青山学院・立教・中央・法政で合算すると204名で1名の差がある"
+  ]
+}

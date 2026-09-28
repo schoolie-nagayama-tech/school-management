@@ -1,0 +1,659 @@
+{
+  "prefecture": "東京都",
+  "school_name": "光丘",
+  "official_url": "https://www.metro.ed.jp/hikarigaoka-h/",
+  "researched_at": "2026-09-28",
+  "stats": [
+    {
+      "metric": "university_count",
+      "item": "日東駒専レベル以上",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 6,
+      "source_url": "https://www.metro.ed.jp/hikarigaoka-h/assets/filelink/filelink-pdffile-505.pdf",
+      "source_label": "光丘高校 令和7年度学校経営報告 目標値・実績値一覧「日東駒専レベル以上大学合格者数」",
+      "as_of": "2026-03",
+      "note": "学校が自分で数えた塊の数。GMARCH等より上位の大学の合格者を含む可能性があり、日東駒専単体の内訳は不明。"
+    },
+    {
+      "metric": "university_count",
+      "item": "国公立",
+      "basis": "現役",
+      "fiscal_year": 2024,
+      "value_num": 0,
+      "source_url": "https://www.metro.ed.jp/hikarigaoka-h/assets/令和6年度_進路概況.pdf",
+      "source_label": "光丘高校 令和6年度 進路状況（概況）合格状況（現役のみ）大学別一覧",
+      "as_of": "2025-03",
+      "note": "大学別合格者一覧に該当する大学名なし。"
+    },
+    {
+      "metric": "university_count",
+      "item": "早慶上理",
+      "basis": "現役",
+      "fiscal_year": 2024,
+      "value_num": 0,
+      "source_url": "https://www.metro.ed.jp/hikarigaoka-h/assets/令和6年度_進路概況.pdf",
+      "source_label": "光丘高校 令和6年度 進路状況（概況）合格状況（現役のみ）大学別一覧",
+      "as_of": "2025-03",
+      "note": "大学別合格者一覧に該当する大学名なし。"
+    },
+    {
+      "metric": "university_count",
+      "item": "GMARCH",
+      "basis": "現役",
+      "fiscal_year": 2024,
+      "value_num": 0,
+      "source_url": "https://www.metro.ed.jp/hikarigaoka-h/assets/令和6年度_進路概況.pdf",
+      "source_label": "光丘高校 令和6年度 進路状況（概況）合格状況（現役のみ）大学別一覧",
+      "as_of": "2025-03",
+      "note": "大学別合格者一覧に該当する大学名なし。"
+    },
+    {
+      "metric": "university_count",
+      "item": "成成明武",
+      "basis": "現役",
+      "fiscal_year": 2024,
+      "value_num": 0,
+      "source_url": "https://www.metro.ed.jp/hikarigaoka-h/assets/令和6年度_進路概況.pdf",
+      "source_label": "光丘高校 令和6年度 進路状況（概況）合格状況（現役のみ）大学別一覧",
+      "as_of": "2025-03",
+      "note": "大学別合格者一覧に該当する大学名なし。"
+    },
+    {
+      "metric": "university_count",
+      "item": "日東駒専",
+      "basis": "現役",
+      "fiscal_year": 2024,
+      "value_num": 3,
+      "source_url": "https://www.metro.ed.jp/hikarigaoka-h/assets/令和6年度_進路概況.pdf",
+      "source_label": "光丘高校 令和6年度 進路状況（概況）合格状況（現役のみ）大学別一覧から合算",
+      "as_of": "2025-03",
+      "note": "駒澤大学1・東洋大学1・日本大学1の合算（延べ）。専修大学は一覧になし。"
+    },
+    {
+      "metric": "university_count",
+      "item": "合計",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 73,
+      "source_url": "https://www.metro.ed.jp/hikarigaoka-h/assets/令和7年度_進路概況(速報版).pdf",
+      "source_label": "光丘高校 令和7年度 進路状況（概況）速報版「分野ごとの進学人数」",
+      "as_of": "2026-09",
+      "note": "四年制大学72名＋短期大学1名。学校経営報告の「大学短大合格73名(39.6%)」と一致。"
+    },
+    {
+      "metric": "career_decided_rate",
+      "item": "",
+      "basis": "",
+      "fiscal_year": 2025,
+      "value_num": 91.2,
+      "source_url": "https://www.metro.ed.jp/hikarigaoka-h/assets/filelink/filelink-pdffile-505.pdf",
+      "source_label": "光丘高校 令和7年度学校経営報告",
+      "as_of": "2026-03",
+      "note": "大学短大合格73名(39.6%)・専門学校等合格71名(38.6%)・就職内定24名(13.0%)の合計で進路決定率91.2%。"
+    },
+    {
+      "metric": "club_join_rate",
+      "item": "",
+      "basis": "",
+      "fiscal_year": 2025,
+      "value_num": 51.1,
+      "source_url": "https://www.metro.ed.jp/hikarigaoka-h/assets/filelink/filelink-pdffile-505.pdf",
+      "source_label": "光丘高校 令和7年度学校経営報告 目標値・実績値一覧「部活動加入率」",
+      "as_of": "2026-03",
+      "note": "目標70％以上に対し実績51.1％で前年度(60.0%)から減少。学校は全員加入を推進していると案内しているが、実績はこの数字。"
+    },
+    {
+      "metric": "satisfaction",
+      "item": "生徒:学校生活",
+      "basis": "",
+      "fiscal_year": 2025,
+      "value_num": 72.5,
+      "source_url": "https://www.metro.ed.jp/hikarigaoka-h/assets/filelink/filelink-pdffile-505.pdf",
+      "source_label": "光丘高校 令和7年度学校経営報告 目標値・実績値一覧「学校満足度の肯定的な回答（生徒）」",
+      "as_of": "2026-03",
+      "note": ""
+    },
+    {
+      "metric": "satisfaction",
+      "item": "保護者:学校生活",
+      "basis": "",
+      "fiscal_year": 2025,
+      "value_num": 83.9,
+      "source_url": "https://www.metro.ed.jp/hikarigaoka-h/assets/filelink/filelink-pdffile-505.pdf",
+      "source_label": "光丘高校 令和7年度学校経営報告 目標値・実績値一覧「学校満足度の肯定的な回答（保護者）」",
+      "as_of": "2026-03",
+      "note": ""
+    },
+    {
+      "metric": "satisfaction",
+      "item": "生徒:授業",
+      "basis": "",
+      "fiscal_year": 2025,
+      "value_num": 86.4,
+      "source_url": "https://www.metro.ed.jp/hikarigaoka-h/assets/filelink/filelink-pdffile-505.pdf",
+      "source_label": "光丘高校 令和7年度学校経営報告 目標値・実績値一覧「授業満足度の肯定的な回答（生徒）」",
+      "as_of": "2026-03",
+      "note": ""
+    },
+    {
+      "metric": "satisfaction",
+      "item": "生徒:学校行事",
+      "basis": "",
+      "fiscal_year": 2025,
+      "value_num": 84.7,
+      "source_url": "https://www.metro.ed.jp/hikarigaoka-h/assets/filelink/filelink-pdffile-505.pdf",
+      "source_label": "光丘高校 令和7年度学校経営報告 目標値・実績値一覧「学校行事満足度の肯定的な回答（生徒）」",
+      "as_of": "2026-03",
+      "note": ""
+    },
+    {
+      "metric": "satisfaction",
+      "item": "生徒:部活動",
+      "basis": "",
+      "fiscal_year": 2025,
+      "value_num": 84.9,
+      "source_url": "https://www.metro.ed.jp/hikarigaoka-h/assets/filelink/filelink-pdffile-505.pdf",
+      "source_label": "光丘高校 令和7年度学校経営報告「部活動の満足度も84.9％で前年度に比較して増加」",
+      "as_of": "2026-03",
+      "note": ""
+    },
+    {
+      "metric": "satisfaction",
+      "item": "生徒:進路指導",
+      "basis": "",
+      "fiscal_year": 2025,
+      "value_num": 89.4,
+      "source_url": "https://www.metro.ed.jp/hikarigaoka-h/assets/filelink/filelink-pdffile-505.pdf",
+      "source_label": "光丘高校 令和7年度学校経営報告 目標値・実績値一覧「進路指導満足度の肯定的な回答（生徒）」",
+      "as_of": "2026-03",
+      "note": ""
+    },
+    {
+      "metric": "exam_ratio",
+      "item": "推薦",
+      "basis": "",
+      "fiscal_year": 2026,
+      "value_num": 1.5,
+      "source_url": "https://www.metro.ed.jp/hikarigaoka-h/assets/filelink/filelink-pdffile-505.pdf",
+      "source_label": "光丘高校 令和7年度学校経営報告 目標値・実績値一覧「推薦選抜の応募倍率」",
+      "as_of": "2026-03",
+      "note": "応募倍率。2026年4月入学者向け選抜（前年度実績1.54倍から低下）。"
+    },
+    {
+      "metric": "uniform",
+      "item": "",
+      "basis": "",
+      "fiscal_year": 2026,
+      "value_text": "男子は紺ブレザー・グレーのズボン・白ワイシャツ・ネクタイ、女子は紺ブレザー・チェックのスカート（スラックス可）・白ブラウス・リボンまたはネクタイ。平成21年（2009年）入学者から現行デザイン。夏服（6〜9月）はポロシャツ可。",
+      "source_url": "https://www.metro.ed.jp/hikarigaoka-h/school_life/symbols.html",
+      "source_label": "光丘高校 制服・校章・校歌／生徒心得",
+      "as_of": "2026-09",
+      "note": ""
+    },
+    {
+      "metric": "rules_summary",
+      "item": "",
+      "basis": "",
+      "fiscal_year": 2026,
+      "value_text": "頭髪はパーマ・染色・脱色・特異な刈り込み・エクステ等を禁止。ピアス等の装身具・化粧も禁止。携帯電話等は使用可能時間以外は電源を切りロッカーで保管。アルバイトは原則禁止（やむを得ない場合は保護者が担任に相談）。最終下校17:00。",
+      "source_url": "https://www.metro.ed.jp/hikarigaoka-h/assets/filelink/filelink-pdffile-18141.pdf",
+      "source_label": "光丘高校 生徒心得",
+      "as_of": "2026-09",
+      "note": ""
+    },
+    {
+      "metric": "designation",
+      "item": "",
+      "basis": "",
+      "fiscal_year": 2024,
+      "value_text": "文部科学省「DXハイスクール」（令和6年度指定）",
+      "source_url": "https://www.metro.ed.jp/hikarigaoka-h/our_school/feature.html",
+      "source_label": "光丘高校 特色",
+      "as_of": "2026-09",
+      "note": "情報・数学等の教育を重視するカリキュラムとICTを活用した文理横断的・探究的な学びの強化校。"
+    },
+    {
+      "metric": "designation",
+      "item": "",
+      "basis": "",
+      "fiscal_year": 2026,
+      "value_text": "東京都教育委員会指定「スキルアップ推進校」",
+      "source_url": "https://www.metro.ed.jp/hikarigaoka-h/our_school/feature.html",
+      "source_label": "光丘高校 特色",
+      "as_of": "2026-09",
+      "note": "グローバルスキル・デジタルスキル向上のため「英検受験対策講座」「Word・Excel・PowerPoint活用講座」を教育課程に位置付け。指定開始年度は特色ページに記載なし。"
+    }
+  ],
+  "clubs": [
+    {
+      "name": "サッカー部",
+      "kind": "運動",
+      "days_note": "平日は基礎練習、土日どちらかは練習試合やリーグ戦",
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2026年度 高円宮杯U-18サッカーリーグ東京 T1〜T5のいずれにも所属なし（支部リーグ相当、tleague-u18.com T1〜T5参加チーム一覧で確認）",
+      "source_url": "https://www.metro.ed.jp/hikarigaoka-h/activities/cat1968/index.html",
+      "as_of": "2026-09-28",
+      "results": []
+    },
+    {
+      "name": "男子バスケットボール部",
+      "kind": "運動",
+      "days_note": "【体育館】火・水(隔週)・金・土または日／【朝練】火・水・木・金",
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2024年12月 新人戦本大会に出場（順位の記載なし）。2026年8月 練馬区民大会優勝（地区大会）。直近3年で都大会上位進出の記録は確認できず",
+      "source_url": "https://www.metro.ed.jp/hikarigaoka-h/activities/cat1967/index.html",
+      "as_of": "2026-09-28",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "東京都高等学校バスケットボール新人大会",
+          "level": "都県",
+          "result": "本大会に出場（順位の記載なし）",
+          "source_url": "https://www.metro.ed.jp/hikarigaoka-h/activities/cat1967/index.html"
+        }
+      ]
+    },
+    {
+      "name": "女子バスケットボール部",
+      "kind": "運動",
+      "days_note": "月(ラントレ)・火水金(体育館、水は隔週でラントレ/筋トレ)・土(・日)(体育館練習または練習試合)",
+      "days_per_week": 5.5,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "都夏季大会のブロック戦で2023年度準優勝・2024年度3位・2025年度優勝。ブロック（A〜P）内の順位で都ベスト8ではないため段階3（見直しで1→3）",
+      "source_url": "https://www.metro.ed.jp/hikarigaoka-h/activities/cat1966/index.html",
+      "as_of": "2026-09-28",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "東京都高等学校バスケットボール夏季大会 Pブロック",
+          "level": "都県",
+          "result": "優勝",
+          "happened_on": "2025-08-23",
+          "source_url": "https://www.metro.ed.jp/hikarigaoka-h/activities/cat1966/index.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "東京都高等学校バスケットボール夏季大会 Mブロック",
+          "level": "都県",
+          "result": "第3位",
+          "happened_on": "2024-08-17",
+          "source_url": "https://www.metro.ed.jp/hikarigaoka-h/activities/cat1966/index.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "東京都高等学校バスケットボール夏季大会 Oブロック",
+          "level": "都県",
+          "result": "準優勝",
+          "happened_on": "2023-08-20",
+          "source_url": "https://www.metro.ed.jp/hikarigaoka-h/activities/cat1966/index.html"
+        }
+      ]
+    },
+    {
+      "name": "女子バレーボール部",
+      "kind": "運動",
+      "days_note": "火・水・金(体育館)、木(トレーニングルーム)、土・日・祝(練習または練習試合)",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "source_url": "https://www.metro.ed.jp/hikarigaoka-h/activities/cat1965/index.html",
+      "as_of": "2026-09-28",
+      "results": []
+    },
+    {
+      "name": "陸上競技部",
+      "kind": "運動",
+      "days_note": "月・火・水・金・土",
+      "days_per_week": 5,
+      "weekend": "土",
+      "tier": 2,
+      "tier_basis": "2023年度 東京都高等学校陸上競技対校選手権大会 女子ハンマー投6位（都大会入賞。個人種目のため段階2が上限）",
+      "source_url": "https://www.metro.ed.jp/hikarigaoka-h/activities/cat1964/index.html",
+      "as_of": "2026-09-28",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "東京都高等学校陸上競技対校選手権大会",
+          "level": "都県",
+          "result": "女子ハンマー投 6位",
+          "source_url": "https://www.metro.ed.jp/hikarigaoka-h/activities/cat1964/index.html"
+        }
+      ]
+    },
+    {
+      "name": "剣道部",
+      "kind": "運動",
+      "tier": 2,
+      "tier_basis": "2025年12月28日 東京都高等学校国公立剣道大会 男子団体準優勝（都立・国公立校限定大会のためベスト8以上で段階2、光丘高校サイト）",
+      "source_url": "https://www.metro.ed.jp/hikarigaoka-h/activities/cat1963/index.html",
+      "as_of": "2026-09-28",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "東京都高等学校国公立剣道大会",
+          "level": "地区",
+          "result": "男子団体準優勝（都立・国公立校限定大会）",
+          "happened_on": "2025-12-28",
+          "source_url": "https://www.metro.ed.jp/hikarigaoka-h/activities/cat1963/index.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "全国高等学校剣道大会東京都予選（個人）",
+          "level": "都県",
+          "result": "3名出場、ベスト16未達",
+          "happened_on": "2025-06-14",
+          "source_url": "https://www.metro.ed.jp/hikarigaoka-h/activities/cat1963/index.html"
+        }
+      ]
+    },
+    {
+      "name": "柔道部",
+      "kind": "運動",
+      "days_note": "週4日（土曜日日曜日は試合などの場合あり）",
+      "days_per_week": 4,
+      "tier": 3,
+      "tier_basis": "2026年9月 関東選抜大会第三支部予選（個人）を勝ち上がり、81kg級で都大会に1名出場（結果は大会前のため未確定、光丘高校サイト）",
+      "source_url": "https://www.metro.ed.jp/hikarigaoka-h/activities/cat1962/index.html",
+      "as_of": "2026-09-28",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "関東選抜大会 第三支部予選（個人・81kg級）",
+          "level": "地区",
+          "result": "支部予選を勝ち上がり都大会出場",
+          "happened_on": "2026-09-13",
+          "source_url": "https://www.metro.ed.jp/hikarigaoka-h/activities/2026/09/clubentry_56.html"
+        }
+      ]
+    },
+    {
+      "name": "硬式野球部",
+      "kind": "運動",
+      "days_note": "平日はほぼ毎日グラウンドで練習（雨天時は校内・駐輪場）",
+      "tier": 3,
+      "tier_basis": "2023〜2025年度の選手権西東京大会・春季/秋季東京都大会予選は、いずれも初戦〜2回戦で敗退（一球速報.com、光丘高校チームページ）",
+      "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=12011",
+      "as_of": "2026-09-28",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "令和7年度秋季東京都高等学校野球大会 一次予選",
+          "level": "都県",
+          "result": "1回戦敗退（1-15 対 法政、5回コールド）",
+          "happened_on": "2025-09-13",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=12011"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第107回全国高等学校野球選手権西東京大会",
+          "level": "都県",
+          "result": "2回戦敗退（0-7 対 日野台、8回コールド）",
+          "happened_on": "2025-07-10",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=12011"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "令和6年度秋季東京都高等学校野球大会 一次予選",
+          "level": "都県",
+          "result": "初戦敗退（2-3 対 足立新田）",
+          "source_url": "https://www.metro.ed.jp/hikarigaoka-h/activities/cat1961/index.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "第106回全国高等学校野球選手権西東京大会",
+          "level": "都県",
+          "result": "2回戦敗退（0-7 対 調布南、7回コールド）",
+          "happened_on": "2024-07-11",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=12011"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "第105回全国高等学校野球選手権記念西東京大会",
+          "level": "都県",
+          "result": "1回戦敗退（0-8 対 狛江）",
+          "happened_on": "2023-07-09",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=12011"
+        }
+      ]
+    },
+    {
+      "name": "ダンス部",
+      "kind": "運動",
+      "days_note": "月・水・金",
+      "days_per_week": 3,
+      "tier": 4,
+      "tier_basis": "活動日は週3日（月・水・金）。地域イベントへの出演はあるが大会の順位記録は確認できない",
+      "source_url": "https://www.metro.ed.jp/hikarigaoka-h/activities/cat1960/index.html",
+      "as_of": "2026-09-28",
+      "results": []
+    },
+    {
+      "name": "テニス部",
+      "kind": "運動",
+      "days_note": "週5日、学校のコートで練習（土日は練習試合・公式試合の場合あり）",
+      "days_per_week": 5,
+      "source_url": "https://www.metro.ed.jp/hikarigaoka-h/activities/cat1959/index.html",
+      "as_of": "2026-09-28",
+      "results": []
+    },
+    {
+      "name": "卓球部",
+      "kind": "運動",
+      "days_note": "月・水・木",
+      "days_per_week": 3,
+      "tier": 4,
+      "tier_basis": "活動日は週3日（月・水・木）。大会の順位記録は確認できない",
+      "source_url": "https://www.metro.ed.jp/hikarigaoka-h/activities/tabletennis01/index.html",
+      "as_of": "2026-09-28",
+      "results": []
+    },
+    {
+      "name": "水泳部",
+      "kind": "運動",
+      "days_note": "月・水・金",
+      "days_per_week": 3,
+      "tier": 4,
+      "tier_basis": "活動日は週3日（月・水・金）。自己ベスト更新を目標としており、大会の順位記録は確認できない",
+      "source_url": "https://www.metro.ed.jp/hikarigaoka-h/activities/cat1957/index.html",
+      "as_of": "2026-09-28",
+      "results": []
+    },
+    {
+      "name": "バドミントン部",
+      "kind": "運動",
+      "days_note": "月・水(隔週)・木・土",
+      "days_per_week": 3.5,
+      "tier": 3,
+      "tier_basis": "関東大会予選・インターハイ予選・新人戦・国公立大会などに出場（光丘高校サイト、順位の記載なし）",
+      "source_url": "https://www.metro.ed.jp/hikarigaoka-h/activities/cat1956/index.html",
+      "as_of": "2026-09-28",
+      "results": []
+    },
+    {
+      "name": "写真部",
+      "kind": "文化",
+      "days_note": "週1日(物理室)",
+      "days_per_week": 1,
+      "tier": 3,
+      "tier_basis": "2025年12月 第48回東京都高等学校文化祭写真部門中央大会に出展（展示型の都大会のため段階3）",
+      "source_url": "https://www.metro.ed.jp/hikarigaoka-h/activities/cat1955/index.html",
+      "as_of": "2026-09-28",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "東京都高等学校文化祭 写真部門中央大会",
+          "level": "都県",
+          "result": "出展（展示のみ、入選等の記載なし）",
+          "happened_on": "2025-12-22",
+          "source_url": "https://www.metro.ed.jp/hikarigaoka-h/activities/cat1955/index.html"
+        }
+      ]
+    },
+    {
+      "name": "吹奏楽部",
+      "kind": "文化",
+      "days_note": "月・水・金(音楽室)",
+      "days_per_week": 3,
+      "tier": 4,
+      "tier_basis": "活動日は週3日（月・水・金）。高文連音楽部門の地区大会・中央大会への出演はあるが、順位や賞の記録は確認できない",
+      "source_url": "https://www.metro.ed.jp/hikarigaoka-h/activities/cat1954/index.html",
+      "as_of": "2026-09-28",
+      "results": []
+    },
+    {
+      "name": "科学部",
+      "kind": "文化",
+      "days_note": "週1回(火曜・生物室)",
+      "days_per_week": 1,
+      "tier": 4,
+      "tier_basis": "活動日は週1回。学内文化祭（光陵祭）の受賞はあるが、外部の大会実績は確認できない",
+      "source_url": "https://www.metro.ed.jp/hikarigaoka-h/activities/cat1953/index.html",
+      "as_of": "2026-09-28",
+      "results": []
+    },
+    {
+      "name": "美術部",
+      "kind": "文化",
+      "tier": 3,
+      "tier_basis": "2023〜2025年度、東京都高等学校文化祭中央展に3年連続出品（展示のみで入選・受賞の記載はないため段階3）",
+      "source_url": "https://www.metro.ed.jp/hikarigaoka-h/activities/cat1951/index.html",
+      "as_of": "2026-09-28",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "東京都高等学校文化祭 第36回中央展",
+          "level": "都県",
+          "result": "出展",
+          "source_url": "https://www.metro.ed.jp/hikarigaoka-h/activities/cat1951/index.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "東京都高等学校文化祭 第35回中央展",
+          "level": "都県",
+          "result": "出展",
+          "source_url": "https://www.metro.ed.jp/hikarigaoka-h/activities/cat1951/index.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "東京都高等学校文化祭 第34回中央展",
+          "level": "都県",
+          "result": "出展（9名参加）",
+          "happened_on": "2023-12-13",
+          "source_url": "https://www.metro.ed.jp/hikarigaoka-h/activities/cat1951/index.html"
+        }
+      ]
+    },
+    {
+      "name": "茶道部",
+      "kind": "文化",
+      "tier": 3,
+      "tier_basis": "2024年度 東京都高等学校文化連盟茶道部門 中央大会「冬の茶会」に参加。順位を競う大会ではないため段階3（見直しで2→3）",
+      "source_url": "https://www.metro.ed.jp/hikarigaoka-h/activities/cat1950/index.html",
+      "as_of": "2026-09-28",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "東京都高等学校文化連盟 茶道部門中央大会「冬の茶会」",
+          "level": "都県",
+          "result": "参加（優秀な活動をしている高校として招かれる形）",
+          "happened_on": "2024-12-24",
+          "source_url": "https://www.metro.ed.jp/hikarigaoka-h/activities/cat1950/index.html"
+        }
+      ]
+    },
+    {
+      "name": "パソコン部",
+      "kind": "文化",
+      "days_note": "水・木(5F PC室)",
+      "days_per_week": 2,
+      "tier": 4,
+      "tier_basis": "活動日は週2日（水・木）。文化祭での作品展示のみで、外部の大会実績は確認できない",
+      "source_url": "https://www.metro.ed.jp/hikarigaoka-h/activities/pc/index.html",
+      "as_of": "2026-09-28",
+      "results": []
+    },
+    {
+      "name": "軽音楽部",
+      "kind": "文化",
+      "days_note": "毎日（バンドごとに交代で練習）",
+      "source_url": "https://www.metro.ed.jp/hikarigaoka-h/activities/cat1948/index.html",
+      "as_of": "2026-09-28",
+      "results": []
+    },
+    {
+      "name": "中国語部",
+      "kind": "文化",
+      "source_url": "https://www.metro.ed.jp/hikarigaoka-h/activities/cat1947/index.html",
+      "as_of": "2026-09-28",
+      "results": []
+    },
+    {
+      "name": "ESS部",
+      "kind": "文化",
+      "source_url": "https://www.metro.ed.jp/hikarigaoka-h/activities/ess/index.html",
+      "as_of": "2026-09-28",
+      "results": []
+    },
+    {
+      "name": "文芸部",
+      "kind": "文化",
+      "days_note": "不定期で活動",
+      "source_url": "https://www.metro.ed.jp/hikarigaoka-h/activities/cat1945/index.html",
+      "as_of": "2026-09-28",
+      "results": []
+    },
+    {
+      "name": "書道部",
+      "kind": "文化",
+      "days_note": "週1回（外部指導員と活動）",
+      "days_per_week": 1,
+      "tier": 4,
+      "tier_basis": "活動日は週1回。直近3年（2023〜2025年度）の大会実績の記録が確認できない（サイト上の最新の受賞歴は令和元年度）",
+      "source_url": "https://www.metro.ed.jp/hikarigaoka-h/activities/cat1944/index.html",
+      "as_of": "2026-09-28",
+      "results": []
+    },
+    {
+      "name": "演劇部",
+      "kind": "文化",
+      "days_note": "月・水・木(視聴覚室)",
+      "days_per_week": 3,
+      "tier": 4,
+      "tier_basis": "活動日は週3日（月・水・木）。直近3年（2023〜2025年度）の大会成績の記録が確認できない（サイト上の最新の実績は2021年度の全国高等学校総合文化祭）",
+      "source_url": "https://www.metro.ed.jp/hikarigaoka-h/activities/cat1952/index.html",
+      "as_of": "2026-09-28",
+      "results": []
+    },
+    {
+      "name": "勉強同好会",
+      "kind": "同好会",
+      "source_url": "https://www.metro.ed.jp/hikarigaoka-h/school_life/activities.html",
+      "as_of": "2026-09-28",
+      "results": []
+    }
+  ],
+  "designated_universities": [],
+  "events": [
+    {
+      "kind": "指定",
+      "period_label": "2024年度（令和6年度）から",
+      "summary": "文部科学省「DXハイスクール」に指定された",
+      "source_url": "https://www.metro.ed.jp/hikarigaoka-h/our_school/feature.html"
+    }
+  ],
+  "unresolved": [
+    "指定校推薦の大学一覧：学校案内パンフレット（pamphlet-pdffile-4202.pdf）や進路ページに『指定校』と明記した大学名の一覧が見当たらず、掲載場所を特定できなかった",
+    "入試方式別（一般・指定校推薦・公募推薦・総合型）の進学者割合：進路概況PDFの『進学人数』表と『学校推薦（指定校・公募）による進学者人数内訳』表・『過年度比較』表で合格数と受験数・延べ数が混在しており、確実な比率を計算できなかった",
+    "男女別の生徒数：学校経営報告・進路概況・特色ページのいずれにも公式な男女別在校生数の記載がなかった",
+    "学級増減の有無：学校経営報告・学校経営計画に学級数の変化についての記載がなく、都教委の募集人員発表は未確認",
+    "東京都教育委員会指定「スキルアップ推進校」の指定開始年度：特色ページに指定の事実はあるが開始年度の記載がなかった",
+    "軽音楽部・中国語部・ESS部の活動日：部活動ページに曜日や週の日数の具体的な記載がなかった"
+  ],
+  "conflicts": [
+    "部活動の一覧：学校生活『部活動・生徒会』ページのナビゲーションには文化部として『マイコン部』とあるが、同じページ内の部紹介記事本文と個別ページのタイトルは『パソコン部』表記だった（同一の部と判断し『パソコン部』で記載）",
+    "『勉強同好会』の扱い：学校生活『部活動・生徒会』ページのナビゲーションには文化部・同好会として『勉強同好会』が挙がっているが、学校案内『特色』ページの部活動一覧（文化系12部）には含まれていなかった"
+  ]
+}

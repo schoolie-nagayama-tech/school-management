@@ -1,0 +1,804 @@
+{
+  "prefecture": "東京都",
+  "school_name": "小平西",
+  "official_url": "https://www.metro.ed.jp/kodairanishi-h/",
+  "researched_at": "2026-09-28",
+  "stats": [
+    {
+      "metric": "university_count",
+      "item": "国公立",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 0,
+      "source_url": "https://www.metro.ed.jp/kodairanishi-h/assets/filelink/filelink-pdffile-37048.pdf",
+      "source_label": "小平西高校 令和9年度学校案内パンフレット「過去3年間の主な合格状況（既卒含む）」",
+      "as_of": "2026-09",
+      "note": "パンフレットに「国公立大学　なし」と明記。学校公式「2025年度大学短大合格状況」の合格先一覧にも国公立大学名なし"
+    },
+    {
+      "metric": "university_count",
+      "item": "早慶上理",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 0,
+      "source_url": "https://www.metro.ed.jp/kodairanishi-h/assets/2025年度大学短大合格状況.pdf",
+      "source_label": "小平西高校 2025年度大学短大合格状況（各分野合格先一覧）",
+      "as_of": "2026-03",
+      "note": "合格先一覧に早稲田・慶應・上智・東京理科いずれも掲載なし"
+    },
+    {
+      "metric": "university_count",
+      "item": "GMARCH",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 2,
+      "source_url": "https://www.metro.ed.jp/kodairanishi-h/assets/2025年度大学短大合格状況.pdf",
+      "source_label": "小平西高校 2025年度大学短大合格状況（各分野合格先一覧）",
+      "as_of": "2026-03",
+      "note": "大学別の表から合算（中央大学1＋立教大学1）。学校案内パンフレット「2025年度卒業生主な大学合格状況」には掲載なし（「など多数」の対象で規模が小さいためと見られる）"
+    },
+    {
+      "metric": "university_count",
+      "item": "成成明武",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 1,
+      "source_url": "https://www.metro.ed.jp/kodairanishi-h/assets/filelink/filelink-pdffile-37048.pdf",
+      "source_label": "小平西高校 令和9年度学校案内パンフレット「2025年度卒業生主な大学合格状況」",
+      "as_of": "2026-09",
+      "note": "武蔵大学1名。成蹊・成城・明治学院は合格先一覧に掲載なし。学校公式「2025年度大学短大合格状況」の合格先一覧では武蔵大学3件（食い違いはconflictsに記載）"
+    },
+    {
+      "metric": "university_count",
+      "item": "日東駒専",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 6,
+      "source_url": "https://www.metro.ed.jp/kodairanishi-h/assets/経営計画（08）.pdf",
+      "source_label": "小平西高校 令和8年度学校経営計画（数値目標）「日東駒専レベル以上大学合格者数」",
+      "as_of": "2026-03",
+      "note": "令和7年度学校経営報告の数値目標表も同じく6名。学校経営報告の本文は「日東駒専以上の現役合格者５名」と記載し数が食い違う（conflicts参照）"
+    },
+    {
+      "metric": "university_count",
+      "item": "明星大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 31,
+      "source_url": "https://www.metro.ed.jp/kodairanishi-h/assets/filelink/filelink-pdffile-37048.pdf",
+      "source_label": "小平西高校 令和9年度学校案内パンフレット「2025年度卒業生主な大学合格状況」",
+      "as_of": "2026-09",
+      "note": "合格・進学が多い大学（上位）"
+    },
+    {
+      "metric": "university_count",
+      "item": "帝京大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 18,
+      "source_url": "https://www.metro.ed.jp/kodairanishi-h/assets/filelink/filelink-pdffile-37048.pdf",
+      "source_label": "小平西高校 令和9年度学校案内パンフレット「2025年度卒業生主な大学合格状況」",
+      "as_of": "2026-09",
+      "note": "合格・進学が多い大学（上位）"
+    },
+    {
+      "metric": "university_count",
+      "item": "拓殖大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 6,
+      "source_url": "https://www.metro.ed.jp/kodairanishi-h/assets/filelink/filelink-pdffile-37048.pdf",
+      "source_label": "小平西高校 令和9年度学校案内パンフレット「2025年度卒業生主な大学合格状況」",
+      "as_of": "2026-09",
+      "note": "合格・進学が多い大学（上位）"
+    },
+    {
+      "metric": "university_count",
+      "item": "東京経済大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 5,
+      "source_url": "https://www.metro.ed.jp/kodairanishi-h/assets/filelink/filelink-pdffile-37048.pdf",
+      "source_label": "小平西高校 令和9年度学校案内パンフレット「2025年度卒業生主な大学合格状況」",
+      "as_of": "2026-09",
+      "note": "国士舘大学・亜細亜大学・杏林大学も同数（5名）"
+    },
+    {
+      "metric": "university_count",
+      "item": "国士舘大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 5,
+      "source_url": "https://www.metro.ed.jp/kodairanishi-h/assets/filelink/filelink-pdffile-37048.pdf",
+      "source_label": "小平西高校 令和9年度学校案内パンフレット「2025年度卒業生主な大学合格状況」",
+      "as_of": "2026-09",
+      "note": "亜細亜大学・杏林大学・東京経済大学も同数（5名）"
+    },
+    {
+      "metric": "career_decided_rate",
+      "item": "",
+      "basis": "",
+      "fiscal_year": 2025,
+      "value_num": 96.5,
+      "source_url": "https://www.metro.ed.jp/kodairanishi-h/assets/経営報告 (07).pdf",
+      "source_label": "小平西高校 令和7年度学校経営報告",
+      "as_of": "2026-03",
+      "note": ""
+    },
+    {
+      "metric": "club_join_rate",
+      "item": "",
+      "basis": "",
+      "fiscal_year": 2025,
+      "value_num": 72.2,
+      "source_url": "https://www.metro.ed.jp/kodairanishi-h/assets/経営報告 (07).pdf",
+      "source_label": "小平西高校 令和7年度学校経営報告",
+      "as_of": "2026-03",
+      "note": ""
+    },
+    {
+      "metric": "satisfaction",
+      "item": "生徒:学校生活",
+      "basis": "",
+      "fiscal_year": 2025,
+      "value_num": 88.7,
+      "source_url": "https://www.metro.ed.jp/kodairanishi-h/assets/経営報告 (07).pdf",
+      "source_label": "小平西高校 令和7年度学校経営報告",
+      "as_of": "2026-03",
+      "note": ""
+    },
+    {
+      "metric": "satisfaction",
+      "item": "保護者:学校教育",
+      "basis": "",
+      "fiscal_year": 2025,
+      "value_num": 88.5,
+      "source_url": "https://www.metro.ed.jp/kodairanishi-h/assets/経営報告 (07).pdf",
+      "source_label": "小平西高校 令和7年度学校経営報告",
+      "as_of": "2026-03",
+      "note": ""
+    },
+    {
+      "metric": "satisfaction",
+      "item": "生徒:学校行事",
+      "basis": "",
+      "fiscal_year": 2025,
+      "value_num": 90.0,
+      "source_url": "https://www.metro.ed.jp/kodairanishi-h/assets/経営報告 (07).pdf",
+      "source_label": "小平西高校 令和7年度学校経営報告",
+      "as_of": "2026-03",
+      "note": ""
+    },
+    {
+      "metric": "satisfaction",
+      "item": "保護者:学校行事",
+      "basis": "",
+      "fiscal_year": 2025,
+      "value_num": 88.5,
+      "source_url": "https://www.metro.ed.jp/kodairanishi-h/assets/経営報告 (07).pdf",
+      "source_label": "小平西高校 令和7年度学校経営報告",
+      "as_of": "2026-03",
+      "note": ""
+    },
+    {
+      "metric": "satisfaction",
+      "item": "生徒:部活動",
+      "basis": "",
+      "fiscal_year": 2025,
+      "value_num": 74.2,
+      "source_url": "https://www.metro.ed.jp/kodairanishi-h/assets/経営報告 (07).pdf",
+      "source_label": "小平西高校 令和7年度学校経営報告",
+      "as_of": "2026-03",
+      "note": ""
+    },
+    {
+      "metric": "satisfaction",
+      "item": "保護者:部活動",
+      "basis": "",
+      "fiscal_year": 2025,
+      "value_num": 66.0,
+      "source_url": "https://www.metro.ed.jp/kodairanishi-h/assets/経営報告 (07).pdf",
+      "source_label": "小平西高校 令和7年度学校経営報告",
+      "as_of": "2026-03",
+      "note": ""
+    },
+    {
+      "metric": "satisfaction",
+      "item": "生徒:進路指導",
+      "basis": "",
+      "fiscal_year": 2025,
+      "value_num": 89.0,
+      "source_url": "https://www.metro.ed.jp/kodairanishi-h/assets/経営報告 (07).pdf",
+      "source_label": "小平西高校 令和7年度学校経営報告",
+      "as_of": "2026-03",
+      "note": ""
+    },
+    {
+      "metric": "exam_ratio",
+      "item": "推薦",
+      "basis": "",
+      "fiscal_year": 2026,
+      "value_num": 2.57,
+      "source_url": "https://www.metro.ed.jp/kodairanishi-h/assets/経営報告 (07).pdf",
+      "source_label": "小平西高校 令和7年度学校経営報告",
+      "as_of": "2026-03",
+      "note": "応募倍率"
+    },
+    {
+      "metric": "uniform",
+      "item": "",
+      "basis": "",
+      "fiscal_year": 2026,
+      "value_text": "紺ブレザー＋グレー。女子はネクタイ/リボン・スカート/スラックスを選択可。夏期（5/1〜10/31）は白または紺の指定ポロシャツ可、ノーネクタイ可。",
+      "source_url": "https://www.metro.ed.jp/kodairanishi-h/school_life/symbols.html",
+      "source_label": "小平西高校 制服・校章・校歌",
+      "as_of": "2026-09",
+      "note": ""
+    },
+    {
+      "metric": "rules_summary",
+      "item": "",
+      "basis": "",
+      "fiscal_year": 2026,
+      "value_text": "頭髪の染色・パーマ等やピアス・化粧は禁止。スマホは授業中電源off・カバンかロッカーへ。アルバイトは原則禁止（許可制）。下校17時。",
+      "source_url": "https://www.metro.ed.jp/kodairanishi-h/assets/filelink/filelink-pdffile-37048.pdf",
+      "source_label": "都立小平西高校生徒心得",
+      "as_of": "2026-09",
+      "note": ""
+    },
+    {
+      "metric": "designation",
+      "item": "学力向上推進校",
+      "basis": "",
+      "fiscal_year": 2026,
+      "value_text": "東京都教育委員会指定（令和8年度）。補習・講習の計画的実施等",
+      "source_url": "https://www.metro.ed.jp/kodairanishi-h/assets/経営計画（08）.pdf",
+      "source_label": "小平西高校 令和8年度学校経営計画",
+      "as_of": "2026-03",
+      "note": ""
+    },
+    {
+      "metric": "designation",
+      "item": "Tokyo-IBLハイスクール指定校（TIPS-Type3）",
+      "basis": "",
+      "fiscal_year": 2026,
+      "value_text": "東京都教育委員会指定・推進事業。大学・企業等と連携した探究的な学びが特色",
+      "source_url": "https://www.metro.ed.jp/kodairanishi-h/assets/filelink/filelink-pdffile-37048.pdf",
+      "source_label": "小平西高校 令和9年度学校案内パンフレット",
+      "as_of": "2026-09",
+      "note": ""
+    },
+    {
+      "metric": "designation",
+      "item": "エンジョイスポーツプロジェクト",
+      "basis": "",
+      "fiscal_year": 2026,
+      "value_text": "東京都教育委員会指定（令和8年度）。計画的な体力づくり・健康づくりを推進",
+      "source_url": "https://www.metro.ed.jp/kodairanishi-h/assets/経営計画（08）.pdf",
+      "source_label": "小平西高校 令和8年度学校経営計画",
+      "as_of": "2026-03",
+      "note": ""
+    },
+    {
+      "metric": "designation",
+      "item": "教育課程実践検証協力校",
+      "basis": "",
+      "fiscal_year": 2026,
+      "value_text": "文部科学省指定・推進事業「E-Assessmentに関するもの」（国語科が採択）",
+      "source_url": "https://www.metro.ed.jp/kodairanishi-h/assets/filelink/filelink-pdffile-37048.pdf",
+      "source_label": "小平西高校 令和9年度学校案内パンフレット／令和8年度学校経営計画",
+      "as_of": "2026-09",
+      "note": ""
+    }
+  ],
+  "clubs": [
+    {
+      "name": "硬式野球部",
+      "kind": "運動",
+      "days_note": "火・水・木・金・土・日(土日は練習試合等)、朝練（火・木）",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2023〜2025年度の夏は2回戦・2回戦・5回戦(ベスト16)敗退。ベスト16は2025年度の1回のみで複数回でないため段階2に届かず（学校公式部活動ページ・学校案内パンフレット・一球速報.com）",
+      "source_url": "https://www.metro.ed.jp/kodairanishi-h/activities/club/index.html",
+      "as_of": "2026-09",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "全国高校野球選手権西東京大会",
+          "level": "都県",
+          "result": "2回戦敗退",
+          "source_url": "https://www.metro.ed.jp/kodairanishi-h/activities/club/index.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "全国高校野球選手権西東京大会",
+          "level": "都県",
+          "result": "2回戦敗退",
+          "source_url": "https://www.metro.ed.jp/kodairanishi-h/activities/club/index.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第107回全国高校野球選手権西東京大会",
+          "level": "都県",
+          "result": "5回戦進出（ベスト16）。東海大菅生に0-11で敗退",
+          "happened_on": "2025-07-22",
+          "source_url": "https://baseball.omyutech.com/teamTop.action?teamId=11857"
+        }
+      ]
+    },
+    {
+      "name": "ラグビー部",
+      "kind": "運動",
+      "days_note": "月・水・土（日）",
+      "days_per_week": 3.5,
+      "weekend": "土",
+      "tier": 2,
+      "tier_basis": "全国大会東京都予選で2023年度（単独チーム）・2025年度（合同チーム）のいずれもベスト16。都県ベスト16が複数回のため段階2（学校案内パンフレット「過去3年間の部活動実績」）",
+      "source_url": "https://www.metro.ed.jp/kodairanishi-h/activities/club_1/index.html",
+      "as_of": "2026-09",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "全国大会東京都予選",
+          "level": "都県",
+          "result": "ベスト16（単独チーム）",
+          "source_url": "https://www.metro.ed.jp/kodairanishi-h/assets/filelink/filelink-pdffile-37048.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "全国大会東京都予選",
+          "level": "都県",
+          "result": "ベスト16（合同チーム）",
+          "source_url": "https://www.metro.ed.jp/kodairanishi-h/assets/filelink/filelink-pdffile-37048.pdf"
+        }
+      ]
+    },
+    {
+      "name": "サッカー部",
+      "kind": "運動",
+      "days_note": "月水木金土日(日は大会や練習試合等)",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2026年度 高円宮杯U-18サッカーリーグ東京T1〜T5のいずれにも所属なし（支部リーグ扱い）",
+      "source_url": "https://www.tleague-u18.com/team.php?dy=2026&dt=1",
+      "as_of": "2026-09",
+      "results": []
+    },
+    {
+      "name": "女子ソフトボール部",
+      "kind": "運動",
+      "days_note": "月曜日オフ/それ以外は本校グラウンドにて練習/原則土日のどちらかは練習試合or練習",
+      "days_per_week": 5,
+      "weekend": "土日",
+      "tier": 1,
+      "tier_basis": "東京都教育委員会Premiere Club指定（都立高校における部活動の特別強化プロジェクト）に加え、2023〜2025年度の東京都総体・春季大会等で3位〜準優勝を複数回（2025年6月 東京都総体兼全国高校総体予選 準優勝）獲得しており都県ベスト8以上が複数回（学校案内パンフレット）",
+      "source_url": "https://www.metro.ed.jp/kodairanishi-h/assets/filelink/filelink-pdffile-37048.pdf",
+      "as_of": "2026-09",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "春季大会兼関東大会予選",
+          "level": "都県",
+          "result": "第3位",
+          "happened_on": "2023-05-01",
+          "source_url": "https://www.metro.ed.jp/kodairanishi-h/assets/filelink/filelink-pdffile-37048.pdf"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "高校総体兼全国高校総体予選",
+          "level": "都県",
+          "result": "第3位",
+          "happened_on": "2023-06-01",
+          "source_url": "https://www.metro.ed.jp/kodairanishi-h/assets/filelink/filelink-pdffile-37048.pdf"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "新人大会兼全国選抜大会予選",
+          "level": "都県",
+          "result": "第3位",
+          "happened_on": "2023-11-01",
+          "source_url": "https://www.metro.ed.jp/kodairanishi-h/assets/filelink/filelink-pdffile-37048.pdf"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "春季大会兼関東大会予選",
+          "level": "都県",
+          "result": "第4位",
+          "happened_on": "2024-05-01",
+          "source_url": "https://www.metro.ed.jp/kodairanishi-h/assets/filelink/filelink-pdffile-37048.pdf"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "高校総体兼全国高校総体予選",
+          "level": "都県",
+          "result": "第3位",
+          "happened_on": "2024-06-01",
+          "source_url": "https://www.metro.ed.jp/kodairanishi-h/assets/filelink/filelink-pdffile-37048.pdf"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "新人大会兼全国選抜大会予選",
+          "level": "都県",
+          "result": "第3位",
+          "happened_on": "2024-11-01",
+          "source_url": "https://www.metro.ed.jp/kodairanishi-h/assets/filelink/filelink-pdffile-37048.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "春季大会兼関東大会予選",
+          "level": "都県",
+          "result": "第3位",
+          "happened_on": "2025-05-01",
+          "source_url": "https://www.metro.ed.jp/kodairanishi-h/assets/filelink/filelink-pdffile-37048.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "高校総体兼全国高校総体予選",
+          "level": "都県",
+          "result": "準優勝",
+          "happened_on": "2025-06-01",
+          "source_url": "https://www.metro.ed.jp/kodairanishi-h/assets/filelink/filelink-pdffile-37048.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第59回東京都公立高等学校ソフトボール選手権大会",
+          "level": "地区",
+          "result": "優勝（公立校のみの大会）",
+          "happened_on": "2025-08-01",
+          "source_url": "https://www.metro.ed.jp/kodairanishi-h/assets/filelink/filelink-pdffile-37048.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "新人大会兼全国選抜大会予選",
+          "level": "都県",
+          "result": "ベスト8",
+          "happened_on": "2025-09-01",
+          "source_url": "https://www.metro.ed.jp/kodairanishi-h/assets/filelink/filelink-pdffile-37048.pdf"
+        }
+      ]
+    },
+    {
+      "name": "男子バスケットボール部",
+      "kind": "運動",
+      "days_note": "火水木金土日(日は大会や練習試合等が入ることがあります)",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2023年度 新人戦東京都本大会でベスト32（1回のみ）。他年度はインターハイ予選・関東大会予選とも都大会に進めず、複数回のベスト8/16〜32には届かないため段階3（学校公式部活動ページ）",
+      "source_url": "https://www.metro.ed.jp/kodairanishi-h/activities/club_11/index.html",
+      "as_of": "2026-09",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "新人大会東京都本大会",
+          "level": "都県",
+          "result": "東京都ベスト32",
+          "source_url": "https://www.metro.ed.jp/kodairanishi-h/activities/club_11/index.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "インターハイ予選",
+          "level": "都県",
+          "result": "3回戦進出",
+          "source_url": "https://www.metro.ed.jp/kodairanishi-h/activities/club_11/index.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "インターハイ予選",
+          "level": "都県",
+          "result": "4回戦進出",
+          "source_url": "https://www.metro.ed.jp/kodairanishi-h/activities/club_11/index.html"
+        }
+      ]
+    },
+    {
+      "name": "女子バスケットボール部",
+      "kind": "運動",
+      "days_note": "火・水・木・金・土・日",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "source_url": "https://www.metro.ed.jp/kodairanishi-h/school_life/activities.html",
+      "as_of": "2026-09"
+    },
+    {
+      "name": "男子ハンドボール部",
+      "kind": "運動",
+      "days_note": "月火木金土日(日は大会や練習試合等が入ることがあります)",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "source_url": "https://www.metro.ed.jp/kodairanishi-h/school_life/activities.html",
+      "as_of": "2026-09"
+    },
+    {
+      "name": "女子ハンドボール部",
+      "kind": "運動",
+      "days_note": "月火木金土日(日は大会や練習試合等が入ることがあります)",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "source_url": "https://www.metro.ed.jp/kodairanishi-h/activities/club_4/index.html",
+      "as_of": "2026-09"
+    },
+    {
+      "name": "男子硬式テニス部",
+      "kind": "運動",
+      "days_note": "月・水・木・金・土",
+      "days_per_week": 5,
+      "weekend": "土",
+      "source_url": "https://www.metro.ed.jp/kodairanishi-h/school_life/activities.html",
+      "as_of": "2026-09"
+    },
+    {
+      "name": "女子硬式テニス部",
+      "kind": "運動",
+      "days_note": "平日４日、週末１日（大会や練習試合などが入った場合は調整）",
+      "days_per_week": 5,
+      "weekend": "土日",
+      "source_url": "https://www.metro.ed.jp/kodairanishi-h/school_life/activities.html",
+      "as_of": "2026-09"
+    },
+    {
+      "name": "水泳部",
+      "kind": "運動",
+      "days_note": "月火水木金",
+      "days_per_week": 5,
+      "weekend": "なし",
+      "source_url": "https://www.metro.ed.jp/kodairanishi-h/school_life/activities.html",
+      "as_of": "2026-09"
+    },
+    {
+      "name": "女子バレーボール部",
+      "kind": "運動",
+      "days_note": "月・水・金・日（日曜日は練習試合が入ることあり、稀に土曜日も活動）",
+      "days_per_week": 4.5,
+      "weekend": "土日",
+      "source_url": "https://www.metro.ed.jp/kodairanishi-h/school_life/activities.html",
+      "as_of": "2026-09"
+    },
+    {
+      "name": "男子バドミントン部",
+      "kind": "運動",
+      "days_note": "月水金土日",
+      "days_per_week": 5,
+      "weekend": "土日",
+      "source_url": "https://www.metro.ed.jp/kodairanishi-h/school_life/activities.html",
+      "as_of": "2026-09"
+    },
+    {
+      "name": "女子バドミントン部",
+      "kind": "運動",
+      "days_note": "月水金土日",
+      "days_per_week": 5,
+      "weekend": "土日",
+      "source_url": "https://www.metro.ed.jp/kodairanishi-h/school_life/activities.html",
+      "as_of": "2026-09"
+    },
+    {
+      "name": "女子ダンス部",
+      "kind": "運動",
+      "days_note": "月・火・木・金　週4日（公演1か月前から土曜日午前も活動）",
+      "days_per_week": 4,
+      "weekend": "なし",
+      "source_url": "https://www.metro.ed.jp/kodairanishi-h/assets/filelink/filelink-pdffile-37048.pdf",
+      "as_of": "2026-09"
+    },
+    {
+      "name": "剣道部",
+      "kind": "運動",
+      "days_note": "木　週1日",
+      "days_per_week": 1,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日は週1日（木曜）で、目立つ大会実績の記載なし",
+      "source_url": "https://www.metro.ed.jp/kodairanishi-h/school_life/activities.html",
+      "as_of": "2026-09"
+    },
+    {
+      "name": "卓球部",
+      "kind": "運動",
+      "days_note": "火、水、金、日（祝）",
+      "days_per_week": 4,
+      "weekend": "日",
+      "source_url": "https://www.metro.ed.jp/kodairanishi-h/school_life/activities.html",
+      "as_of": "2026-09"
+    },
+    {
+      "name": "陸上競技部",
+      "kind": "運動",
+      "days_note": "月・火・木（大会は土日）",
+      "days_per_week": 3,
+      "weekend": "試合のみ",
+      "tier": 4,
+      "tier_basis": "活動日は週3日（月・火・木）で、目立つ大会成績の記載なし",
+      "source_url": "https://www.metro.ed.jp/kodairanishi-h/school_life/activities.html",
+      "as_of": "2026-09"
+    },
+    {
+      "name": "吹奏楽部",
+      "kind": "文化",
+      "days_note": "平日4日16:00〜18:00、土日どちらか1日9:00〜12:00",
+      "days_per_week": 5,
+      "weekend": "土日",
+      "source_url": "https://www.metro.ed.jp/kodairanishi-h/school_life/activities.html",
+      "as_of": "2026-09"
+    },
+    {
+      "name": "演劇部",
+      "kind": "文化",
+      "days_note": "火・土日祝以外の最終活動時刻（18時）まで（発表会約二週間前から休日練習あり）",
+      "weekend": "試合のみ",
+      "tier": 2,
+      "tier_basis": "2023・2024・2026年度に東京都高等学校文化祭演劇部門中央大会（都大会）等で優秀賞を複数回受賞（2026年度は東京都短編演劇発表会で都2位相当の優秀賞）。全国大会出場はないため段階1には届かず段階2（学校公式部活動ページ）",
+      "source_url": "https://www.metro.ed.jp/kodairanishi-h/school_life/activities.html",
+      "as_of": "2026-09",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "東京都高等学校文化祭演劇部門中央大会",
+          "level": "都県",
+          "result": "優秀賞、榊原政常記念創作脚本賞",
+          "source_url": "https://www.metro.ed.jp/kodairanishi-h/school_life/activities.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "多摩北地区新人デビュー発表会（東京都短編演劇発表会）",
+          "level": "都県",
+          "result": "都大会進出",
+          "source_url": "https://www.metro.ed.jp/kodairanishi-h/school_life/activities.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "東京都高等学校文化祭演劇部門中央大会",
+          "level": "都県",
+          "result": "優秀賞",
+          "source_url": "https://www.metro.ed.jp/kodairanishi-h/school_life/activities.html"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "多摩北地区新人デビュー発表会（東京都短編演劇発表会）",
+          "level": "都県",
+          "result": "都大会進出",
+          "source_url": "https://www.metro.ed.jp/kodairanishi-h/school_life/activities.html"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "東京都短編演劇発表会",
+          "level": "都県",
+          "result": "優秀賞（東京都2位相当）",
+          "source_url": "https://www.metro.ed.jp/kodairanishi-h/school_life/activities.html"
+        }
+      ]
+    },
+    {
+      "name": "華道部",
+      "kind": "文化",
+      "days_note": "木曜日を中心に、年間30回程度",
+      "days_per_week": 1,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日は週1日（木曜中心）で、文化祭・卒業制作での展示発表が中心。順位のつく大会実績なし",
+      "source_url": "https://www.metro.ed.jp/kodairanishi-h/school_life/activities.html",
+      "as_of": "2026-09"
+    },
+    {
+      "name": "軽音楽部",
+      "kind": "文化",
+      "days_note": "月〜金は個人練習やバンド練習、土日に合同ライブや大会参加あり",
+      "days_per_week": 5,
+      "weekend": "土日",
+      "source_url": "https://www.metro.ed.jp/kodairanishi-h/school_life/activities.html",
+      "as_of": "2026-09"
+    },
+    {
+      "name": "自然研究部",
+      "kind": "文化",
+      "days_note": "水曜日（内容によっては土日や夏休みも活動）",
+      "days_per_week": 1,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日は週1日（水曜）中心で、目立つ大会実績の記載なし",
+      "source_url": "https://www.metro.ed.jp/kodairanishi-h/school_life/activities.html",
+      "as_of": "2026-09"
+    },
+    {
+      "name": "美術部",
+      "kind": "文化",
+      "days_note": "原則月水木",
+      "days_per_week": 3,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日は週3日（月水木）で、目立つ大会実績の記載なし",
+      "source_url": "https://www.metro.ed.jp/kodairanishi-h/school_life/activities.html",
+      "as_of": "2026-09"
+    },
+    {
+      "name": "漫画研究部",
+      "kind": "文化",
+      "days_note": "毎週　火曜、木曜、金曜",
+      "days_per_week": 3,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日は週3日（火木金）で、目立つ大会実績の記載なし",
+      "source_url": "https://www.metro.ed.jp/kodairanishi-h/school_life/activities.html",
+      "as_of": "2026-09"
+    },
+    {
+      "name": "家庭部",
+      "kind": "文化",
+      "days_note": "火曜日",
+      "days_per_week": 1,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日は週1日（火曜）で、お菓子作りが中心の同好的な活動であり大会に出る活動ではない",
+      "source_url": "https://www.metro.ed.jp/kodairanishi-h/school_life/activities.html",
+      "as_of": "2026-09"
+    },
+    {
+      "name": "ボランティア同好会",
+      "kind": "同好会",
+      "source_url": "https://www.metro.ed.jp/kodairanishi-h/school_life/activities.html",
+      "as_of": "2026-09"
+    },
+    {
+      "name": "かるた",
+      "kind": "同好会",
+      "source_url": "https://www.metro.ed.jp/kodairanishi-h/school_life/activities.html",
+      "as_of": "2026-09"
+    }
+  ],
+  "designated_universities": [
+    { "university": "武蔵大学", "fiscal_year": 2026, "source_url": "https://www.metro.ed.jp/kodairanishi-h/assets/filelink/filelink-pdffile-37048.pdf", "note": "学校案内パンフレット「2026年度 主な指定校推薦」（4年制大学、以下同）" },
+    { "university": "東洋大学", "fiscal_year": 2026, "source_url": "https://www.metro.ed.jp/kodairanishi-h/assets/filelink/filelink-pdffile-37048.pdf", "note": "" },
+    { "university": "大東文化大学", "fiscal_year": 2026, "source_url": "https://www.metro.ed.jp/kodairanishi-h/assets/filelink/filelink-pdffile-37048.pdf", "note": "" },
+    { "university": "亜細亜大学", "fiscal_year": 2026, "source_url": "https://www.metro.ed.jp/kodairanishi-h/assets/filelink/filelink-pdffile-37048.pdf", "note": "" },
+    { "university": "帝京大学", "fiscal_year": 2026, "source_url": "https://www.metro.ed.jp/kodairanishi-h/assets/filelink/filelink-pdffile-37048.pdf", "note": "" },
+    { "university": "国士舘大学", "fiscal_year": 2026, "source_url": "https://www.metro.ed.jp/kodairanishi-h/assets/filelink/filelink-pdffile-37048.pdf", "note": "" },
+    { "university": "大妻女子大学", "fiscal_year": 2026, "source_url": "https://www.metro.ed.jp/kodairanishi-h/assets/filelink/filelink-pdffile-37048.pdf", "note": "" },
+    { "university": "関東学院大学", "fiscal_year": 2026, "source_url": "https://www.metro.ed.jp/kodairanishi-h/assets/filelink/filelink-pdffile-37048.pdf", "note": "" },
+    { "university": "杏林大学", "fiscal_year": 2026, "source_url": "https://www.metro.ed.jp/kodairanishi-h/assets/filelink/filelink-pdffile-37048.pdf", "note": "" },
+    { "university": "工学院大学", "fiscal_year": 2026, "source_url": "https://www.metro.ed.jp/kodairanishi-h/assets/filelink/filelink-pdffile-37048.pdf", "note": "" },
+    { "university": "実践女子大学", "fiscal_year": 2026, "source_url": "https://www.metro.ed.jp/kodairanishi-h/assets/filelink/filelink-pdffile-37048.pdf", "note": "" },
+    { "university": "昭和音楽大学", "fiscal_year": 2026, "source_url": "https://www.metro.ed.jp/kodairanishi-h/assets/filelink/filelink-pdffile-37048.pdf", "note": "" },
+    { "university": "女子美術大学", "fiscal_year": 2026, "source_url": "https://www.metro.ed.jp/kodairanishi-h/assets/filelink/filelink-pdffile-37048.pdf", "note": "" },
+    { "university": "白梅学園大学", "fiscal_year": 2026, "source_url": "https://www.metro.ed.jp/kodairanishi-h/assets/filelink/filelink-pdffile-37048.pdf", "note": "" },
+    { "university": "創価大学", "fiscal_year": 2026, "source_url": "https://www.metro.ed.jp/kodairanishi-h/assets/filelink/filelink-pdffile-37048.pdf", "note": "" },
+    { "university": "拓殖大学", "fiscal_year": 2026, "source_url": "https://www.metro.ed.jp/kodairanishi-h/assets/filelink/filelink-pdffile-37048.pdf", "note": "" },
+    { "university": "津田塾大学", "fiscal_year": 2026, "source_url": "https://www.metro.ed.jp/kodairanishi-h/assets/filelink/filelink-pdffile-37048.pdf", "note": "" },
+    { "university": "東京経済大学", "fiscal_year": 2026, "source_url": "https://www.metro.ed.jp/kodairanishi-h/assets/filelink/filelink-pdffile-37048.pdf", "note": "" },
+    { "university": "東京工科大学", "fiscal_year": 2026, "source_url": "https://www.metro.ed.jp/kodairanishi-h/assets/filelink/filelink-pdffile-37048.pdf", "note": "" },
+    { "university": "東京純心大学", "fiscal_year": 2026, "source_url": "https://www.metro.ed.jp/kodairanishi-h/assets/filelink/filelink-pdffile-37048.pdf", "note": "" },
+    { "university": "東京農業大学", "fiscal_year": 2026, "source_url": "https://www.metro.ed.jp/kodairanishi-h/assets/filelink/filelink-pdffile-37048.pdf", "note": "" },
+    { "university": "フェリス女学院大学", "fiscal_year": 2026, "source_url": "https://www.metro.ed.jp/kodairanishi-h/assets/filelink/filelink-pdffile-37048.pdf", "note": "" },
+    { "university": "武蔵野大学", "fiscal_year": 2026, "source_url": "https://www.metro.ed.jp/kodairanishi-h/assets/filelink/filelink-pdffile-37048.pdf", "note": "" },
+    { "university": "明星大学", "fiscal_year": 2026, "source_url": "https://www.metro.ed.jp/kodairanishi-h/assets/filelink/filelink-pdffile-37048.pdf", "note": "" },
+    { "university": "白百合女子大学", "fiscal_year": 2026, "source_url": "https://www.metro.ed.jp/kodairanishi-h/assets/filelink/filelink-pdffile-37048.pdf", "note": "" },
+    { "university": "和光大学", "fiscal_year": 2026, "source_url": "https://www.metro.ed.jp/kodairanishi-h/assets/filelink/filelink-pdffile-37048.pdf", "note": "" },
+    { "university": "秋草学園短期大学", "fiscal_year": 2026, "source_url": "https://www.metro.ed.jp/kodairanishi-h/assets/filelink/filelink-pdffile-37048.pdf", "note": "短期大学" },
+    { "university": "大妻女子大学短期大学部", "fiscal_year": 2026, "source_url": "https://www.metro.ed.jp/kodairanishi-h/assets/filelink/filelink-pdffile-37048.pdf", "note": "短期大学" },
+    { "university": "川口短期大学", "fiscal_year": 2026, "source_url": "https://www.metro.ed.jp/kodairanishi-h/assets/filelink/filelink-pdffile-37048.pdf", "note": "短期大学" },
+    { "university": "共立女子短期大学", "fiscal_year": 2026, "source_url": "https://www.metro.ed.jp/kodairanishi-h/assets/filelink/filelink-pdffile-37048.pdf", "note": "短期大学" },
+    { "university": "国際短期大学", "fiscal_year": 2026, "source_url": "https://www.metro.ed.jp/kodairanishi-h/assets/filelink/filelink-pdffile-37048.pdf", "note": "短期大学" },
+    { "university": "駒沢女子短期大学", "fiscal_year": 2026, "source_url": "https://www.metro.ed.jp/kodairanishi-h/assets/filelink/filelink-pdffile-37048.pdf", "note": "短期大学" },
+    { "university": "日本栄養短期大学", "fiscal_year": 2026, "source_url": "https://www.metro.ed.jp/kodairanishi-h/assets/filelink/filelink-pdffile-37048.pdf", "note": "短期大学" },
+    { "university": "白梅学園短期大学", "fiscal_year": 2026, "source_url": "https://www.metro.ed.jp/kodairanishi-h/assets/filelink/filelink-pdffile-37048.pdf", "note": "短期大学" },
+    { "university": "帝京短期大学", "fiscal_year": 2026, "source_url": "https://www.metro.ed.jp/kodairanishi-h/assets/filelink/filelink-pdffile-37048.pdf", "note": "短期大学" },
+    { "university": "目白大学短期大学部", "fiscal_year": 2026, "source_url": "https://www.metro.ed.jp/kodairanishi-h/assets/filelink/filelink-pdffile-37048.pdf", "note": "短期大学" },
+    { "university": "山野美容芸術短期大学", "fiscal_year": 2026, "source_url": "https://www.metro.ed.jp/kodairanishi-h/assets/filelink/filelink-pdffile-37048.pdf", "note": "短期大学" }
+  ],
+  "events": [],
+  "unresolved": [
+    "大学・短大合格者数（合計）：学校経営報告本文は139名(54.5%)、学校経営計画の数値目標表は143名で食い違い、延べ/現役/実進学の別が資料に明記されていないためstatsに採用せず（conflicts参照）",
+    "男女別生徒数：学校経営報告・学校案内パンフレット等に記載なし",
+    "入試方式別（一般/指定校推薦/公募推薦/総合型）の入学者割合：%表示の資料が見当たらず",
+    "男子ハンドボール部・女子ハンドボール部・女子バスケットボール部など：部活動ブログに大会参加の記事はあるが勝敗・順位の記載がなく段階の根拠にできず",
+    "吹奏楽部の「吹奏楽コンクールC組　金賞」：年度の記載がなく段階の根拠にできず（直近3年内の成績かどうか不明）",
+    "「3年間の推移」PDF（2025年度大学・短大・看護進路状況）は表の列（現役/既卒×年度）の対応関係を確実に読み取れず、大学別の年度別内訳の集計には使用しなかった"
+  ],
+  "conflicts": [
+    "大学・短大合格者数(令和7年度卒業生)：学校経営報告の本文は「139名(54.5%)」、学校経営計画（数値目標表）は「143名」",
+    "日東駒専レベル以上大学合格者数(現役)：学校経営報告の本文は「5名」、学校経営報告・学校経営計画いずれの数値目標表も「6名」",
+    "成成明武（武蔵大学）の2025年度合格者数：学校案内パンフレット「2025年度卒業生主な大学合格状況」では1名、学校公式「2025年度大学短大合格状況」（合格先一覧）の集計では3件",
+    "帝京大学・明星大学の2025年度合格延べ人数：学校案内パンフレット「2025年度卒業生主な大学合格状況」では帝京18・明星31。学校公式「3年間の推移」PDFの列を機械的に読むと帝京30・明星19相当になるが、列（現役/既卒×年度）の対応が不確実なため後者は採用せず、前者をstatsに採用した"
+  ]
+}

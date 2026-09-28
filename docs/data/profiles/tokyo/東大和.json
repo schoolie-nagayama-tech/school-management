@@ -1,0 +1,1013 @@
+{
+  "prefecture": "東京都",
+  "school_name": "東大和",
+  "official_url": "https://www.metro.ed.jp/higashiyamato-h/",
+  "researched_at": "2026-09-28",
+  "stats": [
+    {
+      "metric": "university_count",
+      "item": "国公立",
+      "basis": "現役",
+      "fiscal_year": 2024,
+      "value_num": 0,
+      "source_url": "https://www.metro.ed.jp/higashiyamato-h/assets/③_最近３年間の合格者数.pdf",
+      "source_label": "東大和高校 最近3年間の大学合格者数(50期〜52期・令和7年4月1日現在)",
+      "as_of": "2025-04",
+      "note": "52期生(2024年度卒業)の現役合格者数。国公立大学の2025年計は0(内訳：高知大等4名はいずれも2024年計)。"
+    },
+    {
+      "metric": "university_count",
+      "item": "早慶上理",
+      "basis": "現役",
+      "fiscal_year": 2024,
+      "value_num": 0,
+      "source_url": "https://www.metro.ed.jp/higashiyamato-h/assets/③_最近３年間の合格者数.pdf",
+      "source_label": "東大和高校 最近3年間の大学合格者数(50期〜52期・令和7年4月1日現在)",
+      "as_of": "2025-04",
+      "note": "表中で早慶上理に該当するのは東京理科大学のみ。52期生(2025年計)の現役合格は0(2023年計は2名)。早稲田・慶應・上智の合格者は表に記載なし。"
+    },
+    {
+      "metric": "university_count",
+      "item": "GMARCH",
+      "basis": "現役",
+      "fiscal_year": 2024,
+      "value_num": 6,
+      "source_url": "https://www.metro.ed.jp/higashiyamato-h/assets/進路結果.pdf",
+      "source_label": "東大和高校 卒業生進路状況(52期進路決定者・主な大学の合格者の推移)",
+      "as_of": "2025-04",
+      "note": "学習院・明治・青山学院・立教・中央・法政の小計(学校の表がそのままGMARCHの範囲と一致)。中央4・法政2で計6。大学別合格者数の表(③_最近３年間の合格者数.pdf)からの合算とも一致。"
+    },
+    {
+      "metric": "university_count",
+      "item": "成成明武",
+      "basis": "現役",
+      "fiscal_year": 2024,
+      "value_num": 14,
+      "source_url": "https://www.metro.ed.jp/higashiyamato-h/assets/③_最近３年間の合格者数.pdf",
+      "source_label": "東大和高校 最近3年間の大学合格者数(50期〜52期・令和7年4月1日現在)",
+      "as_of": "2025-04",
+      "note": "手引きの定義(成蹊・成城・明治学院・武蔵)で合算：成蹊7・成城0・明治学院2・武蔵5＝14。学校の「進路結果.pdf」は同じ枠に獨協・國學院を加えた6大学の小計を18としており範囲が異なる(conflicts参照)。"
+    },
+    {
+      "metric": "university_count",
+      "item": "日東駒専",
+      "basis": "現役",
+      "fiscal_year": 2024,
+      "value_num": 45,
+      "source_url": "https://www.metro.ed.jp/higashiyamato-h/assets/③_最近３年間の合格者数.pdf",
+      "source_label": "東大和高校 最近3年間の大学合格者数(50期〜52期・令和7年4月1日現在)",
+      "as_of": "2025-04",
+      "note": "日本10・東洋17・駒澤3・専修15の合算＝45。ただし「進路結果.pdf」の同じ範囲の小計は44(東洋を16としている)で1名食い違う(conflicts参照)。"
+    },
+    {
+      "metric": "university_count",
+      "item": "合計",
+      "basis": "現役",
+      "fiscal_year": 2024,
+      "value_num": 397,
+      "source_url": "https://www.metro.ed.jp/higashiyamato-h/assets/③_最近３年間の合格者数.pdf",
+      "source_label": "東大和高校 最近3年間の大学合格者数(50期〜52期・令和7年4月1日現在)",
+      "as_of": "2025-04",
+      "note": "52期生(2024年度卒業)。四年制大学の国公立0名+私立397名(現役)の合計。短期大学(現役3名)は含まない。浪人分・既卒は含まない。"
+    },
+    {
+      "metric": "university_count",
+      "item": "明星大学",
+      "basis": "現役",
+      "fiscal_year": 2024,
+      "value_num": 45,
+      "source_url": "https://www.metro.ed.jp/higashiyamato-h/assets/③_最近３年間の合格者数.pdf",
+      "source_label": "東大和高校 最近3年間の大学合格者数(50期〜52期・令和7年4月1日現在)",
+      "as_of": "2025-04",
+      "note": "四年制大学合格者数(現役)の中で最多(52期生)。"
+    },
+    {
+      "metric": "university_count",
+      "item": "帝京大学",
+      "basis": "現役",
+      "fiscal_year": 2024,
+      "value_num": 39,
+      "source_url": "https://www.metro.ed.jp/higashiyamato-h/assets/③_最近３年間の合格者数.pdf",
+      "source_label": "東大和高校 最近3年間の大学合格者数(50期〜52期・令和7年4月1日現在)",
+      "as_of": "2025-04",
+      "note": ""
+    },
+    {
+      "metric": "university_count",
+      "item": "亜細亜大学",
+      "basis": "現役",
+      "fiscal_year": 2024,
+      "value_num": 34,
+      "source_url": "https://www.metro.ed.jp/higashiyamato-h/assets/③_最近３年間の合格者数.pdf",
+      "source_label": "東大和高校 最近3年間の大学合格者数(50期〜52期・令和7年4月1日現在)",
+      "as_of": "2025-04",
+      "note": ""
+    },
+    {
+      "metric": "university_count",
+      "item": "東京経済大学",
+      "basis": "現役",
+      "fiscal_year": 2024,
+      "value_num": 34,
+      "source_url": "https://www.metro.ed.jp/higashiyamato-h/assets/③_最近３年間の合格者数.pdf",
+      "source_label": "東大和高校 最近3年間の大学合格者数(50期〜52期・令和7年4月1日現在)",
+      "as_of": "2025-04",
+      "note": ""
+    },
+    {
+      "metric": "university_count",
+      "item": "杏林大学",
+      "basis": "現役",
+      "fiscal_year": 2024,
+      "value_num": 22,
+      "source_url": "https://www.metro.ed.jp/higashiyamato-h/assets/③_最近３年間の合格者数.pdf",
+      "source_label": "東大和高校 最近3年間の大学合格者数(50期〜52期・令和7年4月1日現在)",
+      "as_of": "2025-04",
+      "note": ""
+    },
+    {
+      "metric": "admission_route_share",
+      "item": "一般",
+      "basis": "実進学",
+      "fiscal_year": 2024,
+      "value_num": 40.5,
+      "source_url": "https://www.metro.ed.jp/higashiyamato-h/assets/進路結果.pdf",
+      "source_label": "東大和高校 卒業生進路状況(52期進路決定者)",
+      "as_of": "2025-04",
+      "note": "52期(2024年度卒業)進路決定者のうち4年制大学(200名)に占める「一般受験」81名の割合。同表の「共通テスト利用」15名(7.5%)は一般受験とは別枠のため合算していない。"
+    },
+    {
+      "metric": "admission_route_share",
+      "item": "指定校推薦",
+      "basis": "実進学",
+      "fiscal_year": 2024,
+      "value_num": 19,
+      "source_url": "https://www.metro.ed.jp/higashiyamato-h/assets/進路結果.pdf",
+      "source_label": "東大和高校 卒業生進路状況(52期進路決定者)",
+      "as_of": "2025-04",
+      "note": "4年制大学進路決定者200名に占める指定校推薦38名の割合。"
+    },
+    {
+      "metric": "admission_route_share",
+      "item": "公募推薦",
+      "basis": "実進学",
+      "fiscal_year": 2024,
+      "value_num": 3,
+      "source_url": "https://www.metro.ed.jp/higashiyamato-h/assets/進路結果.pdf",
+      "source_label": "東大和高校 卒業生進路状況(52期進路決定者)",
+      "as_of": "2025-04",
+      "note": "4年制大学進路決定者200名に占める公募制推薦6名の割合。"
+    },
+    {
+      "metric": "admission_route_share",
+      "item": "総合型",
+      "basis": "実進学",
+      "fiscal_year": 2024,
+      "value_num": 29.5,
+      "source_url": "https://www.metro.ed.jp/higashiyamato-h/assets/進路結果.pdf",
+      "source_label": "東大和高校 卒業生進路状況(52期進路決定者)",
+      "as_of": "2025-04",
+      "note": "4年制大学進路決定者200名に占める総合型・AO59名の割合。"
+    },
+    {
+      "metric": "career_decided_rate",
+      "item": "",
+      "basis": "",
+      "fiscal_year": 2024,
+      "value_num": 94.1,
+      "source_url": "https://www.metro.ed.jp/higashiyamato-h/assets/進路結果.pdf",
+      "source_label": "東大和高校 卒業生進路状況(進路決定者数の推移・52期)",
+      "as_of": "2025-04",
+      "note": "52期(2024年度卒業、卒業生269名)のうち進路決定者253名(4年制大学200+短大3+専門48+民間0+公務員2)の割合。浪人等16名(5.9%)は決定者に含めていない。253/269=94.05%。"
+    },
+    {
+      "metric": "satisfaction",
+      "item": "生徒:授業",
+      "basis": "",
+      "fiscal_year": 2025,
+      "value_num": 86.7,
+      "source_url": "https://www.metro.ed.jp/higashiyamato-h/assets/2025学校経営報告_3.pdf",
+      "source_label": "東大和高校 令和7年度 学校経営報告(数値目標「授業満足度 肯定的評価の割合」)",
+      "as_of": "2026-03",
+      "note": "令和7年度実績。令和5年度82.1%→令和6年度81.9%→令和7年度86.7%。経営報告・経営計画とも回答者(生徒/保護者)の別は明記されていないが、手引きの項目例に合わせ「生徒:授業」とした。"
+    },
+    {
+      "metric": "satisfaction",
+      "item": "生徒:特別活動",
+      "basis": "",
+      "fiscal_year": 2025,
+      "value_num": 93.3,
+      "source_url": "https://www.metro.ed.jp/higashiyamato-h/assets/2025学校経営報告_3.pdf",
+      "source_label": "東大和高校 令和7年度 学校経営報告(数値目標「特別活動における満足度」)",
+      "as_of": "2026-03",
+      "note": "令和7年度実績。令和5年度91.9%→令和6年度91.6%→令和7年度93.3%。回答者の別は資料に明記なし。"
+    },
+    {
+      "metric": "satisfaction",
+      "item": "生徒:部活動",
+      "basis": "",
+      "fiscal_year": 2025,
+      "value_num": 91.3,
+      "source_url": "https://www.metro.ed.jp/higashiyamato-h/assets/2025学校経営報告_3.pdf",
+      "source_label": "東大和高校 令和7年度 学校経営報告(数値目標「部活動における満足度」)",
+      "as_of": "2026-03",
+      "note": "令和7年度実績。令和6年度は87.1%(令和5年度は記載なし)。回答者の別は資料に明記なし。"
+    },
+    {
+      "metric": "exam_ratio",
+      "item": "推薦",
+      "basis": "",
+      "fiscal_year": 2026,
+      "value_num": 2.82,
+      "source_url": "https://www.metro.ed.jp/higashiyamato-h/assets/2025学校経営報告_3.pdf",
+      "source_label": "東大和高校 令和7年度 学校経営報告(数値目標「入学者選抜応募倍率 推薦」)",
+      "as_of": "2026-03",
+      "note": "応募倍率。令和7年度中に実施された推薦選抜(令和8年4月入学者向け)の実績。学力検査(一般)の応募倍率は1.25倍。"
+    },
+    {
+      "metric": "designation",
+      "item": "進学指導研究校",
+      "basis": "",
+      "fiscal_year": 2025,
+      "value_num": null,
+      "value_text": "東京都教育委員会指定(令和7年度から)",
+      "source_url": "https://www.metro.ed.jp/higashiyamato-h/assets/2026学校経営計画.pdf",
+      "source_label": "東大和高校 令和8年度 学校経営計画",
+      "as_of": "2026-03",
+      "note": "学校経営計画・学校案内パンフレットの双方に「令和7年度から進学指導研究校に指定」と明記。"
+    },
+    {
+      "metric": "designation",
+      "item": "Premiere Club",
+      "basis": "",
+      "fiscal_year": 2026,
+      "value_num": null,
+      "value_text": "Tier1:女子サッカー部／Tier3:陸上競技部・硬式テニス部(男女)（令和8年度指定）",
+      "source_url": "https://www.metro.ed.jp/higashiyamato-h/assets/pamphlet/pamphlet-pdffile-26.pdf",
+      "source_label": "東大和高校 学校案内パンフレット(令和9年度入学生向け)",
+      "as_of": "2026-09",
+      "note": "都立学校における部活動の特別強化プロジェクト。学校サイトのお知らせ(2026/03/27)は「女子サッカー部・陸上部・女子テニス部」と表記し男子テニス部への言及がないが、パンフレットと取込済みCSV(硬式テニス（男女）Tier3)は男女とも指定としている(conflicts参照)。"
+    }
+  ],
+  "clubs": [
+    {
+      "name": "硬式野球部",
+      "kind": "運動",
+      "days_note": "平日は放課後練習、週末(土日)は練習試合・公式戦等、定休日は月曜日または火曜日",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2023〜2025年度の夏・秋・春の都大会(西東京大会含む)はいずれも1〜3回戦で敗退し、ベスト8以上の実績がない(一球速報.com)。",
+      "source_url": "https://www.metro.ed.jp/higashiyamato-h/school_life/activities.html",
+      "as_of": "2026-09-28",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "第105回全国高等学校野球選手権記念西東京大会",
+          "level": "都県",
+          "result": "1勝1敗、3回戦敗退",
+          "source_url": "https://baseball.omyutech.com/CupHomePageTeams.action?cupId=20230006679"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "令和6年度 春季東京都高等学校野球大会",
+          "level": "都県",
+          "result": "0勝1敗、1回戦敗退(初戦敗退)",
+          "source_url": "https://baseball.omyutech.com/CupHomePageTeams.action?cupId=20240008686"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "第106回全国高等学校野球選手権西東京大会",
+          "level": "都県",
+          "result": "0勝1敗、2回戦敗退",
+          "source_url": "https://baseball.omyutech.com/CupHomePageTeams.action?cupId=20240009751"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "令和6年度 秋季東京都高等学校野球大会 一次予選",
+          "level": "都県",
+          "result": "2勝0敗、一次予選を突破(本大会進出)",
+          "source_url": "https://baseball.omyutech.com/CupHomePageTeams.action?cupId=20240012548"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "令和6年度 秋季東京都高等学校野球大会",
+          "level": "都県",
+          "result": "1勝1敗、2回戦敗退",
+          "source_url": "https://baseball.omyutech.com/CupHomePageTeams.action?cupId=20240013339"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "令和7年度 春季東京都高等学校野球大会",
+          "level": "都県",
+          "result": "1勝1敗、2回戦敗退",
+          "source_url": "https://baseball.omyutech.com/CupHomePageTeams.action?cupId=20250021175"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第107回全国高等学校野球選手権西東京大会",
+          "level": "都県",
+          "result": "0勝1敗、2回戦敗退",
+          "source_url": "https://baseball.omyutech.com/CupHomePageTeams.action?cupId=20250000301"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "令和7年度 秋季東京都高等学校野球大会 一次予選",
+          "level": "都県",
+          "result": "2勝0敗、一次予選を突破(本大会進出)",
+          "source_url": "https://baseball.omyutech.com/CupHomePageTeams.action?cupId=20250005747"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "令和7年度 秋季東京都高等学校野球大会",
+          "level": "都県",
+          "result": "0勝1敗、1回戦敗退(都ベスト64。令和8年度春季大会シード権を獲得)",
+          "source_url": "https://baseball.omyutech.com/CupHomePageTeams.action?cupId=20250008162"
+        }
+      ]
+    },
+    {
+      "name": "陸上競技部",
+      "kind": "運動",
+      "days_note": "月・火・水・金・土",
+      "days_per_week": 5,
+      "weekend": "土",
+      "tier": 2,
+      "tier_basis": "令和8年度Premiere Club Tier3指定(パンフレット・tokyo-premiere-club-2026.csv)。2025年度 高校総体関東大会出場(男子800m)は個人種目のため段階2にとどめる(手引き§6「個人種目の都県大会入賞は段階2まで」)。",
+      "source_url": "https://www.metro.ed.jp/higashiyamato-h/school_life/activities.html",
+      "as_of": "2026-09-28",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "高校総体",
+          "level": "関東",
+          "result": "男子800m 関東大会出場",
+          "source_url": "https://www.metro.ed.jp/higashiyamato-h/assets/pamphlet/pamphlet-pdffile-26.pdf"
+        }
+      ]
+    },
+    {
+      "name": "男子サッカー部",
+      "kind": "運動",
+      "days_note": "平日は週4回(月曜16:40〜、他の曜日は15:40〜)、土日休日はゲーム中心(練習試合・公式戦)。年間試合数は約150回",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "tier": 2,
+      "tier_basis": "2026年度 高円宮杯U-18サッカーリーグ東京 T4 所属(tleague-u18.com)。手引き§6のサッカー部判定基準(東京T3・T4は段階2)による。",
+      "source_url": "https://www.metro.ed.jp/higashiyamato-h/school_life/activities.html",
+      "as_of": "2026-09-28",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "東京都高校総体サッカー競技",
+          "level": "都県",
+          "result": "1次トーナメント決勝進出、ベスト36",
+          "source_url": "https://www.metro.ed.jp/higashiyamato-h/assets/pamphlet/pamphlet-pdffile-26.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "全国高校サッカー選手権東京都大会",
+          "level": "都県",
+          "result": "2次予選進出Aブロック、ベスト30",
+          "source_url": "https://www.metro.ed.jp/higashiyamato-h/assets/pamphlet/pamphlet-pdffile-26.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "U-18サッカーリーグ2025東京4部(T4)",
+          "level": "都県",
+          "result": "Aブロック第8位",
+          "source_url": "https://www.metro.ed.jp/higashiyamato-h/assets/pamphlet/pamphlet-pdffile-26.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第8地区新人選手権(関東大会東京都予選)",
+          "level": "地区",
+          "result": "準優勝、ベスト30",
+          "source_url": "https://www.metro.ed.jp/higashiyamato-h/assets/pamphlet/pamphlet-pdffile-26.pdf"
+        }
+      ]
+    },
+    {
+      "name": "女子サッカー部",
+      "kind": "運動",
+      "days_note": "週5日(週2日以上の休養日を設定)",
+      "days_per_week": 5,
+      "tier": 1,
+      "tier_basis": "令和8年度Premiere Club Tier1指定。2025年度 都高校総体女子サッカー競技第4位、全日本高校女子サッカー選手権大会東京予選第3位、都女子サッカー新人戦大会第3位と都県ベスト8以上が同一年度に3回。関東女子サッカー選手権大会にも出場。",
+      "source_url": "https://www.metro.ed.jp/higashiyamato-h/school_life/activities.html",
+      "as_of": "2026-09-28",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "第26回東京都高校総体女子サッカー競技",
+          "level": "都県",
+          "result": "第4位",
+          "source_url": "https://www.metro.ed.jp/higashiyamato-h/assets/pamphlet/pamphlet-pdffile-26.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第34回全日本高等学校女子サッカー選手権大会東京予選",
+          "level": "都県",
+          "result": "第3位",
+          "source_url": "https://www.metro.ed.jp/higashiyamato-h/assets/pamphlet/pamphlet-pdffile-26.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第34回関東女子サッカー選手権大会",
+          "level": "関東",
+          "result": "出場",
+          "source_url": "https://www.metro.ed.jp/higashiyamato-h/assets/pamphlet/pamphlet-pdffile-26.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第26回東京都女子サッカー新人戦大会",
+          "level": "都県",
+          "result": "第3位",
+          "source_url": "https://www.metro.ed.jp/higashiyamato-h/assets/pamphlet/pamphlet-pdffile-26.pdf"
+        }
+      ]
+    },
+    {
+      "name": "男子ハンドボール部",
+      "kind": "運動",
+      "days_note": "平日:週4日(グラウンドや近隣の体育館)、土日:練習のほか練習試合・公式戦",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "tier": 1,
+      "tier_basis": "2025年度 春季関東大会都予選ベスト8、インターハイ予選ベスト8と、都大会ベスト8以上が同一年度に2回。公立校大会第3位は都立限定大会のため根拠に含めていない。",
+      "source_url": "https://www.metro.ed.jp/higashiyamato-h/school_life/activities.html",
+      "as_of": "2026-09-28",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "春季関東大会都予選",
+          "level": "都県",
+          "result": "ベスト8",
+          "source_url": "https://www.metro.ed.jp/higashiyamato-h/assets/pamphlet/pamphlet-pdffile-26.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "インターハイ予選",
+          "level": "都県",
+          "result": "ベスト8",
+          "source_url": "https://www.metro.ed.jp/higashiyamato-h/assets/pamphlet/pamphlet-pdffile-26.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "公立校大会",
+          "level": "都県",
+          "result": "第3位",
+          "source_url": "https://www.metro.ed.jp/higashiyamato-h/assets/pamphlet/pamphlet-pdffile-26.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "秋季新人戦兼全国選抜予選",
+          "level": "都県",
+          "result": "ベスト16",
+          "source_url": "https://www.metro.ed.jp/higashiyamato-h/assets/pamphlet/pamphlet-pdffile-26.pdf"
+        }
+      ]
+    },
+    {
+      "name": "女子ハンドボール部",
+      "kind": "運動",
+      "days_note": "平日:週4日(主にグラウンド、外部の体育館)、休日:練習や練習試合、公式戦",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "tier": 1,
+      "tier_basis": "2025年度 春季関東大会都予選ベスト8、インターハイ予選ベスト8と、都大会ベスト8以上が同一年度に2回。公立校大会準優勝は都立限定大会のため根拠に含めていない。",
+      "source_url": "https://www.metro.ed.jp/higashiyamato-h/school_life/activities.html",
+      "as_of": "2026-09-28",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "春季関東大会都予選",
+          "level": "都県",
+          "result": "ベスト8",
+          "source_url": "https://www.metro.ed.jp/higashiyamato-h/assets/pamphlet/pamphlet-pdffile-26.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "インターハイ予選",
+          "level": "都県",
+          "result": "ベスト8",
+          "source_url": "https://www.metro.ed.jp/higashiyamato-h/assets/pamphlet/pamphlet-pdffile-26.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "公立校大会",
+          "level": "都県",
+          "result": "準優勝",
+          "source_url": "https://www.metro.ed.jp/higashiyamato-h/assets/pamphlet/pamphlet-pdffile-26.pdf"
+        }
+      ]
+    },
+    {
+      "name": "男子硬式テニス部",
+      "kind": "運動",
+      "days_note": "月・火・水・金・土・日(土曜は午前か午後の半日練習、日曜は半日練習もしくは公式戦・練習試合)",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "tier": 2,
+      "tier_basis": "令和8年度Premiere Club Tier3指定(パンフレット・tokyo-premiere-club-2026.csvの「硬式テニス（男女）」)。大会成績は東京都高校テニス選手権大会(団体)2回戦、都立対抗テニス選手権大会2回戦にとどまる。",
+      "source_url": "https://www.metro.ed.jp/higashiyamato-h/school_life/activities.html",
+      "as_of": "2026-09-28",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "東京都高等学校テニス選手権大会(団体)",
+          "level": "都県",
+          "result": "2回戦進出",
+          "source_url": "https://www.metro.ed.jp/higashiyamato-h/assets/pamphlet/pamphlet-pdffile-26.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "都立対抗テニス選手権大会",
+          "level": "都県",
+          "result": "2回戦進出",
+          "source_url": "https://www.metro.ed.jp/higashiyamato-h/assets/pamphlet/pamphlet-pdffile-26.pdf"
+        }
+      ]
+    },
+    {
+      "name": "女子硬式テニス部",
+      "kind": "運動",
+      "days_note": "週5日活動(木曜日定休)",
+      "days_per_week": 5,
+      "weekend": "土日",
+      "tier": 2,
+      "tier_basis": "Premiere Club Tier3指定（令和8年度）。2025年度 東京都高等学校テニス選手権 シングルス準優勝・ダブルス優勝（個人種目で関東・全国大会の出場なし）、都立対抗優勝・関東公立大会準優勝（公立限定）。個人種目の都県入賞と公立限定大会のため段階2（見直しで1→2）",
+      "source_url": "https://www.metro.ed.jp/higashiyamato-h/school_life/activities.html",
+      "as_of": "2026-09-28",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "都立対抗テニス大会",
+          "level": "都県",
+          "result": "優勝",
+          "source_url": "https://www.metro.ed.jp/higashiyamato-h/assets/pamphlet/pamphlet-pdffile-26.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "東京都高等学校テニス選手権大会 団体の部",
+          "level": "都県",
+          "result": "ベスト16",
+          "source_url": "https://www.metro.ed.jp/higashiyamato-h/assets/pamphlet/pamphlet-pdffile-26.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "関東公立高校テニス大会",
+          "level": "関東",
+          "result": "準優勝",
+          "source_url": "https://www.metro.ed.jp/higashiyamato-h/assets/pamphlet/pamphlet-pdffile-26.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "東京都高等学校テニス選手権大会 シングルス",
+          "level": "都県",
+          "result": "準優勝",
+          "source_url": "https://www.metro.ed.jp/higashiyamato-h/assets/pamphlet/pamphlet-pdffile-26.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "東京都高等学校テニス選手権大会 ダブルス",
+          "level": "都県",
+          "result": "優勝・準優勝(2組)",
+          "source_url": "https://www.metro.ed.jp/higashiyamato-h/assets/pamphlet/pamphlet-pdffile-26.pdf"
+        }
+      ]
+    },
+    {
+      "name": "ソフトボール部",
+      "kind": "運動",
+      "days_note": "月・水・木・金・土・(日)(火・日曜は定休が原則。日曜は試合や大会が近いと不定期に活動)",
+      "days_per_week": 5.5,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "2025年度 春季高体連新人戦ベスト16の1回のみで、段階2の基準「ベスト16〜32が複数回」に届かない。",
+      "source_url": "https://www.metro.ed.jp/higashiyamato-h/school_life/activities.html",
+      "as_of": "2026-09-28",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "春季高体連新人戦",
+          "level": "都県",
+          "result": "ベスト16",
+          "source_url": "https://www.metro.ed.jp/higashiyamato-h/assets/pamphlet/pamphlet-pdffile-26.pdf"
+        }
+      ]
+    },
+    {
+      "name": "水泳部",
+      "kind": "運動",
+      "tier": 3,
+      "tier_basis": "2025年度 都高校新人水泳競技大会男子100m平泳ぎ総合20位、西東京国公立大会(公立限定のため1段低く読む)男子100mバタフライ7位で、都県上位入賞の基準に届かない。",
+      "source_url": "https://www.metro.ed.jp/higashiyamato-h/school_life/activities.html",
+      "as_of": "2026-09-28",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "東京都高等学校新人水泳競技大会",
+          "level": "都県",
+          "result": "男子100m平泳ぎ 総合20位",
+          "source_url": "https://www.metro.ed.jp/higashiyamato-h/assets/pamphlet/pamphlet-pdffile-26.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "西東京国公立大会",
+          "level": "地区",
+          "result": "男子100mバタフライ 7位",
+          "source_url": "https://www.metro.ed.jp/higashiyamato-h/assets/pamphlet/pamphlet-pdffile-26.pdf"
+        }
+      ]
+    },
+    {
+      "name": "ダンス部",
+      "kind": "運動",
+      "days_note": "月・水・金・土の週4日",
+      "days_per_week": 4,
+      "weekend": "土",
+      "source_url": "https://www.metro.ed.jp/higashiyamato-h/school_life/activities.html",
+      "as_of": "2026-09-28",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "Music Days東京大会2025(民間主催)",
+          "level": "都県",
+          "result": "ダンス部門出場、アースフレンズ東京Z賞",
+          "source_url": "https://www.metro.ed.jp/higashiyamato-h/assets/pamphlet/pamphlet-pdffile-26.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第18回日本高校ダンス部選手権大会東京都大会(民間主催)",
+          "level": "都県",
+          "result": "スモールクラス出場",
+          "source_url": "https://www.metro.ed.jp/higashiyamato-h/assets/pamphlet/pamphlet-pdffile-26.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第19回日本高校ダンス部選手権新人戦東日本大会(民間主催)",
+          "level": "関東",
+          "result": "ビッグクラス出場",
+          "source_url": "https://www.metro.ed.jp/higashiyamato-h/assets/pamphlet/pamphlet-pdffile-26.pdf"
+        }
+      ]
+    },
+    {
+      "name": "卓球部",
+      "kind": "運動",
+      "days_note": "基本的に火曜日から金曜日(週4日)。土日は大会・練習試合・練習会が入ることも",
+      "days_per_week": 4,
+      "tier": 3,
+      "tier_basis": "2025年度の成績はベスト32〜128にとどまり、都県上位入賞の基準に届かない。",
+      "source_url": "https://www.metro.ed.jp/higashiyamato-h/school_life/activities.html",
+      "as_of": "2026-09-28",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "多摩地区大会シングルス",
+          "level": "地区",
+          "result": "ベスト32",
+          "source_url": "https://www.metro.ed.jp/higashiyamato-h/assets/pamphlet/pamphlet-pdffile-26.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "東京都国公立高等学校卓球大会 男子シングルス",
+          "level": "都県",
+          "result": "ベスト64",
+          "source_url": "https://www.metro.ed.jp/higashiyamato-h/assets/pamphlet/pamphlet-pdffile-26.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "東京都高等学校新人卓球大会(シングルスの部)",
+          "level": "都県",
+          "result": "ベスト128",
+          "source_url": "https://www.metro.ed.jp/higashiyamato-h/assets/pamphlet/pamphlet-pdffile-26.pdf"
+        }
+      ]
+    },
+    {
+      "name": "男子バドミントン部",
+      "kind": "運動",
+      "days_note": "月曜日と日曜日はOFF(週5回が基本)。ただし試合が近いと日曜日も活動",
+      "days_per_week": 5,
+      "weekend": "土",
+      "source_url": "https://www.metro.ed.jp/higashiyamato-h/school_life/activities.html",
+      "as_of": "2026-09-28",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "令和7年度関東公立高等学校バドミントン大会",
+          "level": "関東",
+          "result": "出場(順位不明)",
+          "source_url": "https://www.metro.ed.jp/higashiyamato-h/assets/pamphlet/pamphlet-pdffile-26.pdf"
+        }
+      ]
+    },
+    {
+      "name": "女子バドミントン部",
+      "kind": "運動",
+      "days_note": "中練(体育館練習)週3回+外練週2回=計5回。原則日曜・月曜は休みだが、試合及び試合直前は日曜日も活動",
+      "days_per_week": 5,
+      "weekend": "土",
+      "source_url": "https://www.metro.ed.jp/higashiyamato-h/school_life/activities.html",
+      "as_of": "2026-09-28",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "春季大会兼関東大会予選",
+          "level": "都県",
+          "result": "出場(順位不明)",
+          "source_url": "https://www.metro.ed.jp/higashiyamato-h/assets/pamphlet/pamphlet-pdffile-26.pdf"
+        }
+      ]
+    },
+    {
+      "name": "男子バレーボール部",
+      "kind": "運動",
+      "days_note": "平日は週1回休み。土日は練習or練習試合",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "tier": 2,
+      "tier_basis": "2025年度 夏季都立高校大会ベスト8(都立限定大会のため1段低く読んでも段階2水準)。関東大会予選はベスト32にとどまる。",
+      "source_url": "https://www.metro.ed.jp/higashiyamato-h/school_life/activities.html",
+      "as_of": "2026-09-28",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "関東大会予選",
+          "level": "都県",
+          "result": "ベスト32",
+          "source_url": "https://www.metro.ed.jp/higashiyamato-h/assets/pamphlet/pamphlet-pdffile-26.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "新人戦",
+          "level": "都県",
+          "result": "ベスト64",
+          "source_url": "https://www.metro.ed.jp/higashiyamato-h/assets/pamphlet/pamphlet-pdffile-26.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "夏季都立高校大会",
+          "level": "都県",
+          "result": "ベスト8",
+          "source_url": "https://www.metro.ed.jp/higashiyamato-h/assets/pamphlet/pamphlet-pdffile-26.pdf"
+        }
+      ]
+    },
+    {
+      "name": "女子バレーボール部",
+      "kind": "運動",
+      "days_note": "定休日は火曜日、土日は練習試合等",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2025年度の最高成績は関東大会予選・インターハイ予選のベスト32(1回ずつ)で、段階2の基準「ベスト8が1回・ベスト16〜32が複数回」に届かない。夏季大会ブロック準優勝はブロック単位(地区)の順位。",
+      "source_url": "https://www.metro.ed.jp/higashiyamato-h/school_life/activities.html",
+      "as_of": "2026-09-28",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "関東大会予選",
+          "level": "都県",
+          "result": "ベスト32",
+          "source_url": "https://www.metro.ed.jp/higashiyamato-h/assets/pamphlet/pamphlet-pdffile-26.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "インターハイ予選",
+          "level": "都県",
+          "result": "ベスト32",
+          "source_url": "https://www.metro.ed.jp/higashiyamato-h/assets/pamphlet/pamphlet-pdffile-26.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "夏季大会ブロック",
+          "level": "地区",
+          "result": "準優勝",
+          "source_url": "https://www.metro.ed.jp/higashiyamato-h/assets/pamphlet/pamphlet-pdffile-26.pdf"
+        }
+      ]
+    },
+    {
+      "name": "男子バスケットボール部",
+      "kind": "運動",
+      "days_note": "平日:学校体育館(週2〜3日)、外練習・ウエイトトレーニング(週1〜2日)。土日:遠征や大会等",
+      "tier": 3,
+      "tier_basis": "2025年度の成績は夏季TAMAリーグ第6位など地区リーグレベルにとどまり、都県上位入賞の実績が見当たらない。",
+      "source_url": "https://www.metro.ed.jp/higashiyamato-h/school_life/activities.html",
+      "as_of": "2026-09-28",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "夏季TAMAリーグ",
+          "level": "地区",
+          "result": "第6位",
+          "source_url": "https://www.metro.ed.jp/higashiyamato-h/assets/pamphlet/pamphlet-pdffile-26.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "東京都ブロックリーグ",
+          "level": "都県",
+          "result": "T2に昇格",
+          "source_url": "https://www.metro.ed.jp/higashiyamato-h/assets/pamphlet/pamphlet-pdffile-26.pdf"
+        }
+      ]
+    },
+    {
+      "name": "女子バスケットボール部",
+      "kind": "運動",
+      "days_note": "週5日+α、休養日は月or火曜日+α",
+      "days_per_week": 5,
+      "tier": 2,
+      "tier_basis": "2025年度 関東大会予選・インターハイ予選・新人大会でベスト32が複数回。",
+      "source_url": "https://www.metro.ed.jp/higashiyamato-h/school_life/activities.html",
+      "as_of": "2026-09-28",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "関東大会予選",
+          "level": "都県",
+          "result": "ベスト32",
+          "source_url": "https://www.metro.ed.jp/higashiyamato-h/assets/pamphlet/pamphlet-pdffile-26.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "インターハイ予選",
+          "level": "都県",
+          "result": "ベスト32",
+          "source_url": "https://www.metro.ed.jp/higashiyamato-h/assets/pamphlet/pamphlet-pdffile-26.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "新人大会",
+          "level": "都県",
+          "result": "ベスト32",
+          "source_url": "https://www.metro.ed.jp/higashiyamato-h/assets/pamphlet/pamphlet-pdffile-26.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "秋季立川リーグ",
+          "level": "地区",
+          "result": "第3位",
+          "source_url": "https://www.metro.ed.jp/higashiyamato-h/assets/pamphlet/pamphlet-pdffile-26.pdf"
+        }
+      ]
+    },
+    {
+      "name": "吹奏楽部",
+      "kind": "文化",
+      "days_note": "平日の月・水・木・金＋土曜9:00〜13:00(週5日)。コンクールや演奏会前は朝練や練習日を増やすことも",
+      "days_per_week": 5,
+      "weekend": "土",
+      "tier": 2,
+      "tier_basis": "2025年度 東京都高校吹奏楽コンクール東日本予選で金賞、都高校アンサンブルコンテスト管楽8重奏で金賞。都県代表選出級の公的コンクールでの金賞のため段階2(全国大会出場の実績はなく段階1には届かない)。",
+      "source_url": "https://www.metro.ed.jp/higashiyamato-h/school_life/activities.html",
+      "as_of": "2026-09-28",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "第65回東京都高等学校吹奏楽コンクール東日本予選",
+          "level": "都県",
+          "result": "金賞",
+          "source_url": "https://www.metro.ed.jp/higashiyamato-h/assets/pamphlet/pamphlet-pdffile-26.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第49回東京都高等学校アンサンブルコンテスト",
+          "level": "都県",
+          "result": "管楽8重奏 金賞、管打8重奏 銅賞",
+          "source_url": "https://www.metro.ed.jp/higashiyamato-h/assets/pamphlet/pamphlet-pdffile-26.pdf"
+        }
+      ]
+    },
+    {
+      "name": "フォークソング部",
+      "kind": "文化",
+      "days_note": "火・水・金",
+      "days_per_week": 3,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "週3日以下で、大会形式の実績はなく、公民館イベントや文化祭での演奏にとどまる。",
+      "source_url": "https://www.metro.ed.jp/higashiyamato-h/school_life/activities.html",
+      "as_of": "2026-09-28"
+    },
+    {
+      "name": "英語部",
+      "kind": "文化",
+      "source_url": "https://www.metro.ed.jp/higashiyamato-h/school_life/activities.html",
+      "as_of": "2026-09-28"
+    },
+    {
+      "name": "茶道部",
+      "kind": "文化",
+      "days_note": "基本、毎週火曜日。文化祭の前は集中的に練習",
+      "days_per_week": 1,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "週3日以下で、大会実績はなく、地域イベントや文化祭での活動にとどまる。",
+      "source_url": "https://www.metro.ed.jp/higashiyamato-h/school_life/activities.html",
+      "as_of": "2026-09-28"
+    },
+    {
+      "name": "和太鼓部",
+      "kind": "文化",
+      "days_note": "火・水・金・土(不定期)",
+      "source_url": "https://www.metro.ed.jp/higashiyamato-h/school_life/activities.html",
+      "as_of": "2026-09-28"
+    },
+    {
+      "name": "家庭科部",
+      "kind": "文化",
+      "source_url": "https://www.metro.ed.jp/higashiyamato-h/school_life/activities.html",
+      "as_of": "2026-09-28"
+    },
+    {
+      "name": "科学部",
+      "kind": "文化",
+      "days_note": "毎週水曜・金曜",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "週3日以下で、JSEC(全国規模の科学コンテスト)に参加しているが結果は不明。ほかに目立つ実績が確認できない。",
+      "source_url": "https://www.metro.ed.jp/higashiyamato-h/school_life/activities.html",
+      "as_of": "2026-09-28",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "JSEC(高校生・高専生科学技術チャレンジ)",
+          "level": "全国",
+          "result": "参加(結果不明)",
+          "source_url": "https://www.metro.ed.jp/higashiyamato-h/school_life/activities.html"
+        }
+      ]
+    },
+    {
+      "name": "読書部",
+      "kind": "文化",
+      "source_url": "https://www.metro.ed.jp/higashiyamato-h/school_life/activities.html",
+      "as_of": "2026-09-28"
+    },
+    {
+      "name": "美術部",
+      "kind": "文化",
+      "days_note": "週3回程度",
+      "days_per_week": 3,
+      "tier": 3,
+      "tier_basis": "2025年度 高等学校文化連盟中央展に出展。手引き§6「展示型の都県大会(東京都高等学校文化祭の中央大会など)に入選・出品しただけは段階3」に該当。",
+      "source_url": "https://www.metro.ed.jp/higashiyamato-h/school_life/activities.html",
+      "as_of": "2026-09-28",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "高等学校文化連盟中央展",
+          "level": "都県",
+          "result": "出展",
+          "source_url": "https://www.metro.ed.jp/higashiyamato-h/assets/pamphlet/pamphlet-pdffile-26.pdf"
+        }
+      ]
+    },
+    {
+      "name": "デジタルクリエイト部",
+      "kind": "文化",
+      "days_note": "不定期、放課後",
+      "source_url": "https://www.metro.ed.jp/higashiyamato-h/school_life/activities.html",
+      "as_of": "2026-09-28"
+    }
+  ],
+  "designated_universities": [],
+  "events": [
+    {
+      "kind": "指定",
+      "period_label": "令和7年度(2025年度)から",
+      "summary": "東京都教育委員会より「進学指導研究校」に指定された",
+      "source_url": "https://www.metro.ed.jp/higashiyamato-h/assets/2026学校経営計画.pdf"
+    },
+    {
+      "kind": "指定",
+      "period_label": "2026年3月26日発表・令和8年度指定",
+      "summary": "都立学校における部活動の特別強化プロジェクト「Premiere Club」に女子サッカー部(Tier1)・陸上競技部(Tier3)・硬式テニス部(男女、Tier3)が指定された",
+      "source_url": "https://www.metro.ed.jp/higashiyamato-h/news/index.html"
+    },
+    {
+      "kind": "改築",
+      "period_label": "令和7年度(2025年度)から",
+      "summary": "創立60周年に向けた新校舎改築工事が始まり、仮設校舎での学校生活に移行した。グラウンド種目の部活動は校外施設での活動が中心になっている",
+      "source_url": "https://www.metro.ed.jp/higashiyamato-h/assets/pamphlet/pamphlet-pdffile-26.pdf"
+    }
+  ],
+  "unresolved": [
+    "男女別の生徒数：都教委資料・学校案内パンフレットとも公表なし(パンフレットには出身市区町村分布のみ掲載)",
+    "指定校推薦の大学名一覧：進路決定者数の内訳(52期・指定校推薦38名)は判明するが、大学名を列挙した資料は学校サイト・パンフレットに見当たらない",
+    "満足度アンケートの回答者(生徒/保護者)の別：学校経営報告・計画の数値目標表にのみ満足度の数値があり、回答者の別は明記されていない。学校評価アンケート報告のページ自体も学校サイトに見当たらない",
+    "学級の増減：都教委「第一学年生徒の募集人員等について」は未確認",
+    "53期生(2025年度卒業・令和7年度実績)の大学別合格先一覧：学校経営報告のカテゴリ集計(国公立大難関私大1・GMARCH11・日東駒専53)のみ公開されており、大学別の内訳資料(合格先一覧等)は本調査時点で未掲載",
+    "男子バドミントン部・女子バドミントン部・ダンス部・和太鼓部・デジタルクリエイト部・家庭科部・英語部・読書部の大会順位：学校サイト「部活動・生徒会」の説明文以上の情報がなく、順位不明の「出場」までしか分からない(英語部・読書部は説明文自体がない)"
+  ],
+  "conflicts": [
+    "日東駒専(52期・現役合算)：大学別合格者数の表(③_最近３年間の合格者数.pdf)からの合算は日本10+東洋17+駒澤3+専修15=45だが、卒業生進路状況の表(進路結果.pdf)が示す同じ範囲の小計は44(東洋を16としている)で1名食い違う",
+    "成成明武：手引きの定義(成蹊・成城・明治学院・武蔵)で合算すると14だが、学校の「進路結果.pdf」は同じ枠に獨協・國學院を加えた6大学の小計を18として示しており、集計範囲が異なる",
+    "男子硬式テニス部のPremiere Club指定：学校案内パンフレットとtokyo-premiere-club-2026.csv(「硬式テニス（男女）」Tier3)は男女とも指定としているが、学校サイトのお知らせ(2026/03/27「女子サッカー部・陸上部・女子テニス部がPremiere Clubに指定されました」)は男子テニス部に言及していない。部活動ページの本文でも指定への言及があるのは女子硬式テニス部のみ"
+  ]
+}

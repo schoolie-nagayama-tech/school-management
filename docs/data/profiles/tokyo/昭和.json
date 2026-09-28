@@ -1,0 +1,864 @@
+{
+  "prefecture": "東京都",
+  "school_name": "昭和",
+  "official_url": "https://www.metro.ed.jp/showa-h/",
+  "researched_at": "2026-09-28",
+  "stats": [
+    {
+      "metric": "university_count",
+      "item": "国公立",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 60,
+      "source_url": "https://www.metro.ed.jp/showa-h/assets/filelink/filelink-pdffile-35512.pdf",
+      "source_label": "東京都立昭和高等学校 令和7年度 卒業生の進路状況（合格結果）",
+      "as_of": "2026-03-31",
+      "note": "合格総数(含既卒)は67、現役進学者数は55。国公立大学のみ(大学校4名は別枠)。"
+    },
+    {
+      "metric": "university_count",
+      "item": "早慶上理",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 44,
+      "source_url": "https://www.metro.ed.jp/showa-h/assets/filelink/filelink-pdffile-35512.pdf",
+      "source_label": "東京都立昭和高等学校 令和7年度 卒業生の進路状況（合格結果）",
+      "as_of": "2026-03-31",
+      "note": "合格総数(含既卒)は51、現役進学者数は18。"
+    },
+    {
+      "metric": "university_count",
+      "item": "GMARCH",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 231,
+      "source_url": "https://www.metro.ed.jp/showa-h/assets/filelink/filelink-pdffile-35512.pdf",
+      "source_label": "東京都立昭和高等学校 令和7年度 卒業生の進路状況（合格結果）",
+      "as_of": "2026-03-31",
+      "note": "合格総数(含既卒)は245、現役進学者数は64。"
+    },
+    {
+      "metric": "university_count",
+      "item": "成成明武",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 61,
+      "source_url": "https://www.metro.ed.jp/showa-h/assets/filelink/filelink-pdffile-35512.pdf",
+      "source_label": "東京都立昭和高等学校 令和7年度 卒業生の進路状況（合格結果）",
+      "as_of": "2026-03-31",
+      "note": "大学別の表から合算（成蹊30・成城15・明治学院10・武蔵6の現役合格数）。"
+    },
+    {
+      "metric": "university_count",
+      "item": "日東駒専",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 188,
+      "source_url": "https://www.metro.ed.jp/showa-h/assets/filelink/filelink-pdffile-35512.pdf",
+      "source_label": "東京都立昭和高等学校 令和7年度 卒業生の進路状況（合格結果）",
+      "as_of": "2026-03-31",
+      "note": "大学別の表から合算（日本45・東洋92・駒澤25・専修26の現役合格数）。"
+    },
+    {
+      "metric": "university_count",
+      "item": "東洋大学",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 92,
+      "source_url": "https://www.metro.ed.jp/showa-h/assets/filelink/filelink-pdffile-35512.pdf",
+      "source_label": "東京都立昭和高等学校 令和7年度 卒業生の進路状況（合格結果）",
+      "as_of": "2026-03-31",
+      "note": "現役合格数上位校として掲載。"
+    },
+    {
+      "metric": "university_count",
+      "item": "日本大学",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 45,
+      "source_url": "https://www.metro.ed.jp/showa-h/assets/filelink/filelink-pdffile-35512.pdf",
+      "source_label": "東京都立昭和高等学校 令和7年度 卒業生の進路状況（合格結果）",
+      "as_of": "2026-03-31",
+      "note": "現役合格数上位校として掲載。"
+    },
+    {
+      "metric": "university_count",
+      "item": "成蹊大学",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 30,
+      "source_url": "https://www.metro.ed.jp/showa-h/assets/filelink/filelink-pdffile-35512.pdf",
+      "source_label": "東京都立昭和高等学校 令和7年度 卒業生の進路状況（合格結果）",
+      "as_of": "2026-03-31",
+      "note": "現役合格数上位校として掲載。"
+    },
+    {
+      "metric": "university_count",
+      "item": "専修大学",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 26,
+      "source_url": "https://www.metro.ed.jp/showa-h/assets/filelink/filelink-pdffile-35512.pdf",
+      "source_label": "東京都立昭和高等学校 令和7年度 卒業生の進路状況（合格結果）",
+      "as_of": "2026-03-31",
+      "note": "現役合格数上位校として掲載。"
+    },
+    {
+      "metric": "university_count",
+      "item": "駒澤大学",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 25,
+      "source_url": "https://www.metro.ed.jp/showa-h/assets/filelink/filelink-pdffile-35512.pdf",
+      "source_label": "東京都立昭和高等学校 令和7年度 卒業生の進路状況（合格結果）",
+      "as_of": "2026-03-31",
+      "note": "現役合格数上位校として掲載。"
+    },
+    {
+      "metric": "career_decided_rate",
+      "item": "",
+      "basis": "",
+      "fiscal_year": 2025,
+      "value_num": 88,
+      "source_url": "https://www.metro.ed.jp/showa-h/assets/filelink/filelink-pdffile-35534.pdf",
+      "source_label": "東京都立昭和高等学校 令和7年度 卒業生の進路状況（進路決定率等）",
+      "as_of": "2026-03-31",
+      "note": "R6年度92.0％・R5年度90.5％・R4年度92.3％と比べてR7年度は低下（浪人12.0％）。"
+    },
+    {
+      "metric": "club_join_rate",
+      "item": "",
+      "basis": "",
+      "fiscal_year": 2023,
+      "value_num": 101,
+      "source_url": "https://www.metro.ed.jp/showa-h/assets/filelink/filelink-pdffile-10353.pdf",
+      "source_label": "東京都立昭和高等学校 令和5年度学校経営報告",
+      "as_of": "2024-03",
+      "note": "生徒が複数の部を兼部できるため100％を超える延べ値（前年度実績104％）。"
+    },
+    {
+      "metric": "admission_route_share",
+      "item": "一般",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 56.9,
+      "source_url": "https://www.metro.ed.jp/showa-h/assets/filelink/filelink-pdffile-35534.pdf",
+      "source_label": "東京都立昭和高等学校 令和7年度 卒業生の進路状況（大学入試区分別合格概況）",
+      "as_of": "2026-03-31",
+      "note": "一般選抜による合格の割合。別途、共通テスト利用による合格が39.0％（合格総数957に対する割合）。"
+    },
+    {
+      "metric": "admission_route_share",
+      "item": "指定校推薦",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 0.6,
+      "source_url": "https://www.metro.ed.jp/showa-h/assets/filelink/filelink-pdffile-35534.pdf",
+      "source_label": "東京都立昭和高等学校 令和7年度 卒業生の進路状況（大学入試区分別合格概況）",
+      "as_of": "2026-03-31",
+      "note": "指定校による合格の割合（合格総数に対する割合）。"
+    },
+    {
+      "metric": "admission_route_share",
+      "item": "公募推薦",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 0.8,
+      "source_url": "https://www.metro.ed.jp/showa-h/assets/filelink/filelink-pdffile-35534.pdf",
+      "source_label": "東京都立昭和高等学校 令和7年度 卒業生の進路状況（大学入試区分別合格概況）",
+      "as_of": "2026-03-31",
+      "note": "学校推薦型選抜（指定校除く）による合格の割合。"
+    },
+    {
+      "metric": "admission_route_share",
+      "item": "総合型",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 2.6,
+      "source_url": "https://www.metro.ed.jp/showa-h/assets/filelink/filelink-pdffile-35534.pdf",
+      "source_label": "東京都立昭和高等学校 令和7年度 卒業生の進路状況（大学入試区分別合格概況）",
+      "as_of": "2026-03-31",
+      "note": "総合型選抜による合格の割合。"
+    },
+    {
+      "metric": "exam_ratio",
+      "item": "推薦",
+      "basis": "",
+      "fiscal_year": 2024,
+      "value_num": 3.3,
+      "source_url": "https://www.metro.ed.jp/showa-h/assets/filelink/filelink-pdffile-10353.pdf",
+      "source_label": "東京都立昭和高等学校 令和5年度学校経営報告",
+      "as_of": "2024-03",
+      "note": "応募倍率。男女合同選抜の初年度（前年度実績3.4倍）。目標値は3.5倍。"
+    },
+    {
+      "metric": "satisfaction",
+      "item": "生徒:学校生活",
+      "basis": "",
+      "fiscal_year": 2023,
+      "value_num": 65,
+      "source_url": "https://www.metro.ed.jp/showa-h/assets/filelink/filelink-pdffile-10353.pdf",
+      "source_label": "東京都立昭和高等学校 令和5年度学校経営報告（学校評価アンケート）",
+      "as_of": "2024-03",
+      "note": "前年度実績79％から低下。"
+    },
+    {
+      "metric": "satisfaction",
+      "item": "保護者:学校生活",
+      "basis": "",
+      "fiscal_year": 2023,
+      "value_num": 68,
+      "source_url": "https://www.metro.ed.jp/showa-h/assets/filelink/filelink-pdffile-10353.pdf",
+      "source_label": "東京都立昭和高等学校 令和5年度学校経営報告（学校評価アンケート）",
+      "as_of": "2024-03",
+      "note": "前年度実績78％。"
+    },
+    {
+      "metric": "satisfaction",
+      "item": "教員:学校生活",
+      "basis": "",
+      "fiscal_year": 2023,
+      "value_num": 77,
+      "source_url": "https://www.metro.ed.jp/showa-h/assets/filelink/filelink-pdffile-10353.pdf",
+      "source_label": "東京都立昭和高等学校 令和5年度学校経営報告（学校評価アンケート）",
+      "as_of": "2024-03",
+      "note": "前年度実績78％。"
+    },
+    {
+      "metric": "satisfaction",
+      "item": "生徒:授業",
+      "basis": "",
+      "fiscal_year": 2023,
+      "value_num": 80,
+      "source_url": "https://www.metro.ed.jp/showa-h/assets/filelink/filelink-pdffile-10353.pdf",
+      "source_label": "東京都立昭和高等学校 令和5年度学校経営報告（学校評価アンケート）",
+      "as_of": "2024-03",
+      "note": "「教員は、教え方や教材を工夫したわかる授業を行い、学力を向上させている」への肯定的評価（前年度実績90％）。"
+    },
+    {
+      "metric": "designation",
+      "item": "",
+      "basis": "",
+      "fiscal_year": 2023,
+      "value_text": "進学指導推進校",
+      "source_url": "https://www.metro.ed.jp/showa-h/assets/filelink/filelink-pdffile-10353.pdf",
+      "source_label": "東京都立昭和高等学校 令和5年度学校経営報告",
+      "as_of": "2024-03",
+      "note": "多摩地域のニーズ・過去の進学実績等を踏まえ令和5年度から東京都教育委員会が指定。"
+    },
+    {
+      "metric": "designation",
+      "item": "",
+      "basis": "",
+      "fiscal_year": 2025,
+      "value_text": "GE-NET EE指定校",
+      "source_url": "https://www.metro.ed.jp/showa-h/assets/東京都立昭和高等学校学校　R7学校パンフレット.pdf",
+      "source_label": "東京都立昭和高等学校 学校案内パンフレット（2026 SCHOOL GUIDE）",
+      "as_of": "2025-07",
+      "note": "Tokyo Metropolitan Global Education Network School for English Education。令和4年度からの英語教育研究推進校指定を引き継ぐ形。"
+    },
+    {
+      "metric": "designation",
+      "item": "",
+      "basis": "",
+      "fiscal_year": 2024,
+      "value_text": "海外学校間交流推進校",
+      "source_url": "https://www.metro.ed.jp/showa-h/assets/東京都立昭和高等学校学校　R7学校パンフレット.pdf",
+      "source_label": "東京都立昭和高等学校 学校案内パンフレット（2026 SCHOOL GUIDE）",
+      "as_of": "2025-07",
+      "note": "令和6年度に東京都教育委員会より再度指定。オーストラリア・ゴールドコーストでの海外研修を実施。"
+    },
+    {
+      "metric": "uniform",
+      "item": "",
+      "basis": "",
+      "fiscal_year": 2026,
+      "value_text": "制服ではなく標準服（着用推奨・強制ではない）。ブレザーにスカートまたはズボン、リボンまたはネクタイ。女子はスラックスも選択可能で、女子スカートは夏冬2種類、男子ズボンは夏冬各1種類。",
+      "source_url": "https://www.metro.ed.jp/showa-h/school_life/symbols.html",
+      "source_label": "東京都立昭和高等学校 制服・校章・校歌",
+      "as_of": "2026-09",
+      "note": ""
+    },
+    {
+      "metric": "rules_summary",
+      "item": "",
+      "basis": "",
+      "fiscal_year": 2026,
+      "value_text": "頭髪の加工・化粧・ピアス等の装飾品は禁止。バイク・自動車通学は禁止。アルバイトは学校としては原則認めず、必要時は保護者・担任に要相談。居残り届がなければ放課後17時までに下校。SNSは個人情報や無断での写真・動画掲載を禁止する独自ルールあり。",
+      "source_url": "https://www.metro.ed.jp/showa-h/assets/041122_生徒心得（昭和高校）.pdf",
+      "source_label": "東京都立昭和高等学校 生徒心得",
+      "as_of": "2026-09",
+      "note": ""
+    }
+  ],
+  "clubs": [
+    {
+      "name": "男子バレーボール部",
+      "kind": "運動",
+      "days_note": "月・金：体育館練習、火：柔道場練習（トレーニング中心）、土・日：練習、練習試合、大会等",
+      "days_per_week": 5,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "関東大会予選・全日本一次予選でベスト40、夏季・冬季都立高校大会でベスト32（学校案内パンフレット、年度の記載なし）。都立限定大会はベスト8未満のため段階3。",
+      "source_url": "https://www.metro.ed.jp/showa-h/school_life/activities.html",
+      "as_of": "2026-09-28",
+      "results": []
+    },
+    {
+      "name": "女子バレーボール部",
+      "kind": "運動",
+      "days_note": "平日：火・金　体育館練習、水・木　主に基礎練習とトレーニング、休日：練習・練習試合・大会等",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2023年度インターハイ予選ベスト48・新人大会ベスト64・公立校大会ベスト32、2024年度新人大会ベスト64（部活動紹介ページ）。いずれも段階2の基準（ベスト8が1回、またはベスト16〜32が複数回）に届かない。",
+      "source_url": "https://www.metro.ed.jp/showa-h/school_life/activities.html",
+      "as_of": "2026-09-28",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "インターハイ予選",
+          "level": "都県",
+          "result": "ベスト48",
+          "source_url": "https://www.metro.ed.jp/showa-h/school_life/activities.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "新人大会",
+          "level": "都県",
+          "result": "ベスト64",
+          "source_url": "https://www.metro.ed.jp/showa-h/school_life/activities.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "公立校大会",
+          "level": "都県",
+          "result": "ベスト32",
+          "source_url": "https://www.metro.ed.jp/showa-h/school_life/activities.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "新人大会",
+          "level": "都県",
+          "result": "ベスト64",
+          "source_url": "https://www.metro.ed.jp/showa-h/school_life/activities.html"
+        }
+      ]
+    },
+    {
+      "name": "男子バスケットボール部",
+      "kind": "運動",
+      "days_note": "火・金→アリーナ　水・木→トレーニング　土・日→アリーナor練習試合　月→OFF",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "R6年度（2024年度）新人戦支部大会ベスト4、新人戦本大会都ベスト32（学校案内パンフレット）。ベスト32は1回のみで段階2の「複数回」に届かない。2026年4月からの新体制での目標（都ベスト16・ベスト8）は実績ではないため根拠にしていない。",
+      "source_url": "https://www.metro.ed.jp/showa-h/school_life/activities.html",
+      "as_of": "2026-09-28",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "新人戦本大会",
+          "level": "都県",
+          "result": "ベスト32",
+          "source_url": "https://www.metro.ed.jp/showa-h/assets/東京都立昭和高等学校学校　R7学校パンフレット.pdf"
+        }
+      ]
+    },
+    {
+      "name": "女子バスケットボール部",
+      "kind": "運動",
+      "days_note": "水・金：体育館練習　火・木：外練習　土・日・祝日：練習、練習試合",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "source_url": "https://www.metro.ed.jp/showa-h/school_life/activities.html",
+      "as_of": "2026-09-28",
+      "results": []
+    },
+    {
+      "name": "男子硬式テニス部",
+      "kind": "運動",
+      "days_note": "月～土（水曜日off。日曜日は練習試合or公式戦が入らなければoff。）",
+      "days_per_week": 5.5,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "東京都高等学校テニス選手権大会個人4回戦進出、インターハイ予選出場（学校案内パンフレット、順位の表記なし・年度不明）。",
+      "source_url": "https://www.metro.ed.jp/showa-h/school_life/activities.html",
+      "as_of": "2026-09-28",
+      "results": []
+    },
+    {
+      "name": "女子硬式テニス部",
+      "kind": "運動",
+      "days_note": "月～土　日曜日に練習試合や合同練習あり。",
+      "days_per_week": 6.5,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "インターハイ予選4回戦進出（個人）、都立対抗戦5回戦進出（個人）（学校案内パンフレット、年度不明）。",
+      "source_url": "https://www.metro.ed.jp/showa-h/school_life/activities.html",
+      "as_of": "2026-09-28",
+      "results": []
+    },
+    {
+      "name": "男子ソフトテニス部",
+      "kind": "運動",
+      "days_note": "火曜日～日曜日",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "source_url": "https://www.metro.ed.jp/showa-h/school_life/activities.html",
+      "as_of": "2026-09-28",
+      "results": []
+    },
+    {
+      "name": "女子ソフトテニス部",
+      "kind": "運動",
+      "days_note": "火曜日～日曜日",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "tier": 2,
+      "tier_basis": "2025年度 国公立大会 個人優勝（部活動紹介ページ）。公立限定大会のため1段低く読み段階2。パンフレットの国公立大会団体3位・関東大会個人ベスト32は年度不明のため根拠にしていない",
+      "source_url": "https://www.metro.ed.jp/showa-h/school_life/activities.html",
+      "as_of": "2026-09-28",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "国公立大会",
+          "level": "その他",
+          "result": "個人優勝",
+          "source_url": "https://www.metro.ed.jp/showa-h/school_life/activities.html"
+        }
+      ]
+    },
+    {
+      "name": "バドミントン部",
+      "kind": "運動",
+      "days_note": "平日のうち２日は放課後に体育館練習、１日は朝練として体育館練習、１日は外練習。土・日は基本的にどちらか片方で体育館練習。",
+      "days_per_week": 5,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "関東大会予選出場・インターハイ予選出場（団体・シングルス）（学校案内パンフレット、順位の記載なし）。公式戦や各市民大会・三多摩大会・フジ杯等に出場しているが順位の記載はない。",
+      "source_url": "https://www.metro.ed.jp/showa-h/school_life/activities.html",
+      "as_of": "2026-09-28",
+      "results": []
+    },
+    {
+      "name": "サッカー部",
+      "kind": "運動",
+      "days_note": "基本週５日（月・水・木・金・土）",
+      "days_per_week": 5,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "2026年度 高円宮杯U-18東京リーグT1〜T5のいずれにも所属なし（支部リーグ扱い）（tleague-u18.com、team.php?dy=2026&dt=1〜5を確認）。活動日が週5日のため段階4ではなく段階3。",
+      "source_url": "https://www.metro.ed.jp/showa-h/school_life/activities.html",
+      "as_of": "2026-09-28",
+      "results": []
+    },
+    {
+      "name": "ダンス部",
+      "kind": "運動",
+      "days_note": "毎週 月・火・木・金・土",
+      "days_per_week": 5,
+      "weekend": "土",
+      "tier": 2,
+      "tier_basis": "2023年度学校経営報告に「全国：ダンス部」（全国大会出場）の記載。2024年度ALL JAPAN CHEER DANCE CHAMPIONSHIP関東予選大会Cheer Dance部門5位、2025年度USA School & College Nationals（全国大会）Spirit leading部門1位（学校案内パンフレット）。いずれも民間主催の大会が中心のため、直近3年で確認できる全国級実績は複数あるが段階2にとどめた。",
+      "source_url": "https://www.metro.ed.jp/showa-h/school_life/activities.html",
+      "as_of": "2026-09-28",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "（学校経営報告記載、大会名不明）",
+          "level": "全国",
+          "result": "全国大会出場",
+          "source_url": "https://www.metro.ed.jp/showa-h/assets/filelink/filelink-pdffile-10353.pdf"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "ALL JAPAN CHEER DANCE CHAMPIONSHIP 関東予選大会（Cheer Dance部門、民間主催）",
+          "level": "関東",
+          "result": "5位",
+          "source_url": "https://www.metro.ed.jp/showa-h/assets/東京都立昭和高等学校学校　R7学校パンフレット.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "USA School & College Nationals（Spirit leading部門、民間主催）",
+          "level": "全国",
+          "result": "1位",
+          "source_url": "https://www.metro.ed.jp/showa-h/assets/東京都立昭和高等学校学校　R7学校パンフレット.pdf"
+        }
+      ]
+    },
+    {
+      "name": "陸上競技部",
+      "kind": "運動",
+      "days_note": "月・火・水・金・土　（木曜日は自主練習）",
+      "days_per_week": 5,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "都大会（新人戦等）に個人・リレー多種目で出場（学校案内パンフレット）。全国高校駅伝都予選会は男子18位・女子16位にとどまる。2026年度新人戦支部予選を突破し個人10種目・1チームで都新人大会出場を決めたが（学校サイト部活動ニュース）、都大会本番の順位は未掲載。",
+      "source_url": "https://www.metro.ed.jp/showa-h/school_life/activities.html",
+      "as_of": "2026-09-28",
+      "results": []
+    },
+    {
+      "name": "弓道部",
+      "kind": "運動",
+      "days_note": "月～土",
+      "days_per_week": 6,
+      "weekend": "土",
+      "source_url": "https://www.metro.ed.jp/showa-h/school_life/activities.html",
+      "as_of": "2026-09-28",
+      "results": []
+    },
+    {
+      "name": "山岳部",
+      "kind": "運動",
+      "days_note": "火・水・木・金　＋　月に1回土曜日または日曜日",
+      "days_per_week": 4,
+      "weekend": "なし",
+      "tier": 2,
+      "tier_basis": "2023年度学校経営報告に「関東：山岳部」（関東大会出場）の記載。「関東大会通算12回出場」との説明もあるが年度が特定できないため根拠にしていない。2026年度も10月末に関東大会出場予定（学校サイト部活動ニュース、2026-09-25時点で未実施）。",
+      "source_url": "https://www.metro.ed.jp/showa-h/school_life/activities.html",
+      "as_of": "2026-09-28",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "（学校経営報告記載、大会名不明）",
+          "level": "関東",
+          "result": "関東大会出場",
+          "source_url": "https://www.metro.ed.jp/showa-h/assets/filelink/filelink-pdffile-10353.pdf"
+        }
+      ]
+    },
+    {
+      "name": "卓球部",
+      "kind": "運動",
+      "days_note": "月・火・水・金・土（授業日のみ）",
+      "days_per_week": 5,
+      "weekend": "土",
+      "source_url": "https://www.metro.ed.jp/showa-h/school_life/activities.html",
+      "as_of": "2026-09-28",
+      "results": []
+    },
+    {
+      "name": "硬式野球部",
+      "kind": "運動",
+      "days_note": "月曜日以外",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "tier": 2,
+      "tier_basis": "学校案内パンフレットに「東京都秋季大会２年連続ベスト16」の記載。一球速報での対戦結果（2023年度秋季大会3回戦敗退・2024年度秋季大会3回戦敗退、いずれも1回戦不戦勝からの勝ち上がりでベスト16相当）とも整合する。都県大会ベスト16が複数回のため段階2。2026年度は秋季大会一次予選・代表決定戦を突破し本大会出場を決めた（2026-09-25、学校サイト部活動ニュース）が本大会の結果は未確定。夏（西東京大会）は2023〜2026年度いずれも2〜3回勝って3回戦前後で敗退（一球速報）。",
+      "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=11887",
+      "as_of": "2026-09-28",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "秋季東京都高等学校野球大会",
+          "level": "都県",
+          "result": "3回戦敗退（対早大学院、0-10、6回コールド）",
+          "happened_on": "2023-10-22",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=11887&year=2023"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "秋季東京都高等学校野球大会",
+          "level": "都県",
+          "result": "2勝して3回戦敗退（2回戦は雪谷に9-6で勝利、3回戦は早稲田実に0-7で敗退、7回コールド）",
+          "happened_on": "2024-10-19",
+          "source_url": "https://baseball.omyutech.com/teamStats.action?teamId=11887&year=2024"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "第106回全国高等学校野球選手権西東京大会",
+          "level": "都県",
+          "result": "2勝して3回戦敗退",
+          "source_url": "https://baseball.omyutech.com/teamStats.action?teamId=11887&year=2024"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第107回全国高等学校野球選手権西東京大会",
+          "level": "都県",
+          "result": "2勝して3回戦敗退",
+          "source_url": "https://baseball.omyutech.com/teamStats.action?teamId=11887&year=2025"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "春季東京都高等学校野球大会",
+          "level": "都県",
+          "result": "1回戦敗退",
+          "source_url": "https://baseball.omyutech.com/teamStats.action?teamId=11887&year=2025"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "秋季東京都高等学校野球大会一次予選",
+          "level": "都県",
+          "result": "初戦敗退",
+          "source_url": "https://baseball.omyutech.com/teamStats.action?teamId=11887&year=2025"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "第108回全国高等学校野球選手権西東京大会",
+          "level": "都県",
+          "result": "2勝して3回戦敗退（対聖パウロ学園、5-11）",
+          "happened_on": "2026-07-16",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=11887&year=2026"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "春季東京都高等学校野球大会",
+          "level": "都県",
+          "result": "1回戦敗退（対東京、7-8）",
+          "happened_on": "2026-04-02",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=11887&year=2026"
+        }
+      ]
+    },
+    {
+      "name": "剣道部",
+      "kind": "運動",
+      "days_note": "平日毎日　土曜　日曜は大会",
+      "days_per_week": 5,
+      "weekend": "試合のみ",
+      "source_url": "https://www.metro.ed.jp/showa-h/school_life/activities.html",
+      "as_of": "2026-09-28",
+      "results": []
+    },
+    {
+      "name": "水泳部",
+      "kind": "運動",
+      "days_note": "（オンシーズン）火・水・木・金・授業日の土　（オフシーズン）火・水・木・金",
+      "days_per_week": 5,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "東京都高等学校春期水泳競技大会出場、東京都高等学校選手権水泳競技大会出場（学校案内パンフレット、順位の記載なし）。",
+      "source_url": "https://www.metro.ed.jp/showa-h/school_life/activities.html",
+      "as_of": "2026-09-28",
+      "results": []
+    },
+    {
+      "name": "ストリートダンス部",
+      "kind": "運動",
+      "days_note": "月・水・木・土",
+      "days_per_week": 4,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "第15回日本高校ダンス部選手権（民間主催）夏の大会・秋のweb戦に参加（学校案内パンフレット、順位の記載なし）。",
+      "source_url": "https://www.metro.ed.jp/showa-h/school_life/activities.html",
+      "as_of": "2026-09-28",
+      "results": []
+    },
+    {
+      "name": "演劇部",
+      "kind": "文化",
+      "days_note": "基本は月・火・木・土曜授業のある土（公演前・公演当日・講習会当日はそれ以外もあり）",
+      "days_per_week": 4,
+      "weekend": "土",
+      "tier": 2,
+      "tier_basis": "2024年度 東京都高等学校演劇コンクール都大会で団体賞（3位相当）・短編大会最優秀賞、2024・2025年度に都大会推薦校（学校サイト・パンフレット）。関東の演劇祭出場は年度が特定できないため根拠にせず段階2（見直しで1→2）",
+      "source_url": "https://www.metro.ed.jp/showa-h/school_life/activities.html",
+      "as_of": "2026-09-28",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "東京都高等学校演劇コンクール都大会",
+          "level": "都県",
+          "result": "都大会推薦校に選出（『隣の隣人』）",
+          "source_url": "https://www.metro.ed.jp/showa-h/school_life/activities.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "東京都高等学校演劇コンクール都大会",
+          "level": "都県",
+          "result": "都大会推薦校に選出（『都立昭和高校「駈込み訴え」』）",
+          "source_url": "https://www.metro.ed.jp/showa-h/school_life/activities.html"
+        }
+      ]
+    },
+    {
+      "name": "合唱部",
+      "kind": "文化",
+      "days_note": "月・火・水・金・土",
+      "days_per_week": 5,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "地区大会出場（学校案内パンフレット、順位の記載なし）。7月NHKコンクール、11月地区大会、3月定期演奏会などに参加（部活動紹介ページ）。",
+      "source_url": "https://www.metro.ed.jp/showa-h/school_life/activities.html",
+      "as_of": "2026-09-28",
+      "results": []
+    },
+    {
+      "name": "吹奏楽部",
+      "kind": "文化",
+      "days_note": "火～金 15：25～18：00　土・（日） 8：30～16：45",
+      "days_per_week": 5.5,
+      "weekend": "土日",
+      "source_url": "https://www.metro.ed.jp/showa-h/school_life/activities.html",
+      "as_of": "2026-09-28",
+      "results": []
+    },
+    {
+      "name": "美術部",
+      "kind": "文化",
+      "days_note": "月・火・水・木・金",
+      "days_per_week": 5,
+      "weekend": "なし",
+      "tier": 3,
+      "tier_basis": "都高文連美術・工芸部門主催「中央展」に出品（学校案内パンフレット）。展示型の都大会への出品のため段階3。",
+      "source_url": "https://www.metro.ed.jp/showa-h/school_life/activities.html",
+      "as_of": "2026-09-28",
+      "results": []
+    },
+    {
+      "name": "放送部",
+      "kind": "文化",
+      "days_note": "月曜・水曜・木曜・金曜・土曜（授業日のみＰＭ）",
+      "days_per_week": 5,
+      "weekend": "土",
+      "tier": 1,
+      "tier_basis": "2024年度・2025年度にNHK杯全国高校放送コンテスト全国大会に出場（アナウンス部門。2024年度は全国入選、2025年度は全国大会入選）（部活動紹介ページ・学校案内パンフレット）。全国大会出場が直近3年で2回のため段階1。",
+      "source_url": "https://www.metro.ed.jp/showa-h/school_life/activities.html",
+      "as_of": "2026-09-28",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "NHK杯全国高校放送コンテスト（東京大会）",
+          "level": "都県",
+          "result": "アナウンス・朗読部門 決勝進出",
+          "source_url": "https://www.metro.ed.jp/showa-h/school_life/activities.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "東京都高等学校文化祭",
+          "level": "都県",
+          "result": "アナウンス部門 第7位入賞",
+          "source_url": "https://www.metro.ed.jp/showa-h/school_life/activities.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "NHK杯全国高校放送コンテスト",
+          "level": "全国",
+          "result": "アナウンス部門 全国大会出場（東京大会は第5位）",
+          "source_url": "https://www.metro.ed.jp/showa-h/school_life/activities.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "NHK杯全国高校放送コンテスト",
+          "level": "全国",
+          "result": "アナウンス部門 全国大会入選（東京大会は第3位）",
+          "source_url": "https://www.metro.ed.jp/showa-h/school_life/activities.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "東京都高等学校文化祭",
+          "level": "都県",
+          "result": "朗読部門 第4位",
+          "source_url": "https://www.metro.ed.jp/showa-h/school_life/activities.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "関東地区高校放送コンクール（東京）",
+          "level": "関東",
+          "result": "朗読部門 優秀賞（準優勝）",
+          "source_url": "https://www.metro.ed.jp/showa-h/school_life/activities.html"
+        }
+      ]
+    },
+    {
+      "name": "漫画・文芸部",
+      "kind": "文化",
+      "days_note": "週２～３",
+      "days_per_week": 2.5,
+      "source_url": "https://www.metro.ed.jp/showa-h/school_life/activities.html",
+      "as_of": "2026-09-28",
+      "results": []
+    },
+    {
+      "name": "写真部",
+      "kind": "文化",
+      "days_note": "毎週火曜日（休日に屋外の撮影会を開催することがあります。）",
+      "days_per_week": 1,
+      "weekend": "なし",
+      "source_url": "https://www.metro.ed.jp/showa-h/school_life/activities.html",
+      "as_of": "2026-09-28",
+      "results": []
+    },
+    {
+      "name": "茶道部",
+      "kind": "文化",
+      "days_note": "火曜日・水曜日・金曜日",
+      "days_per_week": 3,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "週3日（火・水・金）の活動で、文化祭での茶会や昭島市青少年フェスティバルへの参加が中心。対外の競技大会等の実績記載なし（部活動紹介ページ・学校案内パンフレット）。",
+      "source_url": "https://www.metro.ed.jp/showa-h/school_life/activities.html",
+      "as_of": "2026-09-28",
+      "results": []
+    },
+    {
+      "name": "軽音楽部",
+      "kind": "文化",
+      "days_note": "月曜日から金曜日までの放課後",
+      "days_per_week": 5,
+      "weekend": "なし",
+      "tier": 3,
+      "tier_basis": "「立川BABEL High School」優勝（学校案内パンフレット、地域規模の大会とみられ年度不明）。校内発表・自主公演が中心。",
+      "source_url": "https://www.metro.ed.jp/showa-h/school_life/activities.html",
+      "as_of": "2026-09-28",
+      "results": []
+    },
+    {
+      "name": "華道部",
+      "kind": "文化",
+      "days_note": "金曜日",
+      "days_per_week": 1,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "週1日（金）の活動。毎年「学生いけばな競技会」に参加しているが、順位等の実績の記載なし（部活動紹介ページ）。小原流の講師を招いて稽古する活動が中心。",
+      "source_url": "https://www.metro.ed.jp/showa-h/school_life/activities.html",
+      "as_of": "2026-09-28",
+      "results": []
+    }
+  ],
+  "designated_universities": [],
+  "events": [
+    {
+      "kind": "指定",
+      "period_label": "令和4年度（2022年度）から",
+      "summary": "東京都教育委員会から英語教育研究推進校の指定を受けた（令和7年度のGE-NET EE指定に引き継がれた）。",
+      "source_url": "https://www.metro.ed.jp/showa-h/assets/filelink/filelink-pdffile-10353.pdf"
+    },
+    {
+      "kind": "指定",
+      "period_label": "令和5年度（2023年度）から",
+      "summary": "多摩地域のニーズや過去の進学実績等が認められ、東京都教育委員会から「進学指導推進校」の指定を受けた。",
+      "source_url": "https://www.metro.ed.jp/showa-h/assets/filelink/filelink-pdffile-10353.pdf"
+    },
+    {
+      "kind": "その他",
+      "period_label": "令和5年度（2023年度）入試から",
+      "summary": "推薦選抜・学力検査による入学者選抜を男女合同選抜に変更した（初年度）。",
+      "source_url": "https://www.metro.ed.jp/showa-h/assets/filelink/filelink-pdffile-10353.pdf"
+    },
+    {
+      "kind": "指定",
+      "period_label": "令和6年度（2024年度）",
+      "summary": "東京都教育委員会より海外学校間交流推進校に再度指定された。",
+      "source_url": "https://www.metro.ed.jp/showa-h/assets/東京都立昭和高等学校学校　R7学校パンフレット.pdf"
+    },
+    {
+      "kind": "指定",
+      "period_label": "令和7年度（2025年度）から",
+      "summary": "Tokyo Metropolitan Global Education Network School for English Education（GE-NET EE）に指定された。",
+      "source_url": "https://www.metro.ed.jp/showa-h/assets/東京都立昭和高等学校学校　R7学校パンフレット.pdf"
+    }
+  ],
+  "unresolved": [
+    "指定校推薦の大学一覧：学校経営報告・学校案内パンフレットともに掲載なし（公式サイトの進路ページにも一覧は見当たらない）。",
+    "在校生の男女別人数：卒業生の男女別人数（進路状況資料）は公開されているが、在校生（学年別）の男女別人数を公式に出している資料は見当たらない。",
+    "生徒心得（PDF）の改定年月：ファイル名の数字（041122）以外に版年月の明記がなく、現行版であることは公式サイト掲載から確認したが改定日は不明。",
+    "学校案内パンフレット（2026 SCHOOL GUIDE、R7年度版）の部活動紹介ページに記載された実績の一部（男子・女子ソフトテニス部の国公立大会3位、卓球部の国公立大会3位、剣道部の敢闘賞、弓道部の全国・関東大会出場、吹奏楽部の金賞、写真部の全国大会出場、軽音楽部の優勝など）は、個々の年度が明記されていない。パンフレット自体は2025年時点の実績（一部R7年度の実績も含む）を掲載した現行の公式資料だが、厳密な年度は特定できていない。",
+    "少林寺拳法部：令和5年度学校経営報告には全国・関東大会出場実績の記載があるが、現行の部活動ページ（学校サイト）には掲載がなく（HTMLコメントアウトで非表示）、現在も活動しているか確認できない。",
+    "漫画・文芸部の全国大会出場・入賞の詳細（大会名・年度・回数）：学校サイトに「全国規模のコンクールに多数入賞」とあるが具体名の記載がなく特定できない。",
+    "弓道部・男子ソフトテニス部・卓球部・剣道部・吹奏楽部・写真部：学校案内パンフレットに全国・関東・都大会上位の実績があるが年度が書かれていないため段階を付けていない（見直しで外した）"
+  ],
+  "conflicts": []
+}

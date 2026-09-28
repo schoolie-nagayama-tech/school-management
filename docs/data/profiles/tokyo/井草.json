@@ -1,0 +1,839 @@
+{
+  "prefecture": "東京都",
+  "school_name": "井草",
+  "official_url": "https://www.metro.ed.jp/igusa-h/",
+  "researched_at": "2026-09-28",
+  "stats": [
+    {
+      "metric": "university_count",
+      "item": "国公立",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 9,
+      "source_url": "https://www.metro.ed.jp/igusa-h/l_pdf/令和７年度学校経営報告.pdf",
+      "source_label": "井草高校 令和7年度学校経営報告 数値目標(進路指導)",
+      "as_of": "2026-03",
+      "note": "学校経営計画(令和8年度版)の「昨年度9名」、パンフレット「主な合格大学」表(国公立9校×1名)とも一致。"
+    },
+    {
+      "metric": "university_count",
+      "item": "国公立",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 8,
+      "source_url": "https://www.metro.ed.jp/igusa-h/img_sub/filelink/filelink-pdffile-36026.pdf",
+      "source_label": "井草高校 2026年入試結果PDF「5年間の進学者推移(現役のみ)」",
+      "as_of": "2026-09",
+      "note": "現役生で実際に進学した人数。合格ベースの9名（現役合格者数）とは基準が異なる。"
+    },
+    {
+      "metric": "university_count",
+      "item": "早慶上理",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 13,
+      "source_url": "https://www.metro.ed.jp/igusa-h/img_sub/filelink/filelink-pdffile-36026.pdf",
+      "source_label": "井草高校 2026年入試結果PDF「合格者の推移(難関大)」",
+      "as_of": "2026-09",
+      "note": "早稲田6・慶応義塾3・上智2・東京理科2の合算(パンフレット主な合格大学表)とも一致。学校経営計画(令和8年度版)の「昨年度13名」とも一致。学校経営報告(令和7年度)は「難関私立大学現役合格者12名」としており、1名の食い違いがある(conflicts参照)。"
+    },
+    {
+      "metric": "university_count",
+      "item": "早慶上理",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 7,
+      "source_url": "https://www.metro.ed.jp/igusa-h/img_sub/filelink/filelink-pdffile-36026.pdf",
+      "source_label": "井草高校 2026年入試結果PDF「5年間の進学者推移(現役のみ)」内訳(早稲田4・慶応義塾2・上智1・東京理科0)",
+      "as_of": "2026-09",
+      "note": "現役生で実際に進学した人数。"
+    },
+    {
+      "metric": "university_count",
+      "item": "GMARCH",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 129,
+      "source_url": "https://www.metro.ed.jp/igusa-h/img_sub/filelink/filelink-pdffile-36026.pdf",
+      "source_label": "井草高校 2026年入試結果PDF「合格者の推移(難関大)」",
+      "as_of": "2026-09",
+      "note": "学習院10・明治27・青山学院11・立教39・中央21・法政21の合算(パンフレット主な合格大学表)=129で一致。学校経営計画(令和8年度版)の「昨年度129名」とも一致。学校経営報告(令和7年度)は「GMARCH現役合格者116名」としており、13名の食い違いがある(conflicts参照)。"
+    },
+    {
+      "metric": "university_count",
+      "item": "GMARCH",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 52,
+      "source_url": "https://www.metro.ed.jp/igusa-h/img_sub/filelink/filelink-pdffile-36026.pdf",
+      "source_label": "井草高校 2026年入試結果PDF「5年間の進学者推移(現役のみ)」内訳(学習院3・明治11・青山学院4・立教17・中央12・法政5)",
+      "as_of": "2026-09",
+      "note": "現役生で実際に進学した人数。"
+    },
+    {
+      "metric": "university_count",
+      "item": "日東駒専",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 150,
+      "source_url": "https://www.metro.ed.jp/igusa-h/l_pdf/令和７年度学校経営報告.pdf",
+      "source_label": "井草高校 令和7年度学校経営報告 数値目標(進路指導)",
+      "as_of": "2026-03",
+      "note": "パンフレット「主な合格大学」表からの合算(日本54+東洋91+駒澤23+専修23=191)とは41名の食い違いがある(conflicts参照)。"
+    },
+    {
+      "metric": "university_count",
+      "item": "日東駒専",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 46,
+      "source_url": "https://www.metro.ed.jp/igusa-h/img_sub/filelink/filelink-pdffile-36026.pdf",
+      "source_label": "井草高校 2026年入試結果PDF「5年間の進学者推移(現役のみ)」内訳(日本12・東洋22・駒澤7・専修5)",
+      "as_of": "2026-09",
+      "note": "現役生で実際に進学した人数。"
+    },
+    {
+      "metric": "university_count",
+      "item": "合計",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 720,
+      "source_url": "https://www.metro.ed.jp/igusa-h/img_sub/filelink/filelink-pdffile-36025.pdf",
+      "source_label": "井草高校 2026年進路状況PDF「合格者内訳(複数合格を含む)」",
+      "as_of": "2026-09",
+      "note": "2026年3月卒業生・現役生の大学合格延べ人数(複数合格を含む)。短期大学2・専門学校16は含まない。"
+    },
+    {
+      "metric": "university_count",
+      "item": "成蹊大学",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 35,
+      "source_url": "https://www.metro.ed.jp/igusa-h/img_sub/pamphlet/pamphlet-pdffile-4412.pdf",
+      "source_label": "井草高校 学校案内パンフレット(令和9年度版)「主な合格大学(現役のみ)」表",
+      "as_of": "2026-04",
+      "note": "国公立・早慶上理・GMARCH・日東駒専のいずれにも含まれない大学のうち人数の多い順。"
+    },
+    {
+      "metric": "university_count",
+      "item": "東京工科大学",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 25,
+      "source_url": "https://www.metro.ed.jp/igusa-h/img_sub/pamphlet/pamphlet-pdffile-4412.pdf",
+      "source_label": "井草高校 学校案内パンフレット(令和9年度版)「主な合格大学(現役のみ)」表",
+      "as_of": "2026-04",
+      "note": ""
+    },
+    {
+      "metric": "university_count",
+      "item": "武蔵野大学",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 17,
+      "source_url": "https://www.metro.ed.jp/igusa-h/img_sub/pamphlet/pamphlet-pdffile-4412.pdf",
+      "source_label": "井草高校 学校案内パンフレット(令和9年度版)「主な合格大学(現役のみ)」表",
+      "as_of": "2026-04",
+      "note": ""
+    },
+    {
+      "metric": "university_count",
+      "item": "武蔵大学",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 17,
+      "source_url": "https://www.metro.ed.jp/igusa-h/img_sub/pamphlet/pamphlet-pdffile-4412.pdf",
+      "source_label": "井草高校 学校案内パンフレット(令和9年度版)「主な合格大学(現役のみ)」表",
+      "as_of": "2026-04",
+      "note": ""
+    },
+    {
+      "metric": "university_count",
+      "item": "亜細亜大学",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 15,
+      "source_url": "https://www.metro.ed.jp/igusa-h/img_sub/pamphlet/pamphlet-pdffile-4412.pdf",
+      "source_label": "井草高校 学校案内パンフレット(令和9年度版)「主な合格大学(現役のみ)」表",
+      "as_of": "2026-04",
+      "note": ""
+    },
+    {
+      "metric": "admission_route_share",
+      "item": "指定校推薦",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 1.7,
+      "source_url": "https://www.metro.ed.jp/igusa-h/img_sub/filelink/filelink-pdffile-36025.pdf",
+      "source_label": "井草高校 2026年進路状況PDF「合格者の受験方法(現役生、延べ人数)」",
+      "as_of": "2026-09",
+      "note": "指定校推薦12名/合計720名で算出。合格者(延べ)ベースであり実進学者ベースではない。"
+    },
+    {
+      "metric": "admission_route_share",
+      "item": "公募推薦",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 0.7,
+      "source_url": "https://www.metro.ed.jp/igusa-h/img_sub/filelink/filelink-pdffile-36025.pdf",
+      "source_label": "井草高校 2026年進路状況PDF「合格者の受験方法(現役生、延べ人数)」",
+      "as_of": "2026-09",
+      "note": "公募(推薦)5名/合計720名で算出。原文表記は「公募(推薦)」。"
+    },
+    {
+      "metric": "admission_route_share",
+      "item": "総合型",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 5.3,
+      "source_url": "https://www.metro.ed.jp/igusa-h/img_sub/filelink/filelink-pdffile-36025.pdf",
+      "source_label": "井草高校 2026年進路状況PDF「合格者の受験方法(現役生、延べ人数)」",
+      "as_of": "2026-09",
+      "note": "総合型(AO)38名/合計720名で算出。"
+    },
+    {
+      "metric": "admission_route_share",
+      "item": "共通テスト利用",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 30.8,
+      "source_url": "https://www.metro.ed.jp/igusa-h/img_sub/filelink/filelink-pdffile-36025.pdf",
+      "source_label": "井草高校 2026年進路状況PDF「合格者の受験方法(現役生、延べ人数)」",
+      "as_of": "2026-09",
+      "note": "共通テスト利用222名/合計720名で算出。一般選抜のうち大学入学共通テストのみで合否判定される方式。"
+    },
+    {
+      "metric": "admission_route_share",
+      "item": "一般",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 61.5,
+      "source_url": "https://www.metro.ed.jp/igusa-h/img_sub/filelink/filelink-pdffile-36025.pdf",
+      "source_label": "井草高校 2026年進路状況PDF「合格者の受験方法(現役生、延べ人数)」",
+      "as_of": "2026-09",
+      "note": "一般受験443名/合計720名で算出。原文表記は「一般受験」。"
+    },
+    {
+      "metric": "career_decided_rate",
+      "item": "",
+      "basis": "",
+      "fiscal_year": 2025,
+      "value_num": 83.4,
+      "source_url": "https://www.metro.ed.jp/igusa-h/img_sub/filelink/filelink-pdffile-36025.pdf",
+      "source_label": "井草高校 2026年進路状況PDF「進路決定状況の推移(現役生)」",
+      "as_of": "2026-09",
+      "note": "2026年3月卒業生・現役生。卒業生302名中、大学236・短大2・専門14・留学0・就職0で進路決定236+2+14=252名、決定率83.4%。"
+    },
+    {
+      "metric": "satisfaction",
+      "item": "生徒:授業(学習意欲喚起)",
+      "basis": "",
+      "fiscal_year": 2025,
+      "value_num": 80,
+      "source_url": "https://www.metro.ed.jp/igusa-h/l_pdf/令和７年度学校経営報告.pdf",
+      "source_label": "井草高校 令和7年度学校経営報告 数値目標(学習指導)",
+      "as_of": "2026-03",
+      "note": "「生徒による授業評価、学習への意欲喚起に関する肯定的評価」。目標95%に対し実績80.0%。"
+    },
+    {
+      "metric": "satisfaction",
+      "item": "生徒:特別活動(部活動)",
+      "basis": "",
+      "fiscal_year": 2025,
+      "value_num": 74,
+      "source_url": "https://www.metro.ed.jp/igusa-h/l_pdf/令和７年度学校経営報告.pdf",
+      "source_label": "井草高校 令和7年度学校経営報告 数値目標(生活指導)",
+      "as_of": "2026-03",
+      "note": "「学校評価、特別活動に関する生徒による肯定的評価」を部活動と行事に分けて集計した部活動側の値。"
+    },
+    {
+      "metric": "satisfaction",
+      "item": "生徒:特別活動(行事)",
+      "basis": "",
+      "fiscal_year": 2025,
+      "value_num": 96,
+      "source_url": "https://www.metro.ed.jp/igusa-h/l_pdf/令和７年度学校経営報告.pdf",
+      "source_label": "井草高校 令和7年度学校経営報告 数値目標(生活指導)",
+      "as_of": "2026-03",
+      "note": "「学校評価、特別活動に関する生徒による肯定的評価」を部活動と行事に分けて集計した行事側の値。"
+    },
+    {
+      "metric": "satisfaction",
+      "item": "保護者:教育活動の発信",
+      "basis": "",
+      "fiscal_year": 2025,
+      "value_num": 81,
+      "source_url": "https://www.metro.ed.jp/igusa-h/l_pdf/令和７年度学校経営報告.pdf",
+      "source_label": "井草高校 令和7年度学校経営報告 数値目標(その他)",
+      "as_of": "2026-03",
+      "note": "「学校評価、教育活動の発信に関する保護者による肯定的評価」。目標90%に対し実績81%。"
+    },
+    {
+      "metric": "satisfaction",
+      "item": "地域:規範意識",
+      "basis": "",
+      "fiscal_year": 2025,
+      "value_num": 66,
+      "source_url": "https://www.metro.ed.jp/igusa-h/l_pdf/令和７年度学校経営報告.pdf",
+      "source_label": "井草高校 令和7年度学校経営報告 数値目標(生活指導)",
+      "as_of": "2026-03",
+      "note": "「学校評価、規範意識に関する地域による肯定的評価」。目標90%に対し実績66%。本文では「規範意識に関する地域による肯定的評価の向上を目指す」と次年度課題に挙げている。"
+    },
+    {
+      "metric": "exam_ratio",
+      "item": "推薦",
+      "basis": "",
+      "fiscal_year": 2025,
+      "value_num": 1.18,
+      "source_url": "https://www.metro.ed.jp/igusa-h/l_pdf/令和８年度学校経営計画.pdf",
+      "source_label": "井草高校 令和8年度学校経営計画 数値目標2",
+      "as_of": "2026-03",
+      "note": "応募倍率。「推薦入試応募倍率」昨年度(令和7年度入学者選抜)実績1.18倍、令和8年度目標2.00倍。"
+    },
+    {
+      "metric": "uniform",
+      "item": "",
+      "basis": "",
+      "fiscal_year": 2026,
+      "value_text": "指定の制服なし。生活規則「服装」に「制服は特に定めないが、その場に応じた身だしなみを考える」とある。",
+      "source_url": "https://www.metro.ed.jp/igusa-h/img_sub/生活規則_1.pdf",
+      "source_label": "井草高校生活規則(生徒指導部)",
+      "as_of": "2026-09",
+      "note": "生活規則本体に発行年月の記載なし。学校案内パンフレットの生徒会長対談でも「服装や髪色の指定がないなど、自由な校風」と説明。"
+    },
+    {
+      "metric": "rules_summary",
+      "item": "",
+      "basis": "",
+      "fiscal_year": 2026,
+      "value_text": "頭髪・服装の指定なし(自由な校風)。携帯電話は持込可だが授業中・考査中は電源を切りかばんへ。アルバイトは原則禁止。",
+      "source_url": "https://www.metro.ed.jp/igusa-h/img_sub/生活規則_1.pdf",
+      "source_label": "井草高校生活規則(生徒指導部)",
+      "as_of": "2026-09",
+      "note": "生活規則本体に発行年月の記載なし。"
+    },
+    {
+      "metric": "designation",
+      "item": "海外学校間交流推進校",
+      "basis": "",
+      "fiscal_year": 2026,
+      "value_text": "海外の学校との交流事業を推進する都教委指定。オーストラリア国際交流プログラムや海外修学旅行(マレーシア)等を実施。",
+      "source_url": "https://www.metro.ed.jp/igusa-h/img_sub/pamphlet/pamphlet-pdffile-4412.pdf",
+      "source_label": "井草高校 学校案内パンフレット(令和9年度版)表紙",
+      "as_of": "2026-04",
+      "note": "都教委「だから都立高」の学校プロフィールにも同名の指定が記載され一致。"
+    },
+    {
+      "metric": "designation",
+      "item": "進学指導等の充実事業推進校",
+      "basis": "",
+      "fiscal_year": 2026,
+      "value_text": "国公立大学・難関私立大学等への進学指導の充実を図る都教委事業の推進校指定。",
+      "source_url": "https://www.metro.ed.jp/igusa-h/img_sub/pamphlet/pamphlet-pdffile-4412.pdf",
+      "source_label": "井草高校 学校案内パンフレット(令和9年度版)表紙",
+      "as_of": "2026-04",
+      "note": "都教委「だから都立高」の学校プロフィールにはこの指定名の記載がなく、代わりに「海外探究フィールドワーク指定校」が記載されている(conflicts参照)。"
+    },
+    {
+      "metric": "designation",
+      "item": "海外探究フィールドワーク指定校",
+      "basis": "",
+      "fiscal_year": 2026,
+      "value_text": "海外での探究的なフィールドワーク活動に取り組む指定(詳細不明)。",
+      "source_url": "https://www.toritsuko.metro.tokyo.lg.jp/school/igusa/",
+      "source_label": "だから都立高 井草高等学校プロフィール「指定校・推進校」",
+      "as_of": "2026-09",
+      "note": "学校案内パンフレット(令和9年度版)表紙にはこの指定名の記載がない(conflicts参照)。"
+    }
+  ],
+  "clubs": [
+    {
+      "name": "弓道部",
+      "kind": "運動",
+      "days_note": "月・火・(水)・木・金・土・(日)",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "source_url": "https://www.metro.ed.jp/igusa-h/activities/club_14_1/index.html",
+      "as_of": "2026-09",
+      "results": []
+    },
+    {
+      "name": "剣道部",
+      "kind": "運動",
+      "days_note": "火・水・金・(土)",
+      "days_per_week": 3.5,
+      "weekend": "土",
+      "source_url": "https://www.metro.ed.jp/igusa-h/activities/club_15/index.html",
+      "as_of": "2026-09",
+      "results": []
+    },
+    {
+      "name": "男子バレーボール部",
+      "kind": "運動",
+      "days_note": "火・水・金・土・(日)",
+      "days_per_week": 4.5,
+      "weekend": "土日",
+      "source_url": "https://www.metro.ed.jp/igusa-h/activities/club_5/index.html",
+      "as_of": "2026-09",
+      "results": []
+    },
+    {
+      "name": "女子バレーボール部",
+      "kind": "運動",
+      "days_note": "月・木",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日週2日。「1部リーグ常連チームになることが目標」「現在の力では厳しい状況」と部員自身が言及しており、目立った大会実績の記載がない(学校サイト部活動ページ)。",
+      "source_url": "https://www.metro.ed.jp/igusa-h/activities/club_6/index.html",
+      "as_of": "2026-09",
+      "results": []
+    },
+    {
+      "name": "サッカー部",
+      "kind": "運動",
+      "days_note": "火・水・(木)・金・土or日",
+      "days_per_week": 4.5,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2026年度 高円宮杯U-18サッカーリーグ東京 T1〜T5のいずれにも参加チームが見当たらず、支部リーグ扱い(段階3)。",
+      "source_url": "https://www.metro.ed.jp/igusa-h/activities/club_2/index.html",
+      "as_of": "2026-09",
+      "results": []
+    },
+    {
+      "name": "硬式野球部",
+      "kind": "運動",
+      "days_note": "火・水・金・(土)・(日)",
+      "days_per_week": 4,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2025年夏 西東京大会で井草・大泉・杉並工科・松蔭大松蔭の連合チームとして出場し、東京農に4-11でコールド負け(一球速報)。部員5名で単独チームを編成できず連合チームで出場している。",
+      "source_url": "https://www.metro.ed.jp/igusa-h/activities/club_1/index.html",
+      "as_of": "2026-09",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "全国高等学校野球選手権 西東京大会",
+          "level": "都県",
+          "result": "井草・大泉・杉並工科・松蔭大松蔭の連合チームとして出場、東京農に4-11でコールド負け",
+          "happened_on": "2025-07-11",
+          "source_url": "https://baseball.omyutech.com/CupHomePageSeiseki.action?gameId=20254289975"
+        }
+      ]
+    },
+    {
+      "name": "男子バスケットボール部",
+      "kind": "運動",
+      "days_note": "火・水・木・金・(土)・(日)",
+      "days_per_week": 5,
+      "weekend": "土日",
+      "source_url": "https://www.metro.ed.jp/igusa-h/activities/club_3/index.html",
+      "as_of": "2026-09",
+      "results": []
+    },
+    {
+      "name": "女子バスケットボール部",
+      "kind": "運動",
+      "days_note": "火・木・土・(日)（朝練水金）",
+      "days_per_week": 3.5,
+      "weekend": "土日",
+      "source_url": "https://www.metro.ed.jp/igusa-h/school_life/activities.html",
+      "as_of": "2026-09",
+      "results": []
+    },
+    {
+      "name": "ソフトテニス部",
+      "kind": "運動",
+      "days_note": "月・火・金",
+      "days_per_week": 3,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日週3日。「団体戦出場」「インドア大会出場」は年間目標として記載され、達成を示す実績の記載はない(学校サイト部活動ページ)。",
+      "source_url": "https://www.metro.ed.jp/igusa-h/activities/club_10/index.html",
+      "as_of": "2026-09",
+      "results": []
+    },
+    {
+      "name": "硬式テニス部",
+      "kind": "運動",
+      "days_note": "月・火・木・金・(土)・(日)",
+      "days_per_week": 5,
+      "weekend": "土日",
+      "source_url": "https://www.metro.ed.jp/igusa-h/activities/club_9/index.html",
+      "as_of": "2026-09",
+      "results": []
+    },
+    {
+      "name": "バドミントン部",
+      "kind": "運動",
+      "days_note": "月・水・土・(日)",
+      "days_per_week": 3.5,
+      "weekend": "土日",
+      "source_url": "https://www.metro.ed.jp/igusa-h/activities/club_7/index.html",
+      "as_of": "2026-09",
+      "results": []
+    },
+    {
+      "name": "卓球部",
+      "kind": "運動",
+      "days_note": "月・火・木・(土)",
+      "days_per_week": 3.5,
+      "weekend": "土",
+      "source_url": "https://www.metro.ed.jp/igusa-h/activities/club_16/index.html",
+      "as_of": "2026-09",
+      "results": []
+    },
+    {
+      "name": "水泳部",
+      "kind": "運動",
+      "days_note": "火・水・木・金・(土)・(日)",
+      "days_per_week": 5,
+      "weekend": "土日",
+      "source_url": "https://www.metro.ed.jp/igusa-h/activities/club_13/index.html",
+      "as_of": "2026-09",
+      "results": []
+    },
+    {
+      "name": "陸上競技部",
+      "kind": "運動",
+      "days_note": "月・火・木・金・(土)",
+      "days_per_week": 4.5,
+      "weekend": "土",
+      "source_url": "https://www.metro.ed.jp/igusa-h/activities/club_12/index.html",
+      "as_of": "2026-09",
+      "results": []
+    },
+    {
+      "name": "フットサル部",
+      "kind": "運動",
+      "days_note": "月・水",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日週2日。年間目標に「フットサルフェスタ関東大会出場」「COLOカップ優勝」とあるが目標としての記載であり、達成年度が特定できる実績ではない(学校サイト部活動ページ)。",
+      "source_url": "https://www.metro.ed.jp/igusa-h/activities/club_11/index.html",
+      "as_of": "2026-09",
+      "results": []
+    },
+    {
+      "name": "ダンス部",
+      "kind": "運動",
+      "days_note": "月・火・木・金・(土)",
+      "days_per_week": 4.5,
+      "weekend": "土",
+      "source_url": "https://www.metro.ed.jp/igusa-h/activities/club_8/index.html",
+      "as_of": "2026-09",
+      "results": []
+    },
+    {
+      "name": "生物部",
+      "kind": "文化",
+      "days_note": "月・水・金(月に1回ほど野外活動)",
+      "days_per_week": 3,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日週3日。校内研究発表(文化祭)が中心で、対外的な大会実績の記載はない(学校サイト部活動ページ)。",
+      "source_url": "https://www.metro.ed.jp/igusa-h/activities/club_29/index.html",
+      "as_of": "2026-09",
+      "results": []
+    },
+    {
+      "name": "写真部",
+      "kind": "文化",
+      "days_note": "(水)",
+      "days_per_week": 0.5,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日週0.5日。「東京都高等学校写真連盟写真展に出展」とあるが、入選等の成果や年度の記載がなく目立った実績として扱わない(学校サイト部活動ページ)。",
+      "source_url": "https://www.metro.ed.jp/igusa-h/activities/club_27/index.html",
+      "as_of": "2026-09",
+      "results": []
+    },
+    {
+      "name": "料理研究部",
+      "kind": "文化",
+      "days_note": "木",
+      "days_per_week": 1,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日週1日。大会・コンテスト実績の記載なし(学校サイト部活動ページ)。",
+      "source_url": "https://www.metro.ed.jp/igusa-h/activities/club_25/index.html",
+      "as_of": "2026-09",
+      "results": []
+    },
+    {
+      "name": "吹奏楽部",
+      "kind": "文化",
+      "days_note": "月・水・木・金・(土)",
+      "days_per_week": 4.5,
+      "weekend": "土",
+      "source_url": "https://www.metro.ed.jp/igusa-h/activities/club_19_1/index.html",
+      "as_of": "2026-09",
+      "results": []
+    },
+    {
+      "name": "演劇部",
+      "kind": "文化",
+      "days_note": "月・火・金",
+      "days_per_week": 3,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日週3日。「秋の地区大会で入賞を目指す」は目標であり、達成実績の記載はない(学校サイト部活動ページ)。",
+      "source_url": "https://www.metro.ed.jp/igusa-h/activities/club_20/index.html",
+      "as_of": "2026-09",
+      "results": []
+    },
+    {
+      "name": "天文部",
+      "kind": "文化",
+      "days_note": "木(月1回ほど観望会)",
+      "days_per_week": 1,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日週1日。観望会中心で大会・コンクール実績の記載なし(学校サイト部活動ページ)。",
+      "source_url": "https://www.metro.ed.jp/igusa-h/activities/club_28/index.html",
+      "as_of": "2026-09",
+      "results": []
+    },
+    {
+      "name": "社会福祉研究部",
+      "kind": "文化",
+      "days_note": "金",
+      "days_per_week": 1,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日週1日。ボランティア・研究活動が中心で大会実績の記載なし(学校サイト部活動ページ)。",
+      "source_url": "https://www.metro.ed.jp/igusa-h/activities/club_23_1/index.html",
+      "as_of": "2026-09",
+      "results": []
+    },
+    {
+      "name": "茶道部",
+      "kind": "文化",
+      "days_note": "火・(木)",
+      "days_per_week": 1.5,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日週1.5日。「第46回全国高等学校総合文化祭 東京大会 茶道部門プレ大会出場」等の記載があるが年度が明記されておらず、回次から推定すると2022年頃で直近3年の根拠にできない(学校サイト部活動ページ)。",
+      "source_url": "https://www.metro.ed.jp/igusa-h/activities/club_18/index.html",
+      "as_of": "2026-09",
+      "results": []
+    },
+    {
+      "name": "パソコン部",
+      "kind": "文化",
+      "days_note": "火",
+      "days_per_week": 1,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日週1日。制作活動が中心で大会実績の記載なし(学校サイト部活動ページ)。",
+      "source_url": "https://www.metro.ed.jp/igusa-h/activities/club_30_1/index.html",
+      "as_of": "2026-09",
+      "results": []
+    },
+    {
+      "name": "ESS部",
+      "kind": "文化",
+      "days_note": "月・水",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日週2日。「スピーチコンテストに参加」とあるが順位等の実績の記載はない(学校サイト部活動ページ)。",
+      "source_url": "https://www.metro.ed.jp/igusa-h/activities/club_22/index.html",
+      "as_of": "2026-09",
+      "results": []
+    },
+    {
+      "name": "美術部",
+      "kind": "文化",
+      "days_note": "火・木・金",
+      "days_per_week": 3,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日週3日。大会・コンクール実績の記載なし(学校サイト部活動ページ)。",
+      "source_url": "https://www.metro.ed.jp/igusa-h/activities/club_21/index.html",
+      "as_of": "2026-09",
+      "results": []
+    },
+    {
+      "name": "漫画研究部",
+      "kind": "文化",
+      "days_note": "水・木",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日週2日。部誌発行が中心で対外的な大会実績の記載なし(学校サイト部活動ページ)。",
+      "source_url": "https://www.metro.ed.jp/igusa-h/activities/club_24/index.html",
+      "as_of": "2026-09",
+      "results": []
+    },
+    {
+      "name": "文芸部",
+      "kind": "文化",
+      "days_note": "月",
+      "days_per_week": 1,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日週1日。大会実績の記載なし(学校サイト部活動ページ)。",
+      "source_url": "https://www.metro.ed.jp/igusa-h/activities/club_26/index.html",
+      "as_of": "2026-09",
+      "results": []
+    },
+    {
+      "name": "ギター同好会",
+      "kind": "同好会",
+      "days_note": "火・水",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日週2日。大会・コンテスト実績の記載なし(学校サイト部活動ページ)。",
+      "source_url": "https://www.metro.ed.jp/igusa-h/activities/club_31/index.html",
+      "as_of": "2026-09",
+      "results": []
+    },
+    {
+      "name": "書道部",
+      "kind": "文化",
+      "days_note": "月・火・木",
+      "days_per_week": 3,
+      "weekend": "なし",
+      "tier": 2,
+      "tier_basis": "都教委「部活動の特別強化プロジェクト Premier Club(プレミアクラブ)〈Tier2〉」に指定(学校案内パンフレット令和9年度版、東京都Premiere Club一覧CSVでも確認)。",
+      "source_url": "https://www.metro.ed.jp/igusa-h/activities/club_17/index.html",
+      "as_of": "2026-09",
+      "results": []
+    }
+  ],
+  "designated_universities": [
+    {
+      "university": "青山学院大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/igusa-h/img_sub/pamphlet/pamphlet-pdffile-4412.pdf",
+      "note": "パンフレット(令和9年度版)「主な指定校推薦大学」表"
+    },
+    {
+      "university": "東京理科大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/igusa-h/img_sub/pamphlet/pamphlet-pdffile-4412.pdf",
+      "note": "パンフレット(令和9年度版)「主な指定校推薦大学」表"
+    },
+    {
+      "university": "学習院大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/igusa-h/img_sub/pamphlet/pamphlet-pdffile-4412.pdf",
+      "note": "パンフレット(令和9年度版)「主な指定校推薦大学」表"
+    },
+    {
+      "university": "東洋大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/igusa-h/img_sub/pamphlet/pamphlet-pdffile-4412.pdf",
+      "note": "パンフレット(令和9年度版)「主な指定校推薦大学」表"
+    },
+    {
+      "university": "成蹊大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/igusa-h/img_sub/pamphlet/pamphlet-pdffile-4412.pdf",
+      "note": "パンフレット(令和9年度版)「主な指定校推薦大学」表"
+    },
+    {
+      "university": "日本女子大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/igusa-h/img_sub/pamphlet/pamphlet-pdffile-4412.pdf",
+      "note": "パンフレット(令和9年度版)「主な指定校推薦大学」表"
+    },
+    {
+      "university": "中央大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/igusa-h/img_sub/pamphlet/pamphlet-pdffile-4412.pdf",
+      "note": "パンフレット(令和9年度版)「主な指定校推薦大学」表"
+    },
+    {
+      "university": "法政大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/igusa-h/img_sub/pamphlet/pamphlet-pdffile-4412.pdf",
+      "note": "パンフレット(令和9年度版)「主な指定校推薦大学」表"
+    },
+    {
+      "university": "東京家政大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/igusa-h/img_sub/pamphlet/pamphlet-pdffile-4412.pdf",
+      "note": "パンフレット(令和9年度版)「主な指定校推薦大学」表"
+    },
+    {
+      "university": "武蔵大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/igusa-h/img_sub/pamphlet/pamphlet-pdffile-4412.pdf",
+      "note": "パンフレット(令和9年度版)「主な指定校推薦大学」表"
+    },
+    {
+      "university": "東京女子大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/igusa-h/img_sub/pamphlet/pamphlet-pdffile-4412.pdf",
+      "note": "パンフレット(令和9年度版)「主な指定校推薦大学」表"
+    },
+    {
+      "university": "武蔵野大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/igusa-h/img_sub/pamphlet/pamphlet-pdffile-4412.pdf",
+      "note": "パンフレット(令和9年度版)「主な指定校推薦大学」表"
+    },
+    {
+      "university": "東京電機大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/igusa-h/img_sub/pamphlet/pamphlet-pdffile-4412.pdf",
+      "note": "パンフレット(令和9年度版)「主な指定校推薦大学」表"
+    },
+    {
+      "university": "明治大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/igusa-h/img_sub/pamphlet/pamphlet-pdffile-4412.pdf",
+      "note": "パンフレット(令和9年度版)「主な指定校推薦大学」表"
+    },
+    {
+      "university": "東京農業大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/igusa-h/img_sub/pamphlet/pamphlet-pdffile-4412.pdf",
+      "note": "パンフレット(令和9年度版)「主な指定校推薦大学」表"
+    },
+    {
+      "university": "立教大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/igusa-h/img_sub/pamphlet/pamphlet-pdffile-4412.pdf",
+      "note": "パンフレット(令和9年度版)「主な指定校推薦大学」表"
+    },
+    {
+      "university": "東京薬科大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/igusa-h/img_sub/pamphlet/pamphlet-pdffile-4412.pdf",
+      "note": "パンフレット(令和9年度版)「主な指定校推薦大学」表"
+    },
+    {
+      "university": "國學院大學",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/igusa-h/img_sub/pamphlet/pamphlet-pdffile-4412.pdf",
+      "note": "パンフレット(令和9年度版)「主な指定校推薦大学」表"
+    }
+  ],
+  "events": [
+    {
+      "kind": "改築",
+      "period_label": "令和9年秋頃〜令和18年度(全工事終了予定)",
+      "summary": "校舎・体育館の改築及び改修、グラウンド整備工事を実施。令和9年秋頃にグラウンド内で仮設校舎の建設着工、令和10年夏頃に仮設校舎へ引っ越し・既存校舎解体、令和14年春頃に新校舎完成、その後体育館・プールの解体と新体育館改築・グラウンド整備を行い令和18年度中の全工事終了を予定。工事予定は今後変更の可能性あり。",
+      "source_url": "https://www.metro.ed.jp/igusa-h/news/2026/05/newsentry_129.html"
+    }
+  ],
+  "unresolved": [
+    "部活動加入率(club_join_rate)：具体的な数値の記載が見当たらない。学校経営報告(令和7年度)は「本校の課題は部活動加入率の低さにある」と言及するのみで、数値化された「加入率」は非公開。「部活動年間継続率92%」は別の指標。",
+    "成成明武(成蹊・成城・明治学院・武蔵)の合算：明治学院大学の合格者数がパンフレット「主な合格大学」表に掲載されておらず不明(成蹊35・成城7・武蔵17は判明)。",
+    "水泳部：部活動ページに「女子は水球で関東大会出場、東京都代表にも選出」とあるが、達成年度の記載がなく段階判定の根拠に使用しなかった。",
+    "硬式野球部：一球速報で2025年夏の1試合(西東京大会、連合チーム)は確認できたが、2023・2024年度の夏および秋季・春季都大会の結果は確認できなかった。",
+    "学校評価アンケート報告(満足度の詳細な調査資料)：学校運営方針ページに単独のリンクが見当たらず、学校経営報告内の数値目標のみを使用した。"
+  ],
+  "conflicts": [
+    "難関私立大学(早慶上理)の現役合格者数：学校経営報告(令和7年度)は12名。学校経営計画(令和8年度版、令和7年度実績)は13名。パンフレット「主な合格大学」表からの合算(早稲田6+慶応3+上智2+東京理科2)も13名で、13名側が2つの独立資料と一致する。",
+    "GMARCH現役合格者数：学校経営報告(令和7年度)は116名。学校経営計画(令和8年度版、令和7年度実績)は129名。パンフレット「主な合格大学」表からの合算(学習院10+明治27+青山学院11+立教39+中央21+法政21)も129名で、129名側が2つの独立資料と一致する。",
+    "日東駒専現役合格者数：学校経営報告(令和7年度)は150名。パンフレット「主な合格大学」表からの合算(日本54+東洋91+駒澤23+専修23)は191名で、41名の食い違いがある。",
+    "都教委指定の名称：学校案内パンフレット(令和9年度版、表紙)は「海外学校間交流推進校」「進学指導等の充実事業推進校」の2つを記載。都教委「だから都立高」の学校プロフィールは「海外探究フィールドワーク指定校」「海外学校間交流推進校」の2つを記載しており、2つ目の指定名が食い違う。"
+  ]
+}
