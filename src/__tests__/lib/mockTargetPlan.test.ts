@@ -10,6 +10,7 @@ import {
 import {
   mastersForSlot,
   matchMockSchoolName,
+  schoolNameKey,
   type HighSchoolKeyRow,
 } from '@/lib/scores/mockSchools';
 
@@ -137,5 +138,60 @@ describe('mastersForSlot', () => {
     expect(matchMockSchoolName('八王子', mastersForSlot(master, false)).highSchoolId).toBe('pri');
     // 設置区分の無い行は公立扱い
     expect(mastersForSlot(master, true).map((r) => r.id)).toEqual(['pub', 'old']);
+  });
+});
+
+describe('学校名の表記ゆれ（schoolNameKey）', () => {
+  // ★本番のマスタに実際にある書き方の組
+  it.each([
+    ['専修大付属', '専修大附属'],
+    ['専修大学附属', '専修大附属'],
+    ['慶應義塾女子', '慶応義塾女子'],
+    ['國學院大久我山', '国学院大久我山'],
+    ['日本体育大荏原', '日体大荏原'],
+    ['日本大学第三', '日大第三'],
+    ['日大第3', '日大第三'],
+    ['明治大学付属中野', '明大付属中野'],
+    ['明大付属世田谷', '明大付属世田谷（日本学園）'],
+  ])('%s と %s を同じ学校にする', (a, b) => {
+    expect(schoolNameKey(a)).toBe(schoolNameKey(b));
+  });
+
+  it('学園・女子など、外すと別の学校になる語は触らない', () => {
+    expect(schoolNameKey('昭和第一')).not.toBe(schoolNameKey('昭和第一学園'));
+    expect(schoolNameKey('日大豊山')).not.toBe(schoolNameKey('日大豊山女子'));
+  });
+
+  it('完全一致で当たらなければ、ならした名前とコースで当てる', () => {
+    const master: HighSchoolKeyRow[] = [
+      {
+        id: 'a',
+        prefecture: '東京都',
+        school_name: '専修大附属',
+        course: '',
+        establishment: '私立',
+      },
+      {
+        id: 'b',
+        prefecture: '東京都',
+        school_name: '駒沢学園女子',
+        course: '特進',
+        establishment: '私立',
+      },
+      {
+        id: 'c',
+        prefecture: '東京都',
+        school_name: '駒沢学園女子',
+        course: '進学',
+        establishment: '私立',
+      },
+    ];
+    expect(matchMockSchoolName('専修大学付属', master)).toMatchObject({
+      highSchoolId: 'a',
+      schoolName: '専修大附属',
+    });
+    expect(matchMockSchoolName('駒沢学園女子－特進コース', master).highSchoolId).toBe('b');
+    // コースを書いていない・複数コースがある学校は当てない（どのコースのめやすか分からない）
+    expect(matchMockSchoolName('駒沢学園女子', master).highSchoolId).toBeNull();
   });
 });

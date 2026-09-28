@@ -49,25 +49,31 @@ export async function getStudentMockSchools(studentId: string): Promise<MockScho
   }));
 }
 
+/** 1回に引く行数。★PostgREST は未ページングの select を1000行で黙って切る */
+const MASTER_PAGE = 1000;
+
 /**
- * 高校マスタを学校名の完全一致でまとめて引く（模試の志望校の当てに使う）。
- * ★全件は読まない。取り込む模試に出てきた名前だけを in で引く（数十校）。
+ * 高校マスタの当てに要る列を全件引く（模試の志望校の当てに使う）。
+ * ★2026-09-28 までは模試に出た名前だけを完全一致の in で引いていた。それだと「附属／付属」
+ *   「慶応／慶應」のような表記ゆれの学校がそもそも手元に来ず、matchMockSchoolName の
+ *   ならし（schoolNameKey）が効かない。列を絞れば全件でも1,300行ほどなので、全部引く。
+ * ★1000行を超えるので range でページングする（切り捨てられると後ろの私立が当たらなくなる）。
  */
-export async function getHighSchoolKeysByNames(names: string[]): Promise<HighSchoolKeyRow[]> {
-  // ★名前は normalizeText で「ケ」→「ヶ」にそろえてある。マスタ側がどちらで書いていても
-  //   引けるよう、両方の表記で引く（当ての突き合わせは matchMockSchoolName が両側をそろえて行う）
-  const unique = Array.from(
-    new Set(names.filter(Boolean).flatMap((n) => [n, n.replace(/ヶ/g, 'ケ')]))
-  );
-  if (unique.length === 0) return [];
-  const { data, error } = await supabase
-    .from('high_schools')
-    .select('id, prefecture, school_name, course, establishment')
-    .in('school_name', unique);
-  if (error) {
-    throw new Error(`高校マスタの取得に失敗しました: ${error.message}`);
+export async function getAllHighSchoolKeys(): Promise<HighSchoolKeyRow[]> {
+  const all: HighSchoolKeyRow[] = [];
+  for (let from = 0; ; from += MASTER_PAGE) {
+    const { data, error } = await supabase
+      .from('high_schools')
+      .select('id, prefecture, school_name, course, establishment')
+      .order('id', { ascending: true })
+      .range(from, from + MASTER_PAGE - 1);
+    if (error) {
+      throw new Error(`高校マスタの取得に失敗しました: ${error.message}`);
+    }
+    const rows = (data || []) as HighSchoolKeyRow[];
+    all.push(...rows);
+    if (rows.length < MASTER_PAGE) return all;
   }
-  return (data || []) as HighSchoolKeyRow[];
 }
 
 /**
