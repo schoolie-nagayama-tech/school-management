@@ -1,0 +1,598 @@
+{
+  "prefecture": "神奈川県",
+  "school_name": "市立横浜商業",
+  "official_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-shogyo/",
+  "researched_at": "2026-09-28",
+  "stats": [
+    {
+      "metric": "university_count",
+      "item": "合計",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 173,
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-shogyo/index.cfm/22,1970,c,html/1970/20260609-181420.pdf",
+      "source_label": "横浜商業高等学校 卒業生の進路状況（令和7年度）",
+      "as_of": "2026-06-09",
+      "note": "「進路別集計」全体の大学欄（男109+女64）。短大3・専門31は含まない。4学科（スポーツマネジメント科・商業科・YBC・国際学科）合計。"
+    },
+    {
+      "metric": "university_count",
+      "item": "国公立",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 8,
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-shogyo/index.cfm/22,1970,c,html/1970/20260609-181420.pdf",
+      "source_label": "横浜商業高等学校 卒業生の進路状況（令和7年度）／学科別大学・専門学校等合格状況（令和7年度）",
+      "as_of": "2026-06-09",
+      "note": "「大学・短大分野別集計」の国公立大学欄（男5+女3）。学科別合格状況PDF（商業科2＋YBC3＋国際学科3）の合算とも一致。"
+    },
+    {
+      "metric": "university_count",
+      "item": "早慶上理",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 4,
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-shogyo/index.cfm/22,1970,c,html/1970/20260609-181501.pdf",
+      "source_label": "横浜商業高等学校 令和7年度 大学・専門学校等合格状況",
+      "as_of": "2026-06-09",
+      "note": "4学科（YSM・商業科・YBC・国際学科）別の学部学科別表から合算（早稲田2＋上智2）。指定校・総合型・公募その他・一般の合格件数の延べ数で、同一生徒の複数合格を含みうる。慶應・東京理科は0件。"
+    },
+    {
+      "metric": "university_count",
+      "item": "GMARCH",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 13,
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-shogyo/index.cfm/22,1970,c,html/1970/20260609-181501.pdf",
+      "source_label": "横浜商業高等学校 令和7年度 大学・専門学校等合格状況",
+      "as_of": "2026-06-09",
+      "note": "学部学科別表から合算（学習院0＋明治2＋青山学院1＋立教1＋中央3＋法政6）。延べ数。"
+    },
+    {
+      "metric": "university_count",
+      "item": "成成明武",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 17,
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-shogyo/index.cfm/22,1970,c,html/1970/20260609-181501.pdf",
+      "source_label": "横浜商業高等学校 令和7年度 大学・専門学校等合格状況",
+      "as_of": "2026-06-09",
+      "note": "学部学科別表から合算（成蹊0＋成城5＋明治学院5＋武蔵7）。延べ数。"
+    },
+    {
+      "metric": "university_count",
+      "item": "日東駒専",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 41,
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-shogyo/index.cfm/22,1970,c,html/1970/20260609-181501.pdf",
+      "source_label": "横浜商業高等学校 令和7年度 大学・専門学校等合格状況",
+      "as_of": "2026-06-09",
+      "note": "学部学科別表から合算（日本13＋東洋15＋駒澤7＋専修6）。延べ数。"
+    },
+    {
+      "metric": "university_count",
+      "item": "関東学院大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 18,
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-shogyo/index.cfm/22,1970,c,html/1970/20260609-181501.pdf",
+      "source_label": "横浜商業高等学校 令和7年度 大学・専門学校等合格状況",
+      "as_of": "2026-06-09",
+      "note": "4学科の学部学科別表から合算。合格が多い大学の1位（延べ）。"
+    },
+    {
+      "metric": "university_count",
+      "item": "神奈川大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 15,
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-shogyo/index.cfm/22,1970,c,html/1970/20260609-181501.pdf",
+      "source_label": "横浜商業高等学校 令和7年度 大学・専門学校等合格状況",
+      "as_of": "2026-06-09",
+      "note": "4学科の学部学科別表から合算。合格が多い大学の2位（東洋大学と同数、延べ）。"
+    },
+    {
+      "metric": "university_count",
+      "item": "東洋大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 15,
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-shogyo/index.cfm/22,1970,c,html/1970/20260609-181501.pdf",
+      "source_label": "横浜商業高等学校 令和7年度 大学・専門学校等合格状況",
+      "as_of": "2026-06-09",
+      "note": "4学科の学部学科別表から合算。合格が多い大学の2位（神奈川大学と同数、延べ）。"
+    },
+    {
+      "metric": "admission_route_share",
+      "item": "総合型",
+      "basis": "",
+      "fiscal_year": 2025,
+      "value_num": 34,
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-shogyo/index.cfm/22,1970,c,html/1970/20260609-181420.pdf",
+      "source_label": "横浜商業高等学校 卒業生の進路状況（令和7年度）「受験方法別集計」全体",
+      "as_of": "2026-06-09",
+      "note": "大学・短大・専門学校の合格者計204名に対する割合（総合型選抜）。原文の区分「総合型選抜」をそのまま使用。"
+    },
+    {
+      "metric": "admission_route_share",
+      "item": "学校推薦型選抜",
+      "basis": "",
+      "fiscal_year": 2025,
+      "value_num": 43,
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-shogyo/index.cfm/22,1970,c,html/1970/20260609-181420.pdf",
+      "source_label": "横浜商業高等学校 卒業生の進路状況（令和7年度）「受験方法別集計」全体",
+      "as_of": "2026-06-09",
+      "note": "指定校推薦と公募以外の学校推薦型選抜を合わせた区分（原文どおり）。指定校のみの割合は資料からは分離できない。"
+    },
+    {
+      "metric": "admission_route_share",
+      "item": "一般",
+      "basis": "",
+      "fiscal_year": 2025,
+      "value_num": 13,
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-shogyo/index.cfm/22,1970,c,html/1970/20260609-181420.pdf",
+      "source_label": "横浜商業高等学校 卒業生の進路状況（令和7年度）「受験方法別集計」全体",
+      "as_of": "2026-06-09",
+      "note": "「一般選抜」区分（共通テスト利用1%は含まない、別区分）。"
+    },
+    {
+      "metric": "satisfaction",
+      "item": "生徒:学校からの情報発信",
+      "basis": "",
+      "fiscal_year": 2025,
+      "value_num": 89,
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-shogyo/index.cfm/1,1238,c,html/1238/20260508-091552.pdf",
+      "source_label": "横浜市立横浜商業高等学校評価報告書（令和5〜7年度）令和7年度分",
+      "as_of": "2026-05-08",
+      "note": "「学校に関する情報公開」項目で「そう思う・ややそう思う」と答えた生徒の割合。学校生活全般の満足度ではない点に注意。保護者は82%、学校ホームページの充実度は保護者74%。"
+    },
+    {
+      "metric": "satisfaction",
+      "item": "保護者:学校からの情報提供",
+      "basis": "",
+      "fiscal_year": 2025,
+      "value_num": 80,
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-shogyo/index.cfm/1,1238,c,html/1238/20260508-091552.pdf",
+      "source_label": "横浜市立横浜商業高等学校評価報告書（令和5〜7年度）令和7年度分",
+      "as_of": "2026-05-08",
+      "note": "「保護者・地域等との連携協力」項目で生徒・保護者とも「そう思う・ややそう思う」が80％超。地域は60％未満。学校生活全般の満足度ではない。"
+    },
+    {
+      "metric": "uniform",
+      "item": "",
+      "basis": "",
+      "fiscal_year": 2027,
+      "value_text": "令和9年度（2027年度）から新制服を導入。Ⅰ型（詰襟＋スラックス、現行デザインを継承しストレッチ素材化）とⅡ型（紺ブレザー、ネクタイ／リボンを選択可、スカートまたは女子スラックス選択可）から自由に選べる。生徒主体の制服デザインプロジェクトと全校アンケートで決定。",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-shogyo/index.cfm/27,0,136,html",
+      "source_label": "横浜商業高等学校 制服（Ⅰ型・Ⅱ型）",
+      "as_of": "2026-09-04",
+      "note": "令和8年度以前（現行）の制服を具体的に説明する公開資料は見当たらなかった。"
+    }
+  ],
+  "clubs": [
+    {
+      "name": "硬式野球部",
+      "kind": "運動",
+      "days_note": "週６日(火・水・木・金・土・日）",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "tier": 1,
+      "tier_basis": "2023年夏 全国高等学校野球選手権神奈川大会 準決勝敗退（ベスト4、横浜に2-12）、2023年秋 神奈川県高等学校野球秋季県大会 準々決勝敗退（ベスト8）（ともに一球速報のチーム成績表示）。直近3年でベスト8以上が2回のため段階1。",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-shogyo/index.cfm/26,0,88,html",
+      "as_of": "2026-09-28",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "第105回全国高等学校野球選手権記念神奈川大会",
+          "level": "都県",
+          "result": "5勝1敗で準決勝敗退（ベスト4、横浜に2-12、6回コールド）",
+          "happened_on": "2023-07-23",
+          "source_url": "https://baseball.omyutech.com/CupHomePageTeams.action?cupId=20230006682"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "令和5年度神奈川県高等学校野球秋季県大会",
+          "level": "都県",
+          "result": "3勝1敗で準々決勝敗退（ベスト8）",
+          "source_url": "https://baseball.omyutech.com/CupHomePageTeams.action?cupId=20230007306"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "令和6年度神奈川県高等学校野球春季県大会",
+          "level": "都県",
+          "result": "2回戦（相模原弥栄に4-2）・3回戦（横浜商大に4-2）を突破後、4回戦で敗退",
+          "happened_on": "2024-04-13",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=12290&year=2024"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "第106回全国高等学校野球選手権神奈川大会",
+          "level": "都県",
+          "result": "3回戦敗退（立花学園に0-7、7回コールド）",
+          "happened_on": "2024-07-13",
+          "source_url": "https://www.kanaloco.jp/sports/baseball/hsbaseball/article-1093697.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "令和7年度神奈川県高等学校野球春季県大会",
+          "level": "都県",
+          "result": "3回戦敗退（延長10回、湘南学院に2-3）",
+          "happened_on": "2025-04-12",
+          "source_url": "https://baseball.omyutech.com/CupHomePageTeams.action?cupId=20250024190"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第107回全国高等学校野球選手権神奈川大会",
+          "level": "都県",
+          "result": "1回戦敗退（横浜栄に5-8、12年ぶりの初戦敗退）",
+          "happened_on": "2025-07-10",
+          "source_url": "https://www.kanaloco.jp/sports/baseball/hsbaseball/article-1188752.html"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "第108回全国高等学校野球選手権神奈川大会",
+          "level": "都県",
+          "result": "3回戦は延長11回タイブレークで横浜隼人に3-2で勝利。5回戦で立花学園に6-13で敗退",
+          "happened_on": "2026-07-18",
+          "source_url": "https://www.kanaloco.jp/sports/baseball/hsbaseball/article-1289593.html"
+        }
+      ]
+    },
+    {
+      "name": "軟式野球部",
+      "kind": "運動",
+      "days_note": "週6日(火・水・木・金・土・日)",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "tier": 2,
+      "tier_basis": "2024年夏、3年ぶり8回目の全国大会出場。第69回全国高等学校軟式野球選手権大会でベスト8、同年のSAGA2024国民スポーツ大会（推薦出場）で第2位（学校公式サイト）。直近3年で全国大会出場が確認できるのはこの1回のため段階2。",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-shogyo/index.cfm/26,0,89,html",
+      "as_of": "2026-09-28",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "第69回全国高等学校軟式野球選手権大会",
+          "level": "全国",
+          "result": "ベスト8",
+          "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-shogyo/index.cfm/26,0,89,381,html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "SAGA2024国民スポーツ大会 軟式野球競技（推薦出場）",
+          "level": "全国",
+          "result": "第2位",
+          "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-shogyo/index.cfm/26,0,89,381,html"
+        }
+      ]
+    },
+    {
+      "name": "陸上競技部",
+      "kind": "運動",
+      "days_note": "週6日(月・火・水・木・金・土) ※変更後：週5日(月・火・水・金・土)",
+      "days_per_week": 5,
+      "weekend": "土",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-shogyo/index.cfm/26,0,90,html",
+      "as_of": "2026-09-28"
+    },
+    {
+      "name": "女子バレーボール部",
+      "kind": "運動",
+      "days_note": "火・水・金・土(試合前は日あり)・木トレーニング",
+      "days_per_week": 5,
+      "weekend": "土",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-shogyo/index.cfm/26,0,91,html",
+      "as_of": "2026-09-28"
+    },
+    {
+      "name": "バスケットボール部",
+      "kind": "運動",
+      "days_note": "週5日(月・火・木・金・土)",
+      "days_per_week": 5,
+      "weekend": "土",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-shogyo/index.cfm/26,0,92,html",
+      "as_of": "2026-09-28"
+    },
+    {
+      "name": "女子ソフトテニス部",
+      "kind": "運動",
+      "days_note": "月、火、水、木、金、日の週６回（土曜日に試合等で活動する場合もあり）",
+      "days_per_week": 6,
+      "weekend": "日",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-shogyo/index.cfm/26,0,93,html",
+      "as_of": "2026-09-28"
+    },
+    {
+      "name": "バドミントン部",
+      "kind": "運動",
+      "days_note": "週5日(火・水・木・金・土) ※変更後：週5日(月・火・水・金・土)",
+      "days_per_week": 5,
+      "weekend": "土",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-shogyo/index.cfm/26,0,94,html",
+      "as_of": "2026-09-28"
+    },
+    {
+      "name": "卓球部",
+      "kind": "運動",
+      "days_note": "週5日(火・水・木・金・土)",
+      "days_per_week": 5,
+      "weekend": "土",
+      "tier": 2,
+      "tier_basis": "令和7年度 神奈川県高等学校新人卓球大会（学校対抗）の成績により、令和7年度第29回関東高等学校新人卓球大会・第53回関東高等学校選抜卓球大会に出場（男子学校対抗Ⅱ部は予選リーグ2位、女子学校対抗Ⅱ部は予選リーグ1位通過後、準決勝・3位決定戦で敗れ4位）（学校公式サイト）。直近3年で関東大会出場が確認できるのはこの1回のため段階2。",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-shogyo/index.cfm/26,0,96,html",
+      "as_of": "2026-09-28",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "第29回関東高等学校新人卓球大会（男子学校対抗Ⅱ部）",
+          "level": "関東",
+          "result": "予選リーグ2位（千葉商大付に2-3、宇都宮に3-2、甲府商業に3-0）",
+          "happened_on": "2025-12-26",
+          "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-shogyo/index.cfm/26,0,96,428,html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第53回関東高等学校選抜卓球大会（女子学校対抗Ⅱ部）",
+          "level": "関東",
+          "result": "予選リーグ1位通過後、準決勝（松戸六実に0-3）・3位決定戦（木更津総合に0-3）で敗れ4位",
+          "happened_on": "2025-12-26",
+          "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-shogyo/index.cfm/26,0,96,428,html"
+        }
+      ]
+    },
+    {
+      "name": "サッカー部",
+      "kind": "運動",
+      "days_note": "週5日(月・火・水・金・土)",
+      "days_per_week": 5,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "2026年度 高円宮杯U-18サッカーリーグ神奈川 K6所属（Group K・6位）（神奈川県サッカー協会、手引きの決まりでK5・K6は段階3）。",
+      "source_url": "https://www.kanagawa-fa.gr.jp/cms/u18-league/2026/div6/",
+      "as_of": "2026-09-28"
+    },
+    {
+      "name": "剣道部",
+      "kind": "運動",
+      "days_note": "週5日(火・水・木・金・土) ※変更後：週5日(火・水・木・金・土、日のどちらか1日)",
+      "days_per_week": 5,
+      "weekend": "土",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-shogyo/index.cfm/26,0,97,html",
+      "as_of": "2026-09-28"
+    },
+    {
+      "name": "弓道部",
+      "kind": "運動",
+      "days_note": "週6日(月・水・木・金、土日のどちらか練習・大会) ※変更後：週6日(月・火・水・木・金、土日のどちらか練習・大会)",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-shogyo/index.cfm/26,0,98,html",
+      "as_of": "2026-09-28"
+    },
+    {
+      "name": "硬式テニス部",
+      "kind": "運動",
+      "days_note": "週5日(月・火・水・金・土)",
+      "days_per_week": 5,
+      "weekend": "土",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-shogyo/index.cfm/26,0,100,html",
+      "as_of": "2026-09-28"
+    },
+    {
+      "name": "ボート部",
+      "kind": "運動",
+      "days_note": "週6日(火・水・木・金・土・日)",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "tier": 1,
+      "tier_basis": "2023年度インターハイ（8月・北海道）女子舵手付きクォドルプル3位・男子舵手付きクォドルプル6位、2024年度インターハイ（長崎）男子舵手付きクォドルプル準決勝進出・女子舵手付きクォドルプル準々決勝進出（学校公式サイト、部の戦績表および結果報告記事）。2年連続で全国大会に出場しているため段階1。",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-shogyo/index.cfm/26,0,99,html",
+      "as_of": "2026-09-28",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "全国高等学校総合体育大会（インターハイ）ボート競技",
+          "level": "全国",
+          "result": "女子舵手付きクォドルプル3位、男子舵手付きクォドルプル6位",
+          "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-shogyo/index.cfm/26,0,99,html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "令和6年度全国高等学校選手権大会（インターハイ）ボート競技",
+          "level": "全国",
+          "result": "男子舵手付きクォドルプル準決勝進出、女子舵手付きクォドルプル準々決勝進出、女子ダブルスカル・女子シングルスカルは出場",
+          "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-shogyo/index.cfm/26,7563,99,406,html"
+        }
+      ]
+    },
+    {
+      "name": "バトントワリング部",
+      "kind": "運動",
+      "days_note": "週3～4日(月・水・金・(土)) ※変更後：週3日(火・木・金)",
+      "days_per_week": 3,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日が週3日（変更後）で、大会結果の公開情報が見当たらないため段階4。",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-shogyo/index.cfm/26,0,102,html",
+      "as_of": "2026-09-28"
+    },
+    {
+      "name": "ダンス部",
+      "kind": "運動",
+      "days_note": "週3～4日(月・水・金 ※発表前の土)",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-shogyo/index.cfm/26,0,101,html",
+      "as_of": "2026-09-28"
+    },
+    {
+      "name": "写真部",
+      "kind": "文化",
+      "days_note": "月1日(不定期)",
+      "days_per_week": 0.25,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日が月1日程度と週3日以下で、大会結果の公開情報が見当たらないため段階4。",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-shogyo/index.cfm/26,0,103,html",
+      "as_of": "2026-09-28"
+    },
+    {
+      "name": "自然科学部",
+      "kind": "文化",
+      "days_note": "週2日(水・土)",
+      "days_per_week": 2,
+      "weekend": "土",
+      "tier": 4,
+      "tier_basis": "活動日が週2日で、大会結果の公開情報が見当たらないため段階4。",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-shogyo/index.cfm/26,0,104,html",
+      "as_of": "2026-09-28"
+    },
+    {
+      "name": "中国語部",
+      "kind": "文化",
+      "days_note": "週1日(金) ※変更後：週1日(水)",
+      "days_per_week": 1,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日が週1日で、大会結果の公開情報が見当たらないため段階4。",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-shogyo/index.cfm/26,0,106,html",
+      "as_of": "2026-09-28"
+    },
+    {
+      "name": "吹奏楽部",
+      "kind": "文化",
+      "days_note": "週5日(火・水・木・金・土)",
+      "days_per_week": 5,
+      "weekend": "土",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-shogyo/index.cfm/26,0,105,html",
+      "as_of": "2026-09-28"
+    },
+    {
+      "name": "軽音楽部",
+      "kind": "文化",
+      "days_note": "週1日(月～金 ※スタジオ活動日)",
+      "days_per_week": 1,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日が週1日で、大会結果の公開情報が見当たらないため段階4。",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-shogyo/index.cfm/26,0,107,html",
+      "as_of": "2026-09-28"
+    },
+    {
+      "name": "漫画研究部",
+      "kind": "文化",
+      "days_note": "毎週金曜日",
+      "days_per_week": 1,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日が週1日で、大会結果の公開情報が見当たらないため段階4。",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-shogyo/index.cfm/26,0,108,html",
+      "as_of": "2026-09-28"
+    },
+    {
+      "name": "美術部",
+      "kind": "文化",
+      "days_note": "週1~3日(火・都合の良い日)",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日が週1〜3日で、大会結果の公開情報が見当たらないため段階4。",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-shogyo/index.cfm/26,0,109,html",
+      "as_of": "2026-09-28"
+    },
+    {
+      "name": "書道部",
+      "kind": "文化",
+      "days_note": "週2～3日(木・金・土・(水)) ※変更後：木・金",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日が週2日（変更後）で、大会結果の公開情報が見当たらないため段階4。",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-shogyo/index.cfm/26,0,110,html",
+      "as_of": "2026-09-28"
+    },
+    {
+      "name": "英語部",
+      "kind": "文化",
+      "days_note": "週1日(金)",
+      "days_per_week": 1,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日が週1日で、大会結果の公開情報が見当たらないため段階4。",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-shogyo/index.cfm/26,0,111,html",
+      "as_of": "2026-09-28"
+    },
+    {
+      "name": "茶道部",
+      "kind": "文化",
+      "days_note": "週2日(火・木)",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日が週2日で、大会結果の公開情報が見当たらないため段階4。",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-shogyo/index.cfm/26,0,112,html",
+      "as_of": "2026-09-28"
+    },
+    {
+      "name": "ワープロ部",
+      "kind": "文化",
+      "days_note": "週2日(火・木)",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日が週2日で、大会結果の公開情報が見当たらないため段階4。",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-shogyo/index.cfm/26,0,113,html",
+      "as_of": "2026-09-28"
+    },
+    {
+      "name": "料理部",
+      "kind": "文化",
+      "days_note": "週1日(水)",
+      "days_per_week": 1,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日が週1日で、大会結果の公開情報が見当たらないため段階4。",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-shogyo/index.cfm/26,0,114,html",
+      "as_of": "2026-09-28"
+    },
+    {
+      "name": "簿記部",
+      "kind": "文化",
+      "days_note": "週6日(月・火・水・木・金・土)",
+      "days_per_week": 6,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "2025年度 全国商業高等学校簿記競技大会 神奈川県大会（団体の部）準優勝（学校公式サイト）。学科でしぼった競技会（商業高校の簿記競技）のため手引きの決まりで1段低く読み、段階3。",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-shogyo/index.cfm/26,0,118,html",
+      "as_of": "2026-09-28",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "全国商業高等学校簿記競技大会 神奈川県大会（団体の部）",
+          "level": "都県",
+          "result": "準優勝（2年連続）",
+          "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-shogyo/index.cfm/26,8196,118,408,html"
+        }
+      ]
+    }
+  ],
+  "designated_universities": [],
+  "events": [
+    {
+      "kind": "制服",
+      "period_label": "令和9年度（2027年度）から",
+      "summary": "生徒主体の制服デザインプロジェクトと全校アンケートを経て新制服を導入。Ⅰ型（詰襟）とⅡ型（ブレザー、スカート・女子スラックス選択可）から選べる。",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-shogyo/index.cfm/27,html"
+    }
+  ],
+  "unresolved": [
+    "校則（頭髪・スマホ・アルバイト等の規定）：学校サイトに一覧・要約ページが見当たらなかった。",
+    "現行（〜令和8年度）の制服の詳細：Ⅰ型・Ⅱ型（令和9年度導入の新制服）のページはあったが、それ以前の現行制服を説明する公開資料が見当たらなかった。",
+    "club_join_rate（部活加入率）：公開資料が見当たらなかった。",
+    "career_decided_rate（進路決定率）：卒業生の進路状況PDFに内訳はあるが、「進路決定率」として明示された数値がないため記載を見送った。",
+    "exam_ratio（推薦入試の倍率）：公開資料が見当たらなかった。",
+    "指定校推薦の一覧：パンフレット等の「主な指定校推薦」一覧が見当たらなかった（2024年度学校案内PDFは文字レイヤーが壊れており読めなかった）。合格状況PDFの「指定校」列は合格実績であり、推薦枠の一覧ではないため掲載を見送った。",
+    "DXハイスクール・生成AIパイロット校の指定内容：学校サイトに該当ページはあるが本文が画像のみで読めず、指定年度・内容が確認できなかった。",
+    "剣道部・弓道部・硬式テニス部・女子バレーボール部・バスケットボール部・女子ソフトテニス部・バドミントン部・陸上競技部の直近3年の大会結果：部活動ページの更新が令和3〜5年度で止まっている部が多く、直近の結果を確認できなかった。",
+    "美術部・書道部・茶道部・ワープロ部・料理部・英語部・中国語部・軽音楽部・漫画研究部・写真部・自然科学部の大会実績：公開されている大会結果の情報が見当たらなかった。"
+  ],
+  "conflicts": []
+}
