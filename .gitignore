@@ -62,3 +62,6 @@ supabase/signing_keys.json
 # CI では必ず落ちるうえ機微情報を含みうるのでコミットしない。
 _tmp_*
 .env*
+
+# 販促・ポスティングの分析メモ（社内資料。gitに入れない）
+docs/posting-analysis-*.md
