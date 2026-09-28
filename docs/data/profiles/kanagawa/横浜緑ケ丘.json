@@ -1,0 +1,803 @@
+{
+  "prefecture": "神奈川県",
+  "school_name": "横浜緑ケ丘",
+  "official_url": "https://www.pen-kanagawa.ed.jp/y-midorigaoka-h/",
+  "researched_at": "2026-09-29",
+  "stats": [
+    {
+      "metric": "designation",
+      "item": "学力向上進学重点校",
+      "value_text": "指定",
+      "fiscal_year": 2026,
+      "source_url": "https://www.pen-kanagawa.ed.jp/gakuryokukoujou/",
+      "source_label": "神奈川県教育委員会 学力向上進学重点校・エントリー校",
+      "as_of": "2026-09",
+      "note": "横浜南西地域の学力向上進学重点校。エントリー校ではない"
+    },
+    {
+      "metric": "designation",
+      "item": "SSH",
+      "fiscal_year": 2022,
+      "value_text": "文部科学省スーパーサイエンスハイスクール指定（令和4年4月1日〜令和9年3月31日）。研究課題は「未来の担い手として、他者と協働して課題解決に導く科学的探究力を備えた人材の育成」",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-midorigaoka-h/nyugaku/documents/gakkouannnai2026.pdf",
+      "source_label": "横浜緑ケ丘高校 学校案内（SCHOOL GUIDE 2026）",
+      "as_of": "2026-07-08",
+      "note": ""
+    },
+    {
+      "metric": "club_join_rate",
+      "item": "",
+      "fiscal_year": 2026,
+      "value_num": 90,
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-midorigaoka-h/nyugaku/documents/gakkouannnai2026.pdf",
+      "source_label": "横浜緑ケ丘高校 学校案内（SCHOOL GUIDE 2026）",
+      "as_of": "2026-07-08",
+      "note": "資料の表記は「加入率は90%を超え」"
+    },
+    {
+      "metric": "uniform",
+      "item": "",
+      "fiscal_year": 2026,
+      "value_text": "Ⅰ型（紺、左襟にバッジ、ブラウスは白）はスカート（ボックスプリーツ／24本プリーツ／ジャンパースカート）またはスラックスから選択。Ⅱ型（黒の詰め襟、指定ボタン）は上着とスラックス。Ⅰ型とⅡ型の混用は不可",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-midorigaoka-h/seikatsu/documents/koukouseikatunoshiori.pdf",
+      "source_label": "横浜緑ケ丘高校 高校生活のしおり",
+      "as_of": "2024-07-30",
+      "note": ""
+    },
+    {
+      "metric": "rules_summary",
+      "item": "",
+      "fiscal_year": 2026,
+      "value_text": "登下校時は標準服着用。頭髪・スマートフォン・アルバイトについての規定は本資料に記載なし",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-midorigaoka-h/seikatsu/documents/koukouseikatunoshiori.pdf",
+      "source_label": "横浜緑ケ丘高校 高校生活のしおり",
+      "as_of": "2024-07-30",
+      "note": ""
+    },
+    {
+      "metric": "university_count",
+      "item": "国公立",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 76,
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-midorigaoka-h/shinro/documents/r07-kekka.pdf",
+      "source_label": "横浜緑ケ丘高校 令和7年度 進路状況",
+      "as_of": "2026-05-01",
+      "note": "国立58（うち進学54）＋公立18（うち進学15）の合格数（延べ）"
+    },
+    {
+      "metric": "university_count",
+      "item": "国公立",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 69,
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-midorigaoka-h/shinro/documents/r07-kekka.pdf",
+      "source_label": "横浜緑ケ丘高校 令和7年度 進路状況",
+      "as_of": "2026-05-01",
+      "note": "2025年度卒業生（78期）の現役時進学者数。大学別合格表の進学数合計（54＋15）と一致"
+    },
+    {
+      "metric": "university_count",
+      "item": "早慶上理",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 230,
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-midorigaoka-h/shinro/documents/r07-kekka.pdf",
+      "source_label": "横浜緑ケ丘高校 令和7年度 進路状況",
+      "as_of": "2026-05-01",
+      "note": "大学別の表から合算（早稲田71・慶應義塾63・上智46・東京理科50）"
+    },
+    {
+      "metric": "university_count",
+      "item": "早慶上理",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 68,
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-midorigaoka-h/shinro/documents/r07-kekka.pdf",
+      "source_label": "横浜緑ケ丘高校 令和7年度 進路状況",
+      "as_of": "2026-05-01",
+      "note": "大学別の表の進学数から合算（早稲田30・慶應義塾29・上智4・東京理科5）。パイグラフ「78期進学先」の25.2%（68/270）と整合"
+    },
+    {
+      "metric": "university_count",
+      "item": "GMARCH",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 380,
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-midorigaoka-h/shinro/documents/r07-kekka.pdf",
+      "source_label": "横浜緑ケ丘高校 令和7年度 進路状況",
+      "as_of": "2026-05-01",
+      "note": "大学別の表から合算（学習院17・明治127・青山学院78・立教64・中央31・法政63）"
+    },
+    {
+      "metric": "university_count",
+      "item": "GMARCH",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 59,
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-midorigaoka-h/shinro/documents/r07-kekka.pdf",
+      "source_label": "横浜緑ケ丘高校 令和7年度 進路状況",
+      "as_of": "2026-05-01",
+      "note": "大学別の表の進学数から合算（学習院3・明治20・青山学院14・立教12・中央3・法政7）。パイグラフの21.9%（59/270）と整合"
+    },
+    {
+      "metric": "university_count",
+      "item": "成成明武",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 71,
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-midorigaoka-h/shinro/documents/r07-kekka.pdf",
+      "source_label": "横浜緑ケ丘高校 令和7年度 進路状況",
+      "as_of": "2026-05-01",
+      "note": "大学別の表から合算（成蹊7・成城9・明治学院54・武蔵1）"
+    },
+    {
+      "metric": "university_count",
+      "item": "成成明武",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 6,
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-midorigaoka-h/shinro/documents/r07-kekka.pdf",
+      "source_label": "横浜緑ケ丘高校 令和7年度 進路状況",
+      "as_of": "2026-05-01",
+      "note": "大学別の表の進学数から合算（成蹊0・成城2・明治学院4・武蔵0）"
+    },
+    {
+      "metric": "university_count",
+      "item": "日東駒専",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 69,
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-midorigaoka-h/shinro/documents/r07-kekka.pdf",
+      "source_label": "横浜緑ケ丘高校 令和7年度 進路状況",
+      "as_of": "2026-05-01",
+      "note": "大学別の表から合算（日本28・東洋17・駒澤8・専修16）"
+    },
+    {
+      "metric": "university_count",
+      "item": "日東駒専",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 7,
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-midorigaoka-h/shinro/documents/r07-kekka.pdf",
+      "source_label": "横浜緑ケ丘高校 令和7年度 進路状況",
+      "as_of": "2026-05-01",
+      "note": "大学別の表の進学数から合算（日本2・東洋2・駒澤1・専修2）"
+    },
+    {
+      "metric": "university_count",
+      "item": "合計",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 1013,
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-midorigaoka-h/shinro/documents/r07-kekka.pdf",
+      "source_label": "横浜緑ケ丘高校 令和7年度 進路状況",
+      "as_of": "2026-05-01",
+      "note": "国立58＋公立18＋私立937の合格数（延べ）合計"
+    },
+    {
+      "metric": "university_count",
+      "item": "合計",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 239,
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-midorigaoka-h/shinro/documents/r07-kekka.pdf",
+      "source_label": "横浜緑ケ丘高校 令和7年度 進路状況",
+      "as_of": "2026-05-01",
+      "note": "4年制大学現役進学者の合計（国公立69＋私立170）。「当該年度卒業生計」の内訳と一致"
+    },
+    {
+      "metric": "university_count",
+      "item": "東京都市大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 31,
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-midorigaoka-h/shinro/documents/r07-kekka.pdf",
+      "source_label": "横浜緑ケ丘高校 令和7年度 進路状況",
+      "as_of": "2026-05-01",
+      "note": "大学群以外で合格が多い大学（上位5つ）"
+    },
+    {
+      "metric": "university_count",
+      "item": "國學院大學",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 21,
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-midorigaoka-h/shinro/documents/r07-kekka.pdf",
+      "source_label": "横浜緑ケ丘高校 令和7年度 進路状況",
+      "as_of": "2026-05-01",
+      "note": "大学群以外で合格が多い大学（上位5つ）"
+    },
+    {
+      "metric": "university_count",
+      "item": "神奈川大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 17,
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-midorigaoka-h/shinro/documents/r07-kekka.pdf",
+      "source_label": "横浜緑ケ丘高校 令和7年度 進路状況",
+      "as_of": "2026-05-01",
+      "note": "大学群以外で合格が多い大学（上位5つ）"
+    },
+    {
+      "metric": "university_count",
+      "item": "芝浦工業大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 15,
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-midorigaoka-h/shinro/documents/r07-kekka.pdf",
+      "source_label": "横浜緑ケ丘高校 令和7年度 進路状況",
+      "as_of": "2026-05-01",
+      "note": "大学群以外で合格が多い大学（上位5つ）"
+    },
+    {
+      "metric": "university_count",
+      "item": "北里大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 8,
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-midorigaoka-h/shinro/documents/r07-kekka.pdf",
+      "source_label": "横浜緑ケ丘高校 令和7年度 進路状況",
+      "as_of": "2026-05-01",
+      "note": "大学群以外で合格が多い大学（上位5つ、工学院大学7と僅差）"
+    }
+  ],
+  "clubs": [
+    {
+      "name": "硬式野球部",
+      "kind": "運動",
+      "days_note": "月・水・木・金・土・日（シーズン中は土日とも）",
+      "days_per_week": 5.5,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2024年度選手権神奈川大会1回戦敗退、2025年度は2回戦勝利・3回戦敗退、2026年度も2回戦勝利・3回戦敗退。秋季県大会も早期敗退が続く（一球速報）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-midorigaoka-h/seikatsu/bukatsudou/baseball.html",
+      "as_of": "2026-08-22",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "第108回全国高等学校野球選手権神奈川大会",
+          "level": "都県",
+          "result": "2回戦勝利（5-4で城郷に勝利）、3回戦敗退（0-5で横浜商大に敗退）",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=12297"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "令和8年度神奈川県高等学校野球秋季県大会",
+          "level": "都県",
+          "result": "地区予選2勝1敗で通過も、県大会は1回戦で敗退",
+          "source_url": "https://baseball.omyutech.com/teamStats.action?teamId=12297"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第107回全国高等学校野球選手権神奈川大会",
+          "level": "都県",
+          "result": "2回戦勝利（12-6で保土ケ谷に勝利）、3回戦敗退（4-9で川和に敗退）",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=12297&year=2025"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "令和7年度神奈川県高等学校野球秋季県大会",
+          "level": "都県",
+          "result": "1回戦敗退",
+          "source_url": "https://baseball.omyutech.com/teamStats.action?teamId=12297&year=2025"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "第106回全国高等学校野球選手権神奈川大会",
+          "level": "都県",
+          "result": "1回戦敗退（5-6で伊志田に敗退）",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=12297&year=2024"
+        }
+      ]
+    },
+    {
+      "name": "サッカー部",
+      "kind": "運動",
+      "days_note": "月・水・木・金・土or日（公式戦の予定次第では週6日）",
+      "days_per_week": 5,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2026年度 高円宮杯U-18神奈川 K5所属（Eグループ）。2025年度K6からK5へ昇格、2024年度はK6グループ6位",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-midorigaoka-h/seikatsu/bukatsudou/soccer.html",
+      "as_of": "2026-08-19",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "高校総体（インターハイ）予選",
+          "level": "都県",
+          "result": "4回戦進出（県ベスト39）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-midorigaoka-h/seikatsu/bukatsudou/soccer.html"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "全国高校サッカー選手権神奈川県予選",
+          "level": "都県",
+          "result": "2回戦進出",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-midorigaoka-h/seikatsu/bukatsudou/soccer.html"
+        }
+      ]
+    },
+    {
+      "name": "男子硬式テニス部",
+      "kind": "運動",
+      "days_note": "火・木・土（金・日は男女交互）",
+      "days_per_week": 3.5,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "2025年度横浜地区リーグ6部所属。都県大会上位の実績は確認できず",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-midorigaoka-h/seikatsu/bukatsudou/koushikitennis.html",
+      "as_of": "2026-08-19"
+    },
+    {
+      "name": "女子硬式テニス部",
+      "kind": "運動",
+      "days_note": "月・水・土（金・日は男女交互）",
+      "days_per_week": 3.5,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "2025年度横浜地区リーグ3部所属。都県大会上位の実績は確認できず",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-midorigaoka-h/seikatsu/bukatsudou/koushikitennis.html",
+      "as_of": "2026-08-19"
+    },
+    {
+      "name": "ソフトテニス部",
+      "kind": "運動",
+      "days_note": "週1〜3日（金曜中心）",
+      "days_per_week": 2,
+      "tier": 4,
+      "tier_basis": "週3日以下の活動で、大会結果の記載なし",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-midorigaoka-h/seikatsu/bukatsudou/softtennis.html",
+      "as_of": "2026-08-19"
+    },
+    {
+      "name": "剣道部",
+      "kind": "運動",
+      "days_note": "月・水・金・土",
+      "days_per_week": 4,
+      "weekend": "土",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-midorigaoka-h/seikatsu/bukatsudou/kendou.html",
+      "as_of": "2026-08-19"
+    },
+    {
+      "name": "アーチェリー部",
+      "kind": "運動",
+      "days_note": "月・水・木・金・土",
+      "days_per_week": 5,
+      "weekend": "土",
+      "tier": 1,
+      "tier_basis": "男子個人が2023年度（関東個人選抜大会・埼玉開催）・2024年度（同大会・茨城開催）と2年連続で神奈川県代表として関東大会に出場",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-midorigaoka-h/seikatsu/bukatsudou/archery.html",
+      "as_of": "2026-08-19",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "関東高等学校選抜大会（茨城開催）",
+          "level": "関東",
+          "result": "男子個人が神奈川県代表として出場",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-midorigaoka-h/seikatsu/bukatsudou/archery.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "関東高等学校選抜大会（埼玉開催）",
+          "level": "関東",
+          "result": "男子個人が神奈川県代表として出場",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-midorigaoka-h/seikatsu/bukatsudou/archery.html"
+        }
+      ]
+    },
+    {
+      "name": "男子バスケットボール部",
+      "kind": "運動",
+      "days_note": "火・水・木・金・土・日",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2024年度KBリーグ3部A6位、2025年度KBリーグ3部C6位、2026年度地区予選2回戦進出。都県大会上位の実績なし",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-midorigaoka-h/seikatsu/bukatsudou/baschetball.html",
+      "as_of": "2026-08-19"
+    },
+    {
+      "name": "女子バスケットボール部",
+      "kind": "運動",
+      "days_note": "火・水・木・金・土・日",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2024〜2026年度は南地区ブロックや関東大会県予選のブロック決勝で好成績を収め県大会に出場を続けるが、県大会本戦での順位は資料に記載がなく段階2の基準（都県ベスト8等）を満たすか確認できず",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-midorigaoka-h/seikatsu/bukatsudou/baschetball.html",
+      "as_of": "2026-08-19"
+    },
+    {
+      "name": "バレーボール部",
+      "kind": "運動",
+      "days_note": "火・木・(金)・土・日",
+      "days_per_week": 4.5,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "各種大会に参加しているが、大会名・結果の詳細の記載がなく参加のみ確認できる",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-midorigaoka-h/seikatsu/bukatsudou/volleyball.html",
+      "as_of": "2026-08-19"
+    },
+    {
+      "name": "男子バドミントン部",
+      "kind": "運動",
+      "days_note": "月・水・木・金・土・日",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "tier": 2,
+      "tier_basis": "2025年度高校総体男子団体県ベスト8、2024年度男子団体県ベスト16、2023年度男子団体県ベスト32",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-midorigaoka-h/seikatsu/bukatsudou/badminton.html",
+      "as_of": "2026-08-19",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "高校総体（男子団体）",
+          "level": "都県",
+          "result": "県ベスト8",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-midorigaoka-h/seikatsu/bukatsudou/badminton.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "高校総体（男子団体）",
+          "level": "都県",
+          "result": "県ベスト16",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-midorigaoka-h/seikatsu/bukatsudou/badminton.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "高校総体（男子団体）",
+          "level": "都県",
+          "result": "県ベスト32",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-midorigaoka-h/seikatsu/bukatsudou/badminton.html"
+        }
+      ]
+    },
+    {
+      "name": "女子バドミントン部",
+      "kind": "運動",
+      "days_note": "月・水・木・金・土・日",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "関東地区予選（2023年度4位、2024年度8位、2025年度出場）で県大会に出場を続けるが、高校総体での順位は2023年度の女子団体県ベスト32以降記載がなく、男子ほどの上位実績は確認できず",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-midorigaoka-h/seikatsu/bukatsudou/badminton.html",
+      "as_of": "2026-08-19"
+    },
+    {
+      "name": "卓球部",
+      "kind": "運動",
+      "days_note": "月・火・木・金・土",
+      "days_per_week": 5,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "2023〜2025年度は個人戦（関東大会県予選・インターハイ県予選・新人戦県予選）で2〜4回戦まで進出する年が続くが、都県上位（ベスト8等）の記録は確認できず",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-midorigaoka-h/seikatsu/bukatsudou/tabletennis.html",
+      "as_of": "2026-08-19"
+    },
+    {
+      "name": "ハンドボール部",
+      "kind": "運動",
+      "days_note": "月・水・木・金・土or日",
+      "days_per_week": 5,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2025年度は横浜市大会（地区相当）でベスト8だが、関東大会・インターハイの県予選はいずれも2回戦敗退、秋季地区大会も1回戦敗退。都県大会上位の実績なし（週末は土日いずれかで活動）。男子のみで活動し、女子部は部員がおらず休部中",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-midorigaoka-h/seikatsu/bukatsudou/handball.html",
+      "as_of": "2026-08-19"
+    },
+    {
+      "name": "ダンス部",
+      "kind": "運動",
+      "days_note": "月・水・金・土",
+      "days_per_week": 4,
+      "weekend": "土",
+      "tier": 2,
+      "tier_basis": "2024年度ODORI Grand Prix全国チャンピオン大会で銅賞（全国大会入賞、民間主催）。ほかマイナビHIGH SCHOOL DANCE COMPETITION EASTや県新人大会での上位入賞が複数あるが、民間主催の全国決勝での入賞は確認できた限り2024年度の1回のみ",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-midorigaoka-h/seikatsu/bukatsudou/dance.html",
+      "as_of": "2026-08-19",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "マイナビ HIGH SCHOOL DANCE COMPETITION 2026 EAST Vol.1（民間主催）",
+          "level": "関東",
+          "result": "審査員特別賞",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-midorigaoka-h/seikatsu/bukatsudou/dance.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "ODORI Grand Prix全国チャンピオン大会（民間主催）",
+          "level": "全国",
+          "result": "銅賞",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-midorigaoka-h/seikatsu/bukatsudou/dance.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "神奈川県高等学校ダンス新人大会",
+          "level": "都県",
+          "result": "第5位入賞",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-midorigaoka-h/seikatsu/bukatsudou/dance.html"
+        }
+      ]
+    },
+    {
+      "name": "チアリーディング部",
+      "kind": "運動",
+      "days_note": "月・水・木・土・(日は大会等)",
+      "days_per_week": 4.5,
+      "weekend": "土日",
+      "tier": 2,
+      "tier_basis": "2025年度にJAPAN CUP・全日本高等学校チアリーディング選手権大会（いずれも全国大会）に出場。県大会エキシビションの部では敢闘賞。全国大会出場を確認できたのは2025年度の1回のみ",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-midorigaoka-h/seikatsu/bukatsudou/cheer.html",
+      "as_of": "2026-08-19",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "全日本高等学校チアリーディング選手権大会",
+          "level": "全国",
+          "result": "出場",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-midorigaoka-h/seikatsu/bukatsudou/cheer.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "JAPAN CUP日本選手権大会",
+          "level": "全国",
+          "result": "出場",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-midorigaoka-h/seikatsu/bukatsudou/cheer.html"
+        }
+      ]
+    },
+    {
+      "name": "ラグビー部",
+      "kind": "運動",
+      "days_note": "活動休止中（かつては火・水・木・金・土）",
+      "tier": 3,
+      "tier_basis": "2023年度関東大会県予選でベスト16（合同チーム）。2025年度以降は活動休止",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-midorigaoka-h/seikatsu/bukatsudou/rugby.html",
+      "as_of": "2026-08-19"
+    },
+    {
+      "name": "陸上競技部",
+      "kind": "運動",
+      "days_note": "月・火・木・金・土",
+      "days_per_week": 5,
+      "weekend": "土",
+      "tier": 2,
+      "tier_basis": "2025年度高校総体神奈川県予選会 男子100mで決勝進出8位",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-midorigaoka-h/seikatsu/bukatsudou/field.html",
+      "as_of": "2026-08-19",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "高校総体神奈川県予選会",
+          "level": "都県",
+          "result": "男子100m 決勝進出8位",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-midorigaoka-h/seikatsu/bukatsudou/field.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "神奈川県高校生新人大会",
+          "level": "都県",
+          "result": "男子100m 準決勝進出",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-midorigaoka-h/seikatsu/bukatsudou/field.html"
+        }
+      ]
+    },
+    {
+      "name": "水泳部",
+      "kind": "運動",
+      "days_note": "水・木・金・土（オフシーズンは水・金）",
+      "days_per_week": 4,
+      "weekend": "土",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-midorigaoka-h/seikatsu/bukatsudou/suiei.html",
+      "as_of": "2026-08-19"
+    },
+    {
+      "name": "吹奏楽部",
+      "kind": "文化",
+      "days_note": "火・水・木・金・土・(日)",
+      "days_per_week": 5.5,
+      "weekend": "土日",
+      "tier": 2,
+      "tier_basis": "2025年度神奈川県吹奏楽コンクールA部門金賞で神奈川県代表に選出。東関東吹奏楽コンクールA部門銀賞（関東大会規模）にも出場したが、関東・全国規模の出場を確認できたのは2025年度の1回のみ",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-midorigaoka-h/seikatsu/bukatsudou/brass.html",
+      "as_of": "2026-08-19",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "神奈川県吹奏楽コンクール",
+          "level": "都県",
+          "result": "A部門金賞、神奈川県代表",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-midorigaoka-h/seikatsu/bukatsudou/brass.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "東関東吹奏楽コンクール",
+          "level": "関東",
+          "result": "A部門銀賞",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-midorigaoka-h/seikatsu/bukatsudou/brass.html"
+        }
+      ]
+    },
+    {
+      "name": "管弦楽部",
+      "kind": "文化",
+      "days_note": "月・火・木・金・土",
+      "days_per_week": 5,
+      "weekend": "土",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-midorigaoka-h/seikatsu/bukatsudou/orchestra.html",
+      "as_of": "2026-08-19"
+    },
+    {
+      "name": "軽音楽部",
+      "kind": "文化",
+      "days_note": "バンドごとに週1回程度",
+      "tier": 4,
+      "tier_basis": "バンドごとに週1回程度の活動で、大会結果の記載なし",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-midorigaoka-h/seikatsu/bukatsudou/lightmusic.html",
+      "as_of": "2026-08-19",
+      "days_per_week": 1
+    },
+    {
+      "name": "美術部",
+      "kind": "文化",
+      "days_note": "火・金",
+      "days_per_week": 2,
+      "tier": 4,
+      "tier_basis": "週2日の活動。神奈川県高等学校美術展（2023・2024年度）に出品しているが、入選・受賞の記載はなし",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-midorigaoka-h/seikatsu/bukatsudou/art.html",
+      "as_of": "2026-08-19"
+    },
+    {
+      "name": "書道部",
+      "kind": "文化",
+      "days_note": "火（+随時）",
+      "days_per_week": 1,
+      "tier": 3,
+      "tier_basis": "2024年度第55回神奈川県高等学校教育書道コンクール団体の部で奨励賞、創作の部で神奈川県高等学校教科研究会書道部会賞。第61回神奈川県高等学校書道展（展示型）で特選",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-midorigaoka-h/seikatsu/bukatsudou/calligraphy.html",
+      "as_of": "2026-08-19"
+    },
+    {
+      "name": "クイズ研究同好会",
+      "kind": "同好会",
+      "days_note": "水・金",
+      "days_per_week": 2,
+      "tier": 4,
+      "tier_basis": "週2日の活動。全国高等学校クイズ選手権を目標に掲げるが、大会結果の記載なし",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-midorigaoka-h/seikatsu/bukatsudou/quiz.html",
+      "as_of": "2026-08-19"
+    },
+    {
+      "name": "化学生物部",
+      "kind": "文化",
+      "days_note": "水・木",
+      "days_per_week": 2,
+      "tier": 3,
+      "tier_basis": "2025年3月、日本金属学会2025年春季大会高校生ポスター発表会で研究発表（緑茶の殺菌作用に関する研究）。受賞等の情報はなし",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-midorigaoka-h/seikatsu/bukatsudou/kagakuseibutu.html",
+      "as_of": "2026-08-19"
+    },
+    {
+      "name": "地学部",
+      "kind": "文化",
+      "days_note": "月・火（+年数回の観測会）",
+      "days_per_week": 2,
+      "tier": 4,
+      "tier_basis": "週2日の活動。大会等の実績の記載なし",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-midorigaoka-h/seikatsu/bukatsudou/geoscience.html",
+      "as_of": "2026-08-19"
+    },
+    {
+      "name": "数学物理部",
+      "kind": "文化",
+      "days_note": "月・火",
+      "days_per_week": 2,
+      "tier": 4,
+      "tier_basis": "週2日の活動。直近3年（2023年度以降）の大会実績の記載なし（2018年度の宇宙エレベーターロボット競技会全国大会出場は対象期間外）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-midorigaoka-h/seikatsu/bukatsudou/physicsphysicalscience.html",
+      "as_of": "2026-08-19"
+    },
+    {
+      "name": "棋道部",
+      "kind": "文化",
+      "days_note": "月",
+      "days_per_week": 1,
+      "tier": 1,
+      "tier_basis": "女子個人が神奈川県高等学校総合文化祭将棋部門で2位となり、全国高等学校総合文化祭（2025年度・鹿児島開催）に神奈川県代表として出場。学校サイトによれば2年連続（2024・2025年度）の全国大会出場",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-midorigaoka-h/seikatsu/bukatsudou/shogi.html",
+      "as_of": "2026-08-19",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "神奈川県高等学校総合文化祭 将棋部門",
+          "level": "都県",
+          "result": "女子個人2位",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-midorigaoka-h/seikatsu/bukatsudou/shogi.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "全国高等学校総合文化祭（鹿児島県開催）",
+          "level": "全国",
+          "result": "女子個人が神奈川県代表として出場",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-midorigaoka-h/seikatsu/bukatsudou/shogi.html"
+        }
+      ]
+    },
+    {
+      "name": "クラシックギター部",
+      "kind": "文化",
+      "days_note": "月・水・金（発表会前は土も）",
+      "days_per_week": 3,
+      "tier": 4,
+      "tier_basis": "週3日の活動。定期演奏会や横浜ギタースクール演奏会など発表会が中心で、コンクール等の実績の記載なし",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-midorigaoka-h/seikatsu/bukatsudou/guiter.html",
+      "as_of": "2026-08-19"
+    },
+    {
+      "name": "漫画研究部",
+      "kind": "文化",
+      "days_note": "水・木",
+      "days_per_week": 2,
+      "tier": 4,
+      "tier_basis": "週2日の活動。競技的な大会はなく、コミックマーケットへの参加や文化祭での作品配付など創作発表が中心",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-midorigaoka-h/seikatsu/bukatsudou/comic.html",
+      "as_of": "2026-08-19"
+    },
+    {
+      "name": "料理部",
+      "kind": "文化",
+      "days_note": "第2火曜・第4金曜",
+      "days_per_week": 0.5,
+      "tier": 4,
+      "tier_basis": "月2回程度の活動。大会等の実績の記載なし",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-midorigaoka-h/seikatsu/bukatsudou/cooking.html",
+      "as_of": "2026-08-19"
+    },
+    {
+      "name": "茶道部",
+      "kind": "文化",
+      "days_note": "火・水（週1〜2回）",
+      "days_per_week": 1.5,
+      "tier": 4,
+      "tier_basis": "週1〜2日の活動。大会等の実績の記載はなく、文化祭でのお茶会や国際交流が中心",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-midorigaoka-h/seikatsu/bukatsudou/sado.html",
+      "as_of": "2026-08-19"
+    },
+    {
+      "name": "手芸部",
+      "kind": "文化",
+      "days_note": "月・木・金",
+      "days_per_week": 3,
+      "tier": 4,
+      "tier_basis": "週3日の活動。実績は「特になし」と記載",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-midorigaoka-h/seikatsu/bukatsudou/syugei.html",
+      "as_of": "2026-08-19"
+    },
+    {
+      "name": "合唱同好会",
+      "kind": "同好会",
+      "days_note": "活動休止中（かつては昼休み不定期・木曜放課後）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-midorigaoka-h/seikatsu/bukatsudou/gasshou.html",
+      "as_of": "2026-08-19"
+    }
+  ],
+  "designated_universities": [],
+  "events": [
+    {
+      "kind": "その他",
+      "period_label": "2023年（令和5年）",
+      "summary": "創立100周年を迎えた",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-midorigaoka-h/nyugaku/documents/gakkouannnai2026.pdf"
+    }
+  ],
+  "unresolved": [
+    "推薦の倍率（exam_ratio）：神奈川県の共通選抜には推薦のみの別枠がなく、学校別の応募・受検倍率は県全体のPDFで確認が必要なため確認を見送った",
+    "在籍生徒数（students）：全校の男女別在籍者数を公式に出している資料が見当たらなかった（男女別集計は東京都立校向けの収集方針のため見送り）",
+    "指定校推薦の大学一覧（designated_universities）：進路ページ・学校案内パンフレット（gakkouannnai2026.pdf）を確認したが、指定校推薦の大学名一覧は掲載されていなかった",
+    "卒業後の進路決定率（career_decided_rate）：資料に就職等も含めた進路決定率の記載はなし。現役大学進学率89.6%（2025年度卒業生）のみ判明"
+  ],
+  "conflicts": [
+    "大学別合格者数（現役・延べ）：進路状況PDF（r07-kekka.pdf）と学校案内パンフレット（gakkouannnai2026.pdf）の「各年度卒業生大学合格状況」表で数値が食い違う（例：明治127→パンフレット137、法政63→74、立教64→71、青山学院78→83、東京理科50→56、中央31→33、学習院17→18）。本ファイルの university_count は進路状況PDFの大学別合格数を採用した"
+  ]
+}

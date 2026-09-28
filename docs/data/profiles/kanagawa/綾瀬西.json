@@ -1,0 +1,583 @@
+{
+  "prefecture": "神奈川県",
+  "school_name": "綾瀬西",
+  "official_url": "https://www.pen-kanagawa.ed.jp/ayasenishi-h/",
+  "researched_at": "2026-09-29",
+  "stats": [
+    {
+      "metric": "university_count",
+      "item": "国公立",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 0,
+      "source_url": "https://www.pen-kanagawa.ed.jp/ayasenishi-h/shinro/documents/shinnrojyoukyou2026.pdf",
+      "source_label": "綾瀬西高校 進学・就職合格状況（過去3年分）大学・短大の表",
+      "as_of": "2026-04-01",
+      "note": "大学別の表（R5〜R7の延べ人数、約40校を列挙）に国公立大学の掲載なし"
+    },
+    {
+      "metric": "university_count",
+      "item": "早慶上理",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 0,
+      "source_url": "https://www.pen-kanagawa.ed.jp/ayasenishi-h/shinro/documents/shinnrojyoukyou2026.pdf",
+      "source_label": "綾瀬西高校 進学・就職合格状況（過去3年分）大学・短大の表",
+      "as_of": "2026-04-01",
+      "note": "大学別の表に早稲田・慶應・上智・東京理科の掲載なし"
+    },
+    {
+      "metric": "university_count",
+      "item": "GMARCH",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 0,
+      "source_url": "https://www.pen-kanagawa.ed.jp/ayasenishi-h/shinro/documents/shinnrojyoukyou2026.pdf",
+      "source_label": "綾瀬西高校 進学・就職合格状況（過去3年分）大学・短大の表",
+      "as_of": "2026-04-01",
+      "note": "大学別の表に学習院・明治・青山学院・立教・中央・法政の掲載なし"
+    },
+    {
+      "metric": "university_count",
+      "item": "成成明武",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 0,
+      "source_url": "https://www.pen-kanagawa.ed.jp/ayasenishi-h/shinro/documents/shinnrojyoukyou2026.pdf",
+      "source_label": "綾瀬西高校 進学・就職合格状況（過去3年分）大学・短大の表",
+      "as_of": "2026-04-01",
+      "note": "大学別の表に成蹊・成城・明治学院・武蔵の掲載なし"
+    },
+    {
+      "metric": "university_count",
+      "item": "日東駒専",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 0,
+      "source_url": "https://www.pen-kanagawa.ed.jp/ayasenishi-h/shinro/documents/shinnrojyoukyou2026.pdf",
+      "source_label": "綾瀬西高校 進学・就職合格状況（過去3年分）大学・短大の表",
+      "as_of": "2026-04-01",
+      "note": "大学別の表に日本・東洋・駒澤・専修の掲載なし"
+    },
+    {
+      "metric": "university_count",
+      "item": "合計",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 58,
+      "source_url": "https://www.pen-kanagawa.ed.jp/ayasenishi-h/shinro/documents/shinnrojyoukyou2026.pdf",
+      "source_label": "綾瀬西高校 進学・就職合格状況（過去3年分）四年制大学「R7」列の四大計欄",
+      "as_of": "2026-04-01",
+      "note": "表の注記「R6年度以降は延べ数」に基づく。短期大学の合格延べ数（15）は別枠のため含まない"
+    },
+    {
+      "metric": "university_count",
+      "item": "合計",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 56,
+      "source_url": "https://www.pen-kanagawa.ed.jp/ayasenishi-h/shinro/documents/shinnrojyoukyou2026.pdf",
+      "source_label": "綾瀬西高校 卒業生進路状況（過去3年分）第41期生（令和8年3月卒業生）表の「大学」欄",
+      "as_of": "2026-04-01",
+      "note": "卒業生273名（男145・女128）を進路先ごとに1人1件で集計した表の大学欄"
+    },
+    {
+      "metric": "university_count",
+      "item": "和光大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 12,
+      "source_url": "https://www.pen-kanagawa.ed.jp/ayasenishi-h/shinro/documents/shinnrojyoukyou2026.pdf",
+      "source_label": "綾瀬西高校 進学・就職合格状況（過去3年分）大学・短大の表",
+      "as_of": "2026-04-01",
+      "note": "大学別の表で最多"
+    },
+    {
+      "metric": "university_count",
+      "item": "関東学院大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 8,
+      "source_url": "https://www.pen-kanagawa.ed.jp/ayasenishi-h/shinro/documents/shinnrojyoukyou2026.pdf",
+      "source_label": "綾瀬西高校 進学・就職合格状況（過去3年分）大学・短大の表",
+      "as_of": "2026-04-01",
+      "note": ""
+    },
+    {
+      "metric": "university_count",
+      "item": "相模女子大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 7,
+      "source_url": "https://www.pen-kanagawa.ed.jp/ayasenishi-h/shinro/documents/shinnrojyoukyou2026.pdf",
+      "source_label": "綾瀬西高校 進学・就職合格状況（過去3年分）大学・短大の表",
+      "as_of": "2026-04-01",
+      "note": ""
+    },
+    {
+      "metric": "university_count",
+      "item": "神奈川工科大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 4,
+      "source_url": "https://www.pen-kanagawa.ed.jp/ayasenishi-h/shinro/documents/shinnrojyoukyou2026.pdf",
+      "source_label": "綾瀬西高校 進学・就職合格状況（過去3年分）大学・短大の表",
+      "as_of": "2026-04-01",
+      "note": ""
+    },
+    {
+      "metric": "university_count",
+      "item": "神奈川大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 3,
+      "source_url": "https://www.pen-kanagawa.ed.jp/ayasenishi-h/shinro/documents/shinnrojyoukyou2026.pdf",
+      "source_label": "綾瀬西高校 進学・就職合格状況（過去3年分）大学・短大の表",
+      "as_of": "2026-04-01",
+      "note": "3名で並ぶ複数校の一つとして記載"
+    },
+    {
+      "metric": "uniform",
+      "item": "",
+      "basis": "",
+      "fiscal_year": 2026,
+      "value_text": "ブレザースタイルとスーツスタイル（無地）から選択制。男子はスラックス、女子はスラックス／スカートを選択可（チェック柄または無地）。ブレザー着用時はリボン/ネクタイ必須。冬服期間11月1日〜4月30日、ニット類（ベスト等）は白・黒・紺・グレー。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/ayasenishi-h/seikatsu/seikatu.html",
+      "source_label": "神奈川県立綾瀬西高等学校 生徒心得・服装規定",
+      "as_of": "2026-03-26",
+      "note": ""
+    },
+    {
+      "metric": "rules_summary",
+      "item": "",
+      "basis": "",
+      "fiscal_year": 2026,
+      "value_text": "頭髪はパーマ・染髪禁止（地毛申請制度あり）。化粧・マニキュア・ピアス等の装身具は禁止。携帯電話は授業・HR中使用禁止でテスト中使用は不正行為扱い。アルバイトは届出制（制服着用・夜10時以降等は禁止）。夜間外出・外泊は保護者の事前承諾が必要。一般生徒の下校16:30、部活動生徒は完全下校19:00。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/ayasenishi-h/seikatsu/documents/0914seitokokorohe.pdf",
+      "source_label": "神奈川県立綾瀬西高等学校 生徒心得",
+      "as_of": "2026-03-26",
+      "note": ""
+    }
+  ],
+  "clubs": [
+    {
+      "name": "硬式野球部",
+      "kind": "運動",
+      "days_note": "月、火、木、金、土、日（原則水曜日は休み）",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2023〜2025年度の夏（選手権神奈川大会）はいずれも2回戦までに敗退（2023年2回戦、2024年2回戦、2025年2回戦）。2026年度秋季県大会は3勝して4回戦敗退（慶應義塾に0-10、6回コールド）が直近で最も勝ち進んだ結果（一球速報）",
+      "source_url": "https://baseball.omyutech.com/teamTop.action?teamId=12096",
+      "as_of": "2026-09-29",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "令和8年度神奈川県高等学校野球秋季県大会",
+          "level": "都県",
+          "result": "1回戦 平塚農商に11-0で勝利",
+          "happened_on": "2026-09-05",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=12096&year=2026"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "令和8年度神奈川県高等学校野球秋季県大会",
+          "level": "都県",
+          "result": "2回戦 柏木学園に5-4で勝利",
+          "happened_on": "2026-09-08",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=12096&year=2026"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "令和8年度神奈川県高等学校野球秋季県大会",
+          "level": "都県",
+          "result": "3回戦 川崎工科に10-7で勝利（延長10回）",
+          "happened_on": "2026-09-12",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=12096&year=2026"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "令和8年度神奈川県高等学校野球秋季県大会",
+          "level": "都県",
+          "result": "4回戦敗退（慶應義塾に0-10、6回コールド）",
+          "happened_on": "2026-09-19",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=12096&year=2026"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第107回全国高等学校野球選手権神奈川大会",
+          "level": "都県",
+          "result": "2回戦敗退（伊志田に3-4）",
+          "happened_on": "2025-07-12",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=12096&year=2025"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "令和7年度神奈川県高等学校野球秋季県大会",
+          "level": "都県",
+          "result": "2回戦敗退（横浜商大に6-12）",
+          "happened_on": "2025-09-07",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=12096&year=2025"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "第106回全国高等学校野球選手権神奈川大会",
+          "level": "都県",
+          "result": "2回戦敗退（藤沢清流に1-8）",
+          "happened_on": "2024-07-10",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=12096&year=2024"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "第105回全国高等学校野球選手権記念神奈川大会",
+          "level": "都県",
+          "result": "1回戦 七里ガ浜に9-4で勝利、2回戦は桐蔭学園に0-13で敗退",
+          "happened_on": "2023-07-11",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=12096&year=2023"
+        }
+      ]
+    },
+    {
+      "name": "男女テニス部",
+      "kind": "運動",
+      "days_note": "月・火・木・土曜日の週4日（日曜日以外は自主練ありの週6日）",
+      "days_per_week": 4,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "部活動ページに「際立った実績はありません」と明記（北相地区大会・あじさいカップ・県大会に出場するが上位進出の記録なし）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/ayasenishi-h/seikatsu/undoubu.html",
+      "as_of": "2025-05-02"
+    },
+    {
+      "name": "サッカー部",
+      "kind": "運動",
+      "days_note": "火～金、土、日",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2026年度 高円宮杯U-18サッカーリーグ神奈川 K5所属（グループK、5チーム中5位、2勝3敗）",
+      "source_url": "https://www.kanagawa-fa.gr.jp/cms/u18-league/2026/div5/",
+      "as_of": "2026-09-29",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "令和7年度 高校総体 神奈川県予選",
+          "level": "都県",
+          "result": "1次予選1回戦 柏陽に2-2（PK4-2）で勝利、2回戦は厚木に0-2で敗退",
+          "source_url": "https://www.pen-kanagawa.ed.jp/ayasenishi-h/seikatsu/undoubu.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "令和7年度 高校サッカー選手権 神奈川県予選",
+          "level": "都県",
+          "result": "1次予選1回戦 県立川崎に4-0で勝利、2回戦は茅ヶ崎北稜に0-2で敗退",
+          "source_url": "https://www.pen-kanagawa.ed.jp/ayasenishi-h/seikatsu/undoubu.html"
+        }
+      ]
+    },
+    {
+      "name": "卓球部",
+      "kind": "運動",
+      "days_note": "月・火・木・金（〜18：00）",
+      "days_per_week": 4,
+      "weekend": "なし",
+      "tier": 3,
+      "tier_basis": "2025年度 関東大会県予選（北相地区大会）で団体ベスト8まで勝ち上がり県予選出場権を獲得（地区大会の成績のため一段低く読み段階3）（部活動ページ）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/ayasenishi-h/seikatsu/undoubu.html",
+      "as_of": "2025-05-02",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "関東大会北相地区予選",
+          "level": "地区",
+          "result": "団体ベスト8、関東大会県予選への出場権を獲得",
+          "source_url": "https://www.pen-kanagawa.ed.jp/ayasenishi-h/seikatsu/undoubu.html"
+        }
+      ]
+    },
+    {
+      "name": "男子バスケットボール部",
+      "kind": "運動",
+      "days_note": "朝練7:50〜（月）〜（金）※希望者のみ、夕練16:00〜18:30（月:自主練 水:OFF）、土日:練習や練習試合・公式戦",
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2025年度は総体予選北支部予選で大和に41-90で敗退、北相地区夏季大会は2回戦で相原に79-29で勝利したがブロック準決勝で東海大相模に18-104で敗退（いずれも地区・支部・ブロック単位の大会）（部活動ページ）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/ayasenishi-h/seikatsu/undoubu.html",
+      "as_of": "2025-05-02",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "総体予選 北支部予選",
+          "level": "地区",
+          "result": "大和に41-90で敗退",
+          "happened_on": "2025-05-10",
+          "source_url": "https://www.pen-kanagawa.ed.jp/ayasenishi-h/seikatsu/undoubu.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "北相地区夏季大会",
+          "level": "地区",
+          "result": "2回戦 相原に79-29で勝利、ブロック準決勝は東海大相模に18-104で敗退",
+          "source_url": "https://www.pen-kanagawa.ed.jp/ayasenishi-h/seikatsu/undoubu.html"
+        }
+      ]
+    },
+    {
+      "name": "女子バスケットボール部",
+      "kind": "運動",
+      "days_note": "朝練7:50〜（月）〜（金）、夕練16:00〜18:30（火以外のすべて）、土日:練習や練習試合・公式戦",
+      "weekend": "土日",
+      "source_url": "https://www.pen-kanagawa.ed.jp/ayasenishi-h/seikatsu/undoubu.html",
+      "as_of": "2025-05-02"
+    },
+    {
+      "name": "バドミントン部",
+      "kind": "運動",
+      "days_note": "週5、6日（月・木曜日は原則休み）",
+      "days_per_week": 5.5,
+      "weekend": "土日",
+      "source_url": "https://www.pen-kanagawa.ed.jp/ayasenishi-h/seikatsu/undoubu.html",
+      "as_of": "2025-05-02"
+    },
+    {
+      "name": "バレーボール部",
+      "kind": "運動",
+      "days_note": "週3〜5日",
+      "days_per_week": 4,
+      "source_url": "https://www.pen-kanagawa.ed.jp/ayasenishi-h/seikatsu/undoubu.html",
+      "as_of": "2025-05-02"
+    },
+    {
+      "name": "陸上競技部",
+      "kind": "運動",
+      "days_note": "競技スポーツ部門は週5日間（月・火・水・金・土）、健康スポーツ部門は週3日間（月・水・金）。日曜日が試合の場合は月曜日休み",
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "2025年度は神奈川県記録会・高校総体西地区予選に出場したが上位進出の記載はなし（部活動ページ）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/ayasenishi-h/seikatsu/undoubu.html",
+      "as_of": "2025-05-02",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "神奈川県記録会",
+          "level": "都県",
+          "result": "出場",
+          "source_url": "https://www.pen-kanagawa.ed.jp/ayasenishi-h/seikatsu/undoubu.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "高校総体西地区予選",
+          "level": "地区",
+          "result": "出場",
+          "source_url": "https://www.pen-kanagawa.ed.jp/ayasenishi-h/seikatsu/undoubu.html"
+        }
+      ]
+    },
+    {
+      "name": "山岳部",
+      "kind": "運動",
+      "days_note": "週2日 放課後1時間程度、1〜2か月に1回登山",
+      "days_per_week": 2,
+      "weekend": "土",
+      "tier": 4,
+      "tier_basis": "週2日の活動（+月1〜2回の登山）のみで、競技性のない部のため大会成績の記載なし（部活動ページ）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/ayasenishi-h/seikatsu/undoubu.html",
+      "as_of": "2025-05-02"
+    },
+    {
+      "name": "ハンドボール部",
+      "kind": "運動",
+      "days_note": "毎週月・水・金・土（午前のみ）",
+      "days_per_week": 4,
+      "weekend": "土",
+      "source_url": "https://www.pen-kanagawa.ed.jp/ayasenishi-h/seikatsu/undoubu.html",
+      "as_of": "2025-05-02"
+    },
+    {
+      "name": "柔道部",
+      "kind": "運動",
+      "days_note": "週3日（水・金・土）",
+      "days_per_week": 3,
+      "weekend": "土",
+      "tier": 4,
+      "tier_basis": "週3日の活動で、大会成績の記載なし（初心者中心で昇級・昇段を目標とする旨の記載のみ）（部活動ページ）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/ayasenishi-h/seikatsu/undoubu.html",
+      "as_of": "2025-05-02"
+    },
+    {
+      "name": "ダンス部",
+      "kind": "運動",
+      "days_note": "火・木・金・土・日",
+      "days_per_week": 5,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2025年度 総体ダンスコンクールに出場し49位（部活動ページ）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/ayasenishi-h/seikatsu/undoubu.html",
+      "as_of": "2025-05-02",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "総体ダンスコンクール",
+          "level": "都県",
+          "result": "49位",
+          "happened_on": "2025-06-30",
+          "source_url": "https://www.pen-kanagawa.ed.jp/ayasenishi-h/seikatsu/undoubu.html"
+        }
+      ]
+    },
+    {
+      "name": "イラスト部",
+      "kind": "文化",
+      "days_note": "毎週月・木・金",
+      "days_per_week": 3,
+      "weekend": "なし",
+      "tier": 3,
+      "tier_basis": "2023〜2025年度はまんが甲子園予選会・LIMITS高校生大会予選会に出場したが、全国大会（本選）進出の記載はなし。2022年度の全国大会出場（高知県）は直近3年の対象外（部活動ページ）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/ayasenishi-h/seikatsu/bunkabu.html",
+      "as_of": "2025-05-02",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "まんが甲子園予選会・LIMITS高校生大会予選会",
+          "level": "その他",
+          "result": "予選会出場（本選進出の記載なし）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/ayasenishi-h/seikatsu/bunkabu.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "まんが甲子園予選会",
+          "level": "その他",
+          "result": "予選会出場（本選進出の記載なし）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/ayasenishi-h/seikatsu/bunkabu.html"
+        }
+      ]
+    },
+    {
+      "name": "演劇部",
+      "kind": "文化",
+      "days_note": "毎週火・金曜日",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "source_url": "https://www.pen-kanagawa.ed.jp/ayasenishi-h/seikatsu/bunkabu.html",
+      "as_of": "2025-05-02"
+    },
+    {
+      "name": "合唱部",
+      "kind": "文化",
+      "days_note": "部員で相談して決める（月・水・金で実施することが多い）",
+      "days_per_week": 3,
+      "weekend": "なし",
+      "source_url": "https://www.pen-kanagawa.ed.jp/ayasenishi-h/seikatsu/bunkabu.html",
+      "as_of": "2025-05-02"
+    },
+    {
+      "name": "家庭部",
+      "kind": "文化",
+      "days_note": "毎週水曜日と金曜日",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "source_url": "https://www.pen-kanagawa.ed.jp/ayasenishi-h/seikatsu/bunkabu.html",
+      "as_of": "2025-05-02"
+    },
+    {
+      "name": "華道部",
+      "kind": "文化",
+      "days_note": "毎週水曜日",
+      "days_per_week": 1,
+      "weekend": "なし",
+      "source_url": "https://www.pen-kanagawa.ed.jp/ayasenishi-h/seikatsu/bunkabu.html",
+      "as_of": "2025-05-02"
+    },
+    {
+      "name": "軽音楽部",
+      "kind": "文化",
+      "days_note": "水・土【1年生】、火・木・土【2年生】、月・金・土【3年生】",
+      "weekend": "土",
+      "source_url": "https://www.pen-kanagawa.ed.jp/ayasenishi-h/seikatsu/bunkabu.html",
+      "as_of": "2025-05-02"
+    },
+    {
+      "name": "茶道部",
+      "kind": "文化",
+      "days_note": "毎週金曜日",
+      "days_per_week": 1,
+      "weekend": "なし",
+      "source_url": "https://www.pen-kanagawa.ed.jp/ayasenishi-h/seikatsu/bunkabu.html",
+      "as_of": "2025-05-02"
+    },
+    {
+      "name": "情報科学部",
+      "kind": "文化",
+      "days_note": "月・水・金",
+      "days_per_week": 3,
+      "weekend": "なし",
+      "source_url": "https://www.pen-kanagawa.ed.jp/ayasenishi-h/seikatsu/bunkabu.html",
+      "as_of": "2025-05-02"
+    },
+    {
+      "name": "吹奏楽部",
+      "kind": "文化",
+      "days_note": "火曜日、木曜日、金曜日、土曜日（午前のみ）",
+      "days_per_week": 4,
+      "weekend": "土",
+      "source_url": "https://www.pen-kanagawa.ed.jp/ayasenishi-h/seikatsu/bunkabu.html",
+      "as_of": "2025-05-02"
+    },
+    {
+      "name": "美術部",
+      "kind": "文化",
+      "days_note": "水・金で活動",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "source_url": "https://www.pen-kanagawa.ed.jp/ayasenishi-h/seikatsu/bunkabu.html",
+      "as_of": "2025-05-02"
+    },
+    {
+      "name": "ボランティア部",
+      "kind": "文化",
+      "days_note": "原則、毎週（水）（金）",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "source_url": "https://www.pen-kanagawa.ed.jp/ayasenishi-h/seikatsu/bunkabu.html",
+      "as_of": "2025-05-02"
+    },
+    {
+      "name": "写真部",
+      "kind": "文化",
+      "days_note": "毎週（火）（木）",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "source_url": "https://www.pen-kanagawa.ed.jp/ayasenishi-h/seikatsu/bunkabu.html",
+      "as_of": "2025-05-02"
+    },
+    {
+      "name": "囲碁将棋部",
+      "kind": "文化",
+      "source_url": "https://www.pen-kanagawa.ed.jp/ayasenishi-h/seikatsu/bunkabu.html",
+      "as_of": "2025-05-02"
+    },
+    {
+      "name": "放送部",
+      "kind": "文化",
+      "source_url": "https://www.pen-kanagawa.ed.jp/ayasenishi-h/seikatsu/bunkabu.html",
+      "as_of": "2025-05-02"
+    },
+    {
+      "name": "文芸同好会",
+      "kind": "同好会",
+      "source_url": "https://www.pen-kanagawa.ed.jp/ayasenishi-h/seikatsu/bunkabu.html",
+      "as_of": "2025-05-02"
+    }
+  ],
+  "designated_universities": [],
+  "events": [],
+  "unresolved": [
+    "在籍生徒数（学年別・男女別）：学校概要ページに学級数（1〜3年各9クラス展開）の記載はあるが、生徒の実数（在籍者数）の記載が見当たらない",
+    "指定校推薦の大学一覧：進路ページ・入学希望者向けページ・部活動デジタルパンフレット等を確認したが、公式に大学名を挙げた一覧の掲載が見当たらない",
+    "部活動加入率・満足度（数値）：学校評価報告書は神奈川県の様式で文章のみのため数値の記載がない",
+    "女子バスケットボール部・バドミントン部・バレーボール部・ハンドボール部、および演劇部・合唱部・家庭部・華道部・軽音楽部・茶道部・情報科学部・吹奏楽部・美術部・ボランティア部・写真部の大会成績：部活動ページに具体的な大会名・年度・順位の記載がなく、段階を判定できる情報がなかった",
+    "囲碁将棋部・放送部・文芸同好会：部活動ページに活動日・活動内容・実績の記載が一切ない",
+    "卓球部の部活動デジタルパンフレットに「最高成績 個人県ベスト16 団体県ベスト64」との記載があるが年度の記載がないため段階判定の根拠にしなかった"
+  ],
+  "conflicts": []
+}

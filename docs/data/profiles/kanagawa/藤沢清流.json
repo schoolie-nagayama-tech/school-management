@@ -1,0 +1,700 @@
+{
+  "prefecture": "神奈川県",
+  "school_name": "藤沢清流",
+  "official_url": "https://www.pen-kanagawa.ed.jp/fujisawaseiryu-h/",
+  "researched_at": "2026-09-29",
+  "stats": [
+    {
+      "metric": "university_count",
+      "item": "国公立",
+      "basis": "実進学",
+      "fiscal_year": 2023,
+      "value_num": 1,
+      "source_url": "https://www.pen-kanagawa.ed.jp/fujisawaseiryu-h/shinro/documents/shinnrozyoukyou.pdf",
+      "source_label": "藤沢清流高等学校 卒業生の進路状況「進路先一覧（過去３年間）」国公立大学表",
+      "as_of": "2024-03",
+      "note": "令和5年度（14期生）卒業の実進学者数。東京農工大学（工）1名。表の「合計」列と一致。"
+    },
+    {
+      "metric": "university_count",
+      "item": "合計",
+      "basis": "実進学",
+      "fiscal_year": 2023,
+      "value_num": 171,
+      "source_url": "https://www.pen-kanagawa.ed.jp/fujisawaseiryu-h/shinro/documents/shinnrozyoukyou.pdf",
+      "source_label": "藤沢清流高等学校 卒業生の進路状況「（１）概要（過去３年間）」表",
+      "as_of": "2024-03",
+      "note": "卒業生266名のうち大学等（4年制大学等）へ実進学171名（64.3%）。内訳は国公立1・私立170（私立大学表の合計列と一致）。ほかに短期大学10（3.8%）・専門学校等63（23.7%）・就職（民間）3（1.1%）・就職（公務員）1（0.4%）・進学準備等18（6.8%）。"
+    },
+    {
+      "metric": "club_join_rate",
+      "fiscal_year": 2025,
+      "value_num": 70,
+      "source_url": "https://www.pen-kanagawa.ed.jp/fujisawaseiryu-h/gaiyou/documents/reiwa7nenzissikekka.pdf",
+      "source_label": "藤沢清流高校 令和7年度 学校評価報告書（目標設定・実施結果）",
+      "as_of": "2026-03-25",
+      "note": "「部活動加入率70％程度と高加入率を維持している」との記載（概数のみで、正確な数値の記載はない）。"
+    },
+    {
+      "metric": "uniform",
+      "fiscal_year": 2026,
+      "value_text": "濃紺無地のブレザー。女子はタータンチェック柄のスカート（リボン着用）またはグレーのスラックス（ネクタイ着用）、男子はチェック柄のスラックスとネクタイ。白襟付きシャツ、校章必須。5〜10月は略服可能期間でブレザー・ネクタイ・リボン省略、白ポロシャツ可。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/fujisawaseiryu-h/hogosha/documents/seitokokoroe.pdf",
+      "source_label": "藤沢清流高等学校 生徒心得（生活ハンドブック）「４ 服装」",
+      "note": ""
+    },
+    {
+      "metric": "rules_summary",
+      "fiscal_year": 2026,
+      "value_text": "頭髪の染色・脱色・パーマ等は禁止。スマホは授業中原則電源オフでカバンへ（指示時以外使用不可、守られない場合は一時預かり）。アルバイトは保護者同意の「アルバイト届」提出で許可制。バイク・自動車通学は禁止、ピアス・化粧不可、深夜23時以降の外出禁止（県条例）。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/fujisawaseiryu-h/hogosha/documents/seitokokoroe.pdf",
+      "source_label": "藤沢清流高等学校 生徒心得（生活ハンドブック）",
+      "note": ""
+    }
+  ],
+  "clubs": [
+    {
+      "name": "男子サッカー部",
+      "kind": "運動",
+      "days_note": "月（朝練・清掃活動）、火（自主練習）、水〜金（放課後、A・Bチーム編成）",
+      "days_per_week": 5,
+      "weekend": "試合のみ",
+      "tier": 2,
+      "tier_basis": "2026年度 高円宮杯U-18サッカーリーグ神奈川で、Aチームが K4 Group B に所属（神奈川県サッカー協会公式サイトの参加チーム一覧で確認）。K4は「東京T3・T4／神奈川K3・K4＝段階2」に該当。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/fujisawaseiryu-h/seikatsu/bukatsudou/mensoccer.html",
+      "as_of": "2026-05",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "高円宮杯U-18サッカーリーグ神奈川 K4",
+          "level": "都県",
+          "result": "Aチームが Group B に所属",
+          "source_url": "https://www.kanagawa-fa.gr.jp/cms/u18-league/2026/div4/"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "全国高等学校サッカー選手権大会 神奈川県二次予選",
+          "level": "都県",
+          "result": "1回戦敗退（0-1、延長）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/fujisawaseiryu-h/seikatsu/bukatsudou/mensoccer.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "関東大会予選二次予選",
+          "level": "都県",
+          "result": "4回戦（ベスト16）で敗退（0-3、対東海大相模）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/fujisawaseiryu-h/seikatsu/bukatsudou/mensoccer.html"
+        }
+      ]
+    },
+    {
+      "name": "女子サッカー部",
+      "kind": "運動",
+      "days_note": "月・水・木・金 放課後、土・日は午前or午後",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "tier": 1,
+      "tier_basis": "2024年度 総体3位・選手権4位・新人大会優勝（12年ぶり3回目）。2025年度 総体3位・県選手権準優勝・第34回関東高等学校女子サッカー選手権大会3位（関東大会出場）・新人大会3位。直近2年で県大会ベスト4以上を複数回達成し、関東大会にも出場している。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/fujisawaseiryu-h/seikatsu/bukatsudou/womensoccer.html",
+      "as_of": "2026-03",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "第34回関東高等学校女子サッカー選手権大会",
+          "level": "関東",
+          "result": "3位（準決勝敗退、3位決定戦で健大高崎に3-2で勝利）",
+          "happened_on": "2025-11-09",
+          "source_url": "https://www.pen-kanagawa.ed.jp/fujisawaseiryu-h/seikatsu/bukatsudou/womensoccer.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第34回神奈川県高等学校女子サッカー選手権大会",
+          "level": "都県",
+          "result": "準優勝（決勝で星槎国際湘南に1-4で敗退）",
+          "happened_on": "2025-10-12",
+          "source_url": "https://www.pen-kanagawa.ed.jp/fujisawaseiryu-h/seikatsu/bukatsudou/womensoccer.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "第31回神奈川県高等学校女子サッカー新人大会",
+          "level": "都県",
+          "result": "優勝（12年ぶり3回目、決勝で桐蔭学園に2-1で勝利）",
+          "happened_on": "2025-02-09",
+          "source_url": "https://www.pen-kanagawa.ed.jp/fujisawaseiryu-h/seikatsu/bukatsudou/womensoccer.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "第33回神奈川県高等学校女子サッカー選手権大会",
+          "level": "都県",
+          "result": "4位（3位決定戦で桐蔭学園に2-3で敗退）",
+          "happened_on": "2024-09-15",
+          "source_url": "https://www.pen-kanagawa.ed.jp/fujisawaseiryu-h/seikatsu/bukatsudou/womensoccer.html"
+        }
+      ]
+    },
+    {
+      "name": "硬式野球部",
+      "kind": "運動",
+      "days_note": "月〜金（朝練は希望者のみ）、土曜日・日曜日も活動（試合・練習試合）",
+      "days_per_week": 7,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "選手権神奈川大会は2024年度 4回戦敗退（県ベスト32）、2025年度 3回戦敗退、2023年度 3回戦敗退、2026年度 2回戦敗退。県ベスト32は1回だけのため段階3（見直しで2→3）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/fujisawaseiryu-h/seikatsu/bukatsudou/baseball.html",
+      "as_of": "2026-03-26",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "令和8年度神奈川県高等学校野球秋季県大会",
+          "level": "都県",
+          "result": "1回戦敗退（1試合0勝1敗）",
+          "source_url": "https://baseball.omyutech.com/teamStats.action?teamId=12258&year=2026"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "第108回全国高等学校野球選手権神奈川大会",
+          "level": "都県",
+          "result": "2回戦敗退（1勝1敗、対立花学園）",
+          "source_url": "https://baseball.omyutech.com/teamStats.action?teamId=12258&year=2026"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第107回全国高等学校野球選手権神奈川大会",
+          "level": "都県",
+          "result": "3回戦敗退（延長10回、7-8、対横浜清陵。1回戦8-1旭、2回戦10-2川崎工科で勝利し2勝1敗）",
+          "happened_on": "2025-07-17",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=12258&year=2025"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "令和7年度神奈川県高等学校野球春季県大会",
+          "level": "都県",
+          "result": "2回戦敗退（2-8、対住吉）",
+          "happened_on": "2025-04-12",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=12258&year=2025"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "第106回全国高等学校野球選手権神奈川大会",
+          "level": "都県",
+          "result": "4回戦敗退（0-12、対東海大相模、5回コールド）",
+          "happened_on": "2024-07-17",
+          "source_url": "https://baseball.omyutech.com/teamStats.action?teamId=12258&year=2024"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "令和6年度神奈川県高等学校野球秋季県大会",
+          "level": "都県",
+          "result": "2回戦敗退（0-12、対武相、5回コールド。2試合1勝1敗）",
+          "happened_on": "2024-09-08",
+          "source_url": "https://baseball.omyutech.com/teamStats.action?teamId=12258&year=2024"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "第105回全国高等学校野球選手権記念神奈川大会",
+          "level": "都県",
+          "result": "3回戦敗退（2-13、対厚木北。2回戦は新羽に25-5で勝利）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/fujisawaseiryu-h/seikatsu/bukatsudou/baseball.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "令和5年度神奈川県高校野球春季県大会",
+          "level": "都県",
+          "result": "県大会2回戦敗退（10-11、対厚木）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/fujisawaseiryu-h/seikatsu/bukatsudou/baseball.html"
+        }
+      ]
+    },
+    {
+      "name": "バドミントン部",
+      "kind": "運動",
+      "days_note": "月〜金放課後（土日あり）",
+      "days_per_week": 5,
+      "weekend": "土日",
+      "tier": 2,
+      "tier_basis": "2024年度新人大会 女子学校対抗で県ベスト16。2025年度関東大会県予選で女子が県ベスト16。2026年度関東大会県予選で女子が県ベスト16、高校総体で男子ダブルス・女子団体戦も県ベスト16。男女とも都県ベスト16〜32が複数回。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/fujisawaseiryu-h/seikatsu/bukatsudou/badminton.html",
+      "as_of": "2026-06",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "関東高等学校バドミントン大会 神奈川県予選",
+          "level": "都県",
+          "result": "女子 県ベスト16入り",
+          "source_url": "https://www.pen-kanagawa.ed.jp/fujisawaseiryu-h/seikatsu/bukatsudou/badminton.html"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "高校総体バドミントン大会",
+          "level": "都県",
+          "result": "男子ダブルス・女子団体戦とも県ベスト16入り",
+          "source_url": "https://www.pen-kanagawa.ed.jp/fujisawaseiryu-h/seikatsu/bukatsudou/badminton.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "バドミントン新人大会",
+          "level": "都県",
+          "result": "女子学校対抗 県ベスト16入り",
+          "source_url": "https://www.pen-kanagawa.ed.jp/fujisawaseiryu-h/seikatsu/bukatsudou/badminton.html"
+        }
+      ]
+    },
+    {
+      "name": "男子バスケットボール部",
+      "kind": "運動",
+      "days_note": "火・水・木・金・土・日（土日祝は原則半日）、朝練は火・木（水曜は男子のみ）",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2026年度 高校総体県予選で2回戦まで勝ち県ベスト24。ほかの年度は支部予選で敗退して県大会に届かない、または県大会1回戦で敗退することが中心で、県ベスト16には届いていない。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/fujisawaseiryu-h/seikatsu/bukatsudou/basketball.html",
+      "as_of": "2026-09",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "高校総体 県予選",
+          "level": "都県",
+          "result": "県ベスト24（1回戦81-51川和、2回戦70-66秦野総合で勝利し敗退）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/fujisawaseiryu-h/seikatsu/bukatsudou/basketball.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "高校総体 県大会",
+          "level": "都県",
+          "result": "1回戦敗退（74-99、対厚木北）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/fujisawaseiryu-h/seikatsu/bukatsudou/basketball.html"
+        }
+      ]
+    },
+    {
+      "name": "女子バスケットボール部",
+      "kind": "運動",
+      "days_note": "火・水・木・金・土・日（土日祝は原則半日）、朝練は火・木",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "tier": 2,
+      "tier_basis": "2023年度 関東大会県大会（合同チーム）で1回戦敗退・県ベスト32。2025年度 新人大会県予選で3回戦まで勝ち県ベスト16（「県のシード校の壁は高かったが県ベスト16の結果を残せた」と部自身が記載）。都県ベスト16〜32が複数回。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/fujisawaseiryu-h/seikatsu/bukatsudou/basketball.html",
+      "as_of": "2026-09",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "新人大会県予選",
+          "level": "都県",
+          "result": "県ベスト16（3回戦敗退、45-69、対横浜立野）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/fujisawaseiryu-h/seikatsu/bukatsudou/basketball.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "関東大会 県大会（合同チーム）",
+          "level": "都県",
+          "result": "県ベスト32（1回戦敗退、47-89、対横須賀大津）",
+          "note": "藤沢清流（合同f）として出場",
+          "source_url": "https://www.pen-kanagawa.ed.jp/fujisawaseiryu-h/seikatsu/bukatsudou/basketball.html"
+        }
+      ]
+    },
+    {
+      "name": "ハンドボール部",
+      "kind": "運動",
+      "days_note": "月〜金活動、土曜日・日曜日・祝日は公式戦・練習試合など",
+      "days_per_week": 5,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "直近3年、夏季湘南地区大会・県新人大会・冬季湘南地区大会・選手権大会・関東予選・総体予選のいずれも早い回戦で敗退しており、目立った上位進出の記載がない。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/fujisawaseiryu-h/seikatsu/bukatsudou/handball.html",
+      "as_of": "2026-05",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "県新人大会",
+          "level": "都県",
+          "result": "2回戦敗退（23-33、対浅野）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/fujisawaseiryu-h/seikatsu/bukatsudou/handball.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "冬季湘南地区大会",
+          "level": "地区",
+          "result": "Aチーム3位決定戦敗退、Bチーム準優勝",
+          "source_url": "https://www.pen-kanagawa.ed.jp/fujisawaseiryu-h/seikatsu/bukatsudou/handball.html"
+        }
+      ]
+    },
+    {
+      "name": "ソフトボール部",
+      "kind": "運動",
+      "days_note": "火・木・金（放課後）、土・日は原則半日（公式戦・練習試合が入る日以外は休み）",
+      "days_per_week": 3,
+      "weekend": "試合のみ",
+      "tier": 3,
+      "tier_basis": "2024年度、他校との合同チームで秋季新人・総体で県ベスト16（いずれも2回戦で大差の敗退）、県民体育大会で県ベスト8。部員が少なく全大会が合同チームでの出場のため段階3（見直しで2→3）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/fujisawaseiryu-h/seikatsu/bukatsudou/softball.html",
+      "as_of": "2025-03-06",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "令和6年度神奈川県高等学校秋季新人ソフトボール大会",
+          "level": "都県",
+          "result": "県ベスト16（2回戦敗退、0-10、対厚木王子）",
+          "note": "平塚江南・鶴嶺・高浜との4校合同チーム",
+          "source_url": "https://www.pen-kanagawa.ed.jp/fujisawaseiryu-h/seikatsu/bukatsudou/softball.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "令和6年度神奈川県民体育大会ソフトボール競技",
+          "level": "都県",
+          "result": "県ベスト8（3回戦敗退、4-12、対茅ケ崎）",
+          "note": "平塚江南・鶴嶺・高浜との4校合同チーム。高校の部活動大会ではなく県民体育大会",
+          "source_url": "https://www.pen-kanagawa.ed.jp/fujisawaseiryu-h/seikatsu/bukatsudou/softball.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "令和6年度神奈川県高等学校総合体育大会ソフトボール競技",
+          "level": "都県",
+          "result": "県ベスト16（2回戦敗退、1-11、対横須賀総合）",
+          "note": "平塚農商・小田原東との3校合同チーム",
+          "source_url": "https://www.pen-kanagawa.ed.jp/fujisawaseiryu-h/seikatsu/bukatsudou/softball.html"
+        }
+      ]
+    },
+    {
+      "name": "卓球部",
+      "kind": "運動",
+      "days_note": "月・火・木・金放課後（水曜休み）、土曜日は午前練習、日曜日はオフ",
+      "days_per_week": 4,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "2025年度、新人大会でシングルス・ダブルスとも県大会に出場した記載のみで、県大会での上位進出（ベスト8など）の記載がない。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/fujisawaseiryu-h/seikatsu/bukatsudou/tabletennis.html",
+      "as_of": "2025-11-18",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "新人大会",
+          "level": "都県",
+          "result": "シングルス・ダブルスとも県大会出場",
+          "source_url": "https://www.pen-kanagawa.ed.jp/fujisawaseiryu-h/seikatsu/bukatsudou/tabletennis.html"
+        }
+      ]
+    },
+    {
+      "name": "陸上競技部",
+      "kind": "運動",
+      "days_note": "月・火・木・金・土（水曜休み）。日曜日が大会の場合は月曜日休み",
+      "days_per_week": 5,
+      "weekend": "土",
+      "tier": 1,
+      "tier_basis": "2024年度 関東高等学校陸上競技大会に男子八種競技で出場し第7位。同年度、県新人大会男子砲丸投2位から関東高校選抜新人陸上競技大会に出場し第7位。2023年度も県新人大会男子200m4位から関東選抜陸上競技大会に出場。直近2年で関東大会級の出場が複数回ある。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/fujisawaseiryu-h/seikatsu/bukatsudou/trackanfield.html",
+      "as_of": "2025-01-20",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "関東高等学校陸上競技大会",
+          "level": "関東",
+          "result": "男子八種競技 第7位",
+          "source_url": "https://www.pen-kanagawa.ed.jp/fujisawaseiryu-h/seikatsu/bukatsudou/trackanfield.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "関東高校選抜新人陸上競技大会",
+          "level": "関東",
+          "result": "男子砲丸投 第7位（県新人大会2位から出場）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/fujisawaseiryu-h/seikatsu/bukatsudou/trackanfield.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "関東選抜陸上競技大会",
+          "level": "関東",
+          "result": "男子200m（県新人大会4位から出場）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/fujisawaseiryu-h/seikatsu/bukatsudou/trackanfield.html"
+        }
+      ]
+    },
+    {
+      "name": "バレーボール部",
+      "kind": "運動",
+      "days_note": "月・水・木・金放課後（木曜は屋外ラントレ・筋トレ）、日曜日は公式戦・練習試合が入る場合あり",
+      "days_per_week": 4,
+      "weekend": "日",
+      "tier": 3,
+      "tier_basis": "2024年度インターハイ県予選で1〜3回戦を勝ち4回戦で敗退し県ベスト32。ほかの大会・年度は地区予選または早い回戦での敗退にとどまり、県ベスト32を超える進出は直近3年に見られない。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/fujisawaseiryu-h/seikatsu/bukatsudou/volleyball.html",
+      "as_of": "2024-07-02",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "インターハイ県予選",
+          "level": "都県",
+          "result": "県ベスト32（4回戦敗退、0-2、対三浦学苑）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/fujisawaseiryu-h/seikatsu/bukatsudou/volleyball.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "インターハイ県予選",
+          "level": "都県",
+          "result": "2回戦敗退（0-2、対星槎国際）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/fujisawaseiryu-h/seikatsu/bukatsudou/volleyball.html"
+        }
+      ]
+    },
+    {
+      "name": "ダンス部",
+      "kind": "運動",
+      "days_note": "月・火・木・金・土",
+      "days_per_week": 5,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "2023年度 高校総体ダンスコンクール31位、新人大会（テーマ部門）9位。2024年度 高校総体ダンスコンクール27位。代表選出や上位入賞の記載はなく、順位のみの記載。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/fujisawaseiryu-h/seikatsu/bukatsudou/dance.html",
+      "as_of": "2024-07-24",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "高校総体ダンスコンクール",
+          "level": "都県",
+          "result": "27位",
+          "source_url": "https://www.pen-kanagawa.ed.jp/fujisawaseiryu-h/seikatsu/bukatsudou/dance.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "高校総体ダンスコンクール",
+          "level": "都県",
+          "result": "31位",
+          "source_url": "https://www.pen-kanagawa.ed.jp/fujisawaseiryu-h/seikatsu/bukatsudou/dance.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "新人大会（テーマ部門）",
+          "level": "都県",
+          "result": "9位",
+          "source_url": "https://www.pen-kanagawa.ed.jp/fujisawaseiryu-h/seikatsu/bukatsudou/dance.html"
+        }
+      ]
+    },
+    {
+      "name": "ワンダーフォーゲル部",
+      "kind": "運動",
+      "days_note": "放課後の平日の定例活動なし。月に一度、土曜日・日曜日に日帰り・宿泊の山行。",
+      "weekend": "土日",
+      "tier": 4,
+      "tier_basis": "平日（月〜金）はいずれも活動なしで、月1回土日に山行を行うのみ。大会や競技の実績はなく（登山の合宿記録のみ）、ページも2022年9月から更新されていない。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/fujisawaseiryu-h/seikatsu/bukatsudou/wondervogel.html",
+      "as_of": "2022-09-18",
+      "days_per_week": 0.25
+    },
+    {
+      "name": "剣道部",
+      "kind": "運動",
+      "source_url": "https://www.pen-kanagawa.ed.jp/fujisawaseiryu-h/seikatsu/bukatsudou/kendou.html",
+      "as_of": "2022-10-04"
+    },
+    {
+      "name": "テニス部",
+      "kind": "運動",
+      "source_url": "https://www.pen-kanagawa.ed.jp/fujisawaseiryu-h/seikatsu/bukatsudou-unndoubu.html"
+    },
+    {
+      "name": "ソフトテニス部",
+      "kind": "運動",
+      "days_note": "月〜金放課後、土日は大会前・大会日",
+      "days_per_week": 5,
+      "weekend": "試合のみ",
+      "source_url": "https://www.pen-kanagawa.ed.jp/fujisawaseiryu-h/seikatsu/bukatsudou/softtennis.html",
+      "as_of": "2024-07-25"
+    },
+    {
+      "name": "吹奏楽部",
+      "kind": "文化",
+      "days_note": "火・水・木放課後、土曜日（午前）もあり",
+      "days_per_week": 3,
+      "weekend": "土",
+      "source_url": "https://www.pen-kanagawa.ed.jp/fujisawaseiryu-h/seikatsu/bukatsudou/brassband.html",
+      "as_of": "2026-09-17"
+    },
+    {
+      "name": "箏曲部",
+      "kind": "文化",
+      "days_note": "月・火・木・金放課後",
+      "days_per_week": 4,
+      "weekend": "なし",
+      "tier": 2,
+      "tier_basis": "2025年度 県大会（高等学校日本音楽発表会）で高文連会長賞（第4位）。2023・2025・2026年度の全国高等学校総合文化祭（日本音楽部門）には、県内の複数校で組む神奈川県合同チームの一員として部員が出演。部単独の全国出場ではないため段階2（見直しで1→2）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/fujisawaseiryu-h/seikatsu/bukatsudou/soukyoku.html",
+      "as_of": "2026-08-06",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "第50回全国高等学校総合文化祭（日本音楽部門）",
+          "level": "全国",
+          "result": "出場（神奈川県合同チーム、8校25名、本校から2・3年次生3名）",
+          "happened_on": "2026-07-30",
+          "source_url": "https://www.pen-kanagawa.ed.jp/fujisawaseiryu-h/seikatsu/bukatsudou/soukyoku.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第27回高等学校日本音楽発表会（県大会）",
+          "level": "都県",
+          "result": "高文連会長賞（第4位）",
+          "happened_on": "2025-12-07",
+          "source_url": "https://www.pen-kanagawa.ed.jp/fujisawaseiryu-h/seikatsu/bukatsudou/soukyoku.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第49回全国高等学校総合文化祭（日本音楽部門）",
+          "level": "全国",
+          "result": "出場（神奈川県合同チーム、6校24名、本校から2・3年次生4名）",
+          "happened_on": "2025-07-26",
+          "source_url": "https://www.pen-kanagawa.ed.jp/fujisawaseiryu-h/seikatsu/bukatsudou/soukyoku.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "全国高等学校総合文化祭（日本音楽部門）",
+          "level": "全国",
+          "result": "出場（神奈川県合同チーム、5校25名、本校から2・3年次生4名）",
+          "happened_on": "2023-07-29",
+          "source_url": "https://www.pen-kanagawa.ed.jp/fujisawaseiryu-h/seikatsu/bukatsudou/soukyoku.html"
+        }
+      ]
+    },
+    {
+      "name": "美術部",
+      "kind": "文化",
+      "days_note": "月・火・水・金放課後（木曜休み）。展示会前は場合により土日あり",
+      "days_per_week": 4,
+      "weekend": "なし",
+      "tier": 3,
+      "tier_basis": "2023年度 藤沢市展で奨励賞（2年次2名）。神奈川県高校美術展には出品しているが、直近3年で上位受賞の記載はない。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/fujisawaseiryu-h/seikatsu/bukatsudou/art.html",
+      "as_of": "2025-03-26",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "藤沢市展",
+          "level": "その他",
+          "result": "奨励賞（2年次2名）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/fujisawaseiryu-h/seikatsu/bukatsudou/art.html"
+        }
+      ]
+    },
+    {
+      "name": "軽音楽部",
+      "kind": "文化",
+      "days_note": "月〜日（毎日）",
+      "days_per_week": 7,
+      "weekend": "土日",
+      "source_url": "https://www.pen-kanagawa.ed.jp/fujisawaseiryu-h/seikatsu/bukatsudou/keion.html",
+      "as_of": "2026-04-21"
+    },
+    {
+      "name": "文芸部",
+      "kind": "文化",
+      "days_note": "火・木放課後",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日は週2日（火・木放課後）で、大会・コンクールへの参加実績の記載がない（部員の作品を冊子にして文化祭で配布する活動が中心）。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/fujisawaseiryu-h/seikatsu/bukatsudou/literaryart.html",
+      "as_of": "2022-09-14"
+    },
+    {
+      "name": "漫画研究部",
+      "kind": "文化",
+      "days_note": "火・木放課後（週2回）",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日は週2日（火・木放課後、部自身も「週2回の活動日」と記載）。「全国高等学校漫画選手権大会（まんが甲子園）ワコム賞受賞」の実績が書かれているが年度の記載がないため、段階の根拠にはしていない（unresolved参照）。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/fujisawaseiryu-h/seikatsu/bukatsudou/comic.html",
+      "as_of": "2024-08-02"
+    },
+    {
+      "name": "書道部",
+      "kind": "文化",
+      "days_note": "月・火放課後（展示会前は水曜もあり）",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日は週2日（月・火放課後）。ページが2022年10月の更新で止まっており、直近3年（2023年度以降）に確認できる大会・コンクールの実績の記載がない（記載があるのは2022年度以前の受賞のみで根拠にしていない）。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/fujisawaseiryu-h/seikatsu/bukatsudou/shodou.html",
+      "as_of": "2022-10-12"
+    },
+    {
+      "name": "写真部",
+      "kind": "文化",
+      "days_note": "火放課後（週1回）。土日は不定期で大会・外部講習等に参加",
+      "days_per_week": 1,
+      "weekend": "試合のみ",
+      "tier": 4,
+      "tier_basis": "活動日は週1日（火曜放課後）。個人での公募コンテストへの参加や一般作品展への出品はあるが、入賞など具体的な結果の記載はない。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/fujisawaseiryu-h/seikatsu/bukatsudou/photograph.html",
+      "as_of": "2025-10-28"
+    },
+    {
+      "name": "生物部",
+      "kind": "文化",
+      "days_note": "月〜金放課後。月1回程度の校外野外観察あり",
+      "days_per_week": 5,
+      "weekend": "なし",
+      "source_url": "https://www.pen-kanagawa.ed.jp/fujisawaseiryu-h/seikatsu/bukatsudou/biology.html",
+      "as_of": "2025-06-30"
+    },
+    {
+      "name": "パソコン部",
+      "kind": "文化",
+      "days_note": "火・水・木放課後",
+      "days_per_week": 3,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日は週3日（火・水・木放課後）で、大会・コンクール等の実績の記載がない（個人課題や部内でのプログラム制作が中心）。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/fujisawaseiryu-h/seikatsu/bukatsudou/pc.html",
+      "as_of": "2025-10-28"
+    },
+    {
+      "name": "家庭科部",
+      "kind": "文化",
+      "source_url": "https://www.pen-kanagawa.ed.jp/fujisawaseiryu-h/seikatsu/bukatsudou/homemakingcource.html",
+      "as_of": "2025-10-02"
+    },
+    {
+      "name": "茶道部",
+      "kind": "文化",
+      "days_note": "木放課後（週1回）",
+      "days_per_week": 1,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日は週1日（木曜放課後のみ、師範同席の稽古）。大会・コンクール等の実績の記載はなく、「コロナウイルスの影響により3年間学校外での活動ができていない」との記載（2022年時点）のまま更新されていない。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/fujisawaseiryu-h/seikatsu/bukatsudou/sadou.html",
+      "as_of": "2022-09-21"
+    },
+    {
+      "name": "演劇部",
+      "kind": "文化",
+      "source_url": "https://www.pen-kanagawa.ed.jp/fujisawaseiryu-h/seikatsu/bukatsubou-bunkabu.html"
+    }
+  ],
+  "designated_universities": [],
+  "events": [
+    {
+      "kind": "統合",
+      "period_label": "令和9年度（2027年度）",
+      "happened_on": "2027-04-01",
+      "summary": "藤沢清流高校が深沢高校と再編統合し、藤沢清流高校の校地・施設を活用した「全日制課程の単位制普通科」の新校「藤沢東高等学校」として開校する。令和7年度入学生は3年次、令和8年度入学生は2年次から新校の生徒となる。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/fujisawaseiryu-h/nyugaku/documents/01141.pdf"
+    }
+  ],
+  "unresolved": [
+    "指定校推薦の大学一覧：学校サイト・パンフレット（スクールガイド2027、20260818.pdf）のいずれにも「指定校推薦」の見出しでの大学名公表を確認できなかった。パンフレットの「過去3年間の主な進路先」は実進学（合格ではなく進学）の実績一覧であり、指定校推薦の一覧ではない。",
+    "早慶上理・GMARCH・成成明武・日東駒専の内訳：進路先一覧PDF（shinnrozyoukyou.pdf）とスクールガイド（20260818.pdf、藤沢東高校2027 SCHOOL GUIDE内の「過去3年間の主な進路先」表）はいずれも大学別の表で、列（年度）と数値の対応が視覚的に読み取りづらく、誤読のリスクがあるため大学群ごとの合算は行わなかった。国公立と合計のみ、より読み取りやすい概要表・小計行から採った。",
+    "2025年度（卒業）の進路の割合：スクールガイド（20260818.pdf）掲載の円グラフ「藤沢清流高校 2025年度進路状況」では大学66%・専門22%・短大0.4%・進学準備8%・就職3%とあるが、人数の記載がなく割合のみのため stats には採用しなかった。",
+    "硬式野球部の2025年度（令和7年度）秋季県大会の結果：一球速報（omyutech）のチームページ（teamStats.action / teamGames.action、teamId=12258、year=2025）にも学校サイトにも該当年の秋季大会の結果が見当たらなかった。",
+    "ソフトテニス部・吹奏楽部・生物部・家庭科部：学校サイトに大会・コンクールの結果の記載がなく、段階を付ける根拠がなかった。",
+    "剣道部：部員数・活動日の記載はあるが2022年10月の更新のまま大会実績の記載がなく、また活動日の表の読み取りが曖昧なため段階を付けなかった。",
+    "家庭科部：活動日の表（放課後の欄）の記載が曖昧で、週の活動日数を確定できなかった。",
+    "男子テニス部（硬式テニス、tennis.html）・演劇部（engeki.html）：学校サイトの個別ページがいずれも404（リンク切れ）で、活動日・大会実績とも確認できなかった。一覧ページ（部活動一覧）にのみ部名の記載がある。",
+    "推薦の応募倍率（exam_ratio）：神奈川県の公立高校入学者選抜は共通選抜に一本化されており、東京都のような推薦単独の応募倍率区分の資料が見当たらなかった。",
+    "career_decided_rate（進路決定率）・admission_route_share（入試方式別割合）・satisfaction（満足度）・designation（教育委員会などの指定）：公式資料に該当する数値・記載を確認できなかった（神奈川県の学校評価報告書は様式上、満足度の数値記載がない）。"
+  ],
+  "conflicts": []
+}

@@ -1,0 +1,1313 @@
+{
+  "prefecture": "神奈川県",
+  "school_name": "川和",
+  "official_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/",
+  "researched_at": "2026-09-29",
+  "stats": [
+    {
+      "metric": "designation",
+      "item": "学力向上進学重点校",
+      "value_text": "指定",
+      "fiscal_year": 2026,
+      "source_url": "https://www.pen-kanagawa.ed.jp/gakuryokukoujou/",
+      "source_label": "神奈川県教育委員会 学力向上進学重点校・エントリー校",
+      "as_of": "2026-09",
+      "note": "横浜北東・川崎地域の学力向上進学重点校（横浜翠嵐と同地域）。令和6年度（2024年度）から4年間の指定（校長あいさつより）"
+    },
+    {
+      "metric": "students",
+      "item": "",
+      "sex": "male",
+      "grade": 1,
+      "fiscal_year": 2026,
+      "value_num": 206,
+      "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/nyugaku/documents/2026_gakkouannai.pdf",
+      "source_label": "川和高校 令和8年度学校案内（生徒概況）",
+      "as_of": "2026-05-01",
+      "note": "在籍数（令和8年5月1日現在）"
+    },
+    {
+      "metric": "students",
+      "item": "",
+      "sex": "female",
+      "grade": 1,
+      "fiscal_year": 2026,
+      "value_num": 153,
+      "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/nyugaku/documents/2026_gakkouannai.pdf",
+      "source_label": "川和高校 令和8年度学校案内（生徒概況）",
+      "as_of": "2026-05-01",
+      "note": "在籍数（令和8年5月1日現在）"
+    },
+    {
+      "metric": "students",
+      "item": "",
+      "sex": "male",
+      "grade": 2,
+      "fiscal_year": 2026,
+      "value_num": 157,
+      "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/nyugaku/documents/2026_gakkouannai.pdf",
+      "source_label": "川和高校 令和8年度学校案内（生徒概況）",
+      "as_of": "2026-05-01",
+      "note": "在籍数（令和8年5月1日現在）"
+    },
+    {
+      "metric": "students",
+      "item": "",
+      "sex": "female",
+      "grade": 2,
+      "fiscal_year": 2026,
+      "value_num": 161,
+      "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/nyugaku/documents/2026_gakkouannai.pdf",
+      "source_label": "川和高校 令和8年度学校案内（生徒概況）",
+      "as_of": "2026-05-01",
+      "note": "在籍数（令和8年5月1日現在）"
+    },
+    {
+      "metric": "students",
+      "item": "",
+      "sex": "male",
+      "grade": 3,
+      "fiscal_year": 2026,
+      "value_num": 150,
+      "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/nyugaku/documents/2026_gakkouannai.pdf",
+      "source_label": "川和高校 令和8年度学校案内（生徒概況）",
+      "as_of": "2026-05-01",
+      "note": "在籍数（令和8年5月1日現在）"
+    },
+    {
+      "metric": "students",
+      "item": "",
+      "sex": "female",
+      "grade": 3,
+      "fiscal_year": 2026,
+      "value_num": 167,
+      "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/nyugaku/documents/2026_gakkouannai.pdf",
+      "source_label": "川和高校 令和8年度学校案内（生徒概況）",
+      "as_of": "2026-05-01",
+      "note": "在籍数（令和8年5月1日現在）"
+    },
+    {
+      "metric": "club_join_rate",
+      "item": "",
+      "fiscal_year": 2025,
+      "value_num": 102,
+      "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/gaiyou/documents/uneikyogikai_vol2.pdf",
+      "source_label": "川和高校 令和7年度第2回学校運営協議会議事録",
+      "as_of": "2026-01-14",
+      "note": "副校長報告「部活動は加入率102%」。兼部を含む可能性がある。学校案内パンフレットは「90%を超え」と表記（conflictsに記載）"
+    },
+    {
+      "metric": "uniform",
+      "item": "",
+      "fiscal_year": 2026,
+      "value_text": "男子は詰襟の黒い学生服・黒ズボン。女子はブレザー上衣・グレースカートまたはグレーズボン（選択可）。Yシャツ・開襟シャツ・ブラウスは白無地。夏季(6〜9月)は白無地ポロシャツ着用可。令和5年度から現行の制服",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/seikatsu/documents/kokoroe.pdf",
+      "source_label": "川和高校 校則（服装規定）",
+      "as_of": "2024-07",
+      "note": ""
+    },
+    {
+      "metric": "rules_summary",
+      "item": "",
+      "fiscal_year": 2026,
+      "value_text": "頭髪は染色せず華美を慎み品格を持ったものとする。アルバイトはやむを得ない事情がある場合のみ届け出て許可を受ける（原則禁止）。装飾品（ピアス等）不可。オートバイ・乗用車等での登下校（同乗含む）は禁止。携帯電話の使用に関する規定は本資料に記載なし",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/seikatsu/documents/kokoroe.pdf",
+      "source_label": "川和高校 校則（生活一般規定・服装規定）",
+      "as_of": "2024-07",
+      "note": ""
+    },
+    {
+      "metric": "university_count",
+      "item": "国公立",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 92,
+      "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/shinro/documents/2026_shinrojoukyou_0518.pdf",
+      "source_label": "川和高校 令和8年度入試 大学合格者数一覧（確定版）",
+      "as_of": "2026-05-15",
+      "note": "既卒（浪人）15名を含まない現役合格者数。既卒を含む計は107（延べで別掲）"
+    },
+    {
+      "metric": "university_count",
+      "item": "国公立",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 107,
+      "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/shinro/documents/2026_shinrojoukyou_0518.pdf",
+      "source_label": "川和高校 令和8年度入試 大学合格者数一覧（確定版）",
+      "as_of": "2026-05-15",
+      "note": "現役92名+既卒15名の計（学校の確定版PDFより）"
+    },
+    {
+      "metric": "university_count",
+      "item": "私立",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 1210,
+      "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/shinro/documents/2026_shinrojoukyou_0518.pdf",
+      "source_label": "川和高校 令和8年度入試 大学合格者数一覧（確定版）",
+      "as_of": "2026-05-15",
+      "note": ""
+    },
+    {
+      "metric": "university_count",
+      "item": "私立",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 1362,
+      "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/shinro/documents/2026_shinrojoukyou_0518.pdf",
+      "source_label": "川和高校 令和8年度入試 大学合格者数一覧（確定版）",
+      "as_of": "2026-05-15",
+      "note": ""
+    },
+    {
+      "metric": "university_count",
+      "item": "早慶上理",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 218,
+      "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/shinro/documents/2026_shinrojoukyou_0518.pdf",
+      "source_label": "川和高校 令和8年度入試 大学合格者数一覧（確定版）",
+      "as_of": "2026-05-15",
+      "note": "大学別の表から合算（早稲田90・慶應義塾37・上智38・東京理科53）"
+    },
+    {
+      "metric": "university_count",
+      "item": "早慶上理",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 249,
+      "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/shinro/documents/2026_shinrojoukyou_0518.pdf",
+      "source_label": "川和高校 令和8年度入試 大学合格者数一覧（確定版）",
+      "as_of": "2026-05-15",
+      "note": "大学別の表（計）から合算（早稲田97・慶應義塾42・上智42・東京理科68）"
+    },
+    {
+      "metric": "university_count",
+      "item": "GMARCH",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 545,
+      "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/shinro/documents/2026_shinrojoukyou_0518.pdf",
+      "source_label": "川和高校 令和8年度入試 大学合格者数一覧（確定版）",
+      "as_of": "2026-05-15",
+      "note": "大学別の表から合算（学習院18・明治198・青山学院96・立教72・中央69・法政92）"
+    },
+    {
+      "metric": "university_count",
+      "item": "GMARCH",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 606,
+      "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/shinro/documents/2026_shinrojoukyou_0518.pdf",
+      "source_label": "川和高校 令和8年度入試 大学合格者数一覧（確定版）",
+      "as_of": "2026-05-15",
+      "note": "大学別の表（計）から合算（学習院19・明治220・青山学院111・立教80・中央76・法政100）"
+    },
+    {
+      "metric": "university_count",
+      "item": "成成明武",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 68,
+      "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/shinro/documents/2026_shinrojoukyou_0518.pdf",
+      "source_label": "川和高校 令和8年度入試 大学合格者数一覧（確定版）",
+      "as_of": "2026-05-15",
+      "note": "大学別の表から合算（成蹊8・成城13・明治学院44・武蔵3）"
+    },
+    {
+      "metric": "university_count",
+      "item": "成成明武",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 72,
+      "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/shinro/documents/2026_shinrojoukyou_0518.pdf",
+      "source_label": "川和高校 令和8年度入試 大学合格者数一覧（確定版）",
+      "as_of": "2026-05-15",
+      "note": "大学別の表（計）から合算（成蹊8・成城15・明治学院46・武蔵3）"
+    },
+    {
+      "metric": "university_count",
+      "item": "日東駒専",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 99,
+      "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/shinro/documents/2026_shinrojoukyou_0518.pdf",
+      "source_label": "川和高校 令和8年度入試 大学合格者数一覧（確定版）",
+      "as_of": "2026-05-15",
+      "note": "大学別の表から合算（日本43・東洋25・駒澤17・専修14）"
+    },
+    {
+      "metric": "university_count",
+      "item": "日東駒専",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 109,
+      "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/shinro/documents/2026_shinrojoukyou_0518.pdf",
+      "source_label": "川和高校 令和8年度入試 大学合格者数一覧（確定版）",
+      "as_of": "2026-05-15",
+      "note": "大学別の表（計）から合算（日本51・東洋27・駒澤17・専修14）"
+    },
+    {
+      "metric": "university_count",
+      "item": "合計",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 1304,
+      "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/shinro/documents/2026_shinrojoukyou_0518.pdf",
+      "source_label": "川和高校 令和8年度入試 大学合格者数一覧（確定版）",
+      "as_of": "2026-05-15",
+      "note": "国公立92+私立1210+海外2（学校の確定版PDFより）"
+    },
+    {
+      "metric": "university_count",
+      "item": "合計",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 1471,
+      "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/shinro/documents/2026_shinrojoukyou_0518.pdf",
+      "source_label": "川和高校 令和8年度入試 大学合格者数一覧（確定版）",
+      "as_of": "2026-05-15",
+      "note": "国公立107+私立1362+海外2（学校の確定版PDFより）"
+    },
+    {
+      "metric": "university_count",
+      "item": "東京都市大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 52,
+      "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/shinro/documents/2026_shinrojoukyou_0518.pdf",
+      "source_label": "川和高校 令和8年度入試 大学合格者数一覧（確定版）",
+      "as_of": "2026-05-15",
+      "note": "大学群以外で合格が多い大学（上位5つ、延べ基準）"
+    },
+    {
+      "metric": "university_count",
+      "item": "神奈川大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 27,
+      "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/shinro/documents/2026_shinrojoukyou_0518.pdf",
+      "source_label": "川和高校 令和8年度入試 大学合格者数一覧（確定版）",
+      "as_of": "2026-05-15",
+      "note": "大学群以外で合格が多い大学（上位5つ、延べ基準）"
+    },
+    {
+      "metric": "university_count",
+      "item": "國學院大學",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 26,
+      "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/shinro/documents/2026_shinrojoukyou_0518.pdf",
+      "source_label": "川和高校 令和8年度入試 大学合格者数一覧（確定版）",
+      "as_of": "2026-05-15",
+      "note": "大学群以外で合格が多い大学（上位5つ、延べ基準）"
+    },
+    {
+      "metric": "university_count",
+      "item": "横浜国立大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 24,
+      "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/shinro/documents/2026_shinrojoukyou_0518.pdf",
+      "source_label": "川和高校 令和8年度入試 大学合格者数一覧（確定版）",
+      "as_of": "2026-05-15",
+      "note": "大学群以外で合格が多い大学（上位5つ、延べ基準）"
+    },
+    {
+      "metric": "university_count",
+      "item": "工学院大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 23,
+      "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/shinro/documents/2026_shinrojoukyou_0518.pdf",
+      "source_label": "川和高校 令和8年度入試 大学合格者数一覧（確定版）",
+      "as_of": "2026-05-15",
+      "note": "大学群以外で合格が多い大学（上位5つ、延べ基準）"
+    },
+    {
+      "metric": "university_count",
+      "item": "国公立",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 85,
+      "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/nyugaku/documents/2026_gakkouannai.pdf",
+      "source_label": "川和高校 令和8年度学校案内（進路状況）",
+      "as_of": "2026-07-27",
+      "note": "令和8年3月卒業生355人のうち実際に大学へ進学した人数"
+    },
+    {
+      "metric": "university_count",
+      "item": "私立",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 203,
+      "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/nyugaku/documents/2026_gakkouannai.pdf",
+      "source_label": "川和高校 令和8年度学校案内（進路状況）",
+      "as_of": "2026-07-27",
+      "note": "令和8年3月卒業生355人のうち実際に大学へ進学した人数"
+    },
+    {
+      "metric": "university_count",
+      "item": "合計",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 288,
+      "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/nyugaku/documents/2026_gakkouannai.pdf",
+      "source_label": "川和高校 令和8年度学校案内（進路状況）",
+      "as_of": "2026-07-27",
+      "note": "国公立85+私立203。ほかに短期大学0・海外大学0・専門学校1・就職1・進学準備65（卒業生355人）"
+    }
+  ],
+  "clubs": [
+    {
+      "name": "硬式野球部",
+      "kind": "運動",
+      "days_note": "火・水・木・金・土・日",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "tier": 2,
+      "tier_basis": "2025年度春季大会で創部初のベスト8（夏の大会第2シード）、2025年度夏（第107回全国高等学校野球選手権神奈川大会）は公立唯一の県ベスト16（18年ぶり）、2025年度秋季大会・2026年度春季大会も県ベスト16（4季連続ベスト16以上）。都県大会ベスト8が1回・ベスト16が複数回のため段階2",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/seikatsu/138baseball.html",
+      "as_of": "2026-04-21",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "令和7年度春季大会",
+          "level": "都県",
+          "result": "県大会準々決勝敗退（創部初の春ベスト8、夏の大会第2シード）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/seikatsu/138baseball.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第107回全国高等学校野球選手権神奈川大会",
+          "level": "都県",
+          "result": "5回戦敗退（公立校で唯一のベスト16、18年ぶり、2025年7月）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/seikatsu/138baseball.html"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "令和8年度春季大会",
+          "level": "都県",
+          "result": "県大会準々決勝敗退（春ベスト16、4季連続ベスト16以上、夏の大会第3シード）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/seikatsu/138baseball.html"
+        }
+      ]
+    },
+    {
+      "name": "サッカー部",
+      "kind": "運動",
+      "days_note": "火・水・木・金（・土・日）",
+      "days_per_week": 5,
+      "weekend": "土日",
+      "tier": 2,
+      "tier_basis": "2026年度 高円宮杯U-18サッカーリーグ神奈川 K4所属（Aチーム＝川和高校A、神奈川県サッカー協会の組合せ表で確認）。2025年度はK3 Group A所属。K3・K4はいずれも段階2",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/seikatsu/139soccer.html",
+      "as_of": "2026-05-11",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "第103回全国高校サッカー選手権大会神奈川県予選",
+          "level": "都県",
+          "result": "ベスト16",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/seikatsu/139soccer.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "高円宮杯JFA U-18サッカーリーグ2025神奈川",
+          "level": "都県",
+          "result": "K3 Group A 10位（川和A）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/seikatsu/139soccer.html"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "高円宮杯JFA U-18サッカーリーグ2026神奈川",
+          "level": "都県",
+          "result": "K4所属（川和A）",
+          "source_url": "https://www.kanagawa-fa.gr.jp/cms/u18-league/2026/div4/"
+        }
+      ]
+    },
+    {
+      "name": "ハンドボール部（女子）",
+      "kind": "運動",
+      "days_note": "火・水・木・金（・土・日）",
+      "days_per_week": 5,
+      "weekend": "土日",
+      "tier": 1,
+      "tier_basis": "2025・2026年度とも関東大会神奈川県予選会で3位となり関東大会に出場（2年連続で関東大会出場のため段階1）。2026年度は全国高校総体県予選でも3位",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/seikatsu/140handball.html",
+      "as_of": "2026-06-22",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "関東大会神奈川県予選会",
+          "level": "都県",
+          "result": "3位、関東大会出場",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/seikatsu/140handball.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "神奈川県ハンドボール選手権大会高校生の部",
+          "level": "都県",
+          "result": "ブロック優勝",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/seikatsu/140handball.html"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "関東大会神奈川県予選会",
+          "level": "都県",
+          "result": "3位、関東大会出場",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/seikatsu/140handball.html"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "関東高等学校ハンドボール大会",
+          "level": "関東",
+          "result": "1回戦敗退（対佼成女子）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/seikatsu/140handball.html"
+        }
+      ]
+    },
+    {
+      "name": "ハンドボール部（男子）",
+      "kind": "運動",
+      "days_note": "火・水・木・金（・土・日）",
+      "days_per_week": 5,
+      "weekend": "土日",
+      "tier": 1,
+      "tier_basis": "2025年度 神奈川県新人大会兼全国選抜大会県予選・全国高校総体県予選、2026年度 全国高校総体県予選でいずれも県ベスト8（都県大会ベスト8以上が3回のため段階1）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/seikatsu/140handball.html",
+      "as_of": "2026-06-22",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "神奈川県新人大会兼全国選抜大会県予選",
+          "level": "都県",
+          "result": "ベスト8",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/seikatsu/140handball.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "全国高校総体神奈川県予選会",
+          "level": "都県",
+          "result": "ベスト8",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/seikatsu/140handball.html"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "全国高校総体神奈川県予選会",
+          "level": "都県",
+          "result": "ベスト8",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/seikatsu/140handball.html"
+        }
+      ]
+    },
+    {
+      "name": "バレーボール部（女子）",
+      "kind": "運動",
+      "days_note": "月・火・木・金（・土・日）",
+      "days_per_week": 4,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2025〜2026年度の高校総体県予選はいずれもベスト32にとどまり、横浜市民大会・地区大会でのベスト8等は市・地区レベルで都県大会ベスト8には届かない",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/seikatsu/141volleyball.html",
+      "as_of": "2026-06-16",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "高校総体県予選会",
+          "level": "都県",
+          "result": "ベスト32",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/seikatsu/141volleyball.html"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "横浜市民大会",
+          "level": "地区",
+          "result": "ベスト8",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/seikatsu/141volleyball.html"
+        }
+      ]
+    },
+    {
+      "name": "バレーボール部（男子）",
+      "kind": "運動",
+      "days_note": "月・木・金（・火・水・土・日）",
+      "days_per_week": 5,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2025〜2026年度の関東大会県予選・高校総体県予選はいずれもベスト32にとどまり、都県大会でのベスト16以上の記載がない",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/seikatsu/141volleyball.html",
+      "as_of": "2026-06-16",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "横浜市民大会",
+          "level": "地区",
+          "result": "ベスト4",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/seikatsu/141volleyball.html"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "関東大会県予選会",
+          "level": "都県",
+          "result": "ベスト32",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/seikatsu/141volleyball.html"
+        }
+      ]
+    },
+    {
+      "name": "バスケットボール部（女子）",
+      "kind": "運動",
+      "days_note": "火・水・木・金（・土・日）",
+      "days_per_week": 5,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2024〜2025年度の関東県予選はベスト32、新人大会は県大会出場にとどまり、都県大会でのベスト8以上の記載がない",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/seikatsu/142basketball.html",
+      "as_of": "2026-05-18",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "高校関東県予選",
+          "level": "都県",
+          "result": "ベスト32",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/seikatsu/142basketball.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "高校新人県大会",
+          "level": "都県",
+          "result": "出場",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/seikatsu/142basketball.html"
+        }
+      ]
+    },
+    {
+      "name": "バスケットボール部（男子）",
+      "kind": "運動",
+      "days_note": "火・水・木・金（・土・日）",
+      "days_per_week": 5,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2025年度 関東大会県予選会はベスト32にとどまり、都県大会でのベスト8以上の記載がない",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/seikatsu/142basketball.html",
+      "as_of": "2026-05-18",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "高校関東大会県予選会",
+          "level": "都県",
+          "result": "ベスト32",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/seikatsu/142basketball.html"
+        }
+      ]
+    },
+    {
+      "name": "ラグビー部",
+      "kind": "運動",
+      "days_note": "月・水・木・土曜日",
+      "days_per_week": 4,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "2024〜2026年度は新城・住吉・生田高校との合同チームで各種大会に出場するが、プール戦の勝敗は分かれており上位進出（決勝トーナメント）の記載はない（合同チーム）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/seikatsu/143rugby.html",
+      "as_of": "2026-06-11",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "令和7年度全国高等学校ラグビーフットボール大会神奈川県予選会",
+          "level": "都県",
+          "result": "合同チームとして出場、初戦敗退（0-19）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/seikatsu/143rugby.html"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "第74回関東高等学校ラグビーフットボール大会神奈川県予選会",
+          "level": "都県",
+          "result": "合同チームとして出場、プール戦2敗",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/seikatsu/143rugby.html"
+        }
+      ]
+    },
+    {
+      "name": "陸上競技部",
+      "kind": "運動",
+      "days_note": "月・火・水・木・金（・土）",
+      "days_per_week": 5.5,
+      "weekend": "土",
+      "tier": 1,
+      "tier_basis": "2023〜2026年度は毎年、関東大会・南関東大会や全国大会（全国高校総体八種競技・U20日本選手権・東日本女子駅伝・関東高校陸上競技大会での全国大会出場権獲得など）に出場しており、関東・全国大会出場の実績が複数回に及ぶため段階1",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/seikatsu/144rikujou.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "全国高校総体",
+          "level": "全国",
+          "result": "男子八種競技19位",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/seikatsu/144rikujou.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "第39回東日本女子駅伝",
+          "level": "全国",
+          "result": "神奈川県代表として1名が3区（3.0km）に出場",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/seikatsu/144rikujou.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "関東高等学校陸上競技大会",
+          "level": "関東",
+          "result": "南関東 女子800m 2位（全国大会出場）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/seikatsu/144rikujou.html"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "第68回神奈川県高等学校新人陸上競技大会",
+          "level": "都県",
+          "result": "女子800m 3位、男子1500m14位・女子1500m13位（いずれも関東高校選抜新人陸上競技選手権大会出場）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/seikatsu/144rikujou.html"
+        }
+      ]
+    },
+    {
+      "name": "水泳部",
+      "kind": "運動",
+      "days_note": "月・水・木・金（・土）",
+      "days_per_week": 4.5,
+      "weekend": "土",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/seikatsu/145swimming.html",
+      "as_of": "2026-05-12",
+      "note": "2023年度以降の大会成績で年度が明記されているものがなく（唯一の直近成績は年度不明）、段階の根拠にできる実績が確認できなかったため段階を付けていない",
+      "results": [
+        {
+          "fiscal_year": 2022,
+          "competition": "神奈川県高等学校総合体育大会",
+          "level": "都県",
+          "result": "女子800m自由形 県8位（関東大会出場）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/seikatsu/145swimming.html"
+        }
+      ]
+    },
+    {
+      "name": "バドミントン部（女子）",
+      "kind": "運動",
+      "days_note": "月・火・水・木（・土・日）",
+      "days_per_week": 5,
+      "weekend": "土日",
+      "tier": 2,
+      "tier_basis": "2023・2024年度の関東大会県予選・高校総体県予選で学校対抗・シングルスのベスト16が複数回（都県大会ベスト16〜32が複数回のため段階2）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/seikatsu/146badminton.html",
+      "as_of": "2026-05-12",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "関東大会県予選",
+          "level": "都県",
+          "result": "学校対抗ベスト16",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/seikatsu/146badminton.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "高校総体県予選",
+          "level": "都県",
+          "result": "シングルス・学校対抗ともベスト16",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/seikatsu/146badminton.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "関東大会県予選",
+          "level": "都県",
+          "result": "ベスト16",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/seikatsu/146badminton.html"
+        }
+      ]
+    },
+    {
+      "name": "バドミントン部（男子）",
+      "kind": "運動",
+      "days_note": "月・火・水・木（・土・日）",
+      "days_per_week": 5,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2024年度の県新人大会はシングルスベスト32にとどまり、都県大会でのベスト16以上や複数回の実績が確認できない",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/seikatsu/146badminton.html",
+      "as_of": "2026-05-12",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "県新人大会",
+          "level": "都県",
+          "result": "シングルスベスト32",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/seikatsu/146badminton.html"
+        }
+      ]
+    },
+    {
+      "name": "テニス部（女子）",
+      "kind": "運動",
+      "days_note": "月・火・木・金（・土）",
+      "days_per_week": 4.5,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "2025・2026年度のインターハイ予選・県新人テニス大会はいずれもベスト64にとどまり、都県大会での上位進出の記載がない",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/seikatsu/147tennis.html",
+      "as_of": "2026-08-17",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "インターハイ予選",
+          "level": "都県",
+          "result": "団体戦ベスト64",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/seikatsu/147tennis.html"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "インターハイ予選",
+          "level": "都県",
+          "result": "個人戦ベスト64",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/seikatsu/147tennis.html"
+        }
+      ]
+    },
+    {
+      "name": "テニス部（男子）",
+      "kind": "運動",
+      "days_note": "月・水・木・金（・土）",
+      "days_per_week": 4.5,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "2025年度の県新人テニス大会は団体戦ベスト32にとどまり、都県大会でのベスト16以上や複数回の実績が確認できない",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/seikatsu/147tennis.html",
+      "as_of": "2026-08-17",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "神奈川県新人テニス大会",
+          "level": "都県",
+          "result": "団体戦ベスト32",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/seikatsu/147tennis.html"
+        }
+      ]
+    },
+    {
+      "name": "ソフトテニス部",
+      "kind": "運動",
+      "days_note": "火・水・金・日（日は隔週）",
+      "days_per_week": 3.5,
+      "weekend": "日",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/seikatsu/148softtennis.html",
+      "as_of": "2026-05-18",
+      "note": "直近3年（2023年度以降）の大会成績の記載がなく（掲載されている成績は2022年度）、段階の根拠にできる実績が確認できなかったため段階を付けていない",
+      "results": [
+        {
+          "fiscal_year": 2022,
+          "competition": "関東大会地区予選会（横浜A地区）",
+          "level": "地区",
+          "result": "女子個人 優勝",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/seikatsu/148softtennis.html"
+        }
+      ]
+    },
+    {
+      "name": "卓球部",
+      "kind": "運動",
+      "days_note": "水・木（・土・日）",
+      "days_per_week": 3,
+      "weekend": "土日",
+      "tier": 4,
+      "tier_basis": "活動日は週3日程度で、直近3年（2023年度以降）の大会成績の記載がなく（掲載されている成績は2022年度）実績が確認できない",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/seikatsu/149tabletennis.html",
+      "as_of": "2026-05-11",
+      "results": [
+        {
+          "fiscal_year": 2022,
+          "competition": "県新人大会",
+          "level": "都県",
+          "result": "男子団体ベスト16",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/seikatsu/149tabletennis.html"
+        }
+      ]
+    },
+    {
+      "name": "剣道部",
+      "kind": "運動",
+      "days_note": "基本週5日",
+      "days_per_week": 5,
+      "tier": 1,
+      "tier_basis": "2023〜2025年度にかけて女子団体・個人、男子団体で都県大会ベスト8以内（4〜8位）の成績が複数回（女子団体8位×2、女子個人5位×2、男子団体4・5位など）あり、都県大会ベスト8以上が2回以上のため段階1",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/seikatsu/150kendou.html",
+      "as_of": "2026-06-29",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "第62回神奈川県高等学校総合体育大会剣道競技兼インターハイ予選",
+          "level": "都県",
+          "result": "男子団体5位",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/seikatsu/150kendou.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第63回神奈川県高等学校総合体育大会剣道競技兼インターハイ予選",
+          "level": "都県",
+          "result": "女子団体5位、女子個人5位",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/seikatsu/150kendou.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第72回神奈川県高等学校剣道大会兼関東予選",
+          "level": "都県",
+          "result": "女子団体8位",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/seikatsu/150kendou.html"
+        }
+      ]
+    },
+    {
+      "name": "弓道部",
+      "kind": "運動",
+      "days_note": "月・火・水・木・土",
+      "days_per_week": 5,
+      "weekend": "土",
+      "tier": 1,
+      "tier_basis": "2023〜2026年度は毎年、全国総体弓道競技大会や関東大会（関東高校弓道大会・関東選抜大会等）に出場しており、全国・関東大会出場が複数回のため段階1",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/seikatsu/151kyudou.html",
+      "as_of": "2026-08-24",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "第63回県総合体育大会兼第70回全国総合体育大会県予選会",
+          "level": "都県",
+          "result": "女子個人2位（全国大会出場）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/seikatsu/151kyudou.html"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "第64回県総合体育大会兼第71回全国総合体育大会県予選会",
+          "level": "都県",
+          "result": "女子団体優勝（全国大会出場）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/seikatsu/151kyudou.html"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "第71回全国高等学校総合体育大会弓道競技大会",
+          "level": "全国",
+          "result": "女子団体4位",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/seikatsu/151kyudou.html"
+        }
+      ]
+    },
+    {
+      "name": "山岳部",
+      "kind": "運動",
+      "days_note": "月・水・木（・土）",
+      "days_per_week": 4,
+      "weekend": "土",
+      "tier": 1,
+      "tier_basis": "2024年度（第68回）・2025年度（第69回）の関東高校登山大会に連続出場、2026年度も男女とも県予選で関東大会出場権を獲得（関東大会出場が2回以上のため段階1）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/seikatsu/152sangaku.html",
+      "as_of": "2026-06-22",
+      "note": "本文に「週に4回（月、水、木、土）」と明記",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "第68回関東高校登山大会",
+          "level": "関東",
+          "result": "出場（神奈川県・箱根）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/seikatsu/152sangaku.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第69回関東高校登山大会",
+          "level": "関東",
+          "result": "出場（山梨県・八ヶ岳）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/seikatsu/152sangaku.html"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "第64回高校総体県予選",
+          "level": "都県",
+          "result": "男女とも優秀校として関東大会出場権を獲得",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/seikatsu/152sangaku.html"
+        }
+      ]
+    },
+    {
+      "name": "ダンス部",
+      "kind": "運動",
+      "days_note": "月・水・木・金・土",
+      "days_per_week": 5,
+      "weekend": "土",
+      "tier": 2,
+      "tier_basis": "日本高校ダンス部選手権（民間主催）で、2023年度に全国決勝大会へ進出、2024・2026年度は全国準決勝大会へ進出。民間主催の大会は全国決勝2回以上でなければ段階2まで（全国決勝は1回のため・見直しで1→2）。2024年度は県新人大会フリー部門で優勝",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/seikatsu/153dance.html",
+      "as_of": "2026-08-06",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "第16回日本高校ダンス部選手権 関東・甲信越大会",
+          "level": "関東",
+          "result": "ビッグクラスBブロック第3位（全国決勝大会進出）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/seikatsu/153dance.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "第17回日本高校ダンス部選手権 関東・甲信越大会",
+          "level": "関東",
+          "result": "ビッグクラスAブロック準優勝（全国準決勝大会進出）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/seikatsu/153dance.html"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "第19回日本高校ダンス部選手権 関東・甲信越大会",
+          "level": "関東",
+          "result": "ビッグクラス第6位（全国準決勝大会進出）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/seikatsu/153dance.html"
+        }
+      ]
+    },
+    {
+      "name": "バトントワリング部",
+      "kind": "運動",
+      "days_note": "月・火・木・金・土",
+      "days_per_week": 5,
+      "weekend": "土",
+      "tier": 2,
+      "tier_basis": "2023〜2025年度は毎年バトントワーリング関東大会（民間主催）に出場し銀賞以上（2024年度は金賞）。民間主催の大会は全国決勝2回以上でなければ段階2まで（見直しで1→2）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/seikatsu/154batontwirling.html",
+      "as_of": "2026-05-25",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "第58回バトントワーリング関東大会",
+          "level": "関東",
+          "result": "銀賞",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/seikatsu/154batontwirling.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "第59回バトントワーリング関東大会",
+          "level": "関東",
+          "result": "チームコンテストの部（初級/高等学校）金賞・千葉市教育長賞",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/seikatsu/154batontwirling.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第60回バトントワーリング関東大会",
+          "level": "関東",
+          "result": "学校部門高等学校 銀賞",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/seikatsu/154batontwirling.html"
+        }
+      ]
+    },
+    {
+      "name": "文芸部",
+      "kind": "文化",
+      "days_note": "不定期開催",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/seikatsu/155bungei.html",
+      "as_of": "2026-05-12",
+      "note": "活動日が「不定期開催」で具体的な日数が分からず、大会に類する実績の記載もないため段階を付けていない"
+    },
+    {
+      "name": "美術部",
+      "kind": "文化",
+      "days_note": "火・金",
+      "days_per_week": 2,
+      "tier": 3,
+      "tier_basis": "2025年度 第72回神奈川県高校美術展に出品（展示型の都県大会への出品にとどまるため段階3）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/seikatsu/156bijutsu.html",
+      "as_of": "2026-05-11",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "第72回神奈川県高校美術展",
+          "level": "都県",
+          "result": "出展",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/seikatsu/156bijutsu.html"
+        }
+      ]
+    },
+    {
+      "name": "合唱部",
+      "kind": "文化",
+      "days_note": "月・火・水・木",
+      "days_per_week": 4,
+      "tier": 3,
+      "tier_basis": "2024年度 かながわヴォーカルアンサンブルコンテストで銀賞、NHK全国学校音楽コンクール神奈川県予選（合同）で予選奨励賞（代表選出や金賞などの最上位ではないため段階3）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/seikatsu/157gassho.html",
+      "as_of": "2026-06-01",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "第27回かながわヴォーカルアンサンブルコンテスト（高等学校部門）",
+          "level": "都県",
+          "result": "銀賞および審査員賞",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/seikatsu/157gassho.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "NHK全国学校音楽コンクール神奈川県高校の部",
+          "level": "都県",
+          "result": "予選奨励賞（横浜緑園高等学校・横浜清陵高等学校との合同）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/seikatsu/157gassho.html"
+        }
+      ]
+    },
+    {
+      "name": "吹奏楽部",
+      "kind": "文化",
+      "days_note": "月・火・木・金・土",
+      "days_per_week": 5,
+      "tier": 2,
+      "tier_basis": "2023〜2025年度は横浜吹奏楽コンクールで金賞を受賞し県大会（神奈川県吹奏楽コンクール）に連続出場（横浜地区代表選出）。県大会では銀賞・銅賞にとどまり関東・全国大会への進出はない（代表選出が複数回のため段階2）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/seikatsu/158brassband.html",
+      "as_of": "2026-08-27",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "第25回横浜吹奏楽コンクール",
+          "level": "地区",
+          "result": "高等学校A部門 金賞（県大会出場）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/seikatsu/158brassband.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "第73回神奈川県吹奏楽コンクール",
+          "level": "都県",
+          "result": "高等学校A部門 銀賞",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/seikatsu/158brassband.html"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "第75回神奈川県吹奏楽コンクール",
+          "level": "都県",
+          "result": "高等学校A部門 銅賞",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/seikatsu/158brassband.html"
+        }
+      ]
+    },
+    {
+      "name": "書道部",
+      "kind": "文化",
+      "days_note": "水・木・金（展覧会前等繁忙期は随時）",
+      "days_per_week": 3,
+      "tier": 1,
+      "tier_basis": "2023年度 全国高等学校総合文化祭鹿児島大会に神奈川県代表として出場、2026年度 同秋田大会書道部門で特別賞を受賞（全国大会実績が2回以上のため段階1）。2025年度は高等学校書道展で高文連会長賞・団体優秀賞も受賞",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/seikatsu/159shodo.html",
+      "as_of": "2026-08-24",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "第47回全国高等学校総合文化祭鹿児島大会 書道部門",
+          "level": "全国",
+          "result": "神奈川県代表として出場",
+          "happened_on": "2023-08-02",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/seikatsu/159shodo.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第62回高等学校書道展",
+          "level": "都県",
+          "result": "高文連会長賞・団体優秀賞",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/seikatsu/159shodo.html"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "第50回全国高等学校総合文化祭秋田大会 書道部門",
+          "level": "全国",
+          "result": "特別賞受賞",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/seikatsu/159shodo.html"
+        }
+      ]
+    },
+    {
+      "name": "ESS",
+      "kind": "文化",
+      "days_note": "木曜日昼休み",
+      "days_per_week": 1,
+      "tier": 4,
+      "tier_basis": "活動は週1回の昼休みが中心（ALTとの会話練習等）で、大会成績の記載がない",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/seikatsu/160ess.html",
+      "as_of": "2026-05-18"
+    },
+    {
+      "name": "茶道部",
+      "kind": "文化",
+      "days_note": "水曜日月2回",
+      "tier": 4,
+      "tier_basis": "活動は月2回程度（水曜日）にとどまり、活動実績も川和祭でのお茶会のみで大会成績の記載がない",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/seikatsu/161sadou.html",
+      "as_of": "2026-05-11",
+      "days_per_week": 0.5
+    },
+    {
+      "name": "室内楽部",
+      "kind": "文化",
+      "days_note": "月・火・木・金・土",
+      "days_per_week": 5,
+      "tier": 3,
+      "tier_basis": "2025年度 全国高等学校総合文化祭香川大会に、県内の学校から集めた「県合同ストリングオーケストラ」の一員として出場。部として選ばれた成績ではないため段階3（見直しで2→3）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/seikatsu/162shitsunaigaku.html",
+      "as_of": "2026-01-20",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "第49回全国高等学校総合文化祭香川大会",
+          "level": "全国",
+          "result": "「県合同ストリングオーケストラ」の一員として県代表で出場（2025年7月）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/seikatsu/162shitsunaigaku.html"
+        }
+      ]
+    },
+    {
+      "name": "軽音楽部",
+      "kind": "文化",
+      "days_note": "バンドごとにシフトを決めて週2～3日",
+      "days_per_week": 2.5,
+      "tier": 4,
+      "tier_basis": "活動は校内ライブ・川和祭でのライブが中心で、外部コンクール等の成績の記載がない",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/seikatsu/163keiongaku.html",
+      "as_of": "2026-05-18"
+    },
+    {
+      "name": "パティシエ",
+      "kind": "文化",
+      "days_note": "月2回程度木曜に実施（文化祭前は増加）",
+      "tier": 4,
+      "tier_basis": "活動は文化祭での調理・販売が中心で、大会に類する実績がなく月2回程度の活動にとどまる",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/seikatsu/164patishie.html",
+      "as_of": "2026-05-12",
+      "days_per_week": 0.5
+    },
+    {
+      "name": "服飾イベント",
+      "kind": "文化",
+      "days_note": "水曜日",
+      "days_per_week": 1,
+      "tier": 4,
+      "tier_basis": "活動日は週1日（水曜日）で、実績は川和祭での作品展示（2022年度）のみ",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/seikatsu/165fukushoku.html",
+      "as_of": "2026-05-11"
+    },
+    {
+      "name": "アコースティックギター部",
+      "kind": "文化",
+      "days_note": "火・木",
+      "days_per_week": 2,
+      "tier": 4,
+      "tier_basis": "活動は川和祭でのライブが中心で、外部コンクール等の成績の記載がない",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/seikatsu/167acousticguitar.html",
+      "as_of": "2026-05-11"
+    },
+    {
+      "name": "クイズ研究部",
+      "kind": "文化",
+      "days_note": "水曜日、金曜日の放課後",
+      "days_per_week": 2,
+      "tier": 3,
+      "tier_basis": "2024年度 高校別団体戦(AQL)神奈川リーグ8位、郭公杯決勝3位、立川オープン2024準々決勝進出などにとどまり、都県大会の上位進出の記載はない",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/seikatsu/168quiz.html",
+      "as_of": "2026-05-18",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "高校別団体戦(AQL)神奈川リーグ",
+          "level": "その他",
+          "result": "8位",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/seikatsu/168quiz.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "郭公杯",
+          "level": "その他",
+          "result": "決勝3位",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/seikatsu/168quiz.html"
+        }
+      ]
+    },
+    {
+      "name": "競技かるた同好会",
+      "kind": "同好会",
+      "days_note": "毎週月・火曜日",
+      "days_per_week": 2,
+      "tier": 4,
+      "tier_basis": "活動日は週2日で、2023〜2024年度の大会成績は出場にとどまり順位の記載がない",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/seikatsu/175karuta.html",
+      "as_of": "2026-05-11",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "第26回神奈川県かるた選手権大会（E級）",
+          "level": "都県",
+          "result": "出場",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/seikatsu/175karuta.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "第10回渡辺雅大杯争奪かるた競技大会",
+          "level": "その他",
+          "result": "出場",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/seikatsu/175karuta.html"
+        }
+      ]
+    },
+    {
+      "name": "理科同好会",
+      "kind": "同好会",
+      "days_note": "原則金曜日",
+      "days_per_week": 1,
+      "tier": 4,
+      "tier_basis": "活動は標本作成・野外調査・講演会参加が中心で、2024年度の科学の甲子園神奈川県予選も出場にとどまり大会成績の記載がない",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/seikatsu/177rikakenkyu.html",
+      "as_of": "2026-05-11",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "科学の甲子園神奈川県予選",
+          "level": "都県",
+          "result": "出場",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/seikatsu/177rikakenkyu.html"
+        }
+      ]
+    }
+  ],
+  "designated_universities": [],
+  "events": [
+    {
+      "kind": "制服",
+      "period_label": "2023年度（令和5年度）から",
+      "summary": "制服が変更された（女子はスカートに加えズボンも選択可能に）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/nyugaku/documents/2026_gakkouannai.pdf"
+    },
+    {
+      "kind": "指定",
+      "period_label": "2024年度（令和6年度）から4年間",
+      "summary": "学力向上進学重点校に指定された",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/gaiyou/110gaiyou.html"
+    },
+    {
+      "kind": "施設",
+      "period_label": "2025年度",
+      "summary": "女子ハンドボール部のサブコートが人工芝に改修された",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/seikatsu/140handball.html"
+    },
+    {
+      "kind": "施設",
+      "period_label": "2025年6月",
+      "summary": "野球部のバッティングゲージが4連に新規改築された",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kawawa-h/seikatsu/138baseball.html"
+    }
+  ],
+  "unresolved": [
+    "推薦の倍率（exam_ratio）：神奈川県の入学者選抜実施結果は県全体のPDFで学校別の数値を短時間で特定できず、確認を見送った",
+    "満足度（satisfaction）：神奈川県の学校評価は文章のみで数値の記載がなく、学校運営協議会議事録にも満足度の数値は記載されていない",
+    "入試方式別の割合（admission_route_share）：一般・指定校推薦・公募推薦・総合型の実進学割合を示す公式資料が見つからなかった",
+    "進路決定率（career_decided_rate）：卒業生の進路一覧（355人）に「進学準備65人」の記載はあるが、決定率としての明示的な数値の記載はない",
+    "指定校推薦の大学一覧（designated_universities）：学校案内パンフレット・進路資料に指定校推薦の一覧の記載がなかった",
+    "学級数（classes）：規模ページ等に学級数の記載が見つからなかった"
+  ],
+  "conflicts": [
+    "部活動加入率：学校案内パンフレット（令和8年度版）は「90%を超え」、学校運営協議会議事録（令和8年1月14日）は「102%」（兼部を含む可能性がある）。より新しく具体的な102%を採用した"
+  ]
+}

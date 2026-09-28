@@ -1,0 +1,828 @@
+{
+  "prefecture": "神奈川県",
+  "school_name": "横浜栄",
+  "official_url": "https://www.pen-kanagawa.ed.jp/yokohamasakae-h/",
+  "researched_at": "2026-09-29",
+  "stats": [
+    {
+      "metric": "designation",
+      "item": "プログラミング教育研究推進校",
+      "value_text": "指定",
+      "fiscal_year": 2026,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasakae-h/nyugaku/documents/annai2026.pdf",
+      "source_label": "横浜栄高等学校 学校案内 SCHOOL GUIDE 2026",
+      "as_of": "2026-04",
+      "note": "神奈川県教育委員会指定。令和元(2019)～令和9(2027)年度"
+    },
+    {
+      "metric": "designation",
+      "item": "高等学校DX加速化推進事業（DXハイスクール）",
+      "value_text": "指定",
+      "fiscal_year": 2026,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasakae-h/nyugaku/documents/annai2026.pdf",
+      "source_label": "横浜栄高等学校 学校案内 SCHOOL GUIDE 2026",
+      "as_of": "2026-04",
+      "note": "文部科学省指定。令和6(2024)～令和10(2028)年度。学校経営報告書でも研修会等の実施が確認できる"
+    },
+    {
+      "metric": "students",
+      "item": "",
+      "fiscal_year": 2025,
+      "value_num": 937,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasakae-h/gaiyou/general_situation.html",
+      "source_label": "横浜栄高等学校 生徒概況",
+      "as_of": "2025-05-01",
+      "note": "全学年在籍者の計（1年次319・2年次313・3年次305、令和7年5月1日現在）"
+    },
+    {
+      "metric": "students",
+      "item": "",
+      "grade": 1,
+      "fiscal_year": 2026,
+      "value_num": 318,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasakae-h/gaiyou/history.html",
+      "source_label": "横浜栄高等学校 沿革",
+      "as_of": "2026-04-07",
+      "note": "第18回入学式の人数。入学者数であり在籍生徒数の全校集計ではない"
+    },
+    {
+      "metric": "classes",
+      "item": "",
+      "grade": 1,
+      "fiscal_year": 2026,
+      "value_num": 8,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasakae-h/gaiyou/history.html",
+      "source_label": "横浜栄高等学校 沿革",
+      "as_of": "2026-04-07",
+      "note": "第18回入学式時点の1年次学級数。原文は「8クラス(9クラス展開)」"
+    },
+    {
+      "metric": "uniform",
+      "item": "",
+      "fiscal_year": 2026,
+      "value_text": "男子は3釦シングルブレザー+スラックス+ネクタイ。女子は同型ブレザーで、リボンかネクタイ、スカートかスラックスを選択可。シャツは白色指定、夏はポロシャツ可",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasakae-h/gaiyou/uniform.html",
+      "source_label": "横浜栄高等学校 制服",
+      "as_of": "2024-09-04",
+      "note": ""
+    },
+    {
+      "metric": "rules_summary",
+      "item": "",
+      "fiscal_year": 2026,
+      "value_text": "頭髪は原則として染色・脱色をしないこと。スマートフォン等は授業中電源を切り使用しない(教員指導下の授業利用を除く)。アルバイトは学業への影響に注意し保護者の承認を得て学級担任等に届け出る",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasakae-h/gaiyou/kokoroe.html",
+      "source_label": "横浜栄高等学校 生徒心得",
+      "as_of": "2026-04-13",
+      "note": ""
+    },
+    {
+      "metric": "exam_ratio",
+      "item": "共通選抜",
+      "fiscal_year": 2026,
+      "value_num": 1.2,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasakae-h/nyugaku/documents/annai2026.pdf",
+      "source_label": "横浜栄高等学校 学校案内 SCHOOL GUIDE 2026「入学者選抜状況」",
+      "as_of": "2026-04",
+      "note": "受検倍率（受検者数382名÷合格者数318名、募集定員318名）。神奈川県は推薦選抜を実施しておらず単一の選抜のみ"
+    },
+    {
+      "metric": "exam_ratio",
+      "item": "共通選抜",
+      "fiscal_year": 2025,
+      "value_num": 1.22,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasakae-h/nyugaku/documents/annai2026.pdf",
+      "source_label": "横浜栄高等学校 学校案内 SCHOOL GUIDE 2026「入学者選抜状況」",
+      "as_of": "2026-04",
+      "note": "受検倍率（受検者数390名÷合格者数319名、募集定員319名）"
+    },
+    {
+      "metric": "exam_ratio",
+      "item": "共通選抜",
+      "fiscal_year": 2024,
+      "value_num": 1.26,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasakae-h/nyugaku/documents/annai2026.pdf",
+      "source_label": "横浜栄高等学校 学校案内 SCHOOL GUIDE 2026「入学者選抜状況」",
+      "as_of": "2026-04",
+      "note": "受検倍率（受検者数401名÷合格者数319名、募集定員319名）"
+    },
+    {
+      "metric": "university_count",
+      "item": "国公立",
+      "basis": "延べ",
+      "fiscal_year": 2024,
+      "value_num": 12,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasakae-h/shinro/performance.html",
+      "source_label": "横浜栄高等学校 合格実績（令和6年度）",
+      "as_of": "2025-05-23",
+      "note": ""
+    },
+    {
+      "metric": "university_count",
+      "item": "早慶上理",
+      "basis": "延べ",
+      "fiscal_year": 2024,
+      "value_num": 9,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasakae-h/shinro/performance.html",
+      "source_label": "横浜栄高等学校 合格実績（令和6年度）",
+      "as_of": "2025-05-23",
+      "note": "大学別の表から合算（早稲田2・慶應義塾1・上智1・東京理科5）"
+    },
+    {
+      "metric": "university_count",
+      "item": "GMARCH",
+      "basis": "延べ",
+      "fiscal_year": 2024,
+      "value_num": 73,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasakae-h/shinro/performance.html",
+      "source_label": "横浜栄高等学校 合格実績（令和6年度）",
+      "as_of": "2025-05-23",
+      "note": "大学別の表から合算（学習院6・明治21・青山学院9・立教0・中央15・法政22）"
+    },
+    {
+      "metric": "university_count",
+      "item": "成成明武",
+      "basis": "延べ",
+      "fiscal_year": 2024,
+      "value_num": 37,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasakae-h/shinro/performance.html",
+      "source_label": "横浜栄高等学校 合格実績（令和6年度）",
+      "as_of": "2025-05-23",
+      "note": "大学別の表から合算（成蹊3・成城2・明治学院28・武蔵4）"
+    },
+    {
+      "metric": "university_count",
+      "item": "日東駒専",
+      "basis": "延べ",
+      "fiscal_year": 2024,
+      "value_num": 89,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasakae-h/shinro/performance.html",
+      "source_label": "横浜栄高等学校 合格実績（令和6年度）",
+      "as_of": "2025-05-23",
+      "note": "大学別の表から合算（日本38・東洋19・駒澤10・専修22）"
+    },
+    {
+      "metric": "university_count",
+      "item": "合計",
+      "basis": "延べ",
+      "fiscal_year": 2024,
+      "value_num": 596,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasakae-h/shinro/performance.html",
+      "source_label": "横浜栄高等学校 合格実績（令和6年度）",
+      "as_of": "2025-05-23",
+      "note": "国公立大計12＋私立大計583＋海外大計1"
+    },
+    {
+      "metric": "university_count",
+      "item": "神奈川大学",
+      "basis": "延べ",
+      "fiscal_year": 2024,
+      "value_num": 98,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasakae-h/shinro/performance.html",
+      "source_label": "横浜栄高等学校 合格実績（令和6年度）",
+      "as_of": "2025-05-23",
+      "note": "大学群以外で合格が多い大学（上位5つ）"
+    },
+    {
+      "metric": "university_count",
+      "item": "関東学院大学",
+      "basis": "延べ",
+      "fiscal_year": 2024,
+      "value_num": 37,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasakae-h/shinro/performance.html",
+      "source_label": "横浜栄高等学校 合格実績（令和6年度）",
+      "as_of": "2025-05-23",
+      "note": "大学群以外で合格が多い大学（上位5つ）"
+    },
+    {
+      "metric": "university_count",
+      "item": "東海大学",
+      "basis": "延べ",
+      "fiscal_year": 2024,
+      "value_num": 28,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasakae-h/shinro/performance.html",
+      "source_label": "横浜栄高等学校 合格実績（令和6年度）",
+      "as_of": "2025-05-23",
+      "note": "大学群以外で合格が多い大学（上位5つ）"
+    },
+    {
+      "metric": "university_count",
+      "item": "東京都市大学",
+      "basis": "延べ",
+      "fiscal_year": 2024,
+      "value_num": 23,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasakae-h/shinro/performance.html",
+      "source_label": "横浜栄高等学校 合格実績（令和6年度）",
+      "as_of": "2025-05-23",
+      "note": "大学群以外で合格が多い大学（上位5つ）"
+    },
+    {
+      "metric": "university_count",
+      "item": "國學院大学",
+      "basis": "延べ",
+      "fiscal_year": 2024,
+      "value_num": 16,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasakae-h/shinro/performance.html",
+      "source_label": "横浜栄高等学校 合格実績（令和6年度）",
+      "as_of": "2025-05-23",
+      "note": "大学群以外で合格が多い大学（上位5つ）"
+    },
+    {
+      "metric": "university_count",
+      "item": "国公立",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 7,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasakae-h/nyugaku/documents/annai2026.pdf",
+      "source_label": "横浜栄高等学校 学校案内 SCHOOL GUIDE 2026「進路状況」（令和7年度卒業生302名）",
+      "as_of": "2026-04",
+      "note": "卒業者に占める割合2.3%"
+    },
+    {
+      "metric": "university_count",
+      "item": "私立",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 254,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasakae-h/nyugaku/documents/annai2026.pdf",
+      "source_label": "横浜栄高等学校 学校案内 SCHOOL GUIDE 2026「進路状況」（令和7年度卒業生302名）",
+      "as_of": "2026-04",
+      "note": "卒業者に占める割合84.1%"
+    },
+    {
+      "metric": "university_count",
+      "item": "合計",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 261,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasakae-h/nyugaku/documents/annai2026.pdf",
+      "source_label": "横浜栄高等学校 学校案内 SCHOOL GUIDE 2026「進路状況」（令和7年度卒業生302名）",
+      "as_of": "2026-04",
+      "note": "国公立7＋私立254。専門・各種学校14名、進学準備等27名は大学ではないため含まない（卒業者302名の内訳）"
+    }
+  ],
+  "clubs": [
+    {
+      "name": "アメリカンフットボール部",
+      "kind": "運動",
+      "tier": 2,
+      "tier_basis": "2024年度 春季県大会3位（関東大会代表決定戦で敗退）・秋季は県大会を経て全国大会関東予選に出場。ただし直近3年で好成績はこの1年度のみで、2023・2025年度は春秋とも県大会2回戦にとどまるため段階2",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasakae-h/seikatsu/club/american-football.html",
+      "as_of": "2026-09-01",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "アメリカンフットボール春季・秋季県大会",
+          "level": "都県",
+          "result": "春秋とも2回戦敗退",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasakae-h/seikatsu/club/american-football.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "アメリカンフットボール春季県大会",
+          "level": "都県",
+          "result": "3位（関東大会代表決定戦で敗退）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasakae-h/seikatsu/club/american-football.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "アメリカンフットボール秋季 全国大会関東予選",
+          "level": "関東",
+          "result": "県大会を経て出場",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasakae-h/seikatsu/club/american-football.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "アメリカンフットボール春季・秋季県大会",
+          "level": "都県",
+          "result": "春秋とも2回戦敗退",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasakae-h/seikatsu/club/american-football.html"
+        }
+      ]
+    },
+    {
+      "name": "ラグビー部",
+      "kind": "運動",
+      "tier": 3,
+      "tier_basis": "2026年度(令和7・8年度)の実績として、関東大会県予選ベスト16、全国大会県予選第1地区(地区扱い)ベスト8、県新人大会ベスト14、横浜地区大会3位にとどまり、都県大会ベスト8以上や関東・全国大会出場の実績はない",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasakae-h/seikatsu/club/rugby.html",
+      "as_of": "2026-09-07",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "関東大会県予選",
+          "level": "都県",
+          "result": "県ベスト16",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasakae-h/seikatsu/club/rugby.html"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "全国大会県予選 第1地区",
+          "level": "地区",
+          "result": "第1地区ベスト8",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasakae-h/seikatsu/club/rugby.html"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "県新人大会",
+          "level": "都県",
+          "result": "ベスト14",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasakae-h/seikatsu/club/rugby.html"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "横浜地区大会",
+          "level": "地区",
+          "result": "3位",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasakae-h/seikatsu/club/rugby.html"
+        }
+      ]
+    },
+    {
+      "name": "野球部",
+      "kind": "運動",
+      "tier": 3,
+      "tier_basis": "2023～2025年度の全国高校野球選手権神奈川大会はいずれも2～3回戦で敗退、春季・秋季県大会も2～3回戦にとどまり、直近3年でベスト16未到達",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasakae-h/seikatsu/club/baseball.html",
+      "as_of": "2026-09-11",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "全国高校野球選手権神奈川大会",
+          "level": "都県",
+          "result": "2勝の後3回戦敗退（対川崎北 3-4）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasakae-h/seikatsu/club/baseball.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "春季県大会",
+          "level": "都県",
+          "result": "2回戦敗退（対横浜商業 9-12）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasakae-h/seikatsu/club/baseball.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "全国高校野球選手権神奈川大会",
+          "level": "都県",
+          "result": "2回戦敗退（対桐光学園 1-2）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasakae-h/seikatsu/club/baseball.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "秋季県大会",
+          "level": "都県",
+          "result": "2回戦敗退（対川和 1-9）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasakae-h/seikatsu/club/baseball.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "全国高校野球選手権神奈川大会",
+          "level": "都県",
+          "result": "2回戦敗退（対山手学院 4-5）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasakae-h/seikatsu/club/baseball.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "春季県大会",
+          "level": "都県",
+          "result": "3回戦敗退（対横浜清陵 2-3）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasakae-h/seikatsu/club/baseball.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "秋季県大会",
+          "level": "都県",
+          "result": "1回戦敗退（対大磯 3-6）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasakae-h/seikatsu/club/baseball.html"
+        }
+      ]
+    },
+    {
+      "name": "サッカー部",
+      "kind": "運動",
+      "days_note": "月:OFF、火:練習、水:朝練orフリー、木:練習、金:練習、土日:練習/練習試合/公式戦",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2026年度 高円宮杯U18サッカーリーグ神奈川 K5グループD所属（4位）。K4以上には所属していない（サッカー部はリーグ所属で判定）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasakae-h/seikatsu/club/soccer.html",
+      "as_of": "2026-09-11",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "高円宮杯U18サッカーリーグ神奈川",
+          "level": "都県",
+          "result": "K5グループD所属、4位（1勝3分1敗）",
+          "source_url": "https://www.kanagawa-fa.gr.jp/cms/u18-league/2026/div5/"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "高校総体神奈川県1次予選",
+          "level": "都県",
+          "result": "2回戦敗退（対多摩 延長0-1）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasakae-h/seikatsu/club/soccer.html"
+        }
+      ]
+    },
+    {
+      "name": "陸上競技部",
+      "kind": "運動",
+      "tier": 1,
+      "tier_basis": "個人種目だが2023～2026年度と4年連続で関東大会に出場（種目・記録の詳細記載はないが、関東大会出場が複数回のため段階1）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasakae-h/seikatsu/club/track-and-field.html",
+      "as_of": "2026-06-22",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "関東大会",
+          "level": "関東",
+          "result": "出場（種目の詳細記載なし）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasakae-h/seikatsu/club/track-and-field.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "関東大会",
+          "level": "関東",
+          "result": "出場（種目の詳細記載なし）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasakae-h/seikatsu/club/track-and-field.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "関東大会",
+          "level": "関東",
+          "result": "出場（種目の詳細記載なし）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasakae-h/seikatsu/club/track-and-field.html"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "関東大会",
+          "level": "関東",
+          "result": "出場（種目の詳細記載なし）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasakae-h/seikatsu/club/track-and-field.html"
+        }
+      ]
+    },
+    {
+      "name": "テニス部",
+      "kind": "運動",
+      "days_note": "男女とも月・火・水・金・土",
+      "days_per_week": 5,
+      "weekend": "土",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasakae-h/seikatsu/club/tennis.html",
+      "as_of": "2026-06-22",
+      "note": "大会成績の記載がなく段階は付けていない"
+    },
+    {
+      "name": "ソフトテニス部",
+      "kind": "運動",
+      "days_note": "男女とも水曜日は休み。土日・祝日は公式戦や練習試合に応じて調整",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasakae-h/seikatsu/club/soft-tennis.html",
+      "as_of": "2025-09-03",
+      "note": "「個人戦県ベスト16、団体戦県ベスト8を目標に」との目標の記載や、2024年度に県大会出場・新人戦で男子2ペアが続行戦進出という記述はあるが、具体的な順位（何位/ベスト何）の記載がなく段階の根拠にできなかった"
+    },
+    {
+      "name": "女子バレーボール部",
+      "kind": "運動",
+      "tier": 2,
+      "tier_basis": "都県大会でベスト32が複数回（2023年度 全日本高校選手権神奈川県予選、2025年度 高校総合体育大会・新人大会県大会）。ベスト16以上の記載はない",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasakae-h/seikatsu/club/volleyball.html",
+      "as_of": "2026-09-11",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "全日本高校選手権大会神奈川県予選",
+          "level": "都県",
+          "result": "ベスト32",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasakae-h/seikatsu/club/volleyball.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "高校総合体育大会",
+          "level": "都県",
+          "result": "ベスト32",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasakae-h/seikatsu/club/volleyball.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "新人大会県大会",
+          "level": "都県",
+          "result": "ベスト32",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasakae-h/seikatsu/club/volleyball.html"
+        }
+      ]
+    },
+    {
+      "name": "バスケットボール部",
+      "kind": "運動",
+      "days_note": "火・水・金、（土日はどちらか）",
+      "days_per_week": 3.5,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasakae-h/seikatsu/club/basketball.html",
+      "as_of": "2026-07-10",
+      "note": "活動目標「県大会常時出場・上位入賞」の記載のみで、具体的な大会結果（順位）の記載がなく段階は付けていない"
+    },
+    {
+      "name": "バドミントン部",
+      "kind": "運動",
+      "days_note": "平日は火曜日を除く4日間、土日も活動",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "tier": 2,
+      "tier_basis": "2023年度 新人大会（学校対抗）男子で県ベスト16、2024～2026年度も関東大会予選・高校総体予選・新人大会で男女とも複数回県ベスト32（都県大会ベスト16〜32が複数回のため段階2）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasakae-h/seikatsu/club/badminton.html",
+      "as_of": "2026-06-22",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "新人大会（学校対抗）男子",
+          "level": "都県",
+          "result": "県ベスト16",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasakae-h/seikatsu/club/badminton.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "関東大会予選（学校対抗）男子",
+          "level": "都県",
+          "result": "県ベスト32",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasakae-h/seikatsu/club/badminton.html"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "高校総体予選（学校対抗）女子",
+          "level": "都県",
+          "result": "県ベスト32",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasakae-h/seikatsu/club/badminton.html"
+        }
+      ]
+    },
+    {
+      "name": "卓球部",
+      "kind": "運動",
+      "days_note": "平日週4日、休日1日をベース",
+      "days_per_week": 5,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasakae-h/seikatsu/club/table-tennis.html",
+      "as_of": "2026-06-25",
+      "note": "「学校対抗(団体)で県ベスト32を目標に」との目標の記載のみで、大会結果（実績）の記載がなく段階は付けていない"
+    },
+    {
+      "name": "ダンス部",
+      "kind": "運動",
+      "days_note": "平日 月・水・木（16:00～18:30）",
+      "days_per_week": 3,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日は週3日で、日本高校ダンス部選手権や県新人大会フリー部門への出場はあるが、いずれも出場のみで順位等の記載がなく目立つ大会実績がない",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasakae-h/seikatsu/club/dance.html",
+      "as_of": "2026-07-10"
+    },
+    {
+      "name": "チアリーディング部",
+      "kind": "運動",
+      "days_note": "週3日（イベント前は毎日）",
+      "days_per_week": 3,
+      "tier": 4,
+      "tier_basis": "活動日は週3日で、活動内容は文化祭・野球応援・地域イベントでの演技披露が中心であり、競技大会の成績の記載がない",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasakae-h/seikatsu/club/cheer-leader.html",
+      "as_of": "2026-09-01"
+    },
+    {
+      "name": "剣道部",
+      "kind": "運動",
+      "days_note": "月・火・水・土の4日間",
+      "days_per_week": 4,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "2023～2025年度は関東大会県予選・高校総体県予選等への出場が中心で、都県大会での上位進出の記載はない（栄区民大会の女子1位は区レベルの大会のため段階を上げる根拠にしない）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasakae-h/seikatsu/club/kendo.html",
+      "as_of": "2026-09-11",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "栄区民大会",
+          "level": "その他",
+          "result": "高校女子の部 1位（区レベルの大会）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasakae-h/seikatsu/club/kendo.html"
+        }
+      ]
+    },
+    {
+      "name": "弓道部",
+      "kind": "運動",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasakae-h/seikatsu/club/kyudo.html",
+      "as_of": "2026-06-22",
+      "note": "県予選会等の年間予定の記載のみで、大会結果・活動日の週あたり日数の記載がなく段階は付けていない"
+    },
+    {
+      "name": "吹奏楽部",
+      "kind": "文化",
+      "days_note": "平日 月・火・木・金、休日 土",
+      "days_per_week": 5,
+      "weekend": "土",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasakae-h/seikatsu/club/brass-band.html",
+      "as_of": "2026-06-22",
+      "note": "「近年、横浜吹奏楽コンクール高等学校B部門で金賞・支部代表の推薦をいただき、神奈川県吹奏楽コンクールに出場」との記載があるが、具体的な年度が特定できず段階の根拠にできなかった"
+    },
+    {
+      "name": "軽音楽部",
+      "kind": "文化",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasakae-h/seikatsu/club/light-music.html",
+      "as_of": "2025-09-03",
+      "note": "文化祭・ライブハウス等での演奏が中心で、コンクール等の実績や活動日の記載がなく段階は付けていない"
+    },
+    {
+      "name": "美術部",
+      "kind": "文化",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasakae-h/seikatsu/club/art.html",
+      "as_of": "2026-06-22",
+      "note": "「12月の神奈川県高等学校美術展では、毎年多くの作品を出品」との記載はあるが、年度別の入選・特選等の結果や活動日の記載がなく段階は付けていない"
+    },
+    {
+      "name": "漫画研究部",
+      "kind": "文化",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasakae-h/seikatsu/club/comics.html",
+      "as_of": "2026-06-23",
+      "note": "部誌発行が中心の活動で、校外コンクールへの応募は希望者のみ・結果の記載もなく段階は付けていない。活動日は「平日のみ」で曜日の記載がない"
+    },
+    {
+      "name": "茶道部",
+      "kind": "文化",
+      "days_note": "自主練習を含め週3日ほど",
+      "days_per_week": 3,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasakae-h/seikatsu/club/tea.html",
+      "as_of": "2026-06-22",
+      "note": "お点前の稽古と文化祭での発表が中心で、大会に出場する活動ではない"
+    },
+    {
+      "name": "サイエンス部",
+      "kind": "文化",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasakae-h/seikatsu/club/science.html",
+      "as_of": "2026-06-22",
+      "note": "STAGE:0（全国高校対抗eスポーツ大会）等に2023～2025年度と継続して出場しているが、いずれも申し込めば出られる大会への出場のみで、順位等の結果の記載がなく段階の根拠にできなかった"
+    },
+    {
+      "name": "競技かるた部",
+      "kind": "文化",
+      "days_note": "火・木・金・（日曜日）",
+      "days_per_week": 3.5,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasakae-h/seikatsu/club/karuta.html",
+      "as_of": "2026-09-01",
+      "note": "「様々な大会に参加し、入賞も果たしています」との記載があるが、具体的な年度・大会名・順位が特定できず段階の根拠にできなかった"
+    },
+    {
+      "name": "数学研究部",
+      "kind": "文化",
+      "days_note": "月・火・木",
+      "days_per_week": 3,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasakae-h/seikatsu/club/math-research.html",
+      "as_of": "2026-06-26",
+      "note": "大学入試・数学検定の過去問研究が中心の活動で、外部コンクールへの出場・結果の記載がない"
+    }
+  ],
+  "designated_universities": [
+    {
+      "university": "横浜市立大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasakae-h/nyugaku/documents/annai2026.pdf",
+      "note": "学校案内(annai2026.pdf)「令和7年度指定校」より"
+    },
+    {
+      "university": "青山学院大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasakae-h/nyugaku/documents/annai2026.pdf",
+      "note": "学校案内(annai2026.pdf)「令和7年度指定校」より"
+    },
+    {
+      "university": "学習院大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasakae-h/nyugaku/documents/annai2026.pdf",
+      "note": "学校案内(annai2026.pdf)「令和7年度指定校」より"
+    },
+    {
+      "university": "関西学院大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasakae-h/nyugaku/documents/annai2026.pdf",
+      "note": "学校案内(annai2026.pdf)「令和7年度指定校」より"
+    },
+    {
+      "university": "北里大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasakae-h/nyugaku/documents/annai2026.pdf",
+      "note": "学校案内(annai2026.pdf)「令和7年度指定校」より"
+    },
+    {
+      "university": "上智大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasakae-h/nyugaku/documents/annai2026.pdf",
+      "note": "学校案内(annai2026.pdf)「令和7年度指定校」より"
+    },
+    {
+      "university": "昭和薬科大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasakae-h/nyugaku/documents/annai2026.pdf",
+      "note": "学校案内(annai2026.pdf)「令和7年度指定校」より"
+    },
+    {
+      "university": "成蹊大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasakae-h/nyugaku/documents/annai2026.pdf",
+      "note": "学校案内(annai2026.pdf)「令和7年度指定校」より"
+    },
+    {
+      "university": "成城大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasakae-h/nyugaku/documents/annai2026.pdf",
+      "note": "学校案内(annai2026.pdf)「令和7年度指定校」より"
+    },
+    {
+      "university": "専修大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasakae-h/nyugaku/documents/annai2026.pdf",
+      "note": "学校案内(annai2026.pdf)「令和7年度指定校」より"
+    },
+    {
+      "university": "玉川大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasakae-h/nyugaku/documents/annai2026.pdf",
+      "note": "学校案内(annai2026.pdf)「令和7年度指定校」より"
+    },
+    {
+      "university": "中央大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasakae-h/nyugaku/documents/annai2026.pdf",
+      "note": "学校案内(annai2026.pdf)「令和7年度指定校」より"
+    },
+    {
+      "university": "東京都市大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasakae-h/nyugaku/documents/annai2026.pdf",
+      "note": "学校案内(annai2026.pdf)「令和7年度指定校」より"
+    },
+    {
+      "university": "東京農業大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasakae-h/nyugaku/documents/annai2026.pdf",
+      "note": "学校案内(annai2026.pdf)「令和7年度指定校」より"
+    },
+    {
+      "university": "東京理科大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasakae-h/nyugaku/documents/annai2026.pdf",
+      "note": "学校案内(annai2026.pdf)「令和7年度指定校」より"
+    },
+    {
+      "university": "日本大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasakae-h/nyugaku/documents/annai2026.pdf",
+      "note": "学校案内(annai2026.pdf)「令和7年度指定校」より"
+    },
+    {
+      "university": "日本女子大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasakae-h/nyugaku/documents/annai2026.pdf",
+      "note": "学校案内(annai2026.pdf)「令和7年度指定校」より"
+    },
+    {
+      "university": "法政大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasakae-h/nyugaku/documents/annai2026.pdf",
+      "note": "学校案内(annai2026.pdf)「令和7年度指定校」より"
+    },
+    {
+      "university": "武蔵大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasakae-h/nyugaku/documents/annai2026.pdf",
+      "note": "学校案内(annai2026.pdf)「令和7年度指定校」より"
+    },
+    {
+      "university": "明治大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasakae-h/nyugaku/documents/annai2026.pdf",
+      "note": "学校案内(annai2026.pdf)「令和7年度指定校」より"
+    },
+    {
+      "university": "明治学院大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasakae-h/nyugaku/documents/annai2026.pdf",
+      "note": "学校案内(annai2026.pdf)「令和7年度指定校」より"
+    },
+    {
+      "university": "明治薬科大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasakae-h/nyugaku/documents/annai2026.pdf",
+      "note": "学校案内(annai2026.pdf)「令和7年度指定校」より。原文は末尾に「他」とあり一覧は網羅的ではない"
+    }
+  ],
+  "events": [],
+  "unresolved": [
+    "部活動加入率(club_join_rate)：学校概要ページに「放課後は8割を超える生徒が部活動に取り組んでいます」との記述はあるが、具体的な%の記載がなく数値としては採用しなかった",
+    "進路決定率(career_decided_rate)：卒業年度の進路決定率を明示する資料が見当たらなかった",
+    "入試方式別の割合(admission_route_share)：一般・指定校推薦・公募推薦・総合型の実進学割合を示す資料が見当たらなかった",
+    "満足度(satisfaction)：令和7年度学校評価報告書は達成状況等を文章で記す神奈川県の様式で、数値評価の記載がなかった",
+    "吹奏楽部の大会実績：「近年、横浜吹奏楽コンクール高等学校B部門で金賞・支部代表の推薦をいただき、神奈川県吹奏楽コンクールに出場」との記述があるが年度が特定できず、段階の根拠にできなかった",
+    "競技かるた部の大会実績：「様々な大会に参加し、入賞も果たしています」との記述があるが具体的な年度・大会名・順位が特定できず、段階の根拠にできなかった"
+  ],
+  "conflicts": [
+    "大学合格実績（国公立・早慶上理・GMARCH）：学校案内(annai2026.pdf)は「過去3年間の合格延べ人数（浪人含む）」として国公立31名・早慶上理28名・GMARCH242名と記載している。stats に採用した令和6年度単年度の延べ人数（大学別合格実績表から合算した国公立12名・早慶上理9名・GMARCH73名）とは対象期間が異なり、単純に合算・比較できる数値ではない"
+  ]
+}
