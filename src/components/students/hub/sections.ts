@@ -11,6 +11,7 @@ export const HUB_SECTIONS = [
   { id: 'sec-schedule', label: '通塾日程' },
   { id: 'sec-forms', label: '申込状況' },
   { id: 'sec-scores', label: '成績' },
+  { id: 'sec-targets', label: '志望校' },
   { id: 'sec-progress', label: '進行表' },
   { id: 'sec-lessons', label: '授業の様子' },
   { id: 'sec-discipline', label: '宿題・遅刻・出欠' },

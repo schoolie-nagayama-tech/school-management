@@ -12,7 +12,6 @@
  * 枠が二重になるので、外側の div で内側カードの枠線・角丸・背景だけを消している（部品側は変えない）。
  */
 import { useEffect, useState, type ReactNode } from 'react';
-import { listAssessments } from '@/lib/api/assessments';
 import { getStudentTextbooks, getStudentProgress } from '@/lib/api/progress';
 import {
   getStudentDisciplineSessions,
@@ -20,39 +19,22 @@ import {
   type DisciplineSessionRow,
   type FeedGoalSummary,
 } from '@/lib/api/progress-sessions';
-import { treatZeroScoresAsMissing } from '@/lib/interview/story';
 import { ScorePanel } from '@/app/interview/ScorePanel';
 import { ProgressPanel, type TextbookProgressData } from '@/app/interview/ProgressPanel';
 import { DisciplinePanel } from '@/app/interview/DisciplinePanel';
-import type { AssessmentWithScores } from '@/types/database';
+import { useHubAssessments } from './HubDataContext';
 
 /** 内側カードの枠を消す包み。パネルの CardContent の左右余白はそのまま生かす */
-function Unframed({ children }: { children: ReactNode }) {
+export function Unframed({ children }: { children: ReactNode }) {
   return (
     <div className="[&>div]:rounded-none [&>div]:border-0 [&>div]:bg-transparent">{children}</div>
   );
 }
 
-export function HubScorePanel({ studentId }: { studentId: string }) {
-  const [assessments, setAssessments] = useState<AssessmentWithScores[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    listAssessments(studentId)
-      .catch(() => [] as AssessmentWithScores[])
-      .then((asm) => {
-        if (cancelled) return;
-        // ★0点は未入力として扱う（テストが無かった回に0を入れる運用のため）。面談画面と同じ読み替えで、
-        //   保存されている値は変えない（lib/interview/story.ts の treatZeroScoresAsMissing）
-        setAssessments(treatZeroScoresAsMissing(asm));
-        setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [studentId]);
+export function HubScorePanel() {
+  // ★成績は志望校セクション（useTargetProposals）も使うので、ハブ共通の取得係から読む。
+  //   ここで listAssessments を直接呼ぶと、同じ成績を2回取りに行く（HubDataContext.tsx）
+  const { assessments, loading } = useHubAssessments();
 
   return (
     <Unframed>
