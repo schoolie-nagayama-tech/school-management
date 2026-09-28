@@ -339,6 +339,18 @@ export function reachedUnitTitle(rows: TextbookProgressData['rows']): string | n
   return best?.title ?? null;
 }
 
+/** 季節の印（講習用）が付いているかでテキストを分ける。並び順はそのまま保つ */
+export function splitBySeason<T extends { textbook: { season: string | null } }>(
+  rows: T[]
+): { regular: T[]; seasonal: T[] } {
+  const regular: T[] = [];
+  const seasonal: T[] = [];
+  for (const row of rows) {
+    (row.textbook.season ? seasonal : regular).push(row);
+  }
+  return { regular, seasonal };
+}
+
 /**
  * 進行表の指標。科目ごとに「今使っているテキスト」（LIVE）1冊の進み具合を1行ずつ。
  * 「数学 新中問 数学2 ｜ 二次関数まで」。その LIVE が停滞していれば、その行だけ黄で「停滞 N日」。
@@ -353,11 +365,15 @@ export function reachedUnitTitle(rows: TextbookProgressData['rows']): string | n
  * ★色は停滞の行だけ。停滞していない行も全体の数字も中立にする（対応が要るものだけ色を付ける）。
  */
 export function buildProgressMetric(textbookData: TextbookProgressData[]): HubStatusMetric {
-  const live = pickLiveTextbookDetails(textbookData);
+  // ★講習のテキスト（季節の印あり）は外してから LIVE を選ぶ。講習の期間中は講習の冊子が
+  //   「最近使った1冊」になり、通常授業のテキストの進み具合が見えなくなるため（2026-09-28 指摘）。
+  //   面談④の LIVE は講習の冊子も含むので、ここだけ面談と選ばれ方が違う。
+  const { regular } = splitBySeason(textbookData);
+  const live = pickLiveTextbookDetails(regular);
   if (live.length === 0) return none('進行中のテキストなし');
 
   const rowsByTextbook = new Map(
-    textbookData.map((d): [string, TextbookProgressData['rows']] => [d.textbook.id, d.rows])
+    regular.map((d): [string, TextbookProgressData['rows']] => [d.textbook.id, d.rows])
   );
   const rows: HubStatusRow[] = live.slice(0, PROGRESS_MAX_SUBJECTS).map((detail): HubStatusRow => {
     const subject = SUBJECT_LABELS[detail.subject] ?? detail.subject;

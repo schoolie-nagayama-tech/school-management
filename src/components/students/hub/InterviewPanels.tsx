@@ -17,6 +17,7 @@ import { ScorePanel } from '@/app/interview/ScorePanel';
 import { ProgressPanel } from '@/app/interview/ProgressPanel';
 import { DisciplinePanel } from '@/app/interview/DisciplinePanel';
 import { useHubAssessments, useHubDisciplineSessions, useHubProgress } from './HubDataContext';
+import { splitBySeason } from './hubStatus';
 
 /** 内側カードの枠を消す包み。パネルの CardContent の左右余白はそのまま生かす */
 export function Unframed({ children }: { children: ReactNode }) {
@@ -42,14 +43,34 @@ export function HubProgressPanel() {
   //   このセクションは見えてから読み込むので待たずに取り始める（今の状態が先に取っていればそれを使う）
   const { progress, loading } = useHubProgress();
 
+  // 通常のテキストと講習のテキストを分けて出す。講習のテキストは季節の印（student_textbooks.season）が
+  // 付いているもので、進行表ページも同じ印で見分けている。
+  // ★講習のテキストは講習の期間しか使わないので、期間外に「停滞」と出すと誤解を招く（2026-09-28 指摘）。
+  //   講習側は停滞のバッジを出さない。
+  const { regular, seasonal } = splitBySeason(progress.textbookData);
+
   return (
-    <Unframed>
-      <ProgressPanel
-        textbookData={progress.textbookData}
-        goals={progress.goals}
-        loading={loading}
-      />
-    </Unframed>
+    <div className="flex flex-col gap-4">
+      <Unframed>
+        <ProgressPanel
+          textbookData={regular}
+          goals={progress.goals}
+          loading={loading}
+          title="通常のテキスト"
+        />
+      </Unframed>
+      {!loading && seasonal.length > 0 && (
+        <Unframed>
+          <ProgressPanel
+            textbookData={seasonal}
+            goals={progress.goals}
+            loading={false}
+            title="講習のテキスト"
+            hideStall
+          />
+        </Unframed>
+      )}
+    </div>
   );
 }
 

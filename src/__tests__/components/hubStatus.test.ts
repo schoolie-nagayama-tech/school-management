@@ -12,6 +12,7 @@ import {
   koushuTakenThisYear,
   pickNextLesson,
   reachedUnitTitle,
+  splitBySeason,
 } from '@/components/students/hub/hubStatus';
 import { pickLiveTextbookDetails, type KoushuSeasonBucket } from '@/app/interview/interview.shared';
 import { formatKoushuEnrollment } from '@/lib/interview/story';
@@ -332,10 +333,11 @@ function textbook(
   id: string,
   subject: string,
   units: [string, string[]][],
-  sortOrder: number | null = null
+  sortOrder: number | null = null,
+  season: 'spring' | 'summer' | 'winter' | null = null
 ): TextbookProgressData {
   return {
-    textbook: { id, sort_order: sortOrder, textbook: { name: `教材${id}`, subject } },
+    textbook: { id, sort_order: sortOrder, season, textbook: { name: `教材${id}`, subject } },
     rows: units.map(([title, dates], i) => ({
       title,
       sort_order: i,
@@ -421,6 +423,36 @@ describe('buildProgressMetric', () => {
     expect(m.value).toBeNull();
     expect(m.rows).toBeUndefined();
     expect(m.sub).toEqual(['進行中のテキストなし']);
+  });
+  it('講習のテキスト（季節の印あり）は、新しく使っていても LIVE に選ばない', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 8, 28, 10, 0));
+    // 講習の冊子のほうが最近使っているが、通常授業のテキストの進み具合を出したい
+    const m = buildProgressMetric([
+      textbook('regular', 'math', [['二次関数', ['2026-09-10']]], 0),
+      textbook('koushu', 'math', [['総復習', ['2026-09-26']]], 1, 'summer'),
+    ]);
+    expect(m.rows?.map((r) => r.text)).toEqual(['数学 教材regular ｜ 二次関数まで']);
+  });
+
+  it('講習のテキストしか無ければ「—」', () => {
+    const m = buildProgressMetric([textbook('k', 'math', [['u', ['2026-09-25']]], 0, 'winter')]);
+    expect(m.value).toBeNull();
+    expect(m.sub).toEqual(['進行中のテキストなし']);
+  });
+});
+
+describe('splitBySeason', () => {
+  it('季節の印で通常と講習に分け、それぞれの並びは保つ', () => {
+    const rows = [
+      textbook('a', 'math', [], 0),
+      textbook('b', 'math', [], 1, 'summer'),
+      textbook('c', 'english', [], 2),
+      textbook('d', 'english', [], 3, 'winter'),
+    ];
+    const { regular, seasonal } = splitBySeason(rows);
+    expect(regular.map((r) => r.textbook.id)).toEqual(['a', 'c']);
+    expect(seasonal.map((r) => r.textbook.id)).toEqual(['b', 'd']);
   });
 });
 

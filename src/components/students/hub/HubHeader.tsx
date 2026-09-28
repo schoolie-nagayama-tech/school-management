@@ -178,9 +178,7 @@ export function HubHeader({ student, schoolName }: HubHeaderProps) {
           {fullName}
         </span>
         {kana && <span className="text-xs text-text-muted">{kana}</span>}
-        {student.student_code && (
-          <span className="font-mono text-[11px] text-text-faint">{student.student_code}</span>
-        )}
+        {/* 生徒コードはここに出さない（基本情報にある）。名前の横では読まれず、目の邪魔になる（2026-09-28 指摘） */}
         <span className="text-border-strong">|</span>
         {gradeLabel && <b className="text-xs font-medium text-text-body">{gradeLabel}</b>}
         {student.school_name && (
