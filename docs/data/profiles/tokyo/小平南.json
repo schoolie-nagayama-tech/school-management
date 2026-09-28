@@ -1,0 +1,619 @@
+{
+  "prefecture": "東京都",
+  "school_name": "小平南",
+  "official_url": "https://www.metro.ed.jp/kodairaminami-h/",
+  "researched_at": "2026-09-28",
+  "stats": [
+    {
+      "metric": "university_count",
+      "item": "国公立",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 6,
+      "source_url": "https://www.metro.ed.jp/kodairaminami-h/assets/filelink/filelink-pdffile-35708.pdf",
+      "source_label": "小平南高校 令和7年度 学校経営報告",
+      "as_of": "2026-04",
+      "note": "重点目標「国公立大学(含認定大学校)現役合格者(延べ人数)」の実績値"
+    },
+    {
+      "metric": "university_count",
+      "item": "国公立",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 7,
+      "source_url": "https://www.metro.ed.jp/kodairaminami-h/assets/%E5%B0%8F%E5%B9%B3%E5%8D%97%E5%AD%A6%E6%A0%A1%E6%A1%88%E5%86%85.pdf",
+      "source_label": "小平南高校 学校案内パンフレット SCHOOL GUIDE 2027（合格状況）",
+      "as_of": "2026-04",
+      "note": "パンフレットの大学別内訳（電気通信1+東京学芸1+東京農工1+東京都立2+滋賀1+和歌山1）を合算。学校経営報告の現役6名との差は既卒1名分とみられる"
+    },
+    {
+      "metric": "university_count",
+      "item": "早慶上理",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 10,
+      "source_url": "https://www.metro.ed.jp/kodairaminami-h/assets/filelink/filelink-pdffile-36610.pdf",
+      "source_label": "小平南高校 2026年度入試結果 大学・短大・専門学校（延べ人数、3月集計）",
+      "as_of": "2026-03",
+      "note": "大学別の表から合算（早稲田2+慶應1+上智0+東京理科7）。パンフレット合格状況の個別数値と一致"
+    },
+    {
+      "metric": "university_count",
+      "item": "GMARCH",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 65,
+      "source_url": "https://www.metro.ed.jp/kodairaminami-h/assets/%E5%B0%8F%E5%B9%B3%E5%8D%97%E5%AD%A6%E6%A0%A1%E6%A1%88%E5%86%85.pdf",
+      "source_label": "小平南高校 学校案内パンフレット SCHOOL GUIDE 2027（合格状況）",
+      "as_of": "2026-04",
+      "note": "パンフレットの大学別内訳から合算（学習院5+明治10+青山学院5+立教7+中央19+法政19）"
+    },
+    {
+      "metric": "university_count",
+      "item": "早慶上理GMARCH等難関私立大学",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 88,
+      "source_url": "https://www.metro.ed.jp/kodairaminami-h/assets/filelink/filelink-pdffile-35708.pdf",
+      "source_label": "小平南高校 令和7年度 学校経営報告",
+      "as_of": "2026-04",
+      "note": "学校独自の区分（早慶上理とGMARCHの合算）。学校の集計値をそのまま採用"
+    },
+    {
+      "metric": "university_count",
+      "item": "國學院・成蹊・成城・武蔵・明治学院・日東駒専",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 169,
+      "source_url": "https://www.metro.ed.jp/kodairaminami-h/assets/filelink/filelink-pdffile-35708.pdf",
+      "source_label": "小平南高校 令和7年度 学校経営報告",
+      "as_of": "2026-04",
+      "note": "学校独自の大学群。手引きの「成成明武」「日東駒専」に國學院を加えた区分"
+    },
+    {
+      "metric": "university_count",
+      "item": "合計",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 616,
+      "source_url": "https://www.metro.ed.jp/kodairaminami-h/assets/filelink/filelink-pdffile-36610.pdf",
+      "source_label": "小平南高校 2026年度入試結果 大学・短大・専門学校（延べ人数、3月集計）",
+      "as_of": "2026-03",
+      "note": "4年制大学合格者計（現役613名＋既卒3名）。短大1名・専門学校13名は別枠"
+    },
+    {
+      "metric": "university_count",
+      "item": "東洋",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 43,
+      "source_url": "https://www.metro.ed.jp/kodairaminami-h/assets/%E5%B0%8F%E5%B9%B3%E5%8D%97%E5%AD%A6%E6%A0%A1%E6%A1%88%E5%86%85.pdf",
+      "source_label": "小平南高校 学校案内パンフレット SCHOOL GUIDE 2027（合格状況）",
+      "as_of": "2026-04",
+      "note": ""
+    },
+    {
+      "metric": "university_count",
+      "item": "亜細亜",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 32,
+      "source_url": "https://www.metro.ed.jp/kodairaminami-h/assets/%E5%B0%8F%E5%B9%B3%E5%8D%97%E5%AD%A6%E6%A0%A1%E6%A1%88%E5%86%85.pdf",
+      "source_label": "小平南高校 学校案内パンフレット SCHOOL GUIDE 2027（合格状況）",
+      "as_of": "2026-04",
+      "note": ""
+    },
+    {
+      "metric": "university_count",
+      "item": "専修",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 32,
+      "source_url": "https://www.metro.ed.jp/kodairaminami-h/assets/%E5%B0%8F%E5%B9%B3%E5%8D%97%E5%AD%A6%E6%A0%A1%E6%A1%88%E5%86%85.pdf",
+      "source_label": "小平南高校 学校案内パンフレット SCHOOL GUIDE 2027（合格状況）",
+      "as_of": "2026-04",
+      "note": ""
+    },
+    {
+      "metric": "university_count",
+      "item": "帝京",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 32,
+      "source_url": "https://www.metro.ed.jp/kodairaminami-h/assets/%E5%B0%8F%E5%B9%B3%E5%8D%97%E5%AD%A6%E6%A0%A1%E6%A1%88%E5%86%85.pdf",
+      "source_label": "小平南高校 学校案内パンフレット SCHOOL GUIDE 2027（合格状況）",
+      "as_of": "2026-04",
+      "note": ""
+    },
+    {
+      "metric": "university_count",
+      "item": "成蹊",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 30,
+      "source_url": "https://www.metro.ed.jp/kodairaminami-h/assets/%E5%B0%8F%E5%B9%B3%E5%8D%97%E5%AD%A6%E6%A0%A1%E6%A1%88%E5%86%85.pdf",
+      "source_label": "小平南高校 学校案内パンフレット SCHOOL GUIDE 2027（合格状況）",
+      "as_of": "2026-04",
+      "note": ""
+    },
+    {
+      "metric": "exam_ratio",
+      "item": "推薦",
+      "fiscal_year": 2026,
+      "value_num": 2.05,
+      "source_url": "https://www.metro.ed.jp/kodairaminami-h/assets/filelink/filelink-pdffile-35708.pdf",
+      "source_label": "小平南高校 令和7年度 学校経営報告",
+      "as_of": "2026-04",
+      "note": "応募倍率（昨年2.18倍）。2026年4月入学者選抜分"
+    },
+    {
+      "metric": "club_join_rate",
+      "fiscal_year": 2025,
+      "value_num": 86.1,
+      "source_url": "https://www.metro.ed.jp/kodairaminami-h/assets/filelink/filelink-pdffile-35708.pdf",
+      "source_label": "小平南高校 令和7年度 学校経営報告",
+      "as_of": "2025-05",
+      "note": "5月末段階。昨年度も同率86.1%（資料の記載どおり）"
+    },
+    {
+      "metric": "satisfaction",
+      "item": "生徒:学校行事",
+      "fiscal_year": 2025,
+      "value_num": 83.0,
+      "source_url": "https://www.metro.ed.jp/kodairaminami-h/assets/filelink/filelink-pdffile-35708.pdf",
+      "source_label": "小平南高校 令和7年度 学校経営報告",
+      "as_of": "2026-04",
+      "note": "昨年度81.0%"
+    },
+    {
+      "metric": "satisfaction",
+      "item": "生徒:進路指導",
+      "fiscal_year": 2025,
+      "value_num": 78.0,
+      "source_url": "https://www.metro.ed.jp/kodairaminami-h/assets/filelink/filelink-pdffile-35708.pdf",
+      "source_label": "小平南高校 令和7年度 学校経営報告",
+      "as_of": "2026-04",
+      "note": "同資料内で前年比較値が「73.0%」（重点目標表）と「75%」（次年度の課題部分）の2通り記載。conflictsに記載"
+    },
+    {
+      "metric": "satisfaction",
+      "item": "生徒:授業",
+      "fiscal_year": 2025,
+      "value_num": 70.0,
+      "source_url": "https://www.metro.ed.jp/kodairaminami-h/assets/filelink/filelink-pdffile-35708.pdf",
+      "source_label": "小平南高校 令和7年度 学校経営報告",
+      "as_of": "2026-04",
+      "note": "学校評価アンケートにおける生徒の肯定的評価。昨年度58%"
+    },
+    {
+      "metric": "satisfaction",
+      "item": "生徒:学校生活",
+      "fiscal_year": 2025,
+      "value_num": 84.0,
+      "source_url": "https://www.metro.ed.jp/kodairaminami-h/assets/filelink/filelink-pdffile-35708.pdf",
+      "source_label": "小平南高校 令和7年度 学校経営報告",
+      "as_of": "2026-04",
+      "note": "「学校満足度」。昨年度85%"
+    },
+    {
+      "metric": "uniform",
+      "fiscal_year": 2026,
+      "value_text": "男女とも指定ブレザー・白ワイシャツ。男子はズボン+ネクタイ、女子はスカートまたは選択制スラックス+リボンかネクタイ（儀式は男子青ネクタイ・女子赤リボン）。夏はワイシャツ・半袖開襟・ポロシャツ可。セーター・ベストは学校指定で5〜11月着用可。",
+      "source_url": "https://www.metro.ed.jp/kodairaminami-h/assets/filelink/filelink-pdffile-14830.pdf",
+      "source_label": "小平南高校 生徒心得（服装等についての規定）",
+      "as_of": "2026-04",
+      "note": ""
+    },
+    {
+      "metric": "rules_summary",
+      "fiscal_year": 2026,
+      "value_text": "頭髪の脱色・パーマ禁止。ピアス・指輪・ネックレス等の装身具や化粧を禁止。アルバイトは原則禁止（やむを得ない場合は保護者・担任と相談）。自動車・バイク通学禁止。スマートフォンに関する個別規定の記載なし。",
+      "source_url": "https://www.metro.ed.jp/kodairaminami-h/assets/filelink/filelink-pdffile-14830.pdf",
+      "source_label": "小平南高校 生徒心得",
+      "as_of": "2026-04",
+      "note": ""
+    }
+  ],
+  "clubs": [
+    {
+      "name": "サッカー部",
+      "kind": "運動",
+      "days_note": "週5日",
+      "days_per_week": 5,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2026年度 高円宮杯U-18サッカーリーグ東京のT1〜T5いずれにも不在（支部リーグ扱い）。2023〜2025年度の選手権・インターハイ予選もいずれも早期敗退",
+      "source_url": "https://www.metro.ed.jp/kodairaminami-h/assets/%E5%B9%B4%E9%96%93%E6%B4%BB%E5%8B%95%E8%A8%88%E7%94%BB%E3%80%90%E3%82%B5%E3%83%83%E3%82%AB%E3%83%BC%E9%83%A8%E3%80%91.pdf",
+      "as_of": "2026-04",
+      "results": [
+        { "fiscal_year": 2025, "competition": "インターハイ東京都予選", "level": "都県", "result": "2回戦敗退", "source_url": "https://www.metro.ed.jp/kodairaminami-h/assets/%E5%B9%B4%E9%96%93%E6%B4%BB%E5%8B%95%E8%A8%88%E7%94%BB%E3%80%90%E3%82%B5%E3%83%83%E3%82%AB%E3%83%BC%E9%83%A8%E3%80%91.pdf" },
+        { "fiscal_year": 2026, "competition": "高円宮杯U-18サッカーリーグ東京", "level": "都県", "result": "T1〜T5に不在（支部リーグ扱い）", "source_url": "https://www.tleague-u18.com/team.php?dy=2026&dt=1" }
+      ]
+    },
+    {
+      "name": "ソフトテニス部",
+      "kind": "運動",
+      "days_note": "毎週4or5日",
+      "days_per_week": 4.5,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "2024年度 インドア予選3回戦出場が直近3年で最も良い成績で、都県ベスト8には届かず複数回でもない",
+      "source_url": "https://www.metro.ed.jp/kodairaminami-h/assets/%E5%B9%B4%E9%96%93%E6%B4%BB%E5%8B%95%E8%A8%88%E7%94%BB%E3%80%90%E3%82%BD%E3%83%95%E3%83%88%E3%83%86%E3%83%8B%E3%82%B9%E9%83%A8%E3%80%91.pdf",
+      "as_of": "2026-04",
+      "results": [
+        { "fiscal_year": 2024, "competition": "インドア予選", "level": "都県", "result": "3回戦出場", "source_url": "https://www.metro.ed.jp/kodairaminami-h/assets/%E5%B9%B4%E9%96%93%E6%B4%BB%E5%8B%95%E8%A8%88%E7%94%BB%E3%80%90%E3%82%BD%E3%83%95%E3%83%88%E3%83%86%E3%83%8B%E3%82%B9%E9%83%A8%E3%80%91.pdf" }
+      ]
+    },
+    {
+      "name": "ダンス部",
+      "kind": "運動",
+      "days_note": "週4(5)日",
+      "days_per_week": 4.5,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "DCC大会・ダンススタジアム大会・ヤングフェスティバル等に出場しているが、順位の記録はない",
+      "source_url": "https://www.metro.ed.jp/kodairaminami-h/assets/%E5%B9%B4%E9%96%93%E6%B4%BB%E5%8B%95%E8%A8%88%E7%94%BB%E3%80%90%E3%83%80%E3%83%B3%E3%82%B9%E9%83%A8%E3%80%91.pdf",
+      "as_of": "2026-04"
+    },
+    {
+      "name": "ハンドボール部",
+      "kind": "運動",
+      "days_note": "週5日",
+      "days_per_week": 5,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2024年度 都大会ベスト16が1回のみで複数回に届かず、都県ベスト8以上の実績もない",
+      "source_url": "https://www.metro.ed.jp/kodairaminami-h/assets/%E5%B9%B4%E9%96%93%E6%B4%BB%E5%8B%95%E8%A8%88%E7%94%BB%E3%80%90%E3%83%8F%E3%83%B3%E3%83%89%E3%83%9C%E3%83%BC%E3%83%AB%E9%83%A8%E3%80%91.pdf",
+      "as_of": "2026-04",
+      "results": [
+        { "fiscal_year": 2024, "competition": "都大会", "level": "都県", "result": "ベスト16", "source_url": "https://www.metro.ed.jp/kodairaminami-h/assets/%E5%B9%B4%E9%96%93%E6%B4%BB%E5%8B%95%E8%A8%88%E7%94%BB%E3%80%90%E3%83%8F%E3%83%B3%E3%83%89%E3%83%9C%E3%83%BC%E3%83%AB%E9%83%A8%E3%80%91.pdf" },
+        { "fiscal_year": 2025, "competition": "都大会", "level": "都県", "result": "出場（順位記録なし）", "source_url": "https://www.metro.ed.jp/kodairaminami-h/assets/%E5%B9%B4%E9%96%93%E6%B4%BB%E5%8B%95%E8%A8%88%E7%94%BB%E3%80%90%E3%83%8F%E3%83%B3%E3%83%89%E3%83%9C%E3%83%BC%E3%83%AB%E9%83%A8%E3%80%91.pdf" }
+      ]
+    },
+    {
+      "name": "剣道部",
+      "kind": "運動",
+      "days_note": "週4日（土曜授業の日は活動）",
+      "days_per_week": 4,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "2025年度 ブロック大会（地区大会）3位が最も良い成績。都大会は出場のみで順位不明",
+      "source_url": "https://www.metro.ed.jp/kodairaminami-h/assets/%E5%B9%B4%E9%96%93%E6%B4%BB%E5%8B%95%E8%A8%88%E7%94%BB%E3%80%90%E5%89%A3%E9%81%93%E9%83%A8%E3%80%91.pdf",
+      "as_of": "2026-04",
+      "results": [
+        { "fiscal_year": 2025, "competition": "第五支部大会", "level": "地区", "result": "3位", "source_url": "https://www.metro.ed.jp/kodairaminami-h/assets/%E5%B9%B4%E9%96%93%E6%B4%BB%E5%8B%95%E8%A8%88%E7%94%BB%E3%80%90%E5%89%A3%E9%81%93%E9%83%A8%E3%80%91.pdf" }
+      ]
+    },
+    {
+      "name": "硬式野球部",
+      "kind": "運動",
+      "days_note": "週5日",
+      "days_per_week": 5,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2023〜2025年度いずれも全国選手権西東京大会3回戦、秋季・春季大会も早期敗退（学校の年間活動計画。一球速報でも各年の春・夏・秋大会への出場を確認）",
+      "source_url": "https://www.metro.ed.jp/kodairaminami-h/assets/%E5%B9%B4%E9%96%93%E6%B4%BB%E5%8B%95%E8%A8%88%E7%94%BB%E3%80%90%E7%A1%AC%E5%BC%8F%E9%87%8E%E7%90%83%E9%83%A8%E3%80%91.pdf",
+      "as_of": "2026-04",
+      "results": [
+        { "fiscal_year": 2023, "competition": "全国高等学校野球選手権記念西東京大会", "level": "都県", "result": "3回戦敗退", "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=11858" },
+        { "fiscal_year": 2024, "competition": "全国高等学校野球選手権西東京大会", "level": "都県", "result": "3回戦敗退", "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=11858" },
+        { "fiscal_year": 2025, "competition": "全国高等学校野球選手権西東京大会", "level": "都県", "result": "3回戦敗退", "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=11858" }
+      ]
+    },
+    {
+      "name": "女子バスケットボール部",
+      "kind": "運動",
+      "days_note": "週5日",
+      "days_per_week": 5,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2023〜2025年度 東京都ベスト32〜56で、都県ベスト8には届かない",
+      "source_url": "https://www.metro.ed.jp/kodairaminami-h/assets/%E5%B9%B4%E9%96%93%E6%B4%BB%E5%8B%95%E8%A8%88%E7%94%BB%E3%80%90%E5%A5%B3%E5%AD%90%E3%83%90%E3%82%B9%E3%82%B1%E3%83%83%E3%83%88%E3%83%9C%E3%83%BC%E3%83%AB%E9%83%A8%E3%80%91.pdf",
+      "as_of": "2026-04",
+      "results": [
+        { "fiscal_year": 2023, "competition": "都大会", "level": "都県", "result": "東京都ベスト32", "source_url": "https://www.metro.ed.jp/kodairaminami-h/assets/%E5%B9%B4%E9%96%93%E6%B4%BB%E5%8B%95%E8%A8%88%E7%94%BB%E3%80%90%E5%A5%B3%E5%AD%90%E3%83%90%E3%82%B9%E3%82%B1%E3%83%83%E3%83%88%E3%83%9C%E3%83%BC%E3%83%AB%E9%83%A8%E3%80%91.pdf" },
+        { "fiscal_year": 2024, "competition": "都大会", "level": "都県", "result": "東京都ベスト56", "source_url": "https://www.metro.ed.jp/kodairaminami-h/assets/%E5%B9%B4%E9%96%93%E6%B4%BB%E5%8B%95%E8%A8%88%E7%94%BB%E3%80%90%E5%A5%B3%E5%AD%90%E3%83%90%E3%82%B9%E3%82%B1%E3%83%83%E3%83%88%E3%83%9C%E3%83%BC%E3%83%AB%E9%83%A8%E3%80%91.pdf" },
+        { "fiscal_year": 2025, "competition": "都大会", "level": "都県", "result": "東京都ベスト56", "source_url": "https://www.metro.ed.jp/kodairaminami-h/assets/%E5%B9%B4%E9%96%93%E6%B4%BB%E5%8B%95%E8%A8%88%E7%94%BB%E3%80%90%E5%A5%B3%E5%AD%90%E3%83%90%E3%82%B9%E3%82%B1%E3%83%83%E3%83%88%E3%83%9C%E3%83%BC%E3%83%AB%E9%83%A8%E3%80%91.pdf" }
+      ]
+    },
+    {
+      "name": "女子バドミントン部",
+      "kind": "運動",
+      "days_note": "週5日",
+      "days_per_week": 5,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2024年度 新人戦団体西ブロックベスト32、2025年度 国公立大会（学科限定のため1段階下読み）ベスト32が最も良い成績",
+      "source_url": "https://www.metro.ed.jp/kodairaminami-h/assets/%E5%B9%B4%E9%96%93%E6%B4%BB%E5%8B%95%E8%A8%88%E7%94%BB%E3%80%90%E5%A5%B3%E5%AD%90%E3%83%90%E3%83%89%E3%83%9F%E3%83%B3%E3%83%88%E3%83%B3%E9%83%A8%E3%80%91.pdf",
+      "as_of": "2026-04",
+      "results": [
+        { "fiscal_year": 2024, "competition": "新人戦団体", "level": "地区", "result": "西ブロックベスト32", "source_url": "https://www.metro.ed.jp/kodairaminami-h/assets/%E5%B9%B4%E9%96%93%E6%B4%BB%E5%8B%95%E8%A8%88%E7%94%BB%E3%80%90%E5%A5%B3%E5%AD%90%E3%83%90%E3%83%89%E3%83%9F%E3%83%B3%E3%83%88%E3%83%B3%E9%83%A8%E3%80%91.pdf" },
+        { "fiscal_year": 2025, "competition": "国公立大会", "level": "その他", "result": "ベスト32", "source_url": "https://www.metro.ed.jp/kodairaminami-h/assets/%E5%B9%B4%E9%96%93%E6%B4%BB%E5%8B%95%E8%A8%88%E7%94%BB%E3%80%90%E5%A5%B3%E5%AD%90%E3%83%90%E3%83%89%E3%83%9F%E3%83%B3%E3%83%88%E3%83%B3%E9%83%A8%E3%80%91.pdf" }
+      ]
+    },
+    {
+      "name": "女子バレーボール部",
+      "kind": "運動",
+      "days_note": "週5日",
+      "days_per_week": 5,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2024年度 インターハイ予選2回戦敗退。2023・2025年度は記録なし",
+      "source_url": "https://www.metro.ed.jp/kodairaminami-h/assets/%E5%B9%B4%E9%96%93%E6%B4%BB%E5%8B%95%E8%A8%88%E7%94%BB%E3%80%90%E5%A5%B3%E5%AD%90%E3%83%90%E3%83%AC%E3%83%BC%E3%83%9C%E3%83%BC%E3%83%AB%E9%83%A8%E3%80%91.pdf",
+      "as_of": "2026-04",
+      "results": [
+        { "fiscal_year": 2024, "competition": "インターハイ予選", "level": "都県", "result": "2回戦敗退", "source_url": "https://www.metro.ed.jp/kodairaminami-h/assets/%E5%B9%B4%E9%96%93%E6%B4%BB%E5%8B%95%E8%A8%88%E7%94%BB%E3%80%90%E5%A5%B3%E5%AD%90%E3%83%90%E3%83%AC%E3%83%BC%E3%83%9C%E3%83%BC%E3%83%AB%E9%83%A8%E3%80%91.pdf" }
+      ]
+    },
+    {
+      "name": "女子硬式テニス部",
+      "kind": "運動",
+      "days_note": "週5日",
+      "days_per_week": 5,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2026年度 都立対抗大会（団体戦）ベスト16（都立限定大会のため1段階下読み、都県ベスト8には届かず）",
+      "source_url": "https://www.metro.ed.jp/kodairaminami-h/school_life/activities.html",
+      "as_of": "2026-09",
+      "results": [
+        { "fiscal_year": 2026, "competition": "都立対抗大会", "level": "その他", "result": "団体戦ベスト16", "source_url": "https://www.metro.ed.jp/kodairaminami-h/school_life/activities.html" }
+      ]
+    },
+    {
+      "name": "水泳部",
+      "kind": "運動",
+      "days_note": "週4日",
+      "days_per_week": 4,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2025年度 都大会出場（順位の記録なし）",
+      "source_url": "https://www.metro.ed.jp/kodairaminami-h/assets/%E5%B9%B4%E9%96%93%E6%B4%BB%E5%8B%95%E8%A8%88%E7%94%BB%E3%80%90%E6%B0%B4%E6%B3%B3%E9%83%A8%E3%80%91.pdf",
+      "as_of": "2026-04",
+      "results": [
+        { "fiscal_year": 2025, "competition": "都大会", "level": "都県", "result": "出場（順位記録なし）", "source_url": "https://www.metro.ed.jp/kodairaminami-h/assets/%E5%B9%B4%E9%96%93%E6%B4%BB%E5%8B%95%E8%A8%88%E7%94%BB%E3%80%90%E6%B0%B4%E6%B3%B3%E9%83%A8%E3%80%91.pdf" }
+      ]
+    },
+    {
+      "name": "卓球部",
+      "kind": "運動",
+      "days_note": "週5日",
+      "days_per_week": 5,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "東京都総合体育大会・新人大会・多摩地区大会等に出場しているが、成績の記録は空欄",
+      "source_url": "https://www.metro.ed.jp/kodairaminami-h/assets/%E5%B9%B4%E9%96%93%E6%B4%BB%E5%8B%95%E8%A8%88%E7%94%BB%E3%80%90%E5%8D%93%E7%90%83%E9%83%A8%E3%80%91.pdf",
+      "as_of": "2026-04"
+    },
+    {
+      "name": "男子バドミントン部",
+      "kind": "運動",
+      "days_note": "週5日",
+      "days_per_week": 5,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2023年度 国公立大会（学科限定のため1段階下読み）ベスト28、2025年度 小平市民大会（市レベル）準優勝が最も良い成績で、都県ベスト8には届かず",
+      "source_url": "https://www.metro.ed.jp/kodairaminami-h/assets/%E5%B9%B4%E9%96%93%E6%B4%BB%E5%8B%95%E8%A8%88%E7%94%BB%E3%80%90%E7%94%B7%E5%AD%90%E3%83%90%E3%83%89%E3%83%9F%E3%83%B3%E3%83%88%E3%83%B3%E9%83%A8%E3%80%91.pdf",
+      "as_of": "2026-04",
+      "results": [
+        { "fiscal_year": 2023, "competition": "国公立大会", "level": "その他", "result": "ベスト28", "source_url": "https://www.metro.ed.jp/kodairaminami-h/assets/%E5%B9%B4%E9%96%93%E6%B4%BB%E5%8B%95%E8%A8%88%E7%94%BB%E3%80%90%E7%94%B7%E5%AD%90%E3%83%90%E3%83%89%E3%83%9F%E3%83%B3%E3%83%88%E3%83%B3%E9%83%A8%E3%80%91.pdf" },
+        { "fiscal_year": 2024, "competition": "新人戦Ⅰ部ダブルス（個人）", "level": "都県", "result": "4回戦進出", "source_url": "https://www.metro.ed.jp/kodairaminami-h/assets/%E5%B9%B4%E9%96%93%E6%B4%BB%E5%8B%95%E8%A8%88%E7%94%BB%E3%80%90%E7%94%B7%E5%AD%90%E3%83%90%E3%83%89%E3%83%9F%E3%83%B3%E3%83%88%E3%83%B3%E9%83%A8%E3%80%91.pdf" }
+      ]
+    },
+    {
+      "name": "男子バスケットボール部",
+      "kind": "運動",
+      "days_note": "週5日",
+      "days_per_week": 5,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "2023年度 新人戦支部大会（地区大会）ベスト8が最も良い成績で、都大会ベスト8には届かず",
+      "source_url": "https://www.metro.ed.jp/kodairaminami-h/assets/%E5%B9%B4%E9%96%93%E6%B4%BB%E5%8B%95%E8%A8%88%E7%94%BB%E3%80%90%E7%94%B7%E5%AD%90%E3%83%90%E3%82%B9%E3%82%B1%E3%83%83%E3%83%88%E3%83%9C%E3%83%BC%E3%83%AB%E9%83%A8%E3%80%91_1.pdf",
+      "as_of": "2026-04",
+      "results": [
+        { "fiscal_year": 2023, "competition": "新人戦支部大会", "level": "地区", "result": "ベスト8", "source_url": "https://www.metro.ed.jp/kodairaminami-h/assets/%E5%B9%B4%E9%96%93%E6%B4%BB%E5%8B%95%E8%A8%88%E7%94%BB%E3%80%90%E7%94%B7%E5%AD%90%E3%83%90%E3%82%B9%E3%82%B1%E3%83%83%E3%83%88%E3%83%9C%E3%83%BC%E3%83%AB%E9%83%A8%E3%80%91_1.pdf" }
+      ]
+    },
+    {
+      "name": "男子硬式テニス部",
+      "kind": "運動",
+      "days_note": "週5日",
+      "days_per_week": 5,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2023〜2025年度 高体連個人戦ダブルス4回戦が続き、都立対抗テニス大会（都立限定のため1段階下読み）も4回戦",
+      "source_url": "https://www.metro.ed.jp/kodairaminami-h/assets/%E5%B9%B4%E9%96%93%E6%B4%BB%E5%8B%95%E8%A8%88%E7%94%BB%E3%80%90%E7%94%B7%E5%AD%90%E7%A1%AC%E5%BC%8F%E3%83%86%E3%83%8B%E3%82%B9%E9%83%A8%E3%80%91.pdf",
+      "as_of": "2026-04",
+      "results": [
+        { "fiscal_year": 2023, "competition": "高体連個人戦ダブルス", "level": "都県", "result": "4回戦", "source_url": "https://www.metro.ed.jp/kodairaminami-h/assets/%E5%B9%B4%E9%96%93%E6%B4%BB%E5%8B%95%E8%A8%88%E7%94%BB%E3%80%90%E7%94%B7%E5%AD%90%E7%A1%AC%E5%BC%8F%E3%83%86%E3%83%8B%E3%82%B9%E9%83%A8%E3%80%91.pdf" },
+        { "fiscal_year": 2025, "competition": "高体連個人戦ダブルス", "level": "都県", "result": "4回戦", "source_url": "https://www.metro.ed.jp/kodairaminami-h/assets/%E5%B9%B4%E9%96%93%E6%B4%BB%E5%8B%95%E8%A8%88%E7%94%BB%E3%80%90%E7%94%B7%E5%AD%90%E7%A1%AC%E5%BC%8F%E3%83%86%E3%83%8B%E3%82%B9%E9%83%A8%E3%80%91.pdf" }
+      ]
+    },
+    {
+      "name": "男子バレーボール部",
+      "kind": "運動",
+      "days_note": "週5日",
+      "days_per_week": 5,
+      "weekend": "土日",
+      "source_url": "https://www.metro.ed.jp/kodairaminami-h/assets/%E5%B9%B4%E9%96%93%E6%B4%BB%E5%8B%95%E8%A8%88%E7%94%BB%E8%A1%A8%E3%80%90%E7%94%B7%E5%AD%90%E3%83%90%E3%83%AC%E3%83%BC%E3%83%9C%E3%83%BC%E3%83%AB%E9%83%A8%E3%80%91.pdf",
+      "as_of": "2026-04"
+    },
+    {
+      "name": "陸上競技部",
+      "kind": "運動",
+      "days_note": "週5日",
+      "days_per_week": 5,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2025年度 都大会進出（順位の記録なし）。2023・2024年度は記録なし",
+      "source_url": "https://www.metro.ed.jp/kodairaminami-h/assets/%E5%B9%B4%E9%96%93%E6%B4%BB%E5%8B%95%E8%A8%88%E7%94%BB%E3%80%90%E9%99%B8%E4%B8%8A%E7%90%83%E6%8A%80%E9%83%A8%E3%80%91.pdf",
+      "as_of": "2026-04",
+      "results": [
+        { "fiscal_year": 2025, "competition": "都総体（学年別大会等）", "level": "都県", "result": "都大会進出（順位記録なし）", "source_url": "https://www.metro.ed.jp/kodairaminami-h/assets/%E5%B9%B4%E9%96%93%E6%B4%BB%E5%8B%95%E8%A8%88%E7%94%BB%E3%80%90%E9%99%B8%E4%B8%8A%E7%90%83%E6%8A%80%E9%83%A8%E3%80%91.pdf" }
+      ]
+    },
+    {
+      "name": "空手道部",
+      "kind": "運動",
+      "days_note": "毎週3日",
+      "days_per_week": 3,
+      "weekend": "なし",
+      "tier": 1,
+      "tier_basis": "2023年度 都大会 形優勝・組手優勝・全国大会ベスト16、2024年度 都大会 形ベスト8・組手優勝と、直近3年で都県最上位が複数回かつ全国大会出場もあり",
+      "source_url": "https://www.metro.ed.jp/kodairaminami-h/assets/%E5%B9%B4%E9%96%93%E6%B4%BB%E5%8B%95%E8%A8%88%E7%94%BB%E3%80%90%E7%A9%BA%E6%89%8B%E9%81%93%E9%83%A8%E3%80%91.pdf",
+      "as_of": "2026-04",
+      "results": [
+        { "fiscal_year": 2023, "competition": "都大会（形）", "level": "都県", "result": "優勝", "source_url": "https://www.metro.ed.jp/kodairaminami-h/assets/%E5%B9%B4%E9%96%93%E6%B4%BB%E5%8B%95%E8%A8%88%E7%94%BB%E3%80%90%E7%A9%BA%E6%89%8B%E9%81%93%E9%83%A8%E3%80%91.pdf" },
+        { "fiscal_year": 2023, "competition": "都大会（組手）", "level": "都県", "result": "優勝", "source_url": "https://www.metro.ed.jp/kodairaminami-h/assets/%E5%B9%B4%E9%96%93%E6%B4%BB%E5%8B%95%E8%A8%88%E7%94%BB%E3%80%90%E7%A9%BA%E6%89%8B%E9%81%93%E9%83%A8%E3%80%91.pdf" },
+        { "fiscal_year": 2023, "competition": "全国大会", "level": "全国", "result": "ベスト16", "source_url": "https://www.metro.ed.jp/kodairaminami-h/assets/%E5%B9%B4%E9%96%93%E6%B4%BB%E5%8B%95%E8%A8%88%E7%94%BB%E3%80%90%E7%A9%BA%E6%89%8B%E9%81%93%E9%83%A8%E3%80%91.pdf" },
+        { "fiscal_year": 2024, "competition": "都大会（形）", "level": "都県", "result": "ベスト8", "source_url": "https://www.metro.ed.jp/kodairaminami-h/assets/%E5%B9%B4%E9%96%93%E6%B4%BB%E5%8B%95%E8%A8%88%E7%94%BB%E3%80%90%E7%A9%BA%E6%89%8B%E9%81%93%E9%83%A8%E3%80%91.pdf" },
+        { "fiscal_year": 2024, "competition": "都大会（組手）", "level": "都県", "result": "優勝", "source_url": "https://www.metro.ed.jp/kodairaminami-h/assets/%E5%B9%B4%E9%96%93%E6%B4%BB%E5%8B%95%E8%A8%88%E7%94%BB%E3%80%90%E7%A9%BA%E6%89%8B%E9%81%93%E9%83%A8%E3%80%91.pdf" },
+        { "fiscal_year": 2025, "competition": "秋季大会（個人組手）", "level": "その他", "result": "3位", "source_url": "https://www.metro.ed.jp/kodairaminami-h/assets/%E5%B9%B4%E9%96%93%E6%B4%BB%E5%8B%95%E8%A8%88%E7%94%BB%E3%80%90%E7%A9%BA%E6%89%8B%E9%81%93%E9%83%A8%E3%80%91.pdf" }
+      ]
+    },
+    {
+      "name": "フォークソング部",
+      "kind": "文化",
+      "days_note": "毎週3日",
+      "days_per_week": 3,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日数が週3日以下で、大会等の実績記録は「なし」と明記されている",
+      "source_url": "https://www.metro.ed.jp/kodairaminami-h/assets/%E5%B9%B4%E9%96%93%E6%B4%BB%E5%8B%95%E8%A8%88%E7%94%BB%E3%80%90%E3%83%95%E3%82%A9%E3%83%BC%E3%82%AF%E3%82%BD%E3%83%B3%E3%82%B0%E9%83%A8%E3%80%91.pdf",
+      "as_of": "2026-04"
+    },
+    {
+      "name": "家庭科部",
+      "kind": "文化",
+      "days_note": "週1日（木曜日）",
+      "days_per_week": 1,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日数が週1日で、大会等の実績記録はない",
+      "source_url": "https://www.metro.ed.jp/kodairaminami-h/assets/%E5%B9%B4%E9%96%93%E6%B4%BB%E5%8B%95%E8%A8%88%E7%94%BB%E3%80%90%E5%AE%B6%E5%BA%AD%E7%A7%91%E9%83%A8%E3%80%91.pdf",
+      "as_of": "2026-04"
+    },
+    {
+      "name": "科学部",
+      "kind": "文化",
+      "days_note": "毎週2日",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日数が週2日で、大会等の実績記録はない",
+      "source_url": "https://www.metro.ed.jp/kodairaminami-h/assets/%E5%B9%B4%E9%96%93%E6%B4%BB%E5%8B%95%E8%A8%88%E7%94%BB%E3%80%90%E7%A7%91%E5%AD%A6%E9%83%A8%E3%80%91.pdf",
+      "as_of": "2026-04"
+    },
+    {
+      "name": "写真部",
+      "kind": "文化",
+      "days_note": "毎週2日",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "tier": 2,
+      "tier_basis": "2024年度 関東大会（写真部門）進出（都県代表選出に準じる実績、全国大会には届かず段階1には届かない）",
+      "source_url": "https://www.metro.ed.jp/kodairaminami-h/assets/%E5%B9%B4%E9%96%93%E6%B4%BB%E5%8B%95%E8%A8%88%E7%94%BB%E3%80%90%E5%86%99%E7%9C%9F%E9%83%A8%E3%80%91.pdf",
+      "as_of": "2026-04",
+      "results": [
+        { "fiscal_year": 2023, "competition": "写真部門地区大会・中央大会", "level": "都県", "result": "夏・冬の大会作品入賞", "source_url": "https://www.metro.ed.jp/kodairaminami-h/assets/%E5%B9%B4%E9%96%93%E6%B4%BB%E5%8B%95%E8%A8%88%E7%94%BB%E3%80%90%E5%86%99%E7%9C%9F%E9%83%A8%E3%80%91.pdf" },
+        { "fiscal_year": 2024, "competition": "写真甲子園（関東大会）", "level": "関東", "result": "関東大会進出", "source_url": "https://www.metro.ed.jp/kodairaminami-h/assets/%E5%B9%B4%E9%96%93%E6%B4%BB%E5%8B%95%E8%A8%88%E7%94%BB%E3%80%90%E5%86%99%E7%9C%9F%E9%83%A8%E3%80%91.pdf" },
+        { "fiscal_year": 2025, "competition": "写真部門地区大会・中央大会", "level": "都県", "result": "夏・冬の大会作品入賞", "source_url": "https://www.metro.ed.jp/kodairaminami-h/assets/%E5%B9%B4%E9%96%93%E6%B4%BB%E5%8B%95%E8%A8%88%E7%94%BB%E3%80%90%E5%86%99%E7%9C%9F%E9%83%A8%E3%80%91.pdf" },
+        { "fiscal_year": 2025, "competition": "東京都高等学校文化祭 写真部門 地区大会", "level": "都県", "result": "最優秀賞（学校経営報告より）", "source_url": "https://www.metro.ed.jp/kodairaminami-h/assets/filelink/filelink-pdffile-35708.pdf" }
+      ]
+    },
+    {
+      "name": "吹奏楽部",
+      "kind": "文化",
+      "days_note": "週5日",
+      "days_per_week": 5,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2023〜2025年度 東京都吹奏楽コンクール・アンサンブルコンテストとも銀賞・銅賞にとどまり、金賞や代表選出の実績はない",
+      "source_url": "https://www.metro.ed.jp/kodairaminami-h/assets/%E5%B9%B4%E9%96%93%E6%B4%BB%E5%8B%95%E8%A8%88%E7%94%BB%E3%80%90%E5%90%B9%E5%A5%8F%E6%A5%BD%E9%83%A8%E3%80%91.pdf",
+      "as_of": "2026-04",
+      "results": [
+        { "fiscal_year": 2023, "competition": "東京都吹奏楽コンクール", "level": "都県", "result": "東日本組銀賞", "source_url": "https://www.metro.ed.jp/kodairaminami-h/assets/%E5%B9%B4%E9%96%93%E6%B4%BB%E5%8B%95%E8%A8%88%E7%94%BB%E3%80%90%E5%90%B9%E5%A5%8F%E6%A5%BD%E9%83%A8%E3%80%91.pdf" },
+        { "fiscal_year": 2024, "competition": "東京都吹奏楽コンクール", "level": "都県", "result": "C組銀賞", "source_url": "https://www.metro.ed.jp/kodairaminami-h/assets/%E5%B9%B4%E9%96%93%E6%B4%BB%E5%8B%95%E8%A8%88%E7%94%BB%E3%80%90%E5%90%B9%E5%A5%8F%E6%A5%BD%E9%83%A8%E3%80%91.pdf" },
+        { "fiscal_year": 2025, "competition": "東京都吹奏楽コンクール", "level": "都県", "result": "B組銅賞", "source_url": "https://www.metro.ed.jp/kodairaminami-h/assets/%E5%B9%B4%E9%96%93%E6%B4%BB%E5%8B%95%E8%A8%88%E7%94%BB%E3%80%90%E5%90%B9%E5%A5%8F%E6%A5%BD%E9%83%A8%E3%80%91.pdf" }
+      ]
+    },
+    {
+      "name": "美術部",
+      "kind": "文化",
+      "days_note": "週3日",
+      "days_per_week": 3,
+      "weekend": "なし",
+      "tier": 2,
+      "tier_basis": "2023・2024年度とも東京都高等学校文化祭中央展で最優秀賞（都県の最上位賞）を受賞。全国大会には出場しておらず段階1には届かない",
+      "source_url": "https://www.metro.ed.jp/kodairaminami-h/assets/%E5%B9%B4%E9%96%93%E6%B4%BB%E5%8B%95%E8%A8%88%E7%94%BB%E3%80%90%E7%BE%8E%E8%A1%93%E9%83%A8%E3%80%91.pdf",
+      "as_of": "2026-04",
+      "results": [
+        { "fiscal_year": 2023, "competition": "東京都高等学校文化祭 美術・工芸部門 中央展", "level": "都県", "result": "最優秀賞・高文連会長賞", "source_url": "https://www.metro.ed.jp/kodairaminami-h/assets/%E5%B9%B4%E9%96%93%E6%B4%BB%E5%8B%95%E8%A8%88%E7%94%BB%E3%80%90%E7%BE%8E%E8%A1%93%E9%83%A8%E3%80%91.pdf" },
+        { "fiscal_year": 2024, "competition": "東京都高等学校文化祭 美術・工芸部門 中央展", "level": "都県", "result": "最優秀賞・優秀賞・奨励賞", "source_url": "https://www.metro.ed.jp/kodairaminami-h/assets/%E5%B9%B4%E9%96%93%E6%B4%BB%E5%8B%95%E8%A8%88%E7%94%BB%E3%80%90%E7%BE%8E%E8%A1%93%E9%83%A8%E3%80%91.pdf" },
+        { "fiscal_year": 2025, "competition": "東京都高等学校文化祭 美術・工芸部門 中央展", "level": "都県", "result": "東京都教育委員会賞2名・東京都高等学校文化連盟会長賞1名・奨励賞1名（計4名入賞）", "source_url": "https://www.metro.ed.jp/kodairaminami-h/assets/filelink/filelink-pdffile-35708.pdf" }
+      ]
+    },
+    {
+      "name": "野外活動研究部",
+      "kind": "文化",
+      "days_note": "週2日（木曜日、金曜日）",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日数が週2日で、大会等の実績記録はない",
+      "source_url": "https://www.metro.ed.jp/kodairaminami-h/assets/%E5%B9%B4%E9%96%93%E6%B4%BB%E5%8B%95%E8%A8%88%E7%94%BB%E3%80%90%E9%87%8E%E5%A4%96%E6%B4%BB%E5%8B%95%E7%A0%94%E7%A9%B6%E9%83%A8%E3%80%91_1.pdf",
+      "as_of": "2026-04"
+    },
+    {
+      "name": "イラスト部",
+      "kind": "文化",
+      "days_note": "毎週2日（水曜日、木曜日）",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日数が週2日で、大会等の実績記録はない",
+      "source_url": "https://www.metro.ed.jp/kodairaminami-h/assets/%E5%B9%B4%E9%96%93%E6%B4%BB%E5%8B%95%E8%A8%88%E7%94%BB%E3%80%90%E3%82%A4%E3%83%A9%E3%82%B9%E3%83%88%E9%83%A8%E3%80%91.pdf",
+      "as_of": "2026-04"
+    },
+    {
+      "name": "演劇部",
+      "kind": "文化",
+      "days_note": "休部中",
+      "source_url": "https://www.metro.ed.jp/kodairaminami-h/school_life/activities.html",
+      "as_of": "2026-09"
+    }
+  ],
+  "designated_universities": [
+    { "university": "学習院大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/kodairaminami-h/assets/%E5%B0%8F%E5%B9%B3%E5%8D%97%E5%AD%A6%E6%A0%A1%E6%A1%88%E5%86%85.pdf", "note": "パンフレット「主な指定校」欄より" },
+    { "university": "北里大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/kodairaminami-h/assets/%E5%B0%8F%E5%B9%B3%E5%8D%97%E5%AD%A6%E6%A0%A1%E6%A1%88%E5%86%85.pdf", "note": "" },
+    { "university": "成蹊大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/kodairaminami-h/assets/%E5%B0%8F%E5%B9%B3%E5%8D%97%E5%AD%A6%E6%A0%A1%E6%A1%88%E5%86%85.pdf", "note": "" },
+    { "university": "成城大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/kodairaminami-h/assets/%E5%B0%8F%E5%B9%B3%E5%8D%97%E5%AD%A6%E6%A0%A1%E6%A1%88%E5%86%85.pdf", "note": "" },
+    { "university": "専修大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/kodairaminami-h/assets/%E5%B0%8F%E5%B9%B3%E5%8D%97%E5%AD%A6%E6%A0%A1%E6%A1%88%E5%86%85.pdf", "note": "" },
+    { "university": "中央大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/kodairaminami-h/assets/%E5%B0%8F%E5%B9%B3%E5%8D%97%E5%AD%A6%E6%A0%A1%E6%A1%88%E5%86%85.pdf", "note": "" },
+    { "university": "津田塾大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/kodairaminami-h/assets/%E5%B0%8F%E5%B9%B3%E5%8D%97%E5%AD%A6%E6%A0%A1%E6%A1%88%E5%86%85.pdf", "note": "" },
+    { "university": "東京医療保健大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/kodairaminami-h/assets/%E5%B0%8F%E5%B9%B3%E5%8D%97%E5%AD%A6%E6%A0%A1%E6%A1%88%E5%86%85.pdf", "note": "" },
+    { "university": "東京経済大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/kodairaminami-h/assets/%E5%B0%8F%E5%B9%B3%E5%8D%97%E5%AD%A6%E6%A0%A1%E6%A1%88%E5%86%85.pdf", "note": "" },
+    { "university": "東京農業大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/kodairaminami-h/assets/%E5%B0%8F%E5%B9%B3%E5%8D%97%E5%AD%A6%E6%A0%A1%E6%A1%88%E5%86%85.pdf", "note": "" },
+    { "university": "東洋大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/kodairaminami-h/assets/%E5%B0%8F%E5%B9%B3%E5%8D%97%E5%AD%A6%E6%A0%A1%E6%A1%88%E5%86%85.pdf", "note": "" },
+    { "university": "日本大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/kodairaminami-h/assets/%E5%B0%8F%E5%B9%B3%E5%8D%97%E5%AD%A6%E6%A0%A1%E6%A1%88%E5%86%85.pdf", "note": "" },
+    { "university": "日本獣医生命科学大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/kodairaminami-h/assets/%E5%B0%8F%E5%B9%B3%E5%8D%97%E5%AD%A6%E6%A0%A1%E6%A1%88%E5%86%85.pdf", "note": "" },
+    { "university": "日本女子大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/kodairaminami-h/assets/%E5%B0%8F%E5%B9%B3%E5%8D%97%E5%AD%A6%E6%A0%A1%E6%A1%88%E5%86%85.pdf", "note": "" },
+    { "university": "法政大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/kodairaminami-h/assets/%E5%B0%8F%E5%B9%B3%E5%8D%97%E5%AD%A6%E6%A0%A1%E6%A1%88%E5%86%85.pdf", "note": "" },
+    { "university": "武蔵大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/kodairaminami-h/assets/%E5%B0%8F%E5%B9%B3%E5%8D%97%E5%AD%A6%E6%A0%A1%E6%A1%88%E5%86%85.pdf", "note": "" },
+    { "university": "明治学院大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/kodairaminami-h/assets/%E5%B0%8F%E5%B9%B3%E5%8D%97%E5%AD%A6%E6%A0%A1%E6%A1%88%E5%86%85.pdf", "note": "" },
+    { "university": "立教大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/kodairaminami-h/assets/%E5%B0%8F%E5%B9%B3%E5%8D%97%E5%AD%A6%E6%A0%A1%E6%A1%88%E5%86%85.pdf", "note": "" }
+  ],
+  "events": [],
+  "unresolved": [
+    "designation（SSH・Tokyo GE-NET EE・学力向上進学重点校エントリー校等の指定）：学校経営報告・経営計画・パンフレットのいずれにも記載なし",
+    "students（男女別生徒数）：学校経営報告・パンフレットのいずれにも公式な人数の記載なし",
+    "admission_route_share（一般選抜／指定校推薦／公募推薦／総合型選抜の割合）：パンフレットの進路状況は大学・短大・専門学校・浪人等の「進路先の種類」別の円グラフのみで、入試方式別の割合は非公開",
+    "career_decided_rate（進路決定率）：「進路決定率」という名称の指標そのものは学校経営報告・パンフレットに見当たらず（進路状況の内訳のみ公開）",
+    "events（学級増減・改築・制服変更等、2020年度以降）：学校サイトのニュース欄・都教委発表を確認したが該当する発表を見つけられず",
+    "男子バレーボール部の直近3年（2023〜2025年度）の大会成績：学校の「年間活動計画」PDFが令和2〜4年度（2020〜2022年度）のまま更新されておらず、直近3年の実績が非公開"
+  ],
+  "conflicts": [
+    "早慶上理(10)とGMARCH(65)の合算(75)は、学校経営報告の「早慶上理GMARCH等難関私立大学現役合格者」の集計値(88)と一致しない（学校の区分に含まれる大学が手引きの標準区分と異なる可能性）",
+    "パンフレット合格状況の大学別数値（國學院9・成蹊30・成城6・武蔵15・明治学院2・日本28・東洋43・駒澤13・専修32）を手引きの区分で合算すると178となり、学校経営報告の「國學院・成蹊・成城・武蔵・明治学院・日東駒専現役合格者」の集計値(169)と一致しない",
+    "「生徒の進路指導に対する満足度」の前年比較値が、令和7年度学校経営報告の中で「73.0%」（重点目標の表）と「75%」（次年度以降の課題と改善策）の2通り記載されている（当年度の値78%は両箇所で一致）"
+  ]
+}

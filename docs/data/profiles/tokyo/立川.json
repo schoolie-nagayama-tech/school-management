@@ -1,0 +1,813 @@
+{
+  "prefecture": "東京都",
+  "school_name": "立川",
+  "official_url": "https://www.metro.ed.jp/tachikawa-h/",
+  "researched_at": "2026-09-28",
+  "stats": [
+    {
+      "metric": "university_count",
+      "item": "国公立",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 127,
+      "source_url": "https://www.metro.ed.jp/tachikawa-h/assets/経営報告（07全）.pdf",
+      "source_label": "立川高校 令和7年度（全日制課程）学校経営報告",
+      "as_of": "2026-04-10",
+      "note": "「国公立大学現役合格者数」。学校案内パンフレット表紙の「2026年 国公立大学合格者数127名(現役のみ)」とも一致。"
+    },
+    {
+      "metric": "university_count",
+      "item": "国公立",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 161,
+      "source_url": "https://www.metro.ed.jp/tachikawa-h/assets/2024-2026 過去3年間の主な大学の合格実績及び進学状況(R80525更新)_2.pdf",
+      "source_label": "立川高校 2024-2026 過去3年間の主な大学の合格実績及び進学状況(R8.5.25更新)",
+      "as_of": "2026-05-25",
+      "note": "国公立大計の合格計（現役128＋既卒合格33）。現役の値は学校経営報告(127)と1名食い違う（conflicts参照）。"
+    },
+    {
+      "metric": "university_count",
+      "item": "国公立",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 121,
+      "source_url": "https://www.metro.ed.jp/tachikawa-h/assets/2024-2026 過去3年間の主な大学の合格実績及び進学状況(R80525更新)_2.pdf",
+      "source_label": "立川高校 2024-2026 過去3年間の主な大学の合格実績及び進学状況(R8.5.25更新)",
+      "as_of": "2026-05-25",
+      "note": "国公立大計・現役の進学者数。"
+    },
+    {
+      "metric": "university_count",
+      "item": "難関国公立(東大・京大・一橋大・東京科学大医学部医科)",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 19,
+      "source_url": "https://www.metro.ed.jp/tachikawa-h/assets/経営報告（07全）.pdf",
+      "source_label": "立川高校 令和7年度 学校経営報告",
+      "as_of": "2026-04-10",
+      "note": "学校独自の大学群（重点目標「難関国公立(東大・京大・一橋大・科学大・医学部医科)現役合格者数25名以上」に対する実績）。学校の公表値。"
+    },
+    {
+      "metric": "university_count",
+      "item": "難関国公立(東大・京大・一橋大・東京科学大・北大・東北大・名大・阪大・九大・医)",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 39,
+      "source_url": "https://www.metro.ed.jp/tachikawa-h/assets/経営報告（07全）.pdf",
+      "source_label": "立川高校 令和7年度 学校経営報告",
+      "as_of": "2026-04-10",
+      "note": "学校独自の大学群（重点目標40名以上に対する実績）。大学別合格実績表の「旧帝大・一科・医(内数)」現役39とも一致。"
+    },
+    {
+      "metric": "university_count",
+      "item": "早慶上理",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 138,
+      "source_url": "https://www.metro.ed.jp/tachikawa-h/assets/2024-2026 過去3年間の主な大学の合格実績及び進学状況(R80525更新)_2.pdf",
+      "source_label": "立川高校 2024-2026 過去3年間の主な大学の合格実績及び進学状況(R8.5.25更新)",
+      "as_of": "2026-05-25",
+      "note": "大学別の表から合算（早稲田53・慶應25・上智19・東京理科41、いずれも現役）。学校独自の「難関私大計」はICU(3)を含むため141になる（conflicts参照）。"
+    },
+    {
+      "metric": "university_count",
+      "item": "早慶上理",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 187,
+      "source_url": "https://www.metro.ed.jp/tachikawa-h/assets/2024-2026 過去3年間の主な大学の合格実績及び進学状況(R80525更新)_2.pdf",
+      "source_label": "立川高校 2024-2026 過去3年間の主な大学の合格実績及び進学状況(R8.5.25更新)",
+      "as_of": "2026-05-25",
+      "note": "大学別の表から合算（早稲田63・慶應33・上智21・東京理科70、合格計）。"
+    },
+    {
+      "metric": "university_count",
+      "item": "GMARCH",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 311,
+      "source_url": "https://www.metro.ed.jp/tachikawa-h/assets/2024-2026 過去3年間の主な大学の合格実績及び進学状況(R80525更新)_2.pdf",
+      "source_label": "立川高校 2024-2026 過去3年間の主な大学の合格実績及び進学状況(R8.5.25更新)",
+      "as_of": "2026-05-25",
+      "note": "学校集計の「GMARCH計」現役合格者数。大学別合算（学習院5・明治108・青山学院23・立教50・中央70・法政55）とも一致。"
+    },
+    {
+      "metric": "university_count",
+      "item": "GMARCH",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 420,
+      "source_url": "https://www.metro.ed.jp/tachikawa-h/assets/2024-2026 過去3年間の主な大学の合格実績及び進学状況(R80525更新)_2.pdf",
+      "source_label": "立川高校 2024-2026 過去3年間の主な大学の合格実績及び進学状況(R8.5.25更新)",
+      "as_of": "2026-05-25",
+      "note": "学校集計の「GMARCH計」合格計。"
+    },
+    {
+      "metric": "university_count",
+      "item": "医学科(国公立、内数)",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 2,
+      "source_url": "https://www.metro.ed.jp/tachikawa-h/assets/2024-2026 過去3年間の主な大学の合格実績及び進学状況(R80525更新)_2.pdf",
+      "source_label": "立川高校 2024-2026 過去3年間の主な大学の合格実績及び進学状況(R8.5.25更新)",
+      "as_of": "2026-05-25",
+      "note": "国公立大学医学科の内数（既卒含む合格計は7）。"
+    },
+    {
+      "metric": "university_count",
+      "item": "国公立(学校推薦型・総合型選抜、指定校推薦を除く)",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 15,
+      "source_url": "https://www.metro.ed.jp/tachikawa-h/assets/経営報告（07全）.pdf",
+      "source_label": "立川高校 令和7年度 学校経営報告",
+      "as_of": "2026-04-10",
+      "note": "重点目標「国公立大学 学校推薦型・総合型選抜 現役合格者数15名以上(指定校推薦を除く)」の実績。SSH指定以来の過去最高と本文に記載。"
+    },
+    {
+      "metric": "university_count",
+      "item": "東京都立大",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 29,
+      "source_url": "https://www.metro.ed.jp/tachikawa-h/assets/2024-2026 過去3年間の主な大学の合格実績及び進学状況(R80525更新)_2.pdf",
+      "source_label": "立川高校 2024-2026 過去3年間の主な大学の合格実績及び進学状況(R8.5.25更新)",
+      "as_of": "2026-05-25",
+      "note": "現役合格者数（合格計は35）。"
+    },
+    {
+      "metric": "university_count",
+      "item": "東京外国語大",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 11,
+      "source_url": "https://www.metro.ed.jp/tachikawa-h/assets/2024-2026 過去3年間の主な大学の合格実績及び進学状況(R80525更新)_2.pdf",
+      "source_label": "立川高校 2024-2026 過去3年間の主な大学の合格実績及び進学状況(R8.5.25更新)",
+      "as_of": "2026-05-25",
+      "note": ""
+    },
+    {
+      "metric": "university_count",
+      "item": "東京農工大",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 9,
+      "source_url": "https://www.metro.ed.jp/tachikawa-h/assets/2024-2026 過去3年間の主な大学の合格実績及び進学状況(R80525更新)_2.pdf",
+      "source_label": "立川高校 2024-2026 過去3年間の主な大学の合格実績及び進学状況(R8.5.25更新)",
+      "as_of": "2026-05-25",
+      "note": ""
+    },
+    {
+      "metric": "university_count",
+      "item": "東北大",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 8,
+      "source_url": "https://www.metro.ed.jp/tachikawa-h/assets/2024-2026 過去3年間の主な大学の合格実績及び進学状況(R80525更新)_2.pdf",
+      "source_label": "立川高校 2024-2026 過去3年間の主な大学の合格実績及び進学状況(R8.5.25更新)",
+      "as_of": "2026-05-25",
+      "note": ""
+    },
+    {
+      "metric": "university_count",
+      "item": "東京学芸大",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 6,
+      "source_url": "https://www.metro.ed.jp/tachikawa-h/assets/2024-2026 過去3年間の主な大学の合格実績及び進学状況(R80525更新)_2.pdf",
+      "source_label": "立川高校 2024-2026 過去3年間の主な大学の合格実績及び進学状況(R8.5.25更新)",
+      "as_of": "2026-05-25",
+      "note": "北海道大・横浜国立大も同数の現役6名。"
+    },
+    {
+      "metric": "exam_ratio",
+      "item": "推薦（普通科）",
+      "fiscal_year": 2026,
+      "value_num": 3,
+      "source_url": "https://www.metro.ed.jp/tachikawa-h/assets/経営報告（07全）.pdf",
+      "source_label": "立川高校 令和7年度 学校経営報告",
+      "as_of": "2026-04-10",
+      "note": "応募倍率。「【普通科】入学者選抜の最終応募倍率 推薦(普)3.20倍」に対するR7実績。2026年4月入学者選抜。"
+    },
+    {
+      "metric": "exam_ratio",
+      "item": "推薦（創造理数科）",
+      "fiscal_year": 2026,
+      "value_num": 2,
+      "source_url": "https://www.metro.ed.jp/tachikawa-h/assets/経営報告（07全）.pdf",
+      "source_label": "立川高校 令和7年度 学校経営報告",
+      "as_of": "2026-04-10",
+      "note": "応募倍率。「【創造理数科】入学者選抜の最終応募倍率 推薦(理)1.50倍」に対するR7実績。2026年4月入学者選抜。"
+    },
+    {
+      "metric": "satisfaction",
+      "item": "生徒:入学して良かった",
+      "fiscal_year": 2025,
+      "value_num": 97.3,
+      "source_url": "https://www.metro.ed.jp/tachikawa-h/assets/経営報告（07全）.pdf",
+      "source_label": "立川高校 令和7年度 学校経営報告",
+      "as_of": "2026-04-10",
+      "note": "学校評価アンケートで「入学して良かった」と回答した生徒の割合(目標90%以上に対する実績)。「学校生活の満足度」そのものの数値は本資料になし。"
+    },
+    {
+      "metric": "designation",
+      "item": "進学指導重点校",
+      "fiscal_year": 2025,
+      "value_text": "平成15年度(2003)指定、東京都教育委員会",
+      "source_url": "https://www.metro.ed.jp/tachikawa-h/assets/経営報告（07全）.pdf",
+      "source_label": "立川高校 令和7年度 学校経営報告",
+      "as_of": "2026-04-10",
+      "note": ""
+    },
+    {
+      "metric": "designation",
+      "item": "SSH",
+      "fiscal_year": 2025,
+      "value_text": "スーパーサイエンスハイスクール。2018(平成30)年度に5年間の指定を受け、2023(令和5)年度に第II期として5年間再指定。",
+      "source_url": "https://www.metro.ed.jp/tachikawa-h/assets/27立川高_学校案内_HP用.pdf",
+      "source_label": "立川高校 2027年度 学校案内パンフレット",
+      "as_of": "2026-07-09",
+      "note": ""
+    },
+    {
+      "metric": "designation",
+      "item": "GE-NET EE",
+      "fiscal_year": 2025,
+      "value_text": "指定校（パンフレット表紙の記載のみで、内容の詳細未確認）",
+      "source_url": "https://www.metro.ed.jp/tachikawa-h/assets/27立川高_学校案内_HP用.pdf",
+      "source_label": "立川高校 2027年度 学校案内パンフレット",
+      "as_of": "2026-07-09",
+      "note": ""
+    },
+    {
+      "metric": "designation",
+      "item": "海外学校間交流推進校",
+      "fiscal_year": 2025,
+      "value_text": "指定校（パンフレット表紙の記載のみで、内容の詳細未確認）",
+      "source_url": "https://www.metro.ed.jp/tachikawa-h/assets/27立川高_学校案内_HP用.pdf",
+      "source_label": "立川高校 2027年度 学校案内パンフレット",
+      "as_of": "2026-07-09",
+      "note": ""
+    },
+    {
+      "metric": "uniform",
+      "item": "",
+      "fiscal_year": 2025,
+      "value_text": "制服なし",
+      "source_url": "https://www.metro.ed.jp/tachikawa-h/school_life/symbols.html",
+      "source_label": "立川高校 制服・校章・校歌",
+      "as_of": "2026-09-28",
+      "note": "「都立立川高等学校には、制服はありません」と明記。服装は清潔・質素であることのみ求める。"
+    },
+    {
+      "metric": "rules_summary",
+      "item": "",
+      "fiscal_year": 2021,
+      "value_text": "「立高生活の指針」のみで、頭髪・スマホ・アルバイト等の細則は無し。自律的生活・学友間の協力を求める精神的な文書。",
+      "source_url": "https://www.metro.ed.jp/tachikawa-h/assets/filelink/filelink-pdffile-6420.pdf",
+      "source_label": "立川高校 立高生活の指針等",
+      "as_of": "2021-10-27",
+      "note": "校則ページの掲載資料自体が具体的な禁止事項の列挙でなく、心構えを述べる文書になっている。"
+    }
+  ],
+  "clubs": [
+    {
+      "name": "硬式野球部",
+      "kind": "運動",
+      "tier": 3,
+      "tier_basis": "2023〜2026年度、夏(西東京大会)・秋・春とも早期敗退が続き、最も勝ち進んだ2023年度秋季本大会でも東京都ベスト64止まり。都県大会でのベスト8以上は無い（一球速報・学校公式ニュース）。",
+      "source_url": "https://www.metro.ed.jp/tachikawa-h/activities/club_1/index.html",
+      "as_of": "2026-09-28",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "第108回全国高等学校野球選手権大会西東京大会",
+          "level": "都県",
+          "result": "第二回戦で敗退",
+          "source_url": "https://www.metro.ed.jp/tachikawa-h/activities/club_1/index.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第107回全国高等学校野球選手権大会西東京大会",
+          "level": "都県",
+          "result": "3回戦敗退",
+          "source_url": "https://www.metro.ed.jp/tachikawa-h/activities/club_1/index.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "秋季東京都高等学校野球大会 本大会",
+          "level": "都県",
+          "result": "2年連続本大会出場（東京都ベスト64）",
+          "source_url": "https://www.metro.ed.jp/tachikawa-h/activities/club_1/index.html"
+        }
+      ]
+    },
+    {
+      "name": "サッカー部",
+      "kind": "運動",
+      "tier": 3,
+      "tier_basis": "2026年度 高円宮杯U-18サッカーリーグ東京 T1〜T5のいずれにも所属なし（支部リーグ）。",
+      "source_url": "https://www.tleague-u18.com/team.php?dy=2026&dt=1",
+      "as_of": "2026-09-28",
+      "results": []
+    },
+    {
+      "name": "ダンス部",
+      "kind": "運動",
+      "source_url": "https://www.metro.ed.jp/tachikawa-h/activities/club_2/index.html",
+      "as_of": "2026-09-28"
+    },
+    {
+      "name": "男子硬式テニス部",
+      "kind": "運動",
+      "source_url": "https://www.metro.ed.jp/tachikawa-h/activities/club_3/index.html",
+      "as_of": "2026-09-28"
+    },
+    {
+      "name": "女子硬式テニス部",
+      "kind": "運動",
+      "tier": 2,
+      "tier_basis": "2024年度 東京都高等学校新人テニス大会（団体の部）で準々決勝敗退・ベスト8（都大会5位、私立を含む8校中で唯一の都立、立高史上初の5位）。",
+      "source_url": "https://www.metro.ed.jp/tachikawa-h/activities/club_4/index.html",
+      "as_of": "2026-09-28",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "東京都高等学校新人テニス大会（団体の部）",
+          "level": "都県",
+          "result": "準々決勝敗退・ベスト8（都大会5位）",
+          "happened_on": "2024-11-09",
+          "source_url": "https://www.metro.ed.jp/tachikawa-h/activities/2024/11/clubentry_67.html"
+        }
+      ]
+    },
+    {
+      "name": "陸上競技部",
+      "kind": "運動",
+      "tier": 3,
+      "tier_basis": "2024〜2025年度、都高校総合体育大会・都高等学校新人陸上競技大会・支部予選会等に継続して参加しているが、上位進出の記載は無い。",
+      "source_url": "https://www.metro.ed.jp/tachikawa-h/activities/club_5/index.html",
+      "as_of": "2026-09-28",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "令和6年度東京都高等学校総合体育大会",
+          "level": "都県",
+          "result": "参加（上位進出の記載なし）",
+          "source_url": "https://www.metro.ed.jp/tachikawa-h/activities/club_5/index.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "第76回東京都高等学校新人陸上競技大会",
+          "level": "都県",
+          "result": "第5・6支部予選会を経て参加（上位進出の記載なし）",
+          "source_url": "https://www.metro.ed.jp/tachikawa-h/activities/club_5/index.html"
+        }
+      ]
+    },
+    {
+      "name": "卓球部",
+      "kind": "運動",
+      "source_url": "https://www.metro.ed.jp/tachikawa-h/activities/club_6/index.html",
+      "as_of": "2026-09-28"
+    },
+    {
+      "name": "男子バドミントン部",
+      "kind": "運動",
+      "source_url": "https://www.metro.ed.jp/tachikawa-h/activities/club_7/index.html",
+      "as_of": "2026-09-28"
+    },
+    {
+      "name": "女子バドミントン部",
+      "kind": "運動",
+      "source_url": "https://www.metro.ed.jp/tachikawa-h/activities/club_8/index.html",
+      "as_of": "2026-09-28"
+    },
+    {
+      "name": "男子バスケットボール部",
+      "kind": "運動",
+      "tier": 3,
+      "tier_basis": "2024〜2026年度、総体予選(インハイ予選)・新人戦支部大会・TAMAリーグに参加しているが、上位進出の記載は無い。",
+      "source_url": "https://www.metro.ed.jp/tachikawa-h/activities/club_9/index.html",
+      "as_of": "2026-09-28",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "総体予選(インターハイ予選)",
+          "level": "都県",
+          "result": "2回戦で敗退",
+          "source_url": "https://www.metro.ed.jp/tachikawa-h/activities/club_9/index.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "新人戦支部大会",
+          "level": "地区",
+          "result": "第2試合まで（上位進出の記載なし）",
+          "source_url": "https://www.metro.ed.jp/tachikawa-h/activities/club_9/index.html"
+        }
+      ]
+    },
+    {
+      "name": "女子バスケットボール部",
+      "kind": "運動",
+      "source_url": "https://www.metro.ed.jp/tachikawa-h/activities/club_10/index.html",
+      "as_of": "2026-09-28"
+    },
+    {
+      "name": "男子バレーボール部",
+      "kind": "運動",
+      "source_url": "https://www.metro.ed.jp/tachikawa-h/activities/club_11/index.html",
+      "as_of": "2026-09-28"
+    },
+    {
+      "name": "女子バレーボール部",
+      "kind": "運動",
+      "tier": 3,
+      "tier_basis": "2024〜2025年度、東京都高等学校新人選手権大会本選進出、春季大会兼関東大会都予選でベスト32進出。都県大会でのベスト8以上は無い。",
+      "source_url": "https://www.metro.ed.jp/tachikawa-h/activities/club_12/index.html",
+      "as_of": "2026-09-28",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "東京都高等学校 春季大会 兼 関東大会都予選",
+          "level": "都県",
+          "result": "ベスト32進出",
+          "happened_on": "2025-04-27",
+          "source_url": "https://www.metro.ed.jp/tachikawa-h/activities/club_12/index.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "東京都高等学校新人選手権大会",
+          "level": "都県",
+          "result": "本選に進出",
+          "happened_on": "2024-11-06",
+          "source_url": "https://www.metro.ed.jp/tachikawa-h/activities/club_12/index.html"
+        }
+      ]
+    },
+    {
+      "name": "水泳部",
+      "kind": "運動",
+      "tier": 3,
+      "tier_basis": "2026年度 三多摩大会で男子総合入賞（地区大会レベル）。西東京大会・公式戦の結果報告はあるが、都大会での上位進出の記載は無い。",
+      "source_url": "https://www.metro.ed.jp/tachikawa-h/activities/club_13/index.html",
+      "as_of": "2026-09-28",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "三多摩大会",
+          "level": "地区",
+          "result": "男子総合入賞",
+          "happened_on": "2026-08-27",
+          "source_url": "https://www.metro.ed.jp/tachikawa-h/activities/club_13/index.html"
+        }
+      ]
+    },
+    {
+      "name": "ハンドボール部",
+      "kind": "運動",
+      "tier": 1,
+      "tier_basis": "2024年度、東京都ベスト8に男女とも進出（6月）に加え、男子が東京都ベスト8に進出（11月）と、直近3年で都県大会ベスト8以上が2回以上。",
+      "source_url": "https://www.metro.ed.jp/tachikawa-h/activities/club_14/index.html",
+      "as_of": "2026-09-28",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "都大会（男女）",
+          "level": "都県",
+          "result": "男女とも東京都ベスト8進出",
+          "happened_on": "2024-06-11",
+          "source_url": "https://www.metro.ed.jp/tachikawa-h/activities/club_14/index.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "都大会（男子）",
+          "level": "都県",
+          "result": "男子が東京都ベスト8に進出",
+          "happened_on": "2024-11-05",
+          "source_url": "https://www.metro.ed.jp/tachikawa-h/activities/club_14/index.html"
+        }
+      ]
+    },
+    {
+      "name": "剣道部",
+      "kind": "運動",
+      "tier": 3,
+      "tier_basis": "2025年度、東京都秋季高等学校剣道大会は男女とも団体で早期敗退（女子は2回戦、男子は1回戦）。高体連第5支部大会の個人戦で3位（支部レベルのため都県大会には届かない）。",
+      "source_url": "https://www.metro.ed.jp/tachikawa-h/activities/club_15/index.html",
+      "as_of": "2026-09-28",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "東京都秋季高等学校剣道大会（女子団体）",
+          "level": "都県",
+          "result": "2回戦敗退（1回戦は3-2で勝利）",
+          "happened_on": "2025-10-25",
+          "source_url": "https://www.metro.ed.jp/tachikawa-h/activities/2025/10/clubentry_106.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "東京都秋季高等学校剣道大会（男子団体）",
+          "level": "都県",
+          "result": "1回戦敗退",
+          "happened_on": "2025-11-01",
+          "source_url": "https://www.metro.ed.jp/tachikawa-h/activities/2025/11/clubentry_107.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "高体連第5支部剣道大会（男子個人2・3段の部）",
+          "level": "地区",
+          "result": "ベスト4・3位",
+          "happened_on": "2025-11-16",
+          "source_url": "https://www.metro.ed.jp/tachikawa-h/activities/2025/11/5_3.html"
+        }
+      ]
+    },
+    {
+      "name": "柔道同好会",
+      "kind": "同好会",
+      "source_url": "https://www.metro.ed.jp/tachikawa-h/activities/club_16/index.html",
+      "as_of": "2026-09-28"
+    },
+    {
+      "name": "山岳部",
+      "kind": "運動",
+      "source_url": "https://www.metro.ed.jp/tachikawa-h/activities/club_17/index.html",
+      "as_of": "2026-09-28"
+    },
+    {
+      "name": "ソフトテニス部",
+      "kind": "運動",
+      "source_url": "https://www.metro.ed.jp/tachikawa-h/activities/club_18/index.html",
+      "as_of": "2026-09-28"
+    },
+    {
+      "name": "吹奏楽部",
+      "kind": "文化",
+      "tier": 2,
+      "tier_basis": "2023年度、東日本学校吹奏楽大会に創部以来初めて出場（東日本組で金賞を受賞し進出）。直近3年での全国・関東相当大会出場は1回。",
+      "source_url": "https://www.metro.ed.jp/tachikawa-h/activities/club_19/index.html",
+      "as_of": "2026-09-28",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "東日本学校吹奏楽大会",
+          "level": "関東",
+          "result": "創部以来初の東日本大会出場（東日本組金賞）",
+          "happened_on": "2023-08-30",
+          "source_url": "https://www.metro.ed.jp/tachikawa-h/activities/club_19/index.html"
+        }
+      ]
+    },
+    {
+      "name": "室内楽部",
+      "kind": "文化",
+      "source_url": "https://www.metro.ed.jp/tachikawa-h/activities/club_20/index.html",
+      "as_of": "2026-09-28"
+    },
+    {
+      "name": "美術部",
+      "kind": "文化",
+      "tier": 3,
+      "tier_basis": "2024年度、東京都高等学校文化祭 美術・工芸部門 第35回中央展に参加（展示型の都大会への出品のみで、代表選出や上位の賞ではない）。",
+      "source_url": "https://www.metro.ed.jp/tachikawa-h/activities/club_21/index.html",
+      "as_of": "2026-09-28",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "東京都高等学校文化祭 美術・工芸部門 第35回中央展",
+          "level": "都県",
+          "result": "出品・参加",
+          "happened_on": "2024-12-19",
+          "source_url": "https://www.metro.ed.jp/tachikawa-h/activities/club_21/index.html"
+        }
+      ]
+    },
+    {
+      "name": "天文気象部",
+      "kind": "文化",
+      "tier": 1,
+      "tier_basis": "2023・2024・2025年度、高校・高専天文観測機器コンテストで3年連続全国1位（学校案内パンフレット「成果」欄）。",
+      "source_url": "https://www.metro.ed.jp/tachikawa-h/assets/27立川高_学校案内_HP用.pdf",
+      "as_of": "2026-07-09",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "高校・高専天文観測機器コンテスト",
+          "level": "全国",
+          "result": "1位",
+          "source_url": "https://www.metro.ed.jp/tachikawa-h/assets/27立川高_学校案内_HP用.pdf"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "高校・高専天文観測機器コンテスト",
+          "level": "全国",
+          "result": "1位",
+          "source_url": "https://www.metro.ed.jp/tachikawa-h/assets/27立川高_学校案内_HP用.pdf"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "高校・高専天文観測機器コンテスト",
+          "level": "全国",
+          "result": "1位",
+          "source_url": "https://www.metro.ed.jp/tachikawa-h/assets/27立川高_学校案内_HP用.pdf"
+        }
+      ]
+    },
+    {
+      "name": "文芸部",
+      "kind": "文化",
+      "source_url": "https://www.metro.ed.jp/tachikawa-h/activities/club_23/index.html",
+      "as_of": "2026-09-28"
+    },
+    {
+      "name": "茶道部",
+      "kind": "文化",
+      "source_url": "https://www.metro.ed.jp/tachikawa-h/activities/club_24/index.html",
+      "as_of": "2026-09-28"
+    },
+    {
+      "name": "化学部",
+      "kind": "文化",
+      "tier": 3,
+      "tier_basis": "2024年度 日本化学会関東支部 化学クラブ研究発表会（口頭発表）で奨励賞。申し込めば発表できる会で、予選を勝ち上がった成績ではないため段階3（見直しで2→3）",
+      "source_url": "https://www.metro.ed.jp/tachikawa-h/activities/club_25/index.html",
+      "as_of": "2026-09-28",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "日本化学会関東支部 第42回化学クラブ研究発表会（口頭発表）",
+          "level": "関東",
+          "result": "奨励賞（全体4位相当）",
+          "happened_on": "2025-03-25",
+          "source_url": "https://www.metro.ed.jp/tachikawa-h/activities/2025/03/clubentry_83.html"
+        }
+      ]
+    },
+    {
+      "name": "演劇部",
+      "kind": "文化",
+      "source_url": "https://www.metro.ed.jp/tachikawa-h/activities/club_26/index.html",
+      "as_of": "2026-09-28"
+    },
+    {
+      "name": "生物部",
+      "kind": "文化",
+      "tier": 2,
+      "tier_basis": "2025年度、全国高等学校総合文化祭（香川大会）に東京都代表として出場。直近3年での全国大会出場は1回。",
+      "source_url": "https://www.metro.ed.jp/tachikawa-h/activities/club_27/index.html",
+      "as_of": "2026-09-28",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "全国高等学校総合文化祭（香川大会）",
+          "level": "全国",
+          "result": "東京都代表として出場",
+          "happened_on": "2025-08-01",
+          "source_url": "https://www.metro.ed.jp/tachikawa-h/activities/club_27/index.html"
+        }
+      ]
+    },
+    {
+      "name": "漫画部",
+      "kind": "文化",
+      "source_url": "https://www.metro.ed.jp/tachikawa-h/activities/club_28/index.html",
+      "as_of": "2026-09-28"
+    },
+    {
+      "name": "軽音楽部",
+      "kind": "文化",
+      "tier": 1,
+      "tier_basis": "民間主催（YAMAHA）「スニーカーエイジ」全国大会決勝に直近3年で2回進出（2024年1月3位、2026年1月5位）。関東甲信越グランプリ大会でもグランプリ(2025)・準グランプリ(2023)を獲得。",
+      "source_url": "https://www.metro.ed.jp/tachikawa-h/activities/club_29/index.html",
+      "as_of": "2026-09-28",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "スニーカーエイジ全国大会（YAMAHA主催）",
+          "level": "全国",
+          "result": "第5位（YAMAHA賞）",
+          "happened_on": "2026-01-10",
+          "source_url": "https://www.metro.ed.jp/tachikawa-h/activities/club_29/index.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "スニーカーエイジ関東甲信越地区グランプリ大会（YAMAHA主催）",
+          "level": "関東",
+          "result": "グランプリ受賞",
+          "happened_on": "2025-09-27",
+          "source_url": "https://www.metro.ed.jp/tachikawa-h/activities/club_29/index.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "スニーカーエイジ全国大会（YAMAHA主催）",
+          "level": "全国",
+          "result": "第3位",
+          "happened_on": "2024-01-14",
+          "source_url": "https://www.metro.ed.jp/tachikawa-h/activities/club_29/index.html"
+        }
+      ]
+    },
+    {
+      "name": "クイズ研究部",
+      "kind": "文化",
+      "source_url": "https://www.metro.ed.jp/tachikawa-h/activities/club_30/index.html",
+      "as_of": "2026-09-28"
+    },
+    {
+      "name": "合唱部",
+      "kind": "文化",
+      "source_url": "https://www.metro.ed.jp/tachikawa-h/activities/club_31/index.html",
+      "as_of": "2026-09-28"
+    },
+    {
+      "name": "パソコン同好部",
+      "kind": "文化",
+      "source_url": "https://www.metro.ed.jp/tachikawa-h/activities/club_32/index.html",
+      "as_of": "2026-09-28"
+    },
+    {
+      "name": "物理部",
+      "kind": "文化",
+      "source_url": "https://www.metro.ed.jp/tachikawa-h/activities/club_33/index.html",
+      "as_of": "2026-09-28"
+    },
+    {
+      "name": "数学研究同好会",
+      "kind": "同好会",
+      "source_url": "https://www.metro.ed.jp/tachikawa-h/activities/club_34/index.html",
+      "as_of": "2026-09-28"
+    },
+    {
+      "name": "歴史研究部",
+      "kind": "文化",
+      "source_url": "https://www.metro.ed.jp/tachikawa-h/activities/club_35/index.html",
+      "as_of": "2026-09-28"
+    },
+    {
+      "name": "ESS",
+      "kind": "文化",
+      "tier": 3,
+      "tier_basis": "2024・2025年度、東京都高等学校英語スピーチコンテストに参加。上位進出の記載は無い。",
+      "source_url": "https://www.metro.ed.jp/tachikawa-h/activities/ess/index.html",
+      "as_of": "2026-09-28",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "第61回東京都高等学校英語スピーチコンテスト",
+          "level": "都県",
+          "result": "参加（上位進出の記載なし）",
+          "happened_on": "2025-11-04",
+          "source_url": "https://www.metro.ed.jp/tachikawa-h/activities/ess/index.html"
+        }
+      ]
+    },
+    {
+      "name": "TBS(放送部)",
+      "kind": "文化",
+      "source_url": "https://www.metro.ed.jp/tachikawa-h/activities/tbs/index.html",
+      "as_of": "2026-09-28"
+    },
+    {
+      "name": "ボーカロイド同好会",
+      "kind": "同好会",
+      "as_of": "2026-07-09",
+      "source_url": "https://www.metro.ed.jp/tachikawa-h/assets/27立川高_学校案内_HP用.pdf"
+    }
+  ],
+  "designated_universities": [],
+  "events": [
+    {
+      "kind": "学科改編",
+      "period_label": "2022年度から",
+      "summary": "普通科に加えて「創造理数科」を新設し、普通科・創造理数科を併置する都立高校になった。",
+      "source_url": "https://www.metro.ed.jp/tachikawa-h/assets/27立川高_学校案内_HP用.pdf"
+    },
+    {
+      "kind": "指定",
+      "period_label": "2023年度から(5年間)",
+      "summary": "スーパーサイエンスハイスクール(SSH)の指定を第II期として再指定された。",
+      "source_url": "https://www.metro.ed.jp/tachikawa-h/assets/27立川高_学校案内_HP用.pdf"
+    },
+    {
+      "kind": "その他",
+      "period_label": "2028年度(令和10年度)から予定",
+      "summary": "定時制課程が閉課程となる予定で、それに伴い全日制課程の授業時程（時間割）を変更する予定。",
+      "source_url": "https://www.metro.ed.jp/tachikawa-h/assets/27立川高_学校案内_HP用.pdf"
+    }
+  ],
+  "unresolved": [
+    "部活動加入率：公開なし（学校経営報告・学校経営計画に数値目標としての記載なし）",
+    "進路決定率：公開なし（学校経営報告・学校経営計画に数値目標としての記載なし）",
+    "指定校推薦の大学一覧：公開なし（学校案内パンフレットに指定校推薦の一覧ページなし。進路ページにも記載なし）",
+    "生徒数の男女内訳：公開なし（学校案内パンフレットに学年別・男女別人数の記載なし）",
+    "ボーカロイド同好会の活動実績・活動日：学校案内パンフレットの部活動紹介ページに部員数(7名)の記載があるのみで、専用の部活動ページが見当たらない",
+    "GE-NET EE指定校・海外学校間交流推進校の指定時期や指定内容：学校案内パンフレット表紙に名称の記載があるのみで、詳細な説明ページが見当たらない"
+  ],
+  "conflicts": [
+    "国公立大学現役合格者数：学校経営報告(令和7年度)は127名、大学別合格実績表(2024-2026、R8.5.25更新)の国公立大計は現役128名（既卒合格33を含む合格計161）。1名の食い違いがある。",
+    "早慶上理の現役合格者数：手引きの定義（早稲田・慶應・上智・東京理科）で大学別の表から合算すると138名になるが、学校独自の集計「難関私大計」はICU(3名)を含むため141名になっている。本プロファイルの早慶上理はICUを除いた138を採用した。",
+    "歴史研究部/柔道同好会の名称：学校サイトの部活動ページ本体（各部トップページの表題）は「歴史研究部」「柔道同好会」だが、同じ学校サイトの部活動一覧ページ（school_life/activities.html）下部の一覧では「歴史研究同好会」「柔道部」と逆の呼び方で書かれている。学校案内パンフレット(2027年度)は各部の表題側（歴史研究部・柔道同好会）と一致する表記。"
+  ]
+}

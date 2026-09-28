@@ -1,0 +1,576 @@
+{
+  "prefecture": "東京都",
+  "school_name": "多摩科学技術",
+  "official_url": "https://www.metro.ed.jp/tamakagakugijutsu-h/",
+  "researched_at": "2026-09-28",
+  "stats": [
+    {
+      "metric": "university_count",
+      "item": "国公立",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 41,
+      "source_url": "https://www.metro.ed.jp/tamakagakugijutsu-h/assets/経営報告（07）.pdf",
+      "source_label": "多摩科学技術高校 令和7年度 学校経営報告",
+      "as_of": "2026-03-31",
+      "note": "既卒6名を含めると47名（学校経営報告に記載）。学校案内パンフレット・進路実績PDF（2026/8/5時点）の大学別合格実績表では現役46名（国立34＋公立12）・既卒7名・計53名となっており一致しない（合格延べ数と実人数の違いとみられる。conflictsに記載）。"
+    },
+    {
+      "metric": "university_count",
+      "item": "早慶上理",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 19,
+      "source_url": "https://www.metro.ed.jp/tamakagakugijutsu-h/assets/経営報告（07）.pdf",
+      "source_label": "多摩科学技術高校 令和7年度 学校経営報告",
+      "as_of": "2026-03-31",
+      "note": "大学別合格実績表（現役）の合算（早稲田1＋東京理科18、慶應・上智は現役合格なし）とも一致。"
+    },
+    {
+      "metric": "university_count",
+      "item": "GMARCH",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 43,
+      "source_url": "https://www.metro.ed.jp/tamakagakugijutsu-h/assets/R08進路実績（14期生）1.pdf",
+      "source_label": "多摩科学技術高校 2026年～2025年 入試 合格状況（14期生・R8進路実績PDF）",
+      "as_of": "2026-08-05",
+      "note": "学校の公表数値なし。大学別合格実績表から合算（青山学院4＋学習院1＋中央10＋法政9＋明治13＋立教6）。既卒を含む計（延べ）は50。"
+    },
+    {
+      "metric": "university_count",
+      "item": "合計",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 465,
+      "source_url": "https://www.metro.ed.jp/tamakagakugijutsu-h/assets/R08進路実績（14期生）1.pdf",
+      "source_label": "多摩科学技術高校 2026年～2025年 入試 合格状況（14期生・R8進路実績PDF）",
+      "as_of": "2026-08-05",
+      "note": "国公立53（現役46・既卒7）＋私大407＋大学校2＋専門学校3の合算（延べ）。"
+    },
+    {
+      "metric": "university_count",
+      "item": "工学院大",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 57,
+      "source_url": "https://www.metro.ed.jp/tamakagakugijutsu-h/assets/R08進路実績（14期生）1.pdf",
+      "source_label": "多摩科学技術高校 2026年～2025年 入試 合格状況（14期生・R8進路実績PDF）",
+      "as_of": "2026-08-05",
+      "note": "GMARCH・早慶上理・国公立以外で合格者数が多い大学の上位（既卒を含む計は60）。"
+    },
+    {
+      "metric": "university_count",
+      "item": "東京工科大",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 28,
+      "source_url": "https://www.metro.ed.jp/tamakagakugijutsu-h/assets/R08進路実績（14期生）1.pdf",
+      "source_label": "多摩科学技術高校 2026年～2025年 入試 合格状況（14期生・R8進路実績PDF）",
+      "as_of": "2026-08-05",
+      "note": "既卒なし・計28。"
+    },
+    {
+      "metric": "university_count",
+      "item": "東京電機大",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 27,
+      "source_url": "https://www.metro.ed.jp/tamakagakugijutsu-h/assets/R08進路実績（14期生）1.pdf",
+      "source_label": "多摩科学技術高校 2026年～2025年 入試 合格状況（14期生・R8進路実績PDF）",
+      "as_of": "2026-08-05",
+      "note": "既卒4を含めると計31。"
+    },
+    {
+      "metric": "university_count",
+      "item": "東京農業大",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 15,
+      "source_url": "https://www.metro.ed.jp/tamakagakugijutsu-h/assets/R08進路実績（14期生）1.pdf",
+      "source_label": "多摩科学技術高校 2026年～2025年 入試 合格状況（14期生・R8進路実績PDF）",
+      "as_of": "2026-08-05",
+      "note": "既卒なし・計15。"
+    },
+    {
+      "metric": "university_count",
+      "item": "北里大",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 14,
+      "source_url": "https://www.metro.ed.jp/tamakagakugijutsu-h/assets/R08進路実績（14期生）1.pdf",
+      "source_label": "多摩科学技術高校 2026年～2025年 入試 合格状況（14期生・R8進路実績PDF）",
+      "as_of": "2026-08-05",
+      "note": "既卒2を含めると計16。"
+    },
+    {
+      "metric": "satisfaction",
+      "item": "生徒:学習指導",
+      "fiscal_year": 2025,
+      "value_num": 84.2,
+      "source_url": "https://www.metro.ed.jp/tamakagakugijutsu-h/assets/経営報告（07）.pdf",
+      "source_label": "多摩科学技術高校 令和7年度 学校経営報告",
+      "as_of": "2026-03-31",
+      "note": "学習指導の満足度に対する肯定的な回答の割合。目標【達成】。"
+    },
+    {
+      "metric": "satisfaction",
+      "item": "生徒:進路指導",
+      "fiscal_year": 2025,
+      "value_num": 82.1,
+      "source_url": "https://www.metro.ed.jp/tamakagakugijutsu-h/assets/経営報告（07）.pdf",
+      "source_label": "多摩科学技術高校 令和7年度 学校経営報告",
+      "as_of": "2026-03-31",
+      "note": "進路指導の満足度に対する肯定的な回答の割合。目標【達成】。"
+    },
+    {
+      "metric": "satisfaction",
+      "item": "生徒:学校の居場所感",
+      "fiscal_year": 2025,
+      "value_num": 78,
+      "source_url": "https://www.metro.ed.jp/tamakagakugijutsu-h/assets/経営報告（07）.pdf",
+      "source_label": "多摩科学技術高校 令和7年度 学校経営報告",
+      "as_of": "2026-03-31",
+      "note": "「学校が安心できる居場所であると実感する生徒の割合」。目標75%以上【達成】。"
+    },
+    {
+      "metric": "satisfaction",
+      "item": "生徒:相談しやすさ",
+      "fiscal_year": 2025,
+      "value_num": 67,
+      "source_url": "https://www.metro.ed.jp/tamakagakugijutsu-h/assets/経営報告（07）.pdf",
+      "source_label": "多摩科学技術高校 令和7年度 学校経営報告",
+      "as_of": "2026-03-31",
+      "note": "「相談しやすい環境であると実感している生徒の割合」。目標75%以上【未達成】。"
+    },
+    {
+      "metric": "satisfaction",
+      "item": "生徒:交通安全意識",
+      "fiscal_year": 2025,
+      "value_num": 74,
+      "source_url": "https://www.metro.ed.jp/tamakagakugijutsu-h/assets/経営報告（07）.pdf",
+      "source_label": "多摩科学技術高校 令和7年度 学校経営報告",
+      "as_of": "2026-03-31",
+      "note": "「交通安全に関して意識するようになったと実感する生徒の割合」。目標90%【未達成】。"
+    },
+    {
+      "metric": "satisfaction",
+      "item": "生徒:学校行事での多様な体験",
+      "fiscal_year": 2025,
+      "value_num": 87.3,
+      "source_url": "https://www.metro.ed.jp/tamakagakugijutsu-h/assets/経営報告（07）.pdf",
+      "source_label": "多摩科学技術高校 令和7年度 学校経営報告",
+      "as_of": "2026-03-31",
+      "note": "「学校行事を通して、多様な体験ができている」と回答した生徒の割合。目標は明記なしで【未達成】表記。"
+    },
+    {
+      "metric": "exam_ratio",
+      "item": "推薦",
+      "fiscal_year": 2026,
+      "value_num": 1.14,
+      "source_url": "https://www.metro.ed.jp/tamakagakugijutsu-h/assets/経営報告（07）.pdf",
+      "source_label": "多摩科学技術高校 令和7年度 学校経営報告",
+      "as_of": "2026-03-31",
+      "note": "資料の表記どおり「推薦倍率」（応募倍率か受検倍率かの明記なし）。同資料に一次（学力検査）倍率1.42の記載もあり。"
+    },
+    {
+      "metric": "uniform",
+      "fiscal_year": 2026,
+      "value_text": "冬服はブレザー・スラックス・ネクタイ（男子）／ブレザー・スカートまたはスラックス・リボンかネクタイ（女子）。スカートに桜色、スラックスに空色のポイント。夏服はネクタイ・リボン任意。",
+      "source_url": "https://www.metro.ed.jp/tamakagakugijutsu-h/school_life/symbols.html",
+      "as_of": "2026-09-28",
+      "note": ""
+    },
+    {
+      "metric": "rules_summary",
+      "fiscal_year": 2026,
+      "value_text": "染髪・パーマ・化粧・ネックレスやピアス等のアクセサリーは禁止。アルバイトは原則禁止（特別な事情があれば保護者届出で許可）。スマートフォン等の校内使用に関する個別規定の記載なし。",
+      "source_url": "https://www.metro.ed.jp/tamakagakugijutsu-h/assets/filelink/filelink-pdffile-34549.pdf",
+      "source_label": "多摩科学技術高校 生徒心得（令和8年度）",
+      "as_of": "2026-04-06",
+      "note": ""
+    },
+    {
+      "metric": "designation",
+      "item": "SSH",
+      "fiscal_year": 2026,
+      "value_text": "文部科学省指定 スーパーサイエンスハイスクール第Ⅲ期（基礎枠：令和4～8年度／重点枠：令和5～8年度）",
+      "source_url": "https://www.metro.ed.jp/tamakagakugijutsu-h/assets/経営計画（08）.pdf",
+      "source_label": "多摩科学技術高校 令和8年度 学校経営計画",
+      "as_of": "2026-04-15",
+      "note": ""
+    },
+    {
+      "metric": "designation",
+      "item": "進学指導推進校",
+      "fiscal_year": 2026,
+      "value_text": "東京都教育委員会指定（令和5～9年度）",
+      "source_url": "https://www.metro.ed.jp/tamakagakugijutsu-h/assets/経営計画（08）.pdf",
+      "source_label": "多摩科学技術高校 令和8年度 学校経営計画",
+      "as_of": "2026-04-15",
+      "note": ""
+    },
+    {
+      "metric": "designation",
+      "item": "Tokyo GE-NET EE",
+      "fiscal_year": 2026,
+      "value_text": "東京都教育委員会指定 英語教育研究推進校（旧称）",
+      "source_url": "https://www.metro.ed.jp/tamakagakugijutsu-h/assets/多摩科学技術高等学校学校案内.pdf",
+      "source_label": "多摩科学技術高校 学校案内パンフレット（2027年度版）",
+      "as_of": "2026-04-22",
+      "note": ""
+    },
+    {
+      "metric": "designation",
+      "item": "高大接続事業",
+      "fiscal_year": 2026,
+      "value_text": "東京都教育委員会指定。東京農工大学等との高大連携教育プログラムを実施",
+      "source_url": "https://www.metro.ed.jp/tamakagakugijutsu-h/our_school/management.html",
+      "source_label": "多摩科学技術高校 令和8年度 学校経営計画",
+      "as_of": "2026-04-15",
+      "note": ""
+    }
+  ],
+  "clubs": [
+    {
+      "name": "科学研究部数学班",
+      "kind": "文化",
+      "source_url": "https://www.metro.ed.jp/tamakagakugijutsu-h/activities/club_1/index.html",
+      "as_of": "2026-09-28",
+      "results": []
+    },
+    {
+      "name": "科学研究部生物班",
+      "kind": "文化",
+      "source_url": "https://www.metro.ed.jp/tamakagakugijutsu-h/activities/club_2/index.html",
+      "as_of": "2026-09-28",
+      "results": []
+    },
+    {
+      "name": "科学研究部生活科学班",
+      "kind": "文化",
+      "source_url": "https://www.metro.ed.jp/tamakagakugijutsu-h/activities/club_3/index.html",
+      "as_of": "2026-09-28",
+      "results": []
+    },
+    {
+      "name": "科学研究部化学物理班",
+      "kind": "文化",
+      "tier": 2,
+      "tier_basis": "2026年度 全国高等学校総合文化祭（あきた総文2026）自然科学部門に東京都代表として出場（学校公式サイト）。直近3年で全国出場は1回のため段階1でなく段階2。",
+      "source_url": "https://www.metro.ed.jp/tamakagakugijutsu-h/activities/club/index.html",
+      "as_of": "2026-08-28",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "全国高等学校総合文化祭（あきた総文2026）自然科学部門",
+          "level": "全国",
+          "result": "東京都代表として出場",
+          "happened_on": "2026-08-28",
+          "source_url": "https://www.metro.ed.jp/tamakagakugijutsu-h/activities/club/index.html"
+        }
+      ]
+    },
+    {
+      "name": "写真部",
+      "kind": "文化",
+      "source_url": "https://www.metro.ed.jp/tamakagakugijutsu-h/activities/club_4/index.html",
+      "as_of": "2026-09-28",
+      "results": []
+    },
+    {
+      "name": "美術・イラスト部",
+      "kind": "文化",
+      "days_note": "週2日",
+      "days_per_week": 2,
+      "tier": 4,
+      "tier_basis": "活動日は週2日（学校公式サイト）。展示（文化祭部誌等）のみで、外部コンクールでの受賞等の記載なし。",
+      "source_url": "https://www.metro.ed.jp/tamakagakugijutsu-h/activities/club_5/index.html",
+      "as_of": "2026-08-21",
+      "results": []
+    },
+    {
+      "name": "パソコン部",
+      "kind": "文化",
+      "source_url": "https://www.metro.ed.jp/tamakagakugijutsu-h/activities/club_6/index.html",
+      "as_of": "2026-09-28",
+      "results": []
+    },
+    {
+      "name": "天文部",
+      "kind": "文化",
+      "source_url": "https://www.metro.ed.jp/tamakagakugijutsu-h/activities/club_7/index.html",
+      "as_of": "2026-09-28",
+      "results": []
+    },
+    {
+      "name": "吹奏楽部",
+      "kind": "文化",
+      "days_note": "週4日",
+      "days_per_week": 4,
+      "tier": 3,
+      "tier_basis": "学校公式サイトに「夏季は東京都吹奏楽コンクール、冬季はアンサンブルコンテストに出場」と記載（都代表選出・上位受賞の記載なし）。",
+      "source_url": "https://www.metro.ed.jp/tamakagakugijutsu-h/activities/club_8/index.html",
+      "as_of": "2026-09-28",
+      "results": []
+    },
+    {
+      "name": "軽音楽部",
+      "kind": "文化",
+      "source_url": "https://www.metro.ed.jp/tamakagakugijutsu-h/activities/club_9/index.html",
+      "as_of": "2026-09-28",
+      "results": []
+    },
+    {
+      "name": "ロボット研究部",
+      "kind": "文化",
+      "tier": 2,
+      "tier_basis": "2026年度 ロボカップジュニア・ジャパン全国大会（愛知）に出場し全国4位入賞（学校公式サイト）。直近3年で全国出場は1回のため段階1でなく段階2。",
+      "source_url": "https://www.metro.ed.jp/tamakagakugijutsu-h/activities/club_10/index.html",
+      "as_of": "2026-09-28",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "ロボカップジュニア・ジャパン全国大会",
+          "level": "全国",
+          "result": "全国4位入賞",
+          "happened_on": "2026-05-05",
+          "source_url": "https://www.metro.ed.jp/tamakagakugijutsu-h/activities/club_10/index.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "高校生ものづくりコンテスト東京都大会（電子回路組立部門）",
+          "level": "都県",
+          "result": "第5位",
+          "happened_on": "2025-07-29",
+          "source_url": "https://www.metro.ed.jp/tamakagakugijutsu-h/activities/club_10/index.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第6回ロボコンチャレンジ大会",
+          "level": "地区",
+          "result": "準優勝",
+          "happened_on": "2025-12-20",
+          "source_url": "https://www.metro.ed.jp/tamakagakugijutsu-h/activities/club_10/index.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "第5回ロボコンチャレンジ大会（ミドル部門）",
+          "level": "地区",
+          "result": "優勝",
+          "happened_on": "2024-12-26",
+          "source_url": "https://www.metro.ed.jp/tamakagakugijutsu-h/activities/club_10/index.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "第9回たまロボットコンテスト",
+          "level": "地区",
+          "result": "優勝",
+          "happened_on": "2024-02-23",
+          "source_url": "https://www.metro.ed.jp/tamakagakugijutsu-h/activities/club_10/index.html"
+        }
+      ]
+    },
+    {
+      "name": "無線工作部",
+      "kind": "文化",
+      "source_url": "https://www.metro.ed.jp/tamakagakugijutsu-h/activities/club_11/index.html",
+      "as_of": "2026-09-28",
+      "results": []
+    },
+    {
+      "name": "ボランティア部",
+      "kind": "文化",
+      "days_note": "週1回",
+      "days_per_week": 1,
+      "tier": 4,
+      "tier_basis": "活動は毎週1回（学校公式サイト）。ペットボトルキャップ回収等の社会貢献活動が中心で、大会・コンクールの性質の実績なし。",
+      "source_url": "https://www.metro.ed.jp/tamakagakugijutsu-h/activities/club_12/index.html",
+      "as_of": "2026-09-28",
+      "results": []
+    },
+    {
+      "name": "将棋部",
+      "kind": "文化",
+      "days_note": "毎週木曜日",
+      "days_per_week": 1,
+      "tier": 4,
+      "tier_basis": "活動は毎週木曜日（学校公式サイト）。外部大会での上位成績の記載なし。",
+      "source_url": "https://www.metro.ed.jp/tamakagakugijutsu-h/activities/club_22/index.html",
+      "as_of": "2026-09-28",
+      "results": []
+    },
+    {
+      "name": "鉄道・都市研究同好会",
+      "kind": "同好会",
+      "source_url": "https://www.metro.ed.jp/tamakagakugijutsu-h/assets/多摩科学技術高等学校学校案内.pdf",
+      "as_of": "2026-04-22",
+      "results": []
+    },
+    {
+      "name": "演劇部",
+      "kind": "文化",
+      "days_note": "火・木・金",
+      "days_per_week": 3,
+      "tier": 3,
+      "tier_basis": "2026年4月に部活動へ昇格したばかりで、2026年9月に多摩南地区新人デビューフェスティバルへ初出場（結果の記載なし、学校公式サイト）。",
+      "source_url": "https://www.metro.ed.jp/tamakagakugijutsu-h/activities/club_23/index.html",
+      "as_of": "2026-09-02",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "多摩南地区新人デビューフェスティバル",
+          "level": "地区",
+          "result": "初出場（結果の記載なし）",
+          "happened_on": "2026-09-02",
+          "source_url": "https://www.metro.ed.jp/tamakagakugijutsu-h/activities/club_23/index.html"
+        }
+      ]
+    },
+    {
+      "name": "バレーボール部",
+      "kind": "運動",
+      "tier": 3,
+      "tier_basis": "2023年度 夏季都立高等学校選手権大会・冬季都立高等学校選手権大会ともに都立校ベスト32（学校公式サイト）。都立校限定大会のためベスト8には届かない。",
+      "source_url": "https://www.metro.ed.jp/tamakagakugijutsu-h/activities/club_13/index.html",
+      "as_of": "2026-09-28",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "夏季都立高等学校男子バレーボール選手権大会",
+          "level": "その他",
+          "result": "都立校ベスト32（初戦敗退）",
+          "happened_on": "2023-08-12",
+          "source_url": "https://www.metro.ed.jp/tamakagakugijutsu-h/activities/2023/08/clubentry_9.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "冬季都立高等学校男子バレーボール選手権大会",
+          "level": "その他",
+          "result": "都立校ベスト32（トーナメント初戦敗退）",
+          "happened_on": "2024-02-11",
+          "source_url": "https://www.metro.ed.jp/tamakagakugijutsu-h/activities/2024/02/clubentry_16.html"
+        }
+      ]
+    },
+    {
+      "name": "バスケットボール部",
+      "kind": "運動",
+      "days_note": "月・水・木（隔週）・土・日",
+      "days_per_week": 4.5,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "総体予選（インターハイ予選）3回戦進出（学校公式サイト、年度表記なし）。都県大会でのベスト8等の記載なし。",
+      "source_url": "https://www.metro.ed.jp/tamakagakugijutsu-h/activities/club_14/index.html",
+      "as_of": "2026-09-28",
+      "results": []
+    },
+    {
+      "name": "サッカー部",
+      "kind": "運動",
+      "days_note": "月・火・木・金・土・(日)",
+      "days_per_week": 5.5,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2026年度 高円宮杯U-18東京 T1〜T5のいずれにも所属なし（支部リーグ）。T1〜T5参加チームは https://www.tleague-u18.com/team.php?dy=2026&dt=1 ほかdt=2〜5で確認（2026-09-28）。活動日は週5日超のため段階4にはならない。",
+      "source_url": "https://www.metro.ed.jp/tamakagakugijutsu-h/activities/club_15/index.html",
+      "as_of": "2026-09-28",
+      "results": []
+    },
+    {
+      "name": "硬式テニス部",
+      "kind": "運動",
+      "source_url": "https://www.metro.ed.jp/tamakagakugijutsu-h/activities/club_16/index.html",
+      "as_of": "2026-09-28",
+      "results": []
+    },
+    {
+      "name": "卓球部",
+      "kind": "運動",
+      "source_url": "https://www.metro.ed.jp/tamakagakugijutsu-h/activities/club_17/index.html",
+      "as_of": "2026-09-28",
+      "results": []
+    },
+    {
+      "name": "剣道部",
+      "kind": "運動",
+      "tier": 3,
+      "tier_basis": "2024年度 春季剣道大会兼関東大会団体東京都予選で1回戦勝利・2回戦敗退（学校公式サイト）。都県大会でのベスト8等の記載なし。",
+      "source_url": "https://www.metro.ed.jp/tamakagakugijutsu-h/activities/club_18/index.html",
+      "as_of": "2026-09-28",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "春季剣道大会兼関東大会団体東京都予選",
+          "level": "都県",
+          "result": "1回戦勝利・2回戦敗退",
+          "happened_on": "2024-04-20",
+          "source_url": "https://www.metro.ed.jp/tamakagakugijutsu-h/activities/2024/04/6_1.html"
+        }
+      ]
+    },
+    {
+      "name": "バドミントン部",
+      "kind": "運動",
+      "tier": 3,
+      "tier_basis": "2025年度 工業大会2部（競技経験1年未満限定）で男子シングルス準優勝・女子シングルス第3位（学校公式サイト）。学科でしぼった大会かつ未経験者限定のため1段階低く読む。",
+      "source_url": "https://www.metro.ed.jp/tamakagakugijutsu-h/activities/club_19/index.html",
+      "as_of": "2026-09-28",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "工業大会2部（男子シングルス）",
+          "level": "その他",
+          "result": "準優勝",
+          "happened_on": "2025-12-14",
+          "source_url": "https://www.metro.ed.jp/tamakagakugijutsu-h/activities/2025/12/2.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "工業大会2部（女子シングルス）",
+          "level": "その他",
+          "result": "第3位",
+          "happened_on": "2025-12-14",
+          "source_url": "https://www.metro.ed.jp/tamakagakugijutsu-h/activities/2025/12/2.html"
+        }
+      ]
+    },
+    {
+      "name": "陸上競技部",
+      "kind": "運動",
+      "source_url": "https://www.metro.ed.jp/tamakagakugijutsu-h/activities/club_20/index.html",
+      "as_of": "2026-09-28",
+      "results": []
+    },
+    {
+      "name": "水泳部",
+      "kind": "運動",
+      "source_url": "https://www.metro.ed.jp/tamakagakugijutsu-h/activities/club_21/index.html",
+      "as_of": "2026-09-28",
+      "results": []
+    }
+  ],
+  "designated_universities": [],
+  "events": [
+    {
+      "kind": "指定",
+      "period_label": "2022年4月から",
+      "happened_on": "2022-04-01",
+      "summary": "文部科学省よりスーパーサイエンスハイスクール（SSH）第Ⅲ期に指定された（現在も継続中）",
+      "source_url": "https://www.metro.ed.jp/tamakagakugijutsu-h/our_school/history.html"
+    }
+  ],
+  "unresolved": [
+    "指定校推薦の大学一覧：公開なし（学校案内パンフレット全12ページ・進路指導ページを確認したが指定校推薦の記載なし）",
+    "admission_route_share（一般・指定校推薦・公募推薦・総合型の進学割合）：公開資料に記載なし",
+    "career_decided_rate：進路指導ページに「ほぼ100%が4年制理系大学へ進学」との記載はあるが、数値（%）としての公表なし",
+    "club_join_rate：学校経営報告・学校経営計画のいずれにも記載なし",
+    "students（男女別在籍者数）：公式資料での公表を確認できず",
+    "日東駒専・成成明武：大学別合格実績表に駒澤大・専修大・成城大・明治学院大・武蔵大の行がなく合算不可（合格者がいないのか「その他の私立」に含まれるのか資料からは判別できない）",
+    "硬式テニス部・卓球部・陸上競技部・水泳部・パソコン部・天文部・写真部・軽音楽部・無線工作部・科学研究部（数学班／生物班／生活科学班）：部活動ページに活動日・大会成績の記載がなく、段階を判定できず"
+  ],
+  "conflicts": [
+    "国公立大学合格者数（14期生）：学校経営報告（R7）は現役41名・既卒6名を含め47名と記載。学校案内パンフレット・進路実績PDF（2026/8/5時点）の大学別合格実績表では現役46名（国立34＋公立12）・既卒7名・計53名となっており数値が一致しない（合格延べ数と実人数の違いによるとみられる）。",
+    "部活動名：部活動紹介ページの本文には「将棋部は令和5年度、同好会から部に昇格しました」とあるが、同ページ末尾の「令和8年度部活動計画一覧」では「将棋同好会」と表記されている。"
+  ]
+}
