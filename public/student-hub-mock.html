@@ -1,0 +1,2216 @@
+<!DOCTYPE html>
+<!--
+  生徒ハブ（/students/[studentId]）のモック。実装コードではない。
+  生徒詳細モーダルをページに作り替えるための検討用で、データはすべて架空のデモ。
+  目的: 教室長・講師に見せて、並び順と載せる情報の意見を集める。
+
+  設計の経緯と「NESTに存在しないデータ」の一覧は、メモリの 生徒_生徒ハブページ構想 にある。
+  Artifact として公開している版: https://claude.ai/artifact/P2u4sFAUYH3yazNxXwtNht
+  Artifact に出し直すときは <title> から </body> の手前までを取り出し、
+  </head> と <body> の行を除いてから公開する（公開側が head/body を被せるため）。
+-->
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>生徒ハブ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<style>
+/* ============================================================
+   デザイントークン（NEST globals.css に準拠）
+   ライトを :root に完全定義し、ダークはトークンのみ再定義する。
+   コンポーネントは必ず var() 経由で色を取る（直値禁止）。
+   ============================================================ */
+:root {
+  --primary: oklch(55% 0.19 27);
+  --primary-dark: oklch(45% 0.18 27);
+  --primary-subtle: oklch(96% 0.03 27);
+  --text-on-primary: oklch(98% 0.005 27);
+
+  --bg: oklch(96.5% 0.004 27);
+  --surface: #fff;
+  --surface-hover: oklch(95% 0.005 27);
+
+  --text-heading: oklch(22% 0.01 27);
+  --text-body: oklch(38% 0.008 27);
+  --text-muted: oklch(55% 0.008 27);
+  --text-faint: oklch(68% 0.006 27);
+
+  --border-default: oklch(87% 0.006 27);
+  --border-subtle: oklch(92% 0.005 27);
+  --border-strong: oklch(78% 0.01 27);
+
+  --success: oklch(52% 0.15 145);
+  --success-subtle: oklch(93% 0.06 145);
+  --warning: oklch(68% 0.16 80);
+  --warning-subtle: oklch(94% 0.08 80);
+  --danger: oklch(53% 0.2 27);
+  --danger-subtle: oklch(93% 0.05 27);
+  --info: oklch(52% 0.16 250);
+  --info-subtle: oklch(93% 0.05 250);
+
+  --accent-ink: oklch(30% 0.07 257);
+  --accent-ink-subtle: oklch(95% 0.02 257);
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+
+  --font-sans: 'Noto Sans JP', system-ui, -apple-system, 'Hiragino Kaku Gothic ProN', Meiryo, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Consolas, monospace;
+}
+
+/* ダークは反転ではなく独立パレット */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --primary: oklch(65% 0.17 27);
+    --primary-dark: oklch(58% 0.17 27);
+    --primary-subtle: oklch(26% 0.05 27);
+    --text-on-primary: oklch(16% 0.01 27);
+
+    --bg: oklch(18% 0.006 27);
+    --surface: oklch(23% 0.006 27);
+    --surface-hover: oklch(26% 0.007 27);
+
+    --text-heading: oklch(94% 0.006 27);
+    --text-body: oklch(82% 0.006 27);
+    --text-muted: oklch(65% 0.007 27);
+    --text-faint: oklch(50% 0.007 27);
+
+    --border-default: oklch(32% 0.006 27);
+    --border-subtle: oklch(28% 0.005 27);
+    --border-strong: oklch(40% 0.008 27);
+
+    --success: oklch(70% 0.14 145);
+    --success-subtle: oklch(26% 0.05 145);
+    --warning: oklch(78% 0.14 80);
+    --warning-subtle: oklch(27% 0.06 80);
+    --danger: oklch(68% 0.17 27);
+    --danger-subtle: oklch(26% 0.06 27);
+    --info: oklch(70% 0.13 250);
+    --info-subtle: oklch(25% 0.05 250);
+
+    --accent-ink: oklch(80% 0.06 257);
+    --accent-ink-subtle: oklch(26% 0.03 257);
+  }
+}
+:root[data-theme="dark"] {
+  --primary: oklch(65% 0.17 27);
+  --primary-dark: oklch(58% 0.17 27);
+  --primary-subtle: oklch(26% 0.05 27);
+  --text-on-primary: oklch(16% 0.01 27);
+
+  --bg: oklch(18% 0.006 27);
+  --surface: oklch(23% 0.006 27);
+  --surface-hover: oklch(26% 0.007 27);
+
+  --text-heading: oklch(94% 0.006 27);
+  --text-body: oklch(82% 0.006 27);
+  --text-muted: oklch(65% 0.007 27);
+  --text-faint: oklch(50% 0.007 27);
+
+  --border-default: oklch(32% 0.006 27);
+  --border-subtle: oklch(28% 0.005 27);
+  --border-strong: oklch(40% 0.008 27);
+
+  --success: oklch(70% 0.14 145);
+  --success-subtle: oklch(26% 0.05 145);
+  --warning: oklch(78% 0.14 80);
+  --warning-subtle: oklch(27% 0.06 80);
+  --danger: oklch(68% 0.17 27);
+  --danger-subtle: oklch(26% 0.06 27);
+  --info: oklch(70% 0.13 250);
+  --info-subtle: oklch(25% 0.05 250);
+
+  --accent-ink: oklch(80% 0.06 257);
+  --accent-ink-subtle: oklch(26% 0.03 257);
+}
+
+/* ============================================================
+   ベース
+   ============================================================ */
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text-body);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  line-height: 1.7;
+  overflow-x: hidden;
+}
+h1, h2, h3, h4 { font-family: var(--font-sans); font-weight: 700; color: var(--text-heading); margin: 0; }
+a { color: inherit; text-decoration: none; }
+.mono, .num, td.num, th.num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+table { font-variant-numeric: tabular-nums; }
+
+.wrap { max-width: 1280px; margin: 0 auto; padding: 0 20px 64px; }
+
+/* ============================================================
+   A. 固定ヘッダー
+   ============================================================ */
+.hdr {
+  position: sticky; top: 0; z-index: 40;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border-default);
+}
+.hdr-inner { max-width: 1280px; margin: 0 auto; padding: 0 20px; }
+
+.crumbs {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 0 0;
+  flex-wrap: nowrap;
+}
+.crumbs .path { color: var(--text-muted); font-size: 12px; white-space: nowrap; }
+.crumbs .path b { color: var(--text-body); font-weight: 500; }
+.crumbs .sep { color: var(--text-faint); }
+/* 登録日はここ（パンくずの隣）に小さく置く。専用の行を作ると縦が1行ぶん太る。 */
+.crumbs .reg { color: var(--text-faint); font-size: 11px; white-space: nowrap; }
+.crumbs .reg .mono { font-size: 11px; }
+/* 1行に収まらなくなる幅では登録日を落とす（折り返して2行になるほうが損） */
+@media (max-width: 1180px) { .crumbs .reg { display: none; } }
+/* 1100px 未満ではボタンが2行に折り返し、ヘッダーが約70px 膨らむ（1024px で実測）。
+   使う頻度の低い 編集・印刷・設計メモ からラベルを外してアイコンだけにし、1行に保つ。
+   ラベルは aria-label と title に残してあるので、読み上げとマウスオーバーでは分かる。 */
+@media (max-width: 1099px) {
+  .actions .btn-compact .lbl { display: none; }
+  .actions .btn-compact { padding-left: 7px; padding-right: 7px; }
+}
+.crumbs .actions { margin-left: auto; display: flex; gap: 6px; flex-wrap: wrap; }
+
+.btn {
+  display: inline-flex; align-items: center; gap: 5px;
+  border: 1px solid var(--border-default);
+  background: var(--surface);
+  color: var(--text-body);
+  border-radius: var(--radius-sm);
+  padding: 5px 10px;
+  font: inherit; font-size: 12px; line-height: 1.4;
+  cursor: pointer;
+}
+.btn:hover { background: var(--surface-hover); }
+.btn svg { width: 14px; height: 14px; flex: none; }
+.btn-primary { background: var(--primary); border-color: var(--primary); color: var(--text-on-primary); }
+.btn-primary:hover { background: var(--primary-dark); border-color: var(--primary-dark); }
+.btn-sm { padding: 3px 8px; font-size: 11px; }
+/* 本文側のボタンは本文と同じ大きさに。ヘッダーは高さを詰めたので 12px のまま据え置く。 */
+.main .btn { font-size: 13px; }
+.main .btn-sm { font-size: 12px; }
+
+/* アイデンティティ行 */
+.ident {
+  display: flex; align-items: baseline; flex-wrap: wrap;
+  gap: 4px 12px;
+  padding: 3px 0 5px;
+}
+.ident .name { font-size: 21px; font-weight: 700; letter-spacing: 0.01em; }
+.ident .kana { color: var(--text-muted); font-size: 12px; }
+.ident .field { color: var(--text-muted); font-size: 12px; white-space: nowrap; }
+.ident .field b { color: var(--text-body); font-weight: 500; }
+.ident .sid { color: var(--text-faint); font-family: var(--font-mono); font-size: 11px; }
+.divider-dot { color: var(--border-strong); }
+
+.pill {
+  display: inline-flex; align-items: center; gap: 4px;
+  border-radius: 999px; padding: 1px 8px;
+  font-size: 12px; line-height: 1.6; font-weight: 500;
+  border: 1px solid transparent;
+}
+/* ヘッダーのピルは据え置き（ヘッダーの高さを増やさない） */
+.hdr .pill { font-size: 11px; }
+.pill-enrolled { background: var(--success-subtle); color: var(--success); border-color: var(--success); }
+.pill-demo { background: var(--info-subtle); color: var(--info); border-color: var(--info); }
+.pill-neutral { background: var(--surface-hover); color: var(--text-muted); border-color: var(--border-default); }
+.pill-accent { background: var(--accent-ink-subtle); color: var(--accent-ink); border-color: var(--accent-ink); }
+.pill-danger { background: var(--danger-subtle); color: var(--danger); border-color: var(--danger); }
+.pill-warning { background: var(--warning-subtle); color: var(--warning); border-color: var(--warning); }
+.pill-success { background: var(--success-subtle); color: var(--success); border-color: var(--success); }
+.pill-info { background: var(--info-subtle); color: var(--info); border-color: var(--info); }
+/* 色は「対応が要るもの」にだけ使う。
+   - pill-done: もう手を離れた状態（計上済・配布済・順調など）。緑にすると赤・黄が埋もれるので無彩色で控えめに。
+   - pill-tag : 種別・科目などの分類。状態ではないので色を持たせず枠線だけ。 */
+.pill-done { background: transparent; color: var(--text-muted); border-color: transparent; font-weight: 400; padding-left: 0; padding-right: 0; }
+.pill-tag { background: transparent; color: var(--text-body); border-color: var(--border-default); font-weight: 400; }
+/* 2月から: 座席表または保護者アカウントが無いと成り立たない表示（V2）の目印。
+   2027年2月の保護者向けリリースまでは動かない（またはデモ教室だけ）ことを、チームで見て分かるようにする。
+   対応が要るものではないので色は持たせず、pill-tag と同じ枠線だけの見た目にする。
+   設計メモではなく全員が知るべき情報なので .dev にしない（トグルに関係なく常に出す）。
+   中身は薄くしない（この内容で密度を確認するため）。 */
+.v2-tag {
+  display: inline-flex; align-items: center; gap: 3px;
+  border: 1px solid var(--border-default); border-radius: 999px;
+  padding: 0 6px; background: transparent;
+  color: var(--text-muted); font-family: var(--font-sans);
+  font-size: 11px; line-height: 1.6; font-weight: 400; letter-spacing: 0;
+  white-space: nowrap; vertical-align: middle; flex: none;
+}
+.v2-tag svg { display: block; width: 11px; height: 11px; flex: none; }
+/* 凡例: 「今の状態」の見出し行の右端。ヘッダーの高さを変えないため、ヘッダー直下ではなくここに置く。 */
+.v2-legend { margin-left: auto; display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: var(--text-muted); white-space: nowrap; }
+/* 宿題・遅刻・出欠の表: 出席〜振替の3列だけが座席表由来（遅刻・宿題未実施は進行表由来）。
+   3列それぞれに付けると並んでうるさいので、列グループの見出しに1つだけ付ける。 */
+table.tbl tr.v2-grp th { padding-top: 3px; padding-bottom: 3px; }
+table.tbl tr.v2-grp th.v2-span { text-align: center; }
+/* ヘッダー2行目は 1100px 幅で右端まで残り約7pxしかなく、タグを足すと折り返してヘッダーの高さ(113px)が変わる。
+   1200px 未満ではアイコンだけにして（説明は title で出る）、列の間隔を 1px 詰めて1行に収める。 */
+@media (max-width: 1199px) {
+  .ident { column-gap: 11px; }
+  .ident .v2-tag-hdr { border-color: transparent; padding: 0; }
+  .ident .v2-tag-hdr .v2-txt { display: none; }
+}
+
+/* 目次 */
+.toc { overflow-x: auto; scrollbar-width: thin; }
+.toc-list {
+  display: flex; gap: 2px; list-style: none; margin: 0; padding: 0;
+  white-space: nowrap;
+}
+.toc-list a {
+  display: block; padding: 5px 9px 6px;
+  font-size: 12px; color: var(--text-muted);
+  border-bottom: 2px solid transparent;
+}
+.toc-list a:hover { color: var(--text-body); background: var(--surface-hover); }
+.toc-list a.active { color: var(--accent-ink); border-bottom-color: var(--accent-ink); font-weight: 500; }
+
+/* ============================================================
+   B. レイアウト
+   ============================================================ */
+/* 上部だけ 2カラム（.hero）、それ以降は全幅1カラム。
+   sticky はページヘッダーだけに限定する（右カラムの追従は不評だった）。 */
+.layout { padding-top: 20px; }
+.main { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+
+/* 注意系3カードは左カラム(.hero-main)の中で横並び3分割。
+   左カラムは 1100px 以上で常に 728px 以上あるので3列が保てる。
+   「前回の申し送り」は面談セクションの先頭へ移したのでここには無い。 */
+.rail-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  align-items: start;
+  scroll-margin-top: 112px;
+}
+@media (max-width: 900px) { .rail-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 600px) { .rail-grid { grid-template-columns: minmax(0, 1fr); } }
+
+/* 講習と教材はどちらも中身が少ないので左右2カラムに収める。
+   セクションのid・見出し・目次リンクはそのままなので、目次から個別に飛べる。 */
+.pair-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  align-items: start;
+}
+@media (max-width: 1099px) { .pair-grid { grid-template-columns: minmax(0, 1fr); } }
+/* 幅が半分になるので表の最低幅を外し、横スクロールを出さない */
+.pair-grid table.tbl { min-width: 0; }
+.pair-grid table.tbl th, .pair-grid table.tbl td { padding: 6px 8px; }
+.pair-grid table.tbl td.name { white-space: normal; }
+
+/* ------------------------------------------------------------
+   上部2カラム（左=今の状態の指標帯 / 右=基本情報）
+   sticky は使わない。右カラムも本文と一緒にスクロールで流れる。
+   1100px 未満で右カラムが左の下へ落ちる（DOM順どおり左が先）。
+   3.以降のセクションは全幅1カラム（先頭は通塾日程）。
+   ------------------------------------------------------------ */
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 12px;
+  align-items: start;
+}
+.hero-main { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.hero-side { min-width: 0; }
+@media (max-width: 1099px) { .hero { grid-template-columns: minmax(0, 1fr); } }
+
+/* 左カラムは全幅より狭い（1fr - 320px 相当）ので、指標帯は 3列×2段に畳む。
+   幅は改訂前の hero-main と同じなので、タイルが間延びすることはない。 */
+.hero-main .stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.hero-main .stats > div { padding: 10px 12px; }
+.hero-main .stats > div:nth-child(3n+1) { border-left: 0; }
+.hero-main .stats > div:nth-child(n+4) { border-top: 1px solid var(--border-subtle); }
+@media (max-width: 560px) {
+  .hero-main .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .hero-main .stats > div { border-left: 1px solid var(--border-subtle); border-top: 1px solid var(--border-subtle); }
+  .hero-main .stats > div:nth-child(odd) { border-left: 0; }
+  .hero-main .stats > div:nth-child(-n+2) { border-top: 0; }
+}
+
+/* ------------------------------------------------------------
+   基本情報カード（右カラム・コンパクト）
+   本文より1段小さい 12px、行間も詰めた縦1列のラベル/値リスト。
+   ------------------------------------------------------------ */
+.bi-bd { padding: 8px 12px 4px; }
+.bi {
+  display: grid; grid-template-columns: 74px minmax(0, 1fr);
+  gap: 0; font-size: 13px; line-height: 1.55; margin: 0;
+}
+.bi dt { color: var(--text-muted); padding: 2px 0; border-bottom: 1px solid var(--border-subtle); }
+.bi dd {
+  margin: 0; padding: 2px 0; color: var(--text-body);
+  border-bottom: 1px solid var(--border-subtle); overflow-wrap: anywhere;
+}
+.bi dt:last-of-type, .bi dd:last-of-type { border-bottom: 0; }
+.bi .pill { font-size: 11px; padding: 0 7px; }
+.bi .faint { font-size: 11px; }
+
+/* 在籍状況: 退塾登録の入口。カード内で一段強調する。 */
+.enroll {
+  margin: 10px 0 2px;
+  border-left: 2px solid var(--success);
+  background: var(--surface-hover);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  padding: 8px 10px;
+}
+.enroll .h { font-size: 13px; font-weight: 700; color: var(--text-heading); margin-bottom: 4px; }
+.enroll .row { display: flex; align-items: baseline; gap: 6px; padding: 0; font-size: 13px; }
+.enroll .row .k { color: var(--text-muted); font-size: 12px; min-width: 62px; flex: none; }
+.enroll .memo { margin: 6px 0 0; font-size: 12px; color: var(--text-muted); line-height: 1.6; }
+.enroll .btn { margin-top: 5px; }
+
+/* 折りたたみ（担当講師の希望 / NESTが持っていない情報）。既定は閉じる。 */
+.fold { border-top: 1px solid var(--border-subtle); margin-top: 10px; }
+.fold + .fold { margin-top: 0; }
+.fold > summary {
+  list-style: none; cursor: pointer;
+  display: flex; align-items: center; gap: 6px;
+  padding: 7px 0; font-size: 13px; font-weight: 500; color: var(--text-body);
+}
+.fold > summary::-webkit-details-marker { display: none; }
+.fold > summary svg { width: 13px; height: 13px; flex: none; color: var(--text-faint); transition: transform .12s ease; }
+.fold[open] > summary svg { transform: rotate(90deg); }
+.fold > summary:hover { color: var(--accent-ink); }
+.fold > summary:focus-visible {
+  outline: 2px solid var(--accent-ink); outline-offset: 2px;
+  border-radius: var(--radius-sm); color: var(--accent-ink);
+}
+.fold[open] > summary { color: var(--text-heading); }
+.fold .fold-bd { padding: 0 0 10px; }
+.fold .note-block.top { margin: 0 0 8px; font-size: 12px; }
+.fold .notfound { font-size: 11px; }
+
+/* ============================================================
+   セクションカード（カードは「セクション」だけ。中は罫線と余白で組む）
+   ============================================================ */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  scroll-margin-top: 112px;
+}
+.card-hd {
+  display: flex; align-items: baseline; gap: 10px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-subtle);
+  flex-wrap: wrap;
+}
+.card-hd h2 { font-size: 16px; }
+.card-hd .hint { font-size: 12px; color: var(--text-faint); }
+.card-hd .go { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--primary); }
+.card-hd .go:hover { text-decoration: underline; }
+.card-hd .go .p { font-family: var(--font-mono); font-size: 11px; color: var(--text-faint); }
+.card-bd { padding: 14px 16px; }
+.card-bd.tight { padding: 0; }
+
+.sub { margin: 0 0 8px; font-size: 14px; font-weight: 700; color: var(--text-heading); }
+.sub-row { display: flex; align-items: baseline; gap: 8px; margin: 0 0 8px; }
+.sub-row .note { font-size: 12px; color: var(--text-muted); }
+.hr { height: 1px; background: var(--border-subtle); margin: 14px 0; border: 0; }
+
+/* ============================================================
+   汎用パーツ
+   ============================================================ */
+.tblwrap { overflow-x: auto; }
+table.tbl { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 480px; }
+table.tbl th, table.tbl td {
+  text-align: left; padding: 7px 10px;
+  border-bottom: 1px solid var(--border-subtle);
+  white-space: nowrap;
+}
+table.tbl th { color: var(--text-muted); font-weight: 500; font-size: 12px; background: var(--surface-hover); }
+table.tbl td { color: var(--text-body); }
+/* 長い表で行を追いやすくする（ホバー中の行だけ薄く塗る） */
+table.tbl tbody tr:hover td { background: var(--surface-hover); }
+table.tbl tr:last-child td { border-bottom: 0; }
+table.tbl td.num, table.tbl th.num { text-align: right; font-family: var(--font-mono); }
+table.tbl td.wrap-cell { white-space: normal; min-width: 220px; }
+/* 得点のグループと偏差値のグループを罫線で分ける（模試表） */
+table.tbl th.grp, table.tbl td.grp { border-left: 1px solid var(--border-default); }
+/* 表のセルは table.tbl td の文字色指定のほうが詳細度が高く、.down / .up 単体では
+   負けて色が付かなかった。td に付いたときも効くよう、表の中の指定を並べて書く。 */
+.down, table.tbl td.down { color: var(--danger); }
+/* 上がった点は緑のまま残す。色を「対応が要るもの」に絞ったが、成績の上昇は
+   面談で保護者に伝えたい良い話なので、見落とされないよう例外にしている。 */
+.up, table.tbl td.up { color: var(--success); }
+.warn-text { color: var(--warning); }
+.muted { color: var(--text-muted); }
+.faint { color: var(--text-faint); }
+
+.dl { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 0; font-size: 13px; }
+.dl dt { color: var(--text-muted); padding: 5px 0; border-bottom: 1px solid var(--border-subtle); }
+.dl dd { margin: 0; padding: 5px 0; color: var(--text-body); border-bottom: 1px solid var(--border-subtle); }
+.dl dt:last-of-type, .dl dd:last-of-type { border-bottom: 0; }
+
+.list { list-style: none; margin: 0; padding: 0; }
+.list > li { padding: 9px 0; border-bottom: 1px solid var(--border-subtle); }
+.list > li:first-child { padding-top: 0; }
+.list > li:last-child { border-bottom: 0; padding-bottom: 0; }
+.li-hd { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.li-hd .d { font-family: var(--font-mono); font-size: 12px; color: var(--text-muted); }
+.li-hd .t { font-weight: 500; color: var(--text-heading); font-size: 13.5px; }
+.li-bd { font-size: 13px; color: var(--text-body); margin-top: 2px; }
+.li-bd.q { color: var(--text-muted); border-left: 2px solid var(--border-default); padding-left: 8px; }
+
+/* 変更の履歴：いつ何を、だけ。理由は面談・報告書側に書く。 */
+.hist > li { display: flex; align-items: baseline; gap: 10px; padding: 5px 0; font-size: 13px; }
+.hist > li .d { font-family: var(--font-mono); font-size: 12px; color: var(--text-muted); flex: none; }
+.hist > li .t { color: var(--text-body); min-width: 0; }
+
+.link { color: var(--primary); }
+.link:hover { text-decoration: underline; }
+
+.grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 24px; }
+@media (max-width: 720px) { .grid2 { grid-template-columns: minmax(0, 1fr); } }
+
+/* セクション見出しの脇に出す出典テーブル名。設計レビュー用なので控えめに。 */
+.src-tbl { font-family: var(--font-mono); font-size: 11px; color: var(--text-faint); }
+
+/* 設計メモ（開発者向けの表記）。出典テーブル名・パス・種別キー・データ構造の注記。
+   教室長には意味がないので既定で隠し、ヘッダーの「設計メモ」トグルで出す。
+   .dev を付けた要素に加え、既存の開発者向けクラスもここで一括して対象にする。 */
+body:not(.show-dev) .dev,
+body:not(.show-dev) .src-tbl,
+body:not(.show-dev) .card-hd .go .p,
+body:not(.show-dev) .alerts .akey { display: none !important; }
+.dev-toggle[aria-pressed="true"] {
+  background: var(--accent-ink-subtle); color: var(--accent-ink); border-color: var(--accent-ink);
+}
+
+/* NESTが列を持っていない情報を明示するブロック（点線・控えめ） */
+.notfound {
+  margin-top: 16px;
+  border: 1px dashed var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.7;
+}
+.notfound .h { color: var(--text-body); font-weight: 500; }
+.notfound .items { font-family: var(--font-mono); color: var(--text-faint); margin: 2px 0; }
+
+/* 注記（出典・数え方の但し書き） */
+.note-block { font-size: 12px; color: var(--text-muted); margin: 10px 0 0; line-height: 1.7; }
+.note-block.top { margin: 0 0 12px; }
+.note-block b { color: var(--text-body); font-weight: 500; }
+
+/* フィルタチップ（見た目のみ） */
+.chips { display: flex; gap: 6px; flex-wrap: wrap; margin: 0 0 12px; }
+.chip {
+  border: 1px solid var(--border-default); background: var(--surface);
+  color: var(--text-muted); border-radius: 999px; padding: 3px 11px;
+  font: inherit; font-size: 12px; line-height: 1.5; cursor: pointer;
+}
+.chip:hover { background: var(--surface-hover); }
+.chip.is-on { background: var(--accent-ink-subtle); color: var(--accent-ink); border-color: var(--accent-ink); font-weight: 500; }
+
+/* ヘッダーの注意件数バッジ */
+.attn-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  border: 1px solid var(--danger); background: var(--danger-subtle); color: var(--danger);
+  border-radius: 999px; padding: 3px 11px;
+  font-size: 11.5px; font-weight: 500; line-height: 1.4;
+}
+.attn-badge:hover { background: var(--surface); }
+.attn-badge b { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.attn-badge svg { width: 13px; height: 13px; flex: none; }
+
+/* ============================================================
+   1. 今の状態（帯を縦罫線で区切る）
+   ============================================================ */
+.stats { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); }
+.stats > div { padding: 12px 14px; border-left: 1px solid var(--border-subtle); min-width: 0; }
+.stats > div:first-child { border-left: 0; }
+.stats .k { font-size: 12px; color: var(--text-muted); }
+.stats .v { font-size: 22px; line-height: 1.35; font-weight: 700; color: var(--text-heading); font-family: var(--font-mono); font-variant-numeric: tabular-nums; margin-top: 1px; }
+.stats .v.small { font-size: 17px; font-family: var(--font-sans); }
+.stats .v .unit { font-size: 12px; font-weight: 400; font-family: var(--font-sans); }
+.stats .s { font-size: 12px; color: var(--text-faint); margin-top: 1px; }
+.stats .v.is-danger { color: var(--danger); }
+.stats .v.is-warning { color: var(--warning); }
+@media (max-width: 1000px) { .stats { grid-template-columns: repeat(3, minmax(0, 1fr)); } .stats > div:nth-child(3n+1) { border-left: 0; } .stats > div:nth-child(n+4) { border-top: 1px solid var(--border-subtle); } }
+@media (max-width: 560px) { .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } .stats > div { border-left: 1px solid var(--border-subtle); border-top: 1px solid var(--border-subtle); } .stats > div:nth-child(odd) { border-left: 0; } .stats > div:nth-child(-n+2) { border-top: 0; } }
+
+/* ============================================================
+   3. 通塾日程（全幅の最初のセクション）
+   ============================================================ */
+/* 上段=予定表（全幅）、下段=週の枠(左)と変更の履歴(右)。
+   全幅セクションになったので比率はそのまま、週グリッドの上限だけ 600px に広げて
+   左カラムの余白を詰める(全幅で表だけが痩せて見えるのを防ぐ)。 */
+.sched { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: 24px 40px; }
+@media (max-width: 900px) { .sched { grid-template-columns: minmax(0, 1fr); } }
+
+table.week { width: 100%; max-width: 600px; border-collapse: collapse; font-size: 12px; min-width: 380px; table-layout: fixed; }
+table.week th, table.week td { border: 1px solid var(--border-subtle); padding: 4px 5px; text-align: center; height: 40px; vertical-align: middle; }
+table.week th { color: var(--text-muted); font-weight: 500; background: var(--surface-hover); height: auto; }
+table.week th.time, table.week td.time { font-family: var(--font-mono); color: var(--text-muted); width: 56px; background: var(--surface-hover); }
+table.week td.on { background: var(--accent-ink-subtle); color: var(--accent-ink); font-weight: 500; }
+table.week td.on span { display: block; font-size: 11px; color: var(--text-muted); font-weight: 400; }
+
+/* ------------------------------------------------------------
+   予定表（生徒1人×1か月の月間カレンダー）
+   本番 src/components/students/StudentScheduleCalendar.tsx（PR #196）の写し。
+   規約は本番どおり: 日曜始まり7列 / 1行 = 開始時刻・コマ名・科目・講師・(1:1)(前/後)・状態 /
+   「他N件」で省略しない（マスの高さは可変）/ 他教室の予定も絞らず出す。
+   色だけはハブの方針に合わせて変えている（本番は種別ごとに行を塗り分けている）:
+   済は灰色で控えめ、欠席=赤、遅刻=黄、振替は枠線だけのタグ、これからの予定は通常の文字色。
+   ------------------------------------------------------------ */
+.sched-cal { margin-bottom: 18px; }
+.cal-bar { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 6px; margin: 0 0 8px; }
+.cal-bar .sub { margin: 0 8px 0 0; }
+.cal-nav {
+  display: inline-grid; place-items: center;
+  width: 26px; height: 26px; padding: 0;
+  border: 0; border-radius: var(--radius-sm);
+  background: transparent; color: var(--text-muted); cursor: pointer;
+}
+.cal-nav:hover { background: var(--surface-hover); color: var(--text-body); }
+.cal-nav:focus-visible { outline: 2px solid var(--accent-ink); outline-offset: 1px; }
+.cal-nav svg { width: 16px; height: 16px; }
+.cal-month { min-width: 84px; text-align: center; font-weight: 700; color: var(--text-heading); font-size: 14px; font-variant-numeric: tabular-nums; }
+.cal-bar .btn { margin-left: 4px; }
+.cal-sum { margin-left: auto; font-size: 12px; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+
+.cal {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+.cal-hd {
+  padding: 4px 0; text-align: center;
+  font-size: 12px; font-weight: 500; color: var(--text-muted);
+  background: var(--surface-hover);
+  border-bottom: 1px solid var(--border-subtle);
+}
+.cal-hd:not(:nth-child(7n)) { border-right: 1px solid var(--border-subtle); }
+/* 高さは内容なり。授業の無い日は日付だけの高さまで詰める（min-height は日付1行ぶん） */
+.cal-d {
+  min-width: 0; min-height: 34px;
+  padding: 3px 3px 4px;
+  display: flex; flex-direction: column; gap: 3px;
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--surface);
+}
+.cal-d:not(:nth-child(7n)) { border-right: 1px solid var(--border-subtle); }
+.cal-d:nth-last-child(-n+7) { border-bottom: 0; }
+/* 土日は色を持たせない（対応が要る情報ではない）。地の色だけ一段落とす。 */
+.cal-d.we { background: var(--bg); }
+.cal-d .dn { font-size: 12px; line-height: 1.4; color: var(--text-body); font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.cal-d .dn .wd, .cal-d .dn .m { display: none; }
+.cal-d .dn .wd { font-family: var(--font-sans); }
+/* 前月・翌月にはみ出す日。本番は空マスだが、日付だけ薄く出して週の位置を読みやすくしている。 */
+.cal-d.out .dn { color: var(--text-faint); opacity: .6; }
+/* 今日: 本番は amber の塗り。ハブでは色を増やさず枠線で控えめに示す。 */
+.cal-d.today { box-shadow: inset 0 0 0 2px var(--accent-ink); }
+.cal-d.today .dn { color: var(--accent-ink); font-weight: 700; }
+.cal-d .today-tag { font-family: var(--font-sans); font-size: 10px; font-weight: 500; color: var(--accent-ink); margin-left: 4px; }
+
+/* 授業1件 = 1行。項目が多いときは切らずに折り返す（1100px 幅で1マス約140px）。 */
+.cal-e {
+  display: flex; flex-wrap: wrap; align-items: baseline;
+  gap: 0 3px;
+  padding: 1px 3px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  font-size: 11.5px; line-height: 1.5;
+  color: var(--text-body);
+}
+.cal-e .t { font-family: var(--font-mono); font-variant-numeric: tabular-nums; color: var(--text-muted); }
+.cal-e .k { font-weight: 500; color: var(--text-heading); }
+.cal-e .tc { color: var(--text-muted); }
+.cal-e .st { margin-left: auto; font-size: 10.5px; font-weight: 500; padding: 0 3px; border-radius: 3px; white-space: nowrap; }
+/* 済: もう手を離れた授業。灰色で控えめにし、行ごと一段沈める。 */
+.cal-e.is-done { color: var(--text-muted); border-color: transparent; background: var(--surface-hover); }
+.cal-e.is-done .k { color: var(--text-muted); }
+.cal-e .st-done { color: var(--text-faint); }
+/* 欠席・振替元: 科目に取り消し線（本番どおり）。欠席は赤。 */
+.cal-e.is-absent { border-color: var(--danger); background: var(--danger-subtle); }
+.cal-e.is-absent .sj, .cal-e.is-moved .sj { text-decoration: line-through; color: var(--text-faint); }
+.cal-e .st-absent { color: var(--text-on-primary); background: var(--danger); }
+.cal-e .st-late { color: var(--warning); border: 1px solid var(--warning); background: var(--warning-subtle); }
+.cal-e.is-moved { opacity: .6; border-style: dashed; }
+.cal-e .st-moved { color: var(--text-muted); border: 1px solid var(--border-default); }
+/* 振替で入ったコマ: 状態ではなく種別なので、枠線だけのタグ */
+.cal-e .tag { font-size: 10.5px; padding: 0 3px; border: 1px solid var(--border-strong); border-radius: 3px; color: var(--text-body); white-space: nowrap; }
+.cal-e .r11 { font-size: 10px; font-weight: 700; color: var(--text-muted); font-family: var(--font-mono); }
+.cal-e .half { font-size: 10px; padding: 0 3px; border-radius: 3px; background: var(--surface-hover); color: var(--text-muted); }
+
+.cal-legend { display: flex; gap: 4px 14px; flex-wrap: wrap; margin-top: 8px; font-size: 12px; color: var(--text-muted); }
+.cal-legend > span { display: inline-flex; align-items: center; gap: 4px; }
+.cal-legend .cal-e { display: inline-flex; padding: 0 3px; }
+.cal-legend .st { margin-left: 0; }
+
+/* 狭い画面では7列をやめ、授業のある日だけの縦リストにする（横スクロールを出さない） */
+@media (max-width: 759px) {
+  .cal { display: block; }
+  .cal-hd, .cal-d.out, .cal-d.empty:not(.today) { display: none; }
+  .cal-d {
+    flex-direction: row; align-items: flex-start; gap: 10px;
+    border-right: 0 !important; border-bottom: 1px solid var(--border-subtle) !important;
+    padding: 6px 8px;
+  }
+  .cal-d:last-child { border-bottom: 0 !important; }
+  .cal-d .dn { flex: none; width: 64px; }
+  .cal-d .dn .wd, .cal-d .dn .m { display: inline; }
+  .cal-d .es { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+  .cal-sum { margin-left: 0; width: 100%; }
+}
+.cal-d .es { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+
+/* ============================================================
+   4. 成績
+   ============================================================ */
+.scores { display: grid; grid-template-columns: minmax(0, 1fr) 400px; gap: 24px; align-items: start; }
+@media (max-width: 980px) { .scores { grid-template-columns: minmax(0, 1fr); } }
+svg { display: block; max-width: 100%; height: auto; }
+
+/* ============================================================
+   7. 宿題・遅刻・出欠
+   ============================================================ */
+.disc { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 24px; align-items: start; }
+@media (max-width: 980px) { .disc { grid-template-columns: minmax(0, 1fr); } }
+
+/* ============================================================
+   注意カード群（ヘッダー直下の横並び4枚）
+   ============================================================ */
+.rail-grid .card-hd { padding: 10px 12px; }
+.rail-grid .card-hd h2 { font-size: 15px; }
+.rail-grid .card-bd { padding: 10px 12px; }
+
+.alerts { list-style: none; margin: 0; padding: 0; }
+.alerts li {
+  border-left: 3px solid var(--border-default);
+  padding: 5px 0 5px 9px;
+  margin-bottom: 6px;
+  font-size: 13px;
+  line-height: 1.6;
+  background: transparent;
+}
+.alerts li:last-child { margin-bottom: 0; }
+.alerts li.sev-danger { border-left-color: var(--danger); }
+.alerts li.sev-warning { border-left-color: var(--warning); }
+.alerts li.sev-info { border-left-color: var(--info); }
+.alerts .txt { color: var(--text-body); }
+.alerts .to { font-size: 12px; color: var(--primary); white-space: nowrap; margin-left: 6px; }
+.alerts .to:hover { text-decoration: underline; }
+/* どの種別のアラートから来た行かを示すキー（alerts.ts の種別キーそのまま） */
+.alerts .akey { font-family: var(--font-mono); font-size: 11px; color: var(--text-faint); margin-top: 1px; }
+
+/* 面談セクション先頭の「前回の申し送り」ブロック（上部の一覧から移設） */
+.handover {
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  background: var(--surface-hover);
+  padding: 10px 12px;
+  margin: 0 0 12px;
+  max-width: 720px;
+}
+.handover .sub { margin-bottom: 6px; }
+
+.quote { font-size: 13px; color: var(--text-body); }
+.quote .src { display: block; font-size: 12px; color: var(--text-faint); font-family: var(--font-mono); margin-bottom: 4px; }
+.quote p { margin: 0 0 4px; }
+
+.todo { list-style: none; margin: 0; padding: 0; font-size: 13px; }
+.todo li { display: flex; align-items: flex-start; gap: 7px; padding: 5px 0; border-bottom: 1px solid var(--border-subtle); }
+.todo li:last-of-type { border-bottom: 0; }
+.todo .box { width: 13px; height: 13px; border: 1px solid var(--border-strong); border-radius: 3px; flex: none; margin-top: 3px; }
+.todo .tx { min-width: 0; }
+/* 期日ではなく登録日。student_interviews には期日の列が無く interview_date を流用している。 */
+.todo .d { display: block; font-family: var(--font-mono); font-size: 11px; color: var(--text-faint); margin-top: 1px; }
+.todo-add {
+  margin-top: 6px; width: 100%;
+  border: 1px dashed var(--border-default); background: transparent;
+  border-radius: var(--radius-sm); padding: 5px 8px;
+  color: var(--text-faint); font: inherit; font-size: 12px; text-align: left; cursor: pointer;
+}
+
+.msg { font-size: 13px; }
+.msg li { padding: 7px 0; border-bottom: 1px solid var(--border-subtle); list-style: none; }
+.msg li:first-child { padding-top: 0; }
+.msg li:last-child { border-bottom: 0; }
+.msg .m { display: flex; align-items: baseline; gap: 6px; }
+.msg .d { font-family: var(--font-mono); font-size: 12px; color: var(--text-muted); }
+
+/* ============================================================
+   面談セクションの「面談記録を追加」導線
+   カードヘッダーのボタンと、既定で閉じたインライン追加フォーム。
+   保存先は student_interviews（既存の InterviewModal と同じ項目）。
+   ============================================================ */
+.card-hd .hd-btn { margin-left: auto; align-self: center; }
+.card-hd .hd-btn + .go { margin-left: 8px; }
+
+/* セクション下部の操作列。Nottaの取り込みボタンと横に並べる。 */
+.iv-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+
+/* 追加フォーム本体。既定は閉じているのでロード時に高さを取らない。 */
+.iv-new { max-width: 640px; }
+.iv-new > summary {
+  list-style: none; cursor: pointer; width: fit-content;
+  display: inline-flex; align-items: center; gap: 5px;
+  border: 1px solid var(--border-default);
+  background: var(--surface); color: var(--text-body);
+  border-radius: var(--radius-sm);
+  padding: 5px 10px; font-size: 13px; line-height: 1.4;
+}
+.iv-new > summary::-webkit-details-marker { display: none; }
+.iv-new > summary:hover { background: var(--surface-hover); color: var(--accent-ink); }
+.iv-new > summary:focus-visible { outline: 2px solid var(--accent-ink); outline-offset: 2px; }
+.iv-new > summary svg { width: 14px; height: 14px; flex: none; transition: transform .12s ease; }
+.iv-new[open] > summary { background: var(--surface-hover); color: var(--text-heading); }
+.iv-new[open] > summary svg { transform: rotate(45deg); }
+
+.iv-form {
+  max-width: 640px; margin-top: 8px;
+  border: 1px solid var(--border-subtle); border-radius: var(--radius-md);
+  background: var(--bg); padding: 12px;
+}
+.iv-grid { display: flex; flex-wrap: wrap; gap: 10px 12px; }
+.iv-f { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.iv-f.w-date { flex: 1 1 150px; }
+.iv-f.w-type { flex: 1 1 180px; }
+.iv-f.w-full { flex: 1 1 100%; }
+.iv-f > label { font-size: 12px; font-weight: 500; color: var(--text-muted); }
+.iv-f > label .opt { font-weight: 400; color: var(--text-faint); }
+.iv-form input[type="date"],
+.iv-form input[type="text"],
+.iv-form select,
+.iv-form textarea {
+  width: 100%; max-width: 100%;
+  font: inherit; font-size: 13px; line-height: 1.6;
+  color: var(--text-body); background: var(--surface);
+  border: 1px solid var(--border-default); border-radius: var(--radius-sm);
+  padding: 5px 8px;
+}
+.iv-form input[type="date"] { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.iv-form textarea { resize: vertical; }
+.iv-form input:focus-visible,
+.iv-form select:focus-visible,
+.iv-form textarea:focus-visible,
+.iv-form button:focus-visible { outline: 2px solid var(--accent-ink); outline-offset: 1px; }
+.iv-f .fld-key { font-family: var(--font-mono); font-size: 11px; color: var(--text-faint); }
+.iv-form .iv-note { margin: 10px 0 0; font-size: 12px; color: var(--text-muted); line-height: 1.7; }
+.iv-form .iv-note code {
+  font-family: var(--font-mono); font-size: 11px; color: var(--text-body);
+  background: var(--surface-hover); border-radius: 3px; padding: 0 3px;
+}
+.iv-form-actions { display: flex; gap: 8px; margin-top: 12px; }
+
+
+/* ============================================================
+   ページの先頭へ戻る（浮遊ボタン）
+   スクロールが止まってから薄く現れる。ヘッダーの sticky とは別で、
+   fixed の独立した部品として本文の上・ヘッダー(z-index:40)の下に置く。
+   ============================================================ */
+.back-to-top {
+  position: fixed;
+  left: 50%;
+  bottom: 20px;
+  z-index: 30;
+  width: 40px; height: 40px; padding: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  border: 1px solid var(--border-default);
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--surface) 78%, transparent);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  color: var(--text-body);
+  cursor: pointer;
+  /* 既定は非表示。visibility も切ってタブ順に幽霊ボタンを残さない */
+  opacity: 0;
+  visibility: hidden;
+  transform: translateX(-50%) translateY(6px);
+  transition: opacity .22s ease, transform .22s ease, visibility 0s linear .22s;
+}
+.back-to-top.is-visible {
+  opacity: .55;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
+  transition: opacity .22s ease, transform .22s ease, visibility 0s;
+}
+.back-to-top.is-visible:hover,
+.back-to-top.is-visible:focus-visible { opacity: 1; }
+.back-to-top:focus-visible { outline: 2px solid var(--accent-ink); outline-offset: 2px; }
+.back-to-top svg { display: block; width: 18px; height: 18px; }
+
+/* reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  * { scroll-behavior: auto !important; transition: none !important; animation: none !important; }
+}
+</style>
+</head>
+<body>
+<!-- ============================================================
+     A. 固定ヘッダー
+     ============================================================ -->
+<header class="hdr">
+  <div class="hdr-inner">
+
+    <!-- 1行目: パンくず + 操作 -->
+    <div class="crumbs">
+      <div class="path"><a href="#" class="link">生徒管理</a> <span class="sep">›</span> <b>佐藤 結衣</b></div>
+      <span class="sep">|</span>
+      <span class="reg">登録 <span class="mono">2025-04-08</span></span>
+      <div class="actions">
+        <a href="#sec-attention" class="attn-badge">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.6 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.6a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+          注意 <b>5</b>
+        </a>
+        <!-- 並びは授業の前後によく使う順。進行表と報告書は授業のたび、面談は月単位、編集はまれ。 -->
+        <!-- 進行表は別ページ（/students/[id]/progress）で編集するので「開く」。ハブの進行表セクションは読むだけ。 -->
+        <a class="btn" href="#" title="進行表を開く（/students/[id]/progress）">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/></svg>
+          進行表
+        </a>
+        <button class="btn" type="button" title="報告書を書く">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v5h5"/><path d="M9 13h6"/><path d="M9 17h4"/></svg>
+          報告書
+        </button>
+        <!-- 面談記録はハブの面談セクションにある追加フォームを開く（別ページへは飛ばない）。 -->
+        <button class="btn" type="button" id="addInterviewBtn" title="面談記録を追加（下の面談欄のフォームを開く）">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2Z"/><path d="M12 7v6"/><path d="M9 10h6"/></svg>
+          面談記録
+        </button>
+        <button class="btn" type="button" title="面談を始める（面談の画面を開く）">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2Z"/></svg>
+          面談
+        </button>
+        <button class="btn btn-compact" type="button" aria-label="編集" title="編集">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+          <span class="lbl">編集</span>
+        </button>
+        <button class="btn btn-compact" type="button" aria-label="印刷" title="印刷">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v8H6Z"/></svg>
+          <span class="lbl">印刷</span>
+        </button>
+        <button class="btn" type="button">
+          その他
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+        </button>
+        <!-- 設計メモ: 出典テーブル名・パス・種別キーなど開発者向けの表記を出し入れする。既定OFF。 -->
+        <button class="btn btn-compact dev-toggle" type="button" id="devToggle" aria-pressed="false" aria-label="設計メモ" title="出典テーブル名や種別キーなど、設計確認用の表記を表示">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m18 16 4-4-4-4"/><path d="m6 8-4 4 4 4"/><path d="m14.5 4-5 16"/></svg>
+          <span class="lbl">設計メモ</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- 2行目: アイデンティティ -->
+    <div class="ident">
+      <span class="name">佐藤 結衣</span>
+      <span class="pill pill-demo">デモデータ</span>
+      <span class="kana">さとう ゆい</span>
+      <span class="sid">S-2024-0187</span>
+      <span class="divider-dot">|</span>
+      <span class="field"><b>中2</b></span>
+      <span class="field">清瀬第三中学校</span>
+      <span class="pill pill-enrolled">在籍</span>
+      <span class="field">教室 <b>清瀬校</b></span>
+      <span class="field">担当(座席表) <b>田中先生(数学)・鈴木先生(英語)</b> <span class="v2-tag v2-tag-hdr" title="2027年2月の保護者向けリリース（座席表の運用開始・保護者アカウント）から稼働"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 14v2.2l1.6 1"/><path d="M16 2v4"/><path d="M21 7.5V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h3.5"/><path d="M3 10h5"/><path d="M8 2v4"/><circle cx="16" cy="16" r="6"/></svg><span class="v2-txt">2月から</span></span></span>
+      <span class="field">通塾 <b>週2回 火・金 19:00-20:30</b></span>
+    </div>
+
+    <!-- 3行目: セクション目次 -->
+    <nav class="toc" aria-label="セクション目次">
+      <ul class="toc-list">
+        <li><a href="#sec-status" class="active">今の状態</a></li>
+        <li><a href="#sec-basic">基本情報</a></li>
+        <li><a href="#sec-attention">気にすること</a></li>
+        <li><a href="#sec-schedule">通塾日程</a></li>
+        <li><a href="#sec-forms">申込状況</a></li>
+        <li><a href="#sec-scores">成績</a></li>
+        <li><a href="#sec-progress">進行表</a></li>
+        <li><a href="#sec-lessons">授業の様子</a></li>
+        <li><a href="#sec-discipline">宿題・遅刻・出欠</a></li>
+        <li><a href="#sec-interview">面談</a></li>
+        <li><a href="#sec-koushu">講習</a></li>
+        <li><a href="#sec-textbooks">教材</a></li>
+        <li><a href="#sec-proposals">提案書</a></li>
+        <li><a href="#sec-parent">保護者</a></li>
+        <li><a href="#sec-billing">請求</a></li>
+        <li><a href="#sec-logs">履歴</a></li>
+      </ul>
+    </nav>
+
+  </div>
+</header>
+
+<div class="wrap">
+<div class="layout">
+
+  <!-- ==========================================================
+       主カラム
+       ========================================================== -->
+  <main class="main">
+
+    <!-- 上部だけ2カラム。左=今の状態＋気にすること / 右=基本情報。
+         sticky は使わない（本文と一緒に流れること）。1100px 未満で右が下に落ちる。
+         左は 今の状態 → 気にすること の縦積み。以降は全幅1カラムで 通塾日程 から続く。 -->
+    <div class="hero">
+      <div class="hero-main">
+
+    <!-- 1. 今の状態 -->
+    <section class="card" id="sec-status">
+      <div class="card-hd">
+        <h2>今の状態</h2>
+        <span class="hint">2026-09-05 時点</span>
+        <span class="v2-legend"><span class="v2-tag" title="2027年2月の保護者向けリリース（座席表の運用開始・保護者アカウント）から稼働"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 14v2.2l1.6 1"/><path d="M16 2v4"/><path d="M21 7.5V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h3.5"/><path d="M3 10h5"/><path d="M8 2v4"/><circle cx="16" cy="16" r="6"/></svg>2月から</span> = 2027年2月から稼働</span>
+      </div>
+      <div class="card-bd tight">
+        <div class="stats">
+          <div>
+            <div class="k">次回授業 <span class="v2-tag" title="2027年2月の保護者向けリリース（座席表の運用開始・保護者アカウント）から稼働"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 14v2.2l1.6 1"/><path d="M16 2v4"/><path d="M21 7.5V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h3.5"/><path d="M3 10h5"/><path d="M8 2v4"/><circle cx="16" cy="16" r="6"/></svg>2月から</span></div>
+            <div class="v">9/8 (火)</div>
+            <div class="s">19:00 数学・田中</div>
+          </div>
+          <div>
+            <div class="k">直近の定期テスト</div>
+            <div class="v is-danger">312</div>
+            <div class="s">5科合計 / 前回比 −23</div>
+          </div>
+          <div>
+            <div class="k">進行表</div>
+            <div class="v">4 <span class="faint unit">テキスト</span></div>
+            <div class="s">うち 1件が停滞</div>
+          </div>
+          <div>
+            <div class="k">今月の宿題未実施</div>
+            <div class="v is-warning">3回</div>
+            <div class="s">先月 2回</div>
+          </div>
+          <div>
+            <div class="k">前回面談</div>
+            <div class="v is-warning">92日前</div>
+            <div class="s">2026-06-05 三者面談</div>
+          </div>
+          <div>
+            <div class="k">講習</div>
+            <div class="v small">冬期 提案書</div>
+            <div class="s">下書きのまま</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. 気にすること（左カラム内・3カード横並び） -->
+    <div class="rail-grid" id="sec-attention">
+
+    <!-- 注意すること -->
+    <section class="card">
+      <div class="card-hd">
+        <h2>注意すること</h2>
+      </div>
+      <div class="card-bd">
+        <ul class="alerts">
+          <!-- 数学は 74→71→66→54 の3回連続下降なので danger。連続でなければ warning に落とす。 -->
+          <li class="sev-danger">
+            <div class="txt">数学が<span class="mono">74</span>→<span class="mono">71</span>→<span class="mono">66</span>→<span class="mono">54</span>点（3回連続下降）<a href="#sec-scores" class="to">→ 成績</a></div>
+            <div class="akey">score_drop</div>
+          </li>
+          <li class="sev-warning">
+            <div class="txt">宿題未実施 今月<span class="mono">3</span>回<a href="#sec-progress" class="to">→ 進行表</a></div>
+            <div class="akey">homework_not_done</div>
+          </li>
+          <li class="sev-warning">
+            <div class="txt">前回の面談から<span class="mono">92</span>日（閾値<span class="mono">30</span>日）<a href="#sec-interview" class="to">→ 面談</a></div>
+            <div class="akey">interview_overdue</div>
+          </li>
+          <li class="sev-info">
+            <div class="txt">英語の試験目標が未設定（試験日を過ぎている）<a href="#sec-progress" class="to">→ 進行表</a></div>
+            <div class="akey">exam_overdue</div>
+          </li>
+          <li class="sev-warning">
+            <div class="txt">曜日変更の申込が通塾日程に未反映<a href="#sec-schedule" class="to">→ 通塾日程</a></div>
+            <div class="akey">schedule_change_unapplied</div>
+          </li>
+        </ul>
+        <p class="note-block dev">アラートは11種類。教材の未配布と提案書の下書きは検出対象に無い。</p>
+      </div>
+    </section>
+
+    <!-- 未完了の約束 -->
+    <section class="card">
+      <div class="card-hd"><h2>未完了の約束</h2><span class="src-tbl">student_interviews</span></div>
+      <div class="card-bd">
+        <!-- interview_type='task' かつ is_completed=false の行。日付は登録日（interview_date）。 -->
+        <ul class="todo">
+          <li><span class="box"></span><span class="tx">英語の単語テスト 毎週<span class="d">2026-06-05</span></span></li>
+          <li><span class="box"></span><span class="tx">夏期の数学復習プリント<span class="d">2026-08-20</span></span></li>
+          <li><span class="box"></span><span class="tx">三者面談の日程を保護者に確認<span class="d">2026-09-01</span></span></li>
+        </ul>
+        <button class="todo-add" type="button">＋ 約束を追加</button>
+        <p class="note-block dev">面談記録に type=task として保存。期日の列は無い。</p>
+      </div>
+    </section>
+
+    <!-- 保護者との連絡 -->
+    <section class="card">
+      <div class="card-hd"><h2>保護者との連絡</h2><span class="v2-tag" title="2027年2月の保護者向けリリース（座席表の運用開始・保護者アカウント）から稼働"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 14v2.2l1.6 1"/><path d="M16 2v4"/><path d="M21 7.5V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h3.5"/><path d="M3 10h5"/><path d="M8 2v4"/><circle cx="16" cy="16" r="6"/></svg>2月から</span></div>
+      <div class="card-bd">
+        <ul class="msg" style="margin:0;padding:0">
+          <li>
+            <div class="m"><span class="d">2026-09-02</span><span class="pill pill-tag">母 → 塾</span></div>
+            <div>振替の相談 <span class="pill pill-warning">返信待ち</span></div>
+          </li>
+          <li>
+            <div class="m"><span class="d">2026-08-20</span><span class="pill pill-tag">塾 → 母</span></div>
+            <div>模試の案内</div>
+          </li>
+        </ul>
+        <button class="btn btn-primary btn-sm" type="button" style="margin-top:10px;width:100%;justify-content:center">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2Z"/></svg>
+          連絡を書く
+        </button>
+      </div>
+    </section>
+
+    </div>
+
+      </div>
+
+      <aside class="hero-side">
+
+    <!-- 2. 基本情報（students の実在列のみ・右カラム） -->
+    <section class="card" id="sec-basic">
+      <div class="card-hd">
+        <h2>基本情報</h2>
+        <span class="src-tbl">students</span>
+        <a href="#" class="go">編集 <span class="p">/edit</span>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+        </a>
+      </div>
+      <div class="card-bd bi-bd">
+        <dl class="bi">
+          <dt>生徒コード</dt><dd class="mono">S-2024-0187</dd>
+          <dt>かな</dt><dd>さとう ゆい</dd>
+          <dt>学年</dt><dd>中2</dd>
+          <dt>通学校</dt><dd>清瀬第三中学校</dd>
+          <dt>クラス</dt><dd>2年B組</dd>
+          <dt>部活</dt><dd>バスケットボール（週4）</dd>
+          <dt>受講科目</dt><dd><span class="pill pill-tag">数学</span> <span class="pill pill-tag">英語</span></dd>
+          <dt>兄弟</dt><dd><a href="#" class="link">佐藤 大輝</a>（小5・在籍）</dd>
+        </dl>
+
+        <!-- 在籍状況: 退塾登録の入口。ヘッダーの「在籍」ピルは一目確認用、こちらは操作用。 -->
+        <div class="enroll">
+          <div class="h">在籍状況</div>
+          <div class="row"><span class="k">現在</span><span class="pill pill-enrolled">在籍</span></div>
+          <div class="row"><span class="k">退塾予定日</span><span class="muted">未登録</span></div>
+          <button class="btn btn-sm" type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M17 11h6"/></svg>
+            退塾を登録
+          </button>
+          <p class="memo">予定日の翌日に自動で退塾。以降は座席表の生成から除外。</p>
+        </div>
+
+        <details class="fold">
+          <summary>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+            担当講師の希望
+          </summary>
+          <div class="fold-bd">
+            <p class="note-block top">ここは<b>希望</b>。実際の担当は座席表で決まる。<span class="dev">（正典は <span class="mono">schedule_entries.teacher_id</span>）</span></p>
+            <dl class="bi">
+              <dt>固定希望</dt><dd>田中先生</dd>
+              <dt>指名NG</dt><dd class="muted">なし</dd>
+              <dt>希望性別</dt><dd class="muted">指定なし</dd>
+            </dl>
+          </div>
+        </details>
+
+        <details class="fold dev">
+          <summary>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+            NESTが持っていない情報
+          </summary>
+          <div class="fold-bd">
+            <div class="notfound" style="margin-top:0">
+              <div class="items">生年月日 / 住所 / 電話番号 / メールアドレス / 保護者氏名 / 入会日</div>
+              <div>students に列が無く、NEST では扱わない。</div>
+            </div>
+          </div>
+        </details>
+      </div>
+    </section>
+
+      </aside>
+    </div>
+
+
+    <!-- 4. 通塾日程 -->
+    <section class="card" id="sec-schedule">
+      <div class="card-hd">
+        <h2>通塾日程</h2>
+        <span class="src-tbl">schedule_regular_patterns / schedule_entries</span>
+        <span class="hint">パターン 第3版 <span class="mono">2026-09-01〜</span></span>
+        <a href="#" class="go">詳細・編集 <span class="p">/students/[id]/schedule</span>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+        </a>
+      </div>
+      <div class="card-bd">
+
+        <!-- 上段(全幅): 予定表。本番の生徒詳細「予定表」タブ（PR #196）を写したもの。
+             保護者から電話で「今月いつ授業ですか」と聞かれたとき、その場で答えるための表示。
+             ★「他N件」で省略しない。隠れた予定があると「ありません」と誤案内する事故になる。 -->
+        <div class="sched-cal">
+          <div class="cal-bar">
+            <h3 class="sub">予定表</h3>
+            <span class="v2-tag" title="2027年2月の保護者向けリリース（座席表の運用開始・保護者アカウント）から稼働"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 14v2.2l1.6 1"/><path d="M16 2v4"/><path d="M21 7.5V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h3.5"/><path d="M3 10h5"/><path d="M8 2v4"/><circle cx="16" cy="16" r="6"/></svg>2月から</span>
+            <button class="cal-nav" type="button" aria-label="前月へ">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+            </button>
+            <span class="cal-month">2026年9月</span>
+            <button class="cal-nav" type="button" aria-label="翌月へ">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+            </button>
+            <button class="btn btn-sm" type="button">今月</button>
+            <span class="cal-sum">全<span class="mono">10</span>件（実施済 <span class="mono">3</span>・予定 <span class="mono">7</span>・欠席 <span class="mono">0</span>・振替元 <span class="mono">0</span>）</span>
+          </div>
+          <div class="cal" aria-label="2026年9月の予定表">
+            <div class="cal-hd">日</div>
+            <div class="cal-hd">月</div>
+            <div class="cal-hd">火</div>
+            <div class="cal-hd">水</div>
+            <div class="cal-hd">木</div>
+            <div class="cal-hd">金</div>
+            <div class="cal-hd">土</div>
+            <div class="cal-d we out empty"><div class="dn"><span class="m">8/</span>30<span class="wd"> (日)</span></div></div>
+            <div class="cal-d out empty"><div class="dn"><span class="m">8/</span>31<span class="wd"> (月)</span></div></div>
+            <div class="cal-d"><div class="dn"><span class="m">9/</span>1<span class="wd"> (火)</span></div><div class="es"><div class="cal-e is-done"><span class="t">19:00</span><span class="k">3限</span><span class="sj">数学</span><span class="tc">田中</span><span class="st st-done">済</span></div></div></div>
+            <div class="cal-d"><div class="dn"><span class="m">9/</span>2<span class="wd"> (水)</span></div><div class="es"><div class="cal-e is-done" title="振替で入ったコマ（8/25 欠席分）"><span class="t">19:00</span><span class="k">3限</span><span class="sj">数学</span><span class="tc">田中</span><span class="tag">振替</span><span class="st st-done">済</span></div></div></div>
+            <div class="cal-d empty"><div class="dn"><span class="m">9/</span>3<span class="wd"> (木)</span></div></div>
+            <div class="cal-d"><div class="dn"><span class="m">9/</span>4<span class="wd"> (金)</span></div><div class="es"><div class="cal-e is-done" title="遅刻 12分"><span class="t">19:00</span><span class="k">3限</span><span class="sj">英語</span><span class="tc">鈴木</span><span class="st st-late">遅刻</span></div></div></div>
+            <div class="cal-d we empty today" aria-current="date"><div class="dn"><span class="m">9/</span>5<span class="wd"> (土)</span><span class="today-tag">今日</span></div></div>
+            <div class="cal-d we empty"><div class="dn"><span class="m">9/</span>6<span class="wd"> (日)</span></div></div>
+            <div class="cal-d empty"><div class="dn"><span class="m">9/</span>7<span class="wd"> (月)</span></div></div>
+            <div class="cal-d"><div class="dn"><span class="m">9/</span>8<span class="wd"> (火)</span></div><div class="es"><div class="cal-e"><span class="t">19:00</span><span class="k">3限</span><span class="sj">数学</span><span class="tc">田中</span></div></div></div>
+            <div class="cal-d empty"><div class="dn"><span class="m">9/</span>9<span class="wd"> (水)</span></div></div>
+            <div class="cal-d empty"><div class="dn"><span class="m">9/</span>10<span class="wd"> (木)</span></div></div>
+            <div class="cal-d"><div class="dn"><span class="m">9/</span>11<span class="wd"> (金)</span></div><div class="es"><div class="cal-e"><span class="t">19:00</span><span class="k">3限</span><span class="sj">英語</span><span class="tc">鈴木</span></div></div></div>
+            <div class="cal-d we empty"><div class="dn"><span class="m">9/</span>12<span class="wd"> (土)</span></div></div>
+            <div class="cal-d we empty"><div class="dn"><span class="m">9/</span>13<span class="wd"> (日)</span></div></div>
+            <div class="cal-d empty"><div class="dn"><span class="m">9/</span>14<span class="wd"> (月)</span></div></div>
+            <div class="cal-d"><div class="dn"><span class="m">9/</span>15<span class="wd"> (火)</span></div><div class="es"><div class="cal-e"><span class="t">19:00</span><span class="k">3限</span><span class="sj">数学</span><span class="tc">田中</span></div></div></div>
+            <div class="cal-d empty"><div class="dn"><span class="m">9/</span>16<span class="wd"> (水)</span></div></div>
+            <div class="cal-d empty"><div class="dn"><span class="m">9/</span>17<span class="wd"> (木)</span></div></div>
+            <div class="cal-d"><div class="dn"><span class="m">9/</span>18<span class="wd"> (金)</span></div><div class="es"><div class="cal-e"><span class="t">19:00</span><span class="k">3限</span><span class="sj">英語</span><span class="tc">鈴木</span></div></div></div>
+            <div class="cal-d we empty"><div class="dn"><span class="m">9/</span>19<span class="wd"> (土)</span></div></div>
+            <div class="cal-d we empty"><div class="dn"><span class="m">9/</span>20<span class="wd"> (日)</span></div></div>
+            <div class="cal-d empty"><div class="dn"><span class="m">9/</span>21<span class="wd"> (月)</span></div></div>
+            <div class="cal-d"><div class="dn"><span class="m">9/</span>22<span class="wd"> (火)</span></div><div class="es"><div class="cal-e"><span class="t">19:00</span><span class="k">3限</span><span class="sj">数学</span><span class="tc">田中</span></div></div></div>
+            <div class="cal-d empty"><div class="dn"><span class="m">9/</span>23<span class="wd"> (水)</span></div></div>
+            <div class="cal-d empty"><div class="dn"><span class="m">9/</span>24<span class="wd"> (木)</span></div></div>
+            <div class="cal-d"><div class="dn"><span class="m">9/</span>25<span class="wd"> (金)</span></div><div class="es"><div class="cal-e"><span class="t">19:00</span><span class="k">3限</span><span class="sj">英語</span><span class="tc">鈴木</span></div></div></div>
+            <div class="cal-d we empty"><div class="dn"><span class="m">9/</span>26<span class="wd"> (土)</span></div></div>
+            <div class="cal-d we empty"><div class="dn"><span class="m">9/</span>27<span class="wd"> (日)</span></div></div>
+            <div class="cal-d empty"><div class="dn"><span class="m">9/</span>28<span class="wd"> (月)</span></div></div>
+            <div class="cal-d"><div class="dn"><span class="m">9/</span>29<span class="wd"> (火)</span></div><div class="es"><div class="cal-e"><span class="t">19:00</span><span class="k">3限</span><span class="sj">数学</span><span class="tc">田中</span></div></div></div>
+            <div class="cal-d empty"><div class="dn"><span class="m">9/</span>30<span class="wd"> (水)</span></div></div>
+            <div class="cal-d out empty"><div class="dn"><span class="m">10/</span>1<span class="wd"> (木)</span></div></div>
+            <div class="cal-d out empty"><div class="dn"><span class="m">10/</span>2<span class="wd"> (金)</span></div></div>
+            <div class="cal-d we out empty"><div class="dn"><span class="m">10/</span>3<span class="wd"> (土)</span></div></div>
+          </div>
+          <div class="cal-legend">
+            <span><span class="cal-e is-done"><span class="st st-done">済</span></span>実施済</span>
+            <span><span class="cal-e"><span class="st st-absent">欠</span></span>欠席</span>
+            <span><span class="cal-e"><span class="st st-late">遅刻</span></span>遅刻</span>
+            <span><span class="cal-e"><span class="tag">振替</span></span>振替で入ったコマ</span>
+            <span><span class="cal-e"><span class="st st-moved">振</span></span>振替で移動した元のコマ</span>
+            <span><span class="cal-e"><span class="r11">1:1</span></span>1対1</span>
+            <span><span class="cal-e"><span class="half">前</span><span class="half">後</span></span>45分授業の前半・後半</span>
+          </div>
+          <p class="note-block">他教室で受けた振替・講習も、この生徒の予定なので教室で絞らずに出す。</p>
+          <p class="note-block dev">本番: <span class="mono">src/components/students/StudentScheduleCalendar.tsx</span>（PR #196）。「3限」は <span class="mono">time_slots.slot_number</span>（開発用シードで 19:00 開始は3）。この生徒は1対2・90分なので <span class="mono">1:1</span> と <span class="mono">前</span>/<span class="mono">後</span> は付かない。本番の予定表は遅刻（<span class="mono">attendance_status='late'</span>）を表示せず、件数も「予定」に数えている。ハブでは遅刻として出し、実施済に数えた。</p>
+        </div>
+
+        <!-- 下段: 左=週の枠 / 右=変更の履歴。旧「直近4週の出欠」は予定表と重複するので削除した。 -->
+        <div class="sched">
+
+          <div>
+            <h3 class="sub">週の枠</h3>
+            <div class="tblwrap">
+              <table class="week">
+                <thead>
+                  <tr>
+                    <th class="time">時限</th>
+                    <th>月</th><th>火</th><th>水</th><th>木</th><th>金</th><th>土</th><th>日</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr><td class="time">17:00</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+                  <tr><td class="time">18:00</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+                  <tr>
+                    <td class="time">19:00</td>
+                    <td></td>
+                    <td class="on">数学<span>田中</span></td>
+                    <td></td><td></td>
+                    <td class="on">英語<span>鈴木</span></td>
+                    <td></td><td></td>
+                  </tr>
+                  <tr><td class="time">20:30</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+                </tbody>
+              </table>
+            </div>
+            <p class="muted" style="font-size:12px;margin:8px 0 0">1コマ90分。土曜は部活のため不可。</p>
+          </div>
+
+          <div>
+            <h3 class="sub">変更の履歴</h3>
+            <ul class="list hist">
+              <li><span class="d">2026-09-01</span><span class="t">通塾日程を第3版に更新</span></li>
+              <li><span class="d">2026-08-25</span><span class="t">8/25 を 9/2 に振替</span></li>
+              <li><span class="d">2026-04-01</span><span class="t">週1回から週2回に変更</span></li>
+            </ul>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- 5. 申込状況の履歴 -->
+    <section class="card" id="sec-forms">
+      <div class="card-hd">
+        <h2>申込状況の履歴</h2>
+        <span class="src-tbl">form_responses</span>
+        <a href="#" class="go">回答一覧で見る <span class="p">/forms/responses?student=[id]</span>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+        </a>
+      </div>
+      <div class="card-bd">
+        <div class="chips">
+          <button class="chip is-on" type="button">全て</button>
+          <button class="chip" type="button">増コマ</button>
+          <button class="chip" type="button">模試</button>
+          <button class="chip" type="button">Vもぎ</button>
+          <button class="chip" type="button">週回数</button>
+          <button class="chip" type="button">曜日</button>
+          <button class="chip" type="button">教材</button>
+          <button class="chip" type="button">相談</button>
+        </div>
+
+        <div class="tblwrap">
+          <!-- 上位に上げたことで全幅になるので、列幅を固定して間延びを防ぐ -->
+          <table class="tbl" style="min-width:760px;max-width:940px">
+            <colgroup>
+              <col style="width:104px"><col style="width:168px"><col style="width:132px"><col><col style="width:132px">
+            </colgroup>
+            <thead>
+              <tr><th>申込日</th><th>種別</th><th>期</th><th class="wrap-cell">内容</th><th>状態</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="num">2026-09-01</td>
+                <td><span class="pill pill-tag">Vもぎ</span> <span class="faint mono dev">mogi</span></td>
+                <td class="mono">2026年9月</td>
+                <td class="wrap-cell">「第4回 都立Vもぎ・清瀬会場」1件</td>
+                <td><span class="pill pill-warning">未計上</span></td>
+              </tr>
+              <tr>
+                <td class="num">2026-08-20</td>
+                <td><span class="pill pill-tag">増コマ</span> <span class="faint mono dev">zoukoma</span></td>
+                <td class="mono">2学期中間</td>
+                <td class="wrap-cell">数学2コマ・英語2コマ 計 <b class="mono">4</b> コマ</td>
+                <td><span class="pill pill-done">計上済</span></td>
+              </tr>
+              <tr>
+                <td class="num">2026-07-05</td>
+                <td><span class="pill pill-tag">模試</span> <span class="faint mono dev">moshi</span></td>
+                <td class="mono">夏期オープン</td>
+                <td class="wrap-cell">通常受験 <span class="mono">8/11(火) 9:00</span></td>
+                <td><span class="pill pill-done">計上済・発注済</span></td>
+              </tr>
+              <tr>
+                <td class="num">2026-06-18</td>
+                <td><span class="pill pill-tag">相談</span> <span class="faint mono dev">soudan</span></td>
+                <td class="faint">—</td>
+                <td class="wrap-cell">「部活と授業が重なる日の相談」</td>
+                <td><span class="pill pill-done">対応済</span></td>
+              </tr>
+              <tr>
+                <td class="num">2026-05-10</td>
+                <td><span class="pill pill-tag">曜日変更</span> <span class="faint mono dev">youbi</span></td>
+                <td class="mono">2026年度 前期</td>
+                <td class="wrap-cell">水 → 金 に変更</td>
+                <td><span class="pill pill-done">反映済</span></td>
+              </tr>
+              <tr>
+                <td class="num">2026-04-22</td>
+                <td><span class="pill pill-tag">教材販売</span> <span class="faint mono dev">kyozai</span></td>
+                <td class="mono">2026年度</td>
+                <td class="wrap-cell">「新中問 数学2」1冊</td>
+                <td><span class="pill pill-done">計上済</span></td>
+              </tr>
+              <tr>
+                <td class="num">2026-04-02</td>
+                <td><span class="pill pill-tag">週回数変更</span> <span class="faint mono dev">shukaisu</span></td>
+                <td class="mono">2026年度</td>
+                <td class="wrap-cell">週1 → 週2</td>
+                <td><span class="pill pill-done">反映済</span></td>
+              </tr>
+              <tr>
+                <td class="num">2025-11-08</td>
+                <td><span class="pill pill-tag">模試</span> <span class="faint mono dev">moshi</span></td>
+                <td class="mono">冬期オープン</td>
+                <td class="wrap-cell">振替受験 <span class="mono">12/7(日) 13:00</span></td>
+                <td><span class="pill pill-done">計上済</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="note-block dev">この生徒に紐づけ済み（<span class="mono">linked_student_id</span>）のフォーム回答。</p>
+      </div>
+    </section>
+
+    <!-- 6. 成績 -->
+    <section class="card" id="sec-scores">
+      <div class="card-hd">
+        <h2>成績</h2>
+        <span class="src-tbl">assessments / assessment_scores</span>
+        <a href="#" class="go">詳細・編集 <span class="p">/students/[id]/scores</span>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+        </a>
+      </div>
+      <div class="card-bd">
+
+        <!-- (a) 定期テスト -->
+        <div class="sub-row"><h3 class="sub" style="margin:0">(a) 定期テスト</h3><span class="note">直近5回。前回から10点以上下がった科目は赤。</span></div>
+        <div class="scores">
+          <div class="tblwrap">
+            <table class="tbl">
+              <thead>
+                <tr>
+                  <th>テスト</th>
+                  <th class="num">国</th><th class="num">数</th><th class="num">英</th><th class="num">理</th><th class="num">社</th>
+                  <th class="num">5科計</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>2026 1学期期末 <span class="faint mono">06/25</span></td>
+                  <td class="num">64</td><td class="num down">54</td><td class="num">58</td><td class="num">70</td><td class="num">66</td>
+                  <td class="num"><b>312</b></td>
+                </tr>
+                <tr>
+                  <td>2026 1学期中間 <span class="faint mono">05/21</span></td>
+                  <td class="num">66</td><td class="num">66</td><td class="num">62</td><td class="num">72</td><td class="num">69</td>
+                  <td class="num"><b>335</b></td>
+                </tr>
+                <tr>
+                  <td>2025 学年末 <span class="faint mono">02/26</span></td>
+                  <td class="num">68</td><td class="num">71</td><td class="num">66</td><td class="num">73</td><td class="num">65</td>
+                  <td class="num"><b>343</b></td>
+                </tr>
+                <tr>
+                  <td>2025 2学期期末 <span class="faint mono">11/27</span></td>
+                  <td class="num">70</td><td class="num">74</td><td class="num">67</td><td class="num">69</td><td class="num">64</td>
+                  <td class="num"><b>344</b></td>
+                </tr>
+                <tr>
+                  <td>2025 2学期中間 <span class="faint mono">10/09</span></td>
+                  <td class="num">67</td><td class="num">72</td><td class="num">65</td><td class="num">70</td><td class="num">64</td>
+                  <td class="num"><b>338</b></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- 5科計の推移（手書きSVG折れ線） -->
+          <div>
+            <div class="sub" style="font-size:13px">5科合計の推移</div>
+            <svg viewBox="0 0 340 180" role="img" aria-label="5科合計の推移。338、344、343、335、312。">
+              <!-- 目盛 -->
+              <line x1="44" y1="20" x2="330" y2="20" stroke="var(--border-subtle)" stroke-width="1" fill="none"/>
+              <line x1="44" y1="80" x2="330" y2="80" stroke="var(--border-subtle)" stroke-width="1" fill="none"/>
+              <line x1="44" y1="140" x2="330" y2="140" stroke="var(--border-subtle)" stroke-width="1" fill="none"/>
+              <text x="38" y="24" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--text-muted)">350</text>
+              <text x="38" y="84" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--text-muted)">300</text>
+              <text x="38" y="144" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--text-muted)">250</text>
+
+              <!-- 折れ線 -->
+              <polyline points="64,34.4 118,27.2 172,28.4 226,38 280,65.6"
+                        fill="none" stroke="var(--accent-ink)" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round"/>
+
+              <circle cx="64"  cy="34.4" r="3" fill="var(--accent-ink)"/>
+              <circle cx="118" cy="27.2" r="3" fill="var(--accent-ink)"/>
+              <circle cx="172" cy="28.4" r="3" fill="var(--accent-ink)"/>
+              <circle cx="226" cy="38"   r="3" fill="var(--accent-ink)"/>
+              <!-- 最終点を強調 -->
+              <circle cx="280" cy="65.6" r="5.5" fill="var(--danger)" stroke="var(--surface)" stroke-width="2"/>
+              <text x="280" y="56" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" font-weight="500" fill="var(--danger)">312</text>
+
+              <!-- x軸ラベル -->
+              <text x="64"  y="162" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--text-muted)">25/10</text>
+              <text x="118" y="162" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--text-muted)">25/11</text>
+              <text x="172" y="162" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--text-muted)">26/02</text>
+              <text x="226" y="162" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--text-muted)">26/05</text>
+              <text x="280" y="162" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--text-muted)">26/06</text>
+            </svg>
+          </div>
+        </div>
+
+        <hr class="hr">
+
+        <!-- (b) 内申 -->
+        <div class="sub-row"><h3 class="sub" style="margin:0">(b) 内申</h3><span class="note">中1 3学期 評定（9科・45点満点中 30）</span></div>
+        <div class="tblwrap">
+          <table class="tbl" style="min-width:520px">
+            <thead>
+              <tr><th>科目</th><th class="num">国</th><th class="num">社</th><th class="num">数</th><th class="num">理</th><th class="num">英</th><th class="num">音</th><th class="num">美</th><th class="num">保体</th><th class="num">技家</th><th class="num grp">5科計</th><th class="num">9科計</th></tr>
+            </thead>
+            <tbody>
+              <!-- 5科計 3+4+3+4+3=17 ／ 9科計 30。どちらも評定からの計算値で、列としては持たない。 -->
+              <tr><td>3学期評定</td><td class="num">3</td><td class="num">4</td><td class="num">3</td><td class="num">4</td><td class="num">3</td><td class="num">3</td><td class="num">3</td><td class="num">4</td><td class="num">3</td><td class="num grp"><b>17</b></td><td class="num"><b>30</b></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="note-block dev">合計は評定からの計算値。列としては持たない。</p>
+
+        <hr class="hr">
+
+        <!-- (c) 模試 -->
+        <div class="sub-row"><h3 class="sub" style="margin:0">(c) 模試</h3><span class="note">直近2回。偏差値が前回から5以上下がったら赤。</span></div>
+        <div class="tblwrap">
+          <table class="tbl">
+            <thead>
+              <tr>
+                <th>模試名</th>
+                <th class="num">国</th><th class="num">数</th><th class="num">英</th><th class="num">理</th><th class="num">社</th>
+                <th class="num">5科計</th>
+                <th class="num grp">偏差値3科</th><th class="num">偏差値5科</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- 5科計 58+46+52+61+57=274 ／ 62+55+57+64+60=298 -->
+              <tr>
+                <td>第2回オープン模試 <span class="faint mono">2026-08</span></td>
+                <td class="num">58</td><td class="num">46</td><td class="num">52</td><td class="num">61</td><td class="num">57</td>
+                <td class="num"><b>274</b></td>
+                <td class="num grp">48.2</td><td class="num">49.6</td>
+              </tr>
+              <tr>
+                <td>第1回オープン模試 <span class="faint mono">2026-06</span></td>
+                <td class="num">62</td><td class="num">55</td><td class="num">57</td><td class="num">64</td><td class="num">60</td>
+                <td class="num"><b>298</b></td>
+                <td class="num grp">51.4</td><td class="num">52.1</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="note-block dev">志望校の判定は保存していない。</p>
+
+      </div>
+    </section>
+
+    <!-- 7. 進行表 -->
+    <section class="card" id="sec-progress">
+      <div class="card-hd">
+        <h2>進行表</h2>
+        <span class="src-tbl">student_progress / student_textbooks</span>
+        <a href="#" class="go">詳細・編集 <span class="p">/students/[id]/progress</span>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+        </a>
+      </div>
+      <div class="card-bd">
+        <div class="sub-row"><h3 class="sub" style="margin:0">学校進度との比較</h3><span class="note">学校の到達点に対して当塾がどこにいるかを見る。</span></div>
+        <div class="tblwrap">
+          <table class="tbl" style="min-width:820px">
+            <thead>
+              <tr>
+                <th>テキスト名</th>
+                <th>学校の到達単元</th>
+                <th>当塾の到達単元</th>
+                <th>差</th>
+                <th>最終指導日</th>
+                <th>次の単元</th>
+                <th>状態</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>新中問 数学2</td>
+                <td>三平方の定理</td>
+                <td>二次関数</td>
+                <td class="down"><b class="mono">3</b> 単元 遅れ</td>
+                <td class="num">2026-09-02</td>
+                <td>二次関数の利用</td>
+                <td><span class="pill pill-done">順調</span></td>
+              </tr>
+              <tr>
+                <td>新中問 英語2</td>
+                <td>関係代名詞</td>
+                <td>現在完了</td>
+                <td class="warn-text"><b class="mono">2</b> 単元 遅れ</td>
+                <td class="num">2026-09-04</td>
+                <td>不定詞の応用</td>
+                <td><span class="pill pill-done">順調</span></td>
+              </tr>
+              <tr>
+                <td>学校ワーク 数学</td>
+                <td>三平方の定理</td>
+                <td>三平方の定理</td>
+                <td class="muted">同じ</td>
+                <td class="num">2026-09-02</td>
+                <td>円周角</td>
+                <td><span class="pill pill-done">順調</span></td>
+              </tr>
+              <tr>
+                <td>英単語1800</td>
+                <td class="faint">— <span style="font-size:12px">学校進度の記録なし</span></td>
+                <td>Unit 12</td>
+                <td class="faint">—</td>
+                <td class="num">2026-08-14</td>
+                <td>Unit 13</td>
+                <td><span class="pill pill-danger">停滞 22日</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="note-block">学校進度は単元ごとの手入力。未入力の教材は比較できない。</p>
+
+        <hr class="hr">
+
+        <div class="grid2">
+          <div>
+            <h3 class="sub">目標（科目単位）</h3>
+            <dl class="dl" style="grid-template-columns:60px minmax(0,1fr)">
+              <dt>数学</dt><dd>2学期中間で <b>70点</b>（前回 54点）</dd>
+              <dt>英語</dt><dd><b>英検3級</b> 10月受検で合格</dd>
+            </dl>
+          </div>
+          <div>
+            <h3 class="sub">行動目標</h3>
+            <ul class="list">
+              <li><div class="li-bd">毎日 英単語20個（朝の10分で）</div></li>
+              <li><div class="li-bd">数学の宿題は塾の翌日までに終わらせる</div></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 8. 授業の様子 -->
+    <section class="card" id="sec-lessons">
+      <div class="card-hd">
+        <h2>授業の様子</h2>
+        <span class="src-tbl">class_reports / progress_sessions</span>
+        <a href="#" class="go">詳細・編集 <span class="p">/students/[id]/reports</span>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+        </a>
+      </div>
+      <div class="card-bd">
+        <div class="sub-row"><h3 class="sub" style="margin:0">授業報告書（直近3件）</h3><span class="note">保護者公開マークはポータルに表示される。</span><span class="v2-tag" title="2027年2月の保護者向けリリース（座席表の運用開始・保護者アカウント）から稼働"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 14v2.2l1.6 1"/><path d="M16 2v4"/><path d="M21 7.5V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h3.5"/><path d="M3 10h5"/><path d="M8 2v4"/><circle cx="16" cy="16" r="6"/></svg>2月から</span></div>
+        <ul class="list">
+          <li>
+            <div class="li-hd">
+              <span class="d">2026-09-04 (金)</span><span class="pill pill-tag">英語</span><span class="muted">鈴木</span>
+              <span class="t">不定詞（名詞的用法）p.62-65</span>
+              <span class="pill pill-warning">遅刻 12分・保護者公開</span>
+            </div>
+            <div class="li-bd q">前回より訳の順番を意識できていた。to不定詞と動名詞の使い分けは要復習。</div>
+            <div class="li-bd faint">宿題: 出した ／ 前回分: やってきた</div>
+          </li>
+          <li>
+            <div class="li-hd">
+              <span class="d">2026-09-02 (水)</span><span class="pill pill-tag">数学</span><span class="muted">田中</span>
+              <span class="t">1次関数のグラフ（振替）</span>
+            </div>
+            <div class="li-bd q">傾きの意味は説明できるようになった。式からグラフを描く手順はまだ手が止まる。</div>
+            <div class="li-bd faint">宿題: 出した ／ 前回分: やってきた</div>
+          </li>
+          <li>
+            <div class="li-hd">
+              <span class="d">2026-09-01 (火)</span><span class="pill pill-tag">数学</span><span class="muted">田中</span>
+              <span class="t">連立方程式の文章題 p.48-51</span>
+              <span class="pill pill-warning">宿題未実施・保護者公開</span>
+            </div>
+            <div class="li-bd q">式は立てられるが、単位のそろえ方で毎回つまずく。声かけの回数を増やした。</div>
+            <div class="li-bd faint">宿題: 出した ／ 前回分: 未実施</div>
+          </li>
+        </ul>
+
+        <hr class="hr">
+
+        <h3 class="sub">講師の引継ぎメモ</h3>
+        <ul class="list">
+          <li>
+            <div class="li-hd"><span class="d">2026-09-04</span><span class="muted">鈴木</span></div>
+            <div class="li-bd">部活の大会前で疲れている様子。来週まで宿題量を少し減らしたい。</div>
+          </li>
+          <li>
+            <div class="li-hd"><span class="d">2026-09-01</span><span class="muted">田中</span></div>
+            <div class="li-bd">英単語1800が3週止まっている。英語担当と分担を相談したい。</div>
+          </li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- 9. 宿題・遅刻・出欠 -->
+    <section class="card" id="sec-discipline">
+      <div class="card-hd">
+        <h2>宿題・遅刻・出欠</h2>
+        <span class="src-tbl">schedule_entries / class_reports</span>
+        <a href="#" class="go">詳細・編集 <span class="p">/students/[id]/attendance</span>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+        </a>
+      </div>
+      <div class="card-bd">
+        <div class="disc">
+          <div class="tblwrap">
+            <table class="tbl">
+              <thead>
+                <tr class="v2-grp"><th></th><th colspan="3" class="v2-span"><span class="v2-tag" title="2027年2月の保護者向けリリース（座席表の運用開始・保護者アカウント）から稼働"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 14v2.2l1.6 1"/><path d="M16 2v4"/><path d="M21 7.5V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h3.5"/><path d="M3 10h5"/><path d="M8 2v4"/><circle cx="16" cy="16" r="6"/></svg>2月から</span></th><th colspan="2"></th></tr>
+                <tr><th>月</th><th class="num">出席</th><th class="num">欠席</th><th class="num">振替</th><th class="num">遅刻</th><th class="num">宿題未実施</th></tr>
+              </thead>
+              <tbody>
+                <tr><td class="mono">2026-09 <span class="faint">(途中)</span></td><td class="num">3</td><td class="num">0</td><td class="num">1</td><td class="num warn-text">1</td><td class="num warn-text">3</td></tr>
+                <tr><td class="mono">2026-08</td><td class="num">6</td><td class="num">1</td><td class="num">1</td><td class="num">1</td><td class="num">2</td></tr>
+                <tr><td class="mono">2026-07</td><td class="num">7</td><td class="num">2</td><td class="num">2</td><td class="num">0</td><td class="num">4</td></tr>
+                <tr><td class="mono">2026-06</td><td class="num">8</td><td class="num">1</td><td class="num">1</td><td class="num">1</td><td class="num">2</td></tr>
+                <tr><td class="mono">2026-05</td><td class="num">9</td><td class="num">1</td><td class="num">1</td><td class="num">0</td><td class="num">2</td></tr>
+                <tr><td class="mono">2026-04</td><td class="num">8</td><td class="num">0</td><td class="num">0</td><td class="num">0</td><td class="num">1</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- 宿題未実施の6か月推移（手書きSVG棒グラフ） -->
+          <div>
+            <div class="sub" style="font-size:13px">宿題未実施の推移（6か月）</div>
+            <svg viewBox="0 0 300 150" role="img" aria-label="宿題未実施の推移。4月1回、5月2回、6月2回、7月4回、8月2回、9月3回。">
+              <line x1="26" y1="20" x2="290" y2="20" stroke="var(--border-subtle)" stroke-width="1" fill="none"/>
+              <line x1="26" y1="70" x2="290" y2="70" stroke="var(--border-subtle)" stroke-width="1" fill="none"/>
+              <line x1="26" y1="120" x2="290" y2="120" stroke="var(--border-default)" stroke-width="1" fill="none"/>
+              <text x="20" y="24" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--text-muted)">4</text>
+              <text x="20" y="74" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--text-muted)">2</text>
+              <text x="20" y="124" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--text-muted)">0</text>
+
+              <!-- 1本 = 25回px。0点=y120、1回=25px -->
+              <rect x="38"  y="95"  width="28" height="25"  fill="var(--border-strong)" rx="2"/>
+              <rect x="80"  y="70"  width="28" height="50"  fill="var(--border-strong)" rx="2"/>
+              <rect x="122" y="70"  width="28" height="50"  fill="var(--border-strong)" rx="2"/>
+              <rect x="164" y="20"  width="28" height="100" fill="var(--warning)" rx="2"/>
+              <rect x="206" y="70"  width="28" height="50"  fill="var(--border-strong)" rx="2"/>
+              <rect x="248" y="45"  width="28" height="75"  fill="var(--warning)" rx="2"/>
+
+              <text x="52"  y="140" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--text-muted)">04</text>
+              <text x="94"  y="140" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--text-muted)">05</text>
+              <text x="136" y="140" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--text-muted)">06</text>
+              <text x="178" y="140" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--text-muted)">07</text>
+              <text x="220" y="140" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--text-muted)">08</text>
+              <text x="262" y="140" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--text-muted)">09</text>
+            </svg>
+            <p class="muted" style="font-size:12px;margin:6px 0 0">7月は講習期間、9月は途中集計。</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 10. 面談 -->
+    <section class="card" id="sec-interview">
+      <div class="card-hd">
+        <h2>面談</h2>
+        <span class="src-tbl">student_interviews</span>
+        <span class="hint">前回から <b class="mono">92</b> 日</span>
+        <!-- 追加は既存の共有コンポーネント InterviewModal を開く導線。 -->
+        <button class="btn btn-sm hd-btn" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+          面談記録を追加
+        </button>
+        <a href="#" class="go">詳細・編集 <span class="p">/interview?student=[id]</span>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+        </a>
+      </div>
+      <div class="card-bd">
+
+        <!-- 前回の申し送り（改訂前は上部「気にすること」にあったものを面談の先頭へ移設） -->
+        <div class="handover">
+          <h3 class="sub">前回の申し送り</h3>
+          <div class="quote">
+            <span class="src">2026-06-05 三者面談より</span>
+            <p>単語テストを毎週実施し、結果を母へ共有する。</p>
+            <p>夏期は数学に厚く配分し、1学期の連立方程式まで戻す。</p>
+            <p>英検3級は10月受検。申込は9月中旬までに案内する。</p>
+          </div>
+        </div>
+
+        <ul class="list">
+          <li>
+            <div class="li-hd"><span class="d">2026-06-05</span><span class="pill pill-tag">三者面談</span><span class="muted">出席: 母・本人・教室長</span></div>
+            <div class="li-bd">1学期中間の下降を共有。数学は連立方程式でつまずいており、夏期で1学期の復習に戻す方針で合意。</div>
+            <div class="li-bd">英検3級を10月に受検する希望。単語の家庭学習が続かない点が最大の課題。</div>
+            <div class="li-bd q"><b>申し送り:</b> 単語テストを毎週実施し、結果を母へ共有する。夏期は数学に厚く配分。</div>
+          </li>
+          <li>
+            <div class="li-hd"><span class="d">2026-02-20</span><span class="pill pill-tag">進路面談</span><span class="muted">出席: 母・本人</span></div>
+            <div class="li-bd">都立の中堅校を第一志望に想定。内申30から+3が当面の目標。</div>
+            <div class="li-bd">週1回では演習量が足りないため、4月から週2回（数学・英語）へ増やすことを提案し了承。</div>
+            <div class="li-bd q"><b>申し送り:</b> 4月からのパターン変更を手配。理社は自習で回す前提。</div>
+          </li>
+          <li>
+            <div class="li-hd"><span class="d">2025-11-15</span><span class="pill pill-tag">入会後面談</span><span class="muted">出席: 母</span></div>
+            <div class="li-bd">入会から半年。塾には前向きに通えている。部活との両立で土曜は不可。</div>
+            <div class="li-bd">家庭学習の習慣がまだない。宿題の量は控えめにして継続を優先。</div>
+            <div class="li-bd q"><b>申し送り:</b> 宿題は1回30分以内。できた日はカレンダーに記録する運用を試す。</div>
+          </li>
+        </ul>
+        <!-- 下部の操作列。取り込み（既存）と、その場で書く導線を並べる。 -->
+        <div class="iv-actions">
+          <button class="btn" type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m8 11 4 4 4-4"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/></svg>
+            Nottaから取り込む
+          </button>
+        </div>
+
+        <!-- モーダルを開かずその場で書く。既定は閉じた状態でロード時の高さを取らない。 -->
+        <details class="iv-new">
+          <summary>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+            この場で面談記録を書く
+          </summary>
+          <div class="iv-form">
+            <div class="iv-grid">
+
+              <div class="iv-f w-date">
+                <label for="iv-date">日付</label>
+                <input type="date" id="iv-date" value="2026-09-05">
+              </div>
+
+              <div class="iv-f w-type">
+                <label for="iv-type">種別</label>
+                <select id="iv-type">
+                  <option selected>保護者面談</option>
+                  <option>生徒面談</option>
+                  <option>電話</option>
+                  <option>雑談</option>
+                  <option>入会面談</option>
+                  <option>その他</option>
+                  <option>約束</option>
+                </select>
+                <span class="fld-key dev">interview_type</span>
+              </div>
+
+              <div class="iv-f w-full">
+                <label for="iv-title">件名 <span class="opt">（任意）</span></label>
+                <input type="text" id="iv-title" placeholder="2学期の三者面談">
+              </div>
+
+              <div class="iv-f w-full">
+                <label for="iv-content">本文</label>
+                <textarea id="iv-content" rows="4" placeholder="話した内容。次回への申し送りは ## 次回への申し送り の見出しで書く"></textarea>
+              </div>
+
+            </div>
+            <p class="iv-note">本文の <code>## 次回への申し送り</code> は、次の面談で「前回の申し送り」として自動で拾われる。</p>
+            <div class="iv-form-actions">
+              <button class="btn btn-primary" type="button">保存</button>
+              <button class="btn" type="button">キャンセル</button>
+            </div>
+          </div>
+        </details>
+      </div>
+    </section>
+
+    <!-- 11-12. 講習と教材：どちらも中身が少ないので左右2カラム（1100px 未満で1列） -->
+    <div class="pair-grid">
+
+    <!-- 11. 講習 -->
+    <section class="card" id="sec-koushu">
+      <div class="card-hd">
+        <h2>講習</h2>
+        <a href="#" class="go">詳細・編集 <span class="p">/koushu/students/[id]</span>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+        </a>
+      </div>
+      <div class="card-bd">
+        <div class="tblwrap">
+          <table class="tbl">
+            <thead>
+              <tr><th>期</th><th class="num">提案コマ</th><th class="num">取得コマ</th><th class="num">取得率</th><th>状態</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>夏期2026</td>
+                <td class="num">24</td><td class="num">18</td><td class="num">75%</td>
+                <td><span class="pill pill-done">受講済</span></td>
+              </tr>
+              <tr>
+                <td>冬期2026</td>
+                <td class="num">20</td><td class="num faint">—</td><td class="num faint">—</td>
+                <td><span class="pill pill-warning">提案書 下書き</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <hr class="hr">
+
+        <h3 class="sub">講習用テキスト</h3>
+        <div class="tblwrap">
+          <table class="tbl">
+            <thead><tr><th>教材名</th><th>期</th><th>状態</th></tr></thead>
+            <tbody>
+              <tr><td class="name">夏期テキスト 中2 数学</td><td>夏期2026</td><td><span class="pill pill-done">配布済</span></td></tr>
+              <tr><td class="name">夏期テキスト 中2 英語</td><td>夏期2026</td><td><span class="pill pill-done">配布済</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- 12. 教材 -->
+    <section class="card" id="sec-textbooks">
+      <div class="card-hd">
+        <h2>教材</h2>
+        <span class="src-tbl">student_textbooks / material_orders</span>
+        <a href="#" class="go">詳細・編集 <span class="p">/students/[id]/textbooks</span>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+        </a>
+      </div>
+      <div class="card-bd">
+        <div class="tblwrap">
+          <table class="tbl">
+            <thead>
+              <tr><th>教材名</th><th>所持</th><th>進行表管理</th><th>状態</th></tr>
+            </thead>
+            <tbody>
+              <tr><td class="name">新中学問題集 数学2</td><td>あり</td><td>する</td><td><span class="pill pill-done">配布済</span></td></tr>
+              <tr><td class="name">新中学問題集 英語2</td><td>あり</td><td>する</td><td><span class="pill pill-done">配布済</span></td></tr>
+              <tr><td class="name">英単語1800</td><td>あり</td><td>する</td><td><span class="pill pill-done">配布済</span></td></tr>
+              <tr><td class="name">学校ワーク 数学（学校支給）</td><td>あり</td><td>する</td><td><span class="pill pill-done">塾外</span></td></tr>
+              <tr><td class="name">新中問 数学2 標準編</td><td class="muted">未</td><td>しない</td><td><span class="pill pill-warning">発注済・未配布</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div style="margin-top:12px">
+          <button class="btn" type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+            教材を追加
+          </button>
+        </div>
+      </div>
+    </section>
+
+    </div>
+
+    <!-- 13. 提案書・テスト対策 -->
+    <section class="card" id="sec-proposals">
+      <div class="card-hd">
+        <h2>提案書・テスト対策</h2>
+        <a href="#" class="go">詳細・編集 <span class="p">/proposals?student=[id]</span>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+        </a>
+      </div>
+      <div class="card-bd">
+        <div class="tblwrap">
+          <table class="tbl" style="min-width:620px">
+            <thead>
+              <tr><th>種別</th><th>タイトル</th><th>作成日</th><th>公開日</th><th>状態</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>講習提案書</td><td>夏期2026 学習プラン</td><td class="num">2026-06-10</td><td class="num">2026-06-14</td><td><span class="pill pill-done">公開済</span></td></tr>
+              <tr><td>講習提案書</td><td>冬期2026 学習プラン</td><td class="num">2026-08-30</td><td class="faint">—</td><td><span class="pill pill-warning">下書き</span></td></tr>
+              <tr><td>テスト対策</td><td>2学期中間 対策プラン</td><td class="num">2026-09-03</td><td class="faint">—</td><td><span class="pill pill-warning">作成中</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- 14. 保護者・ポータル -->
+    <section class="card" id="sec-parent">
+      <div class="card-hd">
+        <h2>保護者・ポータル</h2>
+        <span class="v2-tag" title="2027年2月の保護者向けリリース（座席表の運用開始・保護者アカウント）から稼働"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 14v2.2l1.6 1"/><path d="M16 2v4"/><path d="M21 7.5V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h3.5"/><path d="M3 10h5"/><path d="M8 2v4"/><circle cx="16" cy="16" r="6"/></svg>2月から</span>
+        <span class="src-tbl">portal_accounts</span>
+        <a href="#" class="go">詳細・編集 <span class="p">/students/[id]/portal</span>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+        </a>
+      </div>
+      <div class="card-bd">
+        <div class="grid2">
+          <div>
+            <h3 class="sub">(a) ポータルアカウント <span class="src-tbl">portal_accounts</span></h3>
+            <dl class="dl" style="grid-template-columns:104px minmax(0,1fr)">
+              <dt>表示名</dt><dd>佐藤（母）</dd>
+              <dt>LINE連携</dt><dd><span class="pill pill-done">済</span></dd>
+              <dt>ログインID</dt><dd class="mono">kiyose-0187</dd>
+              <dt>最終ログイン</dt><dd class="mono">2026-08-28</dd>
+              <dt>紐づく生徒</dt><dd><b class="mono">2</b> 名 — 佐藤 結衣・<a href="#" class="link">佐藤 大輝</a></dd>
+            </dl>
+            <p class="note-block dev">このテーブルは個人情報を持たず、表示名とログイン情報だけを扱う。</p>
+            <div style="margin-top:10px">
+              <button class="btn" type="button">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h6v6H3z"/><path d="M15 3h6v6h-6z"/><path d="M3 15h6v6H3z"/><path d="M15 15h2v2h-2z"/><path d="M19 19h2v2h-2z"/></svg>
+                招待QRを表示
+              </button>
+            </div>
+
+          </div>
+          <div>
+            <h3 class="sub">(b) 保護者との連絡スレッド（直近5件）</h3>
+            <div class="tblwrap">
+              <table class="tbl" style="min-width:0">
+                <thead><tr><th>日付</th><th>方向</th><th class="wrap-cell">要旨</th><th>状態</th></tr></thead>
+                <tbody>
+                  <tr><td class="num">09-02</td><td>母 → 塾</td><td class="wrap-cell">9/4を別日に振替できないか</td><td><span class="pill pill-warning">返信待ち</span></td></tr>
+                  <tr><td class="num">08-20</td><td>塾 → 母</td><td class="wrap-cell">10月模試のご案内</td><td><span class="pill pill-done">既読</span></td></tr>
+                  <tr><td class="num">08-12</td><td>塾 → 母</td><td class="wrap-cell">夏期後半の日程確認</td><td><span class="pill pill-done">返信あり</span></td></tr>
+                  <tr><td class="num">07-05</td><td>母 → 塾</td><td class="wrap-cell">夏期の支払い方法について</td><td><span class="pill pill-done">対応済</span></td></tr>
+                  <tr><td class="num">06-14</td><td>塾 → 母</td><td class="wrap-cell">夏期提案書を公開しました</td><td><span class="pill pill-done">既読</span></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 15. 請求項目の計上 -->
+    <section class="card" id="sec-billing">
+      <div class="card-hd">
+        <h2>請求項目の計上</h2>
+        <span class="src-tbl">student_billings / billing_items</span>
+        <span class="hint">2026年9月度</span>
+        <a href="#" class="go">詳細・編集 <span class="p">/billing?student=[id]</span>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+        </a>
+      </div>
+      <div class="card-bd">
+        <p class="note-block top dev">NESTは<b>金額を持たない</b>。計上の有無と数量だけを記録する。</p>
+        <div class="tblwrap">
+          <table class="tbl" style="min-width:680px">
+            <thead>
+              <tr><th>項目</th><th>種別</th><th>入力形式</th><th>計上</th><th>数量・値</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>授業料（週2）</td>
+                <td>手動 <span class="faint mono dev">free</span></td>
+                <td>チェック</td>
+                <td><span class="pill pill-done">計上済</span></td>
+                <td class="faint">—</td>
+              </tr>
+              <tr>
+                <td>テスト対策増コマ</td>
+                <td>フォーム連携 <span class="faint mono dev">form_charged(zoukoma)</span></td>
+                <td>数量</td>
+                <td><span class="pill pill-done">計上済</span></td>
+                <td><b class="mono">4</b> コマ</td>
+              </tr>
+              <tr>
+                <td>Vもぎ 9月</td>
+                <td>フォーム連携 <span class="faint mono dev">form_charged(mogi)</span></td>
+                <td>チェック</td>
+                <td><span class="pill pill-warning">未計上</span></td>
+                <td class="faint">—</td>
+              </tr>
+              <tr>
+                <td>教材 新中問 数学2</td>
+                <td>発注 <span class="faint mono dev">order</span></td>
+                <td>数量</td>
+                <td><span class="pill pill-done">計上済</span></td>
+                <td><b class="mono">1</b> 冊</td>
+              </tr>
+              <tr>
+                <td>冬期講習</td>
+                <td>手動 <span class="faint mono dev">free</span></td>
+                <td>チェック</td>
+                <td><span class="pill pill-warning">未計上</span></td>
+                <td class="faint">—</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- 16. 変更履歴 -->
+    <section class="card" id="sec-logs">
+      <div class="card-hd">
+        <h2>変更履歴</h2>
+        <span class="src-tbl">student_logs</span>
+        <a href="#" class="go">すべて見る <span class="p">/students/[id]/logs</span>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+        </a>
+      </div>
+      <div class="card-bd">
+        <div class="tblwrap">
+          <table class="tbl" style="min-width:0">
+            <thead><tr><th>日時</th><th class="wrap-cell">出来事</th></tr></thead>
+            <tbody>
+              <tr><td class="num">2026-09-02 14:20</td><td class="wrap-cell">Vもぎ 9月 の申込を紐づけ</td></tr>
+              <tr><td class="num">2026-09-01 10:05</td><td class="wrap-cell">通塾日程を第3版に更新</td></tr>
+              <tr><td class="num">2026-08-25 19:40</td><td class="wrap-cell">8/25 の欠席を登録</td></tr>
+              <tr><td class="num">2026-08-20 11:15</td><td class="wrap-cell">テスト対策増コマの申込を紐づけ</td></tr>
+              <tr><td class="num">2026-04-08 09:30</td><td class="wrap-cell">学年を中2に更新</td></tr>
+              <tr><td class="num">2025-04-08 16:00</td><td class="wrap-cell">生徒を登録</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+</div>
+</div>
+
+<!-- ============================================================
+     ページの先頭へ戻る（fixed の浮遊ボタン）
+     ============================================================ -->
+<button type="button" id="backToTop" class="back-to-top" aria-label="ページの先頭へ戻る" title="ページの先頭へ戻る">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m18 15-6-6-6 6"/></svg>
+</button>
+
+<script>
+// ============================================================
+// 設計メモのトグル。body に .show-dev を付け外しし、CSS で .dev 類を一括表示/非表示。
+// 状態は localStorage に保存。プライベートウィンドウ等で使えなくても既定OFFで動く。
+// ============================================================
+(function () {
+  var KEY = 'studentHub.showDev';
+  var btn = document.getElementById('devToggle');
+  function apply(on) {
+    document.body.classList.toggle('show-dev', on);
+    if (btn) btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+  }
+  var on = false;
+  try { on = window.localStorage.getItem(KEY) === '1'; } catch (e) { on = false; }
+  apply(on);
+  if (!btn) return;
+  btn.addEventListener('click', function () {
+    on = !on;
+    apply(on);
+    try { window.localStorage.setItem(KEY, on ? '1' : '0'); } catch (e) { /* 保存できなくても表示は切り替わる */ }
+  });
+})();
+
+// ============================================================
+// 目次のスクロール追従。
+// IntersectionObserver で「今いちばん上に見えているセクション」を選ぶ。
+// prefers-reduced-motion のときは smooth スクロールを使わない。
+// ============================================================
+(function () {
+  var links = Array.prototype.slice.call(document.querySelectorAll('.toc-list a'));
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // reduced-motion でなければアンカー移動を smooth に
+  if (!reduce) {
+    document.documentElement.style.scrollBehavior = 'smooth';
+  }
+
+  var sections = links
+    .map(function (a) { return document.querySelector(a.getAttribute('href')); })
+    .filter(Boolean);
+
+  if (!('IntersectionObserver' in window) || sections.length === 0) return;
+
+  // 現在見えているセクションの集合を保持し、いちばん上のものを現在地とする
+  var visible = {};
+
+  function setActive(id) {
+    links.forEach(function (a) {
+      a.classList.toggle('active', a.getAttribute('href') === '#' + id);
+    });
+  }
+
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) {
+      if (e.isIntersecting) { visible[e.target.id] = e.boundingClientRect.top; }
+      else { delete visible[e.target.id]; }
+    });
+    var ids = Object.keys(visible);
+    if (ids.length === 0) return;
+    // ドキュメント順でいちばん先頭にあるものを選ぶ
+    var order = sections.map(function (s) { return s.id; });
+    ids.sort(function (a, b) { return order.indexOf(a) - order.indexOf(b); });
+    setActive(ids[0]);
+  }, {
+    // ヘッダー(約132px)の下に入ったものだけを対象にする
+    rootMargin: '-140px 0px -55% 0px',
+    threshold: 0
+  });
+
+  sections.forEach(function (s) { io.observe(s); });
+
+  // 目次クリック時は即座に現在地を移す（監視の遅延で戻って見えるのを防ぐ）
+  links.forEach(function (a) {
+    a.addEventListener('click', function () {
+      setActive(a.getAttribute('href').slice(1));
+    });
+  });
+})();
+
+// ============================================================
+// ページの先頭へ戻るボタン。
+// スクロール中は隠し、止まって 250ms 後にうっすら出す。
+// scroll は passive + requestAnimationFrame で間引く。
+// ============================================================
+(function () {
+  var btn = document.getElementById('backToTop');
+  if (!btn) return;
+
+  var THRESHOLD = 600;   // これより下にいるときだけ対象
+  var IDLE = 250;        // スクロールが止まったと見なすまでの時間
+  var timer = null;
+  var ticking = false;
+
+  function evaluate() {
+    ticking = false;
+    // スクロールが動いた時点でいったん消す
+    btn.classList.remove('is-visible');
+    if (timer) { clearTimeout(timer); timer = null; }
+    if (window.scrollY > THRESHOLD) {
+      timer = setTimeout(function () {
+        if (window.scrollY > THRESHOLD) btn.classList.add('is-visible');
+      }, IDLE);
+    }
+  }
+
+  window.addEventListener('scroll', function () {
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(evaluate);
+  }, { passive: true });
+
+  btn.addEventListener('click', function () {
+    var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    window.scrollTo({ top: 0, behavior: reduce ? 'auto' : 'smooth' });
+  });
+})();
+
+/* ヘッダーの「面談記録を追加」: 面談セクションの追加フォームを開き、そこへ移動して種別にカーソルを置く。
+   日付は今日が入っているので、最初に触るのは種別。フォームは1か所だけにしておき、
+   ヘッダーとセクションの2つの入口から同じものを開く（書きかけが2つに割れないように）。 */
+(function () {
+  var trigger = document.getElementById('addInterviewBtn');
+  var form = document.querySelector('#sec-interview .iv-new');
+  if (!trigger || !form) return;
+  trigger.addEventListener('click', function () {
+    form.open = true;
+    var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    // scroll-margin-top は section に効いているので、フォーム自体を見える位置へ出す
+    form.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'center' });
+    var first = document.getElementById('iv-type');
+    // スクロール中にフォーカスすると即座にジャンプしてスムーズ移動が消えるため、preventScroll を付ける
+    if (first) first.focus({ preventScroll: true });
+  });
+})();
+</script>
+</body>
+</html>
