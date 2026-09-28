@@ -66,6 +66,7 @@ import { TaskProgressWidget } from '@/components/monthly-tasks/TaskProgressWidge
 import { useToast } from '@/hooks/useToast';
 import { ToastContainer } from '@/components/ui';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
+import { isManagerOrAbove } from '@/lib/utils/roles';
 
 const BulletinBoard = dynamic(
   () => import('@/components/bulletin/BulletinBoard').then((m) => m.BulletinBoard),
@@ -134,6 +135,9 @@ export function StudentsPageClient({
 
   // 講師かどうかを判定
   const isTeacher = profile?.role === 'teacher';
+  // 生徒を開いたときの行き先。教室長以上は生徒ハブ（/students/[id]）、講師は今のモーダルのまま。
+  // ★講師の画面は一切変えない（2026-09-28 ユーザー決定。docs/student-hub-plan.md §1）
+  const opensStudentHub = isManagerOrAbove(profile?.role);
   const { toasts, removeToast, success, error: toastError } = useToast();
   // 状態管理（名簿タブはサーバページング、成績タブは従来どおり全件）
   const [rosterRows, setRosterRows] = useState<(Student & { subjects?: Subject[] })[]>([]);
@@ -367,8 +371,17 @@ export function StudentsPageClient({
       handledDetailIdRef.current = null;
       return;
     }
+    // ★ロールが分かるまで待つ。先に進むと教室長でもモーダルで開いてしまい、
+    //   処理済みの印が付くのでロール確定後にハブへ行き直せない
+    if (!profile) return;
     if (handledDetailIdRef.current === detailId) return;
     handledDetailIdRef.current = detailId;
+
+    // 教室長以上は生徒ハブへ置き換えて遷移する（replace なので「戻る」で ?detail= に戻ってこない）
+    if (opensStudentHub) {
+      router.replace(`/students/${detailId}`);
+      return;
+    }
 
     void (async () => {
       const student = await getStudent(detailId, getSelectedSchoolIds());
@@ -379,7 +392,7 @@ export function StudentsPageClient({
       // 開けても開けなくても URL は戻す（リロードで再度開かないように）
       router.replace('/students', { scroll: false });
     })();
-  }, [searchParams, router, getSelectedSchoolIds]);
+  }, [searchParams, router, getSelectedSchoolIds, opensStudentHub, profile]);
 
   // 成績タブ用（クライアント側で在籍・学年フィルタ）
   const filteredStudents = useMemo(() => {
@@ -507,6 +520,12 @@ export function StudentsPageClient({
         // 登録直後に詳細モーダルへ遷移させる（入会オンボーディングの最終地点）。
         // ポータル招待の発行導線（PortalInviteSection）もこのモーダル内にあるため、
         // 「登録→招待発行」が画面遷移なしで一続きになる。
+        // 教室長以上は生徒ハブへ（ハブの「保護者」欄から招待を発行できる）。講師は従来どおりモーダル。
+        // ★トーストは遷移で消えるので、ハブへ行くときは出さない
+        if (opensStudentHub) {
+          router.push(`/students/${created.id}`);
+          return;
+        }
         setSelectedStudent(created);
         setIsDetailModalOpen(true);
         success('生徒を登録しました。ポータル招待はこの詳細画面から発行できます');
@@ -516,7 +535,7 @@ export function StudentsPageClient({
         setIsSubmitting(false);
       }
     },
-    [syncListsAfterMutation, success]
+    [syncListsAfterMutation, success, opensStudentHub, router]
   );
 
   // 更新
@@ -559,11 +578,19 @@ export function StudentsPageClient({
     [selectedStudent, showInactive, success, syncListsAfterMutation]
   );
 
-  // 詳細モーダルを開く
-  const handleOpenDetailModal = useCallback((student: Student) => {
-    setSelectedStudent(student);
-    setIsDetailModalOpen(true);
-  }, []);
+  // 生徒を開く（名簿の行・名前のクリック、スマホのカード、通知フィードの生徒名）。
+  // 教室長以上は生徒ハブのページへ、講師は従来どおり詳細モーダル。
+  const handleOpenDetailModal = useCallback(
+    (student: Student) => {
+      if (opensStudentHub) {
+        router.push(`/students/${student.id}`);
+        return;
+      }
+      setSelectedStudent(student);
+      setIsDetailModalOpen(true);
+    },
+    [opensStudentHub, router]
+  );
 
   // 進行表を新しいタブで開く
   const handleOpenProgress = useCallback((student: Student) => {

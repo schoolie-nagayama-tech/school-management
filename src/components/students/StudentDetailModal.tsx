@@ -45,7 +45,15 @@ function formatJaDate(date: string): string {
   if (!y || !m || !d) return date;
   return `${y}/${Number(m)}/${Number(d)}`;
 }
-import { Trash2, ExternalLink, PackageCheck, CalendarPlus, MessageSquarePlus } from 'lucide-react';
+import {
+  Trash2,
+  ExternalLink,
+  PackageCheck,
+  CalendarPlus,
+  MessageSquarePlus,
+  ArrowRight,
+} from 'lucide-react';
+import Link from 'next/link';
 
 interface StudentDetailModalProps {
   isOpen: boolean;
@@ -91,6 +99,8 @@ export function StudentDetailModal({
   const isTeacher = profile?.role === 'teacher';
   // 面談ワークスペースへの導線は室長以上のみ（面談ワークスペース自体が室長以上限定のページのため）
   const canStartInterview = isManagerOrAbove(profile?.role);
+  // 生徒ハブ（/students/[id]）は教室長以上のページなので、「ページで開く」も教室長以上だけに出す
+  const canOpenHub = isManagerOrAbove(profile?.role);
   // 入会オンボーディング導線: 通塾日程が0件の生徒にだけ「通塾セットアップ」ボタンを出す。
   const [hasPatterns, setHasPatterns] = useState<boolean | null>(null);
   const [textbooks, setTextbooks] = useState<StudentTextbookRow[]>([]);
@@ -444,6 +454,21 @@ export function StudentDetailModal({
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="生徒詳細" size="2xl">
       <div className="space-y-6">
+        {/* 生徒ハブ（/students/[id]）への入口。教室長以上だけ。
+            座席表・入会申込・請求・講習進行表など、生徒一覧以外からこのモーダルを開いたときの入口になる。
+            ★講師には出さない（ハブは教室長以上のページで、講師の画面は今のまま変えない決定） */}
+        {canOpenHub && student && (
+          <div className="-mb-3 flex justify-end">
+            <Link
+              href={`/students/${student.id}`}
+              onClick={onClose}
+              className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+            >
+              ページで開く
+              <ArrowRight className="h-3 w-3" aria-hidden="true" />
+            </Link>
+          </div>
+        )}
         {/* タブ */}
         <div className="flex border-b border-[#e5e7eb] -mx-6 px-6">
           {tabs.map((tab) => (

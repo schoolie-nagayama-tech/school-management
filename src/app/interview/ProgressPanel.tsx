@@ -60,14 +60,27 @@ interface ProgressPanelProps {
   /** student_textbook_id → 目標（試験目標）と行動目標。未取得なら空オブジェクトで良い */
   goals: Record<string, FeedGoalSummary>;
   loading: boolean;
+  /** 見出し。既定は「進行表」（面談ページ）。生徒ハブでは通常と講習で分けて出すので差し替える */
+  title?: string;
+  /**
+   * 停滞のバッジを出さない。講習のテキストは講習の期間しか使わないので、
+   * 期間の外で「14日使っていない」のは当たり前で、停滞と出すと誤解を招く（生徒ハブで使う）。
+   */
+  hideStall?: boolean;
 }
 
-export function ProgressPanel({ textbookData, goals, loading }: ProgressPanelProps) {
+export function ProgressPanel({
+  textbookData,
+  goals,
+  loading,
+  title = '進行表',
+  hideStall = false,
+}: ProgressPanelProps) {
   return (
     <Card>
       <CardHeader className="flex flex-row items-center gap-2 border-b-0 pb-0">
         <BookOpen className="h-4 w-4 text-text-muted" />
-        <CardTitle className="text-sm">進行表</CardTitle>
+        <CardTitle className="text-sm">{title}</CardTitle>
       </CardHeader>
       <CardContent className="pt-3">
         {loading ? (
@@ -97,7 +110,7 @@ export function ProgressPanel({ textbookData, goals, loading }: ProgressPanelPro
                         {detail.subject}
                       </span>
                     )}
-                    {detail.stalled && (
+                    {detail.stalled && !hideStall && (
                       <span className="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-danger-subtle px-1.5 py-0.5 text-[10px] font-medium text-danger">
                         <AlertCircle className="h-3 w-3" />
                         停滞
