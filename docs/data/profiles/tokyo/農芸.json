@@ -1,0 +1,682 @@
+{
+  "prefecture": "東京都",
+  "school_name": "農芸",
+  "official_url": "https://www.metro.ed.jp/nogei-h/",
+  "researched_at": "2026-09-28",
+  "stats": [
+    {
+      "metric": "university_count",
+      "item": "国公立",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 2,
+      "source_url": "https://www.metro.ed.jp/nogei-h/assets/pamphlet/pamphlet-pdffile-57.pdf",
+      "source_label": "農芸高校 学校案内2027（主な進学先・大学）",
+      "as_of": "2026-09",
+      "note": "帯広畜産大学1・宮崎大学1"
+    },
+    {
+      "metric": "university_count",
+      "item": "早慶上理",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 0,
+      "source_url": "https://www.metro.ed.jp/nogei-h/assets/pamphlet/pamphlet-pdffile-57.pdf",
+      "source_label": "農芸高校 学校案内2027（主な進学先・大学）",
+      "as_of": "2026-09",
+      "note": "該当なし"
+    },
+    {
+      "metric": "university_count",
+      "item": "GMARCH",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 1,
+      "source_url": "https://www.metro.ed.jp/nogei-h/assets/pamphlet/pamphlet-pdffile-57.pdf",
+      "source_label": "農芸高校 学校案内2027（主な進学先・大学）",
+      "as_of": "2026-09",
+      "note": "立教大学1"
+    },
+    {
+      "metric": "university_count",
+      "item": "成成明武",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 0,
+      "source_url": "https://www.metro.ed.jp/nogei-h/assets/pamphlet/pamphlet-pdffile-57.pdf",
+      "source_label": "農芸高校 学校案内2027（主な進学先・大学）",
+      "as_of": "2026-09",
+      "note": "該当なし"
+    },
+    {
+      "metric": "university_count",
+      "item": "日東駒専",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 0,
+      "source_url": "https://www.metro.ed.jp/nogei-h/assets/pamphlet/pamphlet-pdffile-57.pdf",
+      "source_label": "農芸高校 学校案内2027（主な進学先・大学）",
+      "as_of": "2026-09",
+      "note": "該当なし"
+    },
+    {
+      "metric": "university_count",
+      "item": "合計",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 41,
+      "source_url": "https://www.metro.ed.jp/nogei-h/assets/R7 学校経営報告 農芸全.pdf",
+      "source_label": "農芸高校 令和7年度学校経営報告（進路状況表）",
+      "as_of": "2026-03-31",
+      "note": "男20・女21。学校案内2027の大学別内訳（国公立2＋私立39）と一致"
+    },
+    {
+      "metric": "university_count",
+      "item": "東京農業大学",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 11,
+      "source_url": "https://www.metro.ed.jp/nogei-h/assets/pamphlet/pamphlet-pdffile-57.pdf",
+      "source_label": "農芸高校 学校案内2027（主な進学先・大学）",
+      "as_of": "2026-09",
+      "note": "大学別の表から。進学先で最多"
+    },
+    {
+      "metric": "university_count",
+      "item": "日本獣医生命科学大学",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 4,
+      "source_url": "https://www.metro.ed.jp/nogei-h/assets/pamphlet/pamphlet-pdffile-57.pdf",
+      "source_label": "農芸高校 学校案内2027（主な進学先・大学）",
+      "as_of": "2026-09",
+      "note": "大学別の表から"
+    },
+    {
+      "metric": "university_count",
+      "item": "嘉悦大学",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 4,
+      "source_url": "https://www.metro.ed.jp/nogei-h/assets/pamphlet/pamphlet-pdffile-57.pdf",
+      "source_label": "農芸高校 学校案内2027（主な進学先・大学）",
+      "as_of": "2026-09",
+      "note": "大学別の表から"
+    },
+    {
+      "metric": "university_count",
+      "item": "帝京科学大学",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 4,
+      "source_url": "https://www.metro.ed.jp/nogei-h/assets/pamphlet/pamphlet-pdffile-57.pdf",
+      "source_label": "農芸高校 学校案内2027（主な進学先・大学）",
+      "as_of": "2026-09",
+      "note": "大学別の表から"
+    },
+    {
+      "metric": "university_count",
+      "item": "東京家政学院大学",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 3,
+      "source_url": "https://www.metro.ed.jp/nogei-h/assets/pamphlet/pamphlet-pdffile-57.pdf",
+      "source_label": "農芸高校 学校案内2027（主な進学先・大学）",
+      "as_of": "2026-09",
+      "note": "大学別の表から"
+    },
+    {
+      "metric": "career_decided_rate",
+      "item": "",
+      "fiscal_year": 2025,
+      "value_num": 85.5,
+      "source_url": "https://www.metro.ed.jp/nogei-h/assets/R7 学校経営報告 農芸全.pdf",
+      "source_label": "農芸高校 令和7年度学校経営報告（数値目標と結果・卒業時進路決定率）",
+      "as_of": "2026-03-31",
+      "note": ""
+    },
+    {
+      "metric": "satisfaction",
+      "item": "生徒:学校生活",
+      "fiscal_year": 2025,
+      "value_num": 87.7,
+      "source_url": "https://www.metro.ed.jp/nogei-h/assets/令和７年度学校運営連絡協議会実施報告書.pdf",
+      "source_label": "農芸高校 令和7年度学校運営連絡協議会実施報告書（学校評価アンケート）",
+      "as_of": "2025-12",
+      "note": "「本校で学ぶことに満足している」生徒の回答"
+    },
+    {
+      "metric": "satisfaction",
+      "item": "保護者:学校生活",
+      "fiscal_year": 2025,
+      "value_num": 91.5,
+      "source_url": "https://www.metro.ed.jp/nogei-h/assets/令和７年度学校運営連絡協議会実施報告書.pdf",
+      "source_label": "農芸高校 令和7年度学校運営連絡協議会実施報告書（学校評価アンケート）",
+      "as_of": "2025-12",
+      "note": "「本校で学ぶことに満足している」保護者の回答"
+    },
+    {
+      "metric": "satisfaction",
+      "item": "生徒:授業",
+      "fiscal_year": 2025,
+      "value_num": 91,
+      "source_url": "https://www.metro.ed.jp/nogei-h/assets/R7 学校経営報告 農芸全.pdf",
+      "source_label": "農芸高校 令和7年度学校経営報告（数値目標と結果・生徒の授業満足度）",
+      "as_of": "2026-03-31",
+      "note": ""
+    },
+    {
+      "metric": "satisfaction",
+      "item": "保護者:授業",
+      "fiscal_year": 2025,
+      "value_num": 89,
+      "source_url": "https://www.metro.ed.jp/nogei-h/assets/令和７年度学校運営連絡協議会実施報告書.pdf",
+      "source_label": "農芸高校 令和7年度学校運営連絡協議会実施報告書（学校評価アンケート）",
+      "as_of": "2025-12",
+      "note": "「授業はわかりやすい」保護者の回答"
+    },
+    {
+      "metric": "uniform",
+      "item": "",
+      "fiscal_year": 2026,
+      "value_text": "冬はブレザー・ネクタイまたはリボン、白ワイシャツ/ブラウス。夏はポロシャツも可。スカートかスラックスを選べる（膝丈）。上下ともウォッシャブル素材。",
+      "source_url": "https://www.metro.ed.jp/nogei-h/school_life/symbols.html",
+      "source_label": "農芸高校 制服・校章・校歌／学校案内2027",
+      "as_of": "2026-09",
+      "note": ""
+    },
+    {
+      "metric": "rules_summary",
+      "item": "",
+      "fiscal_year": 2026,
+      "value_text": "頭髪はパーマ・染髪・脱色・エクステンション禁止。ピアス・指輪・マニキュア・化粧は禁止。アルバイトは学校届出と保護者許可で可（未成年不可の場所は不可）。携帯電話は所持可（SNSでの誹謗中傷は禁止）。",
+      "source_url": "https://www.metro.ed.jp/nogei-h/assets/filelink/filelink-pdffile-37148.pdf",
+      "source_label": "農芸高校 生徒心得",
+      "as_of": "2026-09",
+      "note": ""
+    },
+    {
+      "metric": "designation",
+      "item": "環境教育実践宣言校",
+      "fiscal_year": 2025,
+      "value_text": "東京都指定",
+      "source_url": "https://www.metro.ed.jp/nogei-h/assets/R7 学校経営報告 農芸全.pdf",
+      "source_label": "農芸高校 令和7年度学校経営報告",
+      "as_of": "2026-03-31",
+      "note": ""
+    },
+    {
+      "metric": "designation",
+      "item": "専門高校の新たな学びによる授業改善サポート事業",
+      "fiscal_year": 2025,
+      "value_text": "東京都教育委員会指定校",
+      "source_url": "https://www.metro.ed.jp/nogei-h/assets/R7 学校経営報告 農芸全.pdf",
+      "source_label": "農芸高校 令和7年度学校経営報告",
+      "as_of": "2026-03-31",
+      "note": ""
+    },
+    {
+      "metric": "designation",
+      "item": "都立学校における部活動特別強化プロジェクト（Premier Club）",
+      "fiscal_year": 2026,
+      "value_text": "馬術部がTier2に指定",
+      "source_url": "https://www.metro.ed.jp/nogei-h/assets/pamphlet/pamphlet-pdffile-57.pdf",
+      "source_label": "農芸高校 学校案内2027（R8年度部活動）",
+      "as_of": "2026-09",
+      "note": "取込済みの docs/data/tokyo-premiere-club-2026.csv でも馬術・tier2で一致"
+    },
+    {
+      "metric": "designation",
+      "item": "学力向上研究校",
+      "fiscal_year": 2023,
+      "value_text": "東京都教育委員会指定",
+      "source_url": "https://www.metro.ed.jp/nogei-h/our_school/history.html",
+      "source_label": "農芸高校 沿革（令和5年4月1日）",
+      "as_of": "2023-04-01",
+      "note": ""
+    },
+    {
+      "metric": "designation",
+      "item": "専門高校における民間OB等活用事業指定校",
+      "fiscal_year": 2023,
+      "value_text": "東京都教育委員会指定",
+      "source_url": "https://www.metro.ed.jp/nogei-h/our_school/history.html",
+      "source_label": "農芸高校 沿革（令和5年4月1日）",
+      "as_of": "2023-04-01",
+      "note": ""
+    },
+    {
+      "metric": "designation",
+      "item": "Sport-Science Promotion Club",
+      "fiscal_year": 2023,
+      "value_text": "東京都教育委員会指定",
+      "source_url": "https://www.metro.ed.jp/nogei-h/our_school/history.html",
+      "source_label": "農芸高校 沿革（令和5年4月1日）",
+      "as_of": "2023-04-01",
+      "note": ""
+    },
+    {
+      "metric": "designation",
+      "item": "SIP（Scientific Inquiry Program）拠点校（第III期）",
+      "fiscal_year": 2024,
+      "value_text": "東京都教育委員会指定",
+      "source_url": "https://www.metro.ed.jp/nogei-h/our_school/history.html",
+      "source_label": "農芸高校 沿革（令和6年4月1日）",
+      "as_of": "2024-04-01",
+      "note": "令和7年度学校経営報告でも「SIP拠点校2年目」として継続を確認"
+    }
+  ],
+  "clubs": [
+    {
+      "name": "合気道部",
+      "kind": "運動",
+      "days_note": "毎週火・木曜日の放課後",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "tier": 3,
+      "tier_basis": "2024年度 全日本合気道演武大会・全国高校合気道演武大会に出場。順位を付けない演武の大会で、出場しただけのため段階3（見直しで2→3）",
+      "source_url": "https://www.metro.ed.jp/nogei-h/school_life/activities.html",
+      "as_of": "2026-09-28",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "全日本合気道演武大会",
+          "level": "全国",
+          "result": "出場（演武）",
+          "source_url": "https://www.metro.ed.jp/nogei-h/school_life/activities.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "全国高等学校合気道演武大会",
+          "level": "全国",
+          "result": "出場（演武）",
+          "source_url": "https://www.metro.ed.jp/nogei-h/school_life/activities.html"
+        }
+      ]
+    },
+    {
+      "name": "剣道部",
+      "kind": "運動",
+      "days_note": "水曜日・金曜日",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "tier": 3,
+      "tier_basis": "2023年度 都個人戦（女子）ベスト16（2名）。個人種目の入賞（8位以内）には届かない（学校部活動ページ）",
+      "source_url": "https://www.metro.ed.jp/nogei-h/school_life/activities.html",
+      "as_of": "2026-09-28",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "高体連剣道専門部 個人戦（女子）",
+          "level": "都県",
+          "result": "ベスト16（2名）",
+          "happened_on": "2024-01-23",
+          "source_url": "https://www.metro.ed.jp/nogei-h/school_life/activities.html"
+        }
+      ]
+    },
+    {
+      "name": "硬式テニス部",
+      "kind": "運動",
+      "days_note": "水曜日、金曜日、土曜日",
+      "days_per_week": 3,
+      "weekend": "土",
+      "tier": 4,
+      "tier_basis": "週3日、直近3年の大会成績の記載なし（学校部活動ページ）",
+      "source_url": "https://www.metro.ed.jp/nogei-h/school_life/activities.html",
+      "as_of": "2026-09-28",
+      "results": []
+    },
+    {
+      "name": "柔道同好会",
+      "kind": "同好会",
+      "days_note": "火曜日から土曜日",
+      "days_per_week": 5,
+      "weekend": "土",
+      "source_url": "https://www.metro.ed.jp/nogei-h/school_life/activities.html",
+      "as_of": "2026-09-28",
+      "results": []
+    },
+    {
+      "name": "女子バスケットボール部",
+      "kind": "運動",
+      "days_note": "月曜日・水曜日・木曜日・土曜日",
+      "days_per_week": 4,
+      "weekend": "土",
+      "source_url": "https://www.metro.ed.jp/nogei-h/school_life/activities.html",
+      "as_of": "2026-09-28",
+      "results": []
+    },
+    {
+      "name": "バレーボール部",
+      "kind": "運動",
+      "days_note": "火・木曜日、水曜日は偶数週、土曜日は毎週（偶数週AM・奇数週PM）",
+      "days_per_week": 3.5,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "2024年度 春季大会予選で優勝（本大会の結果の記載なし）（学校部活動ページ）",
+      "source_url": "https://www.metro.ed.jp/nogei-h/activities/club_7/index.html",
+      "as_of": "2026-09-28",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "春季大会予選",
+          "level": "地区",
+          "result": "予選優勝（本大会の結果は記載なし）",
+          "happened_on": "2024-05-10",
+          "source_url": "https://www.metro.ed.jp/nogei-h/activities/club_7/index.html"
+        }
+      ]
+    },
+    {
+      "name": "卓球部",
+      "kind": "運動",
+      "days_note": "月曜日・火曜日・金曜日",
+      "days_per_week": 3,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "週3日、直近3年の大会成績の記載なし（学校部活動ページ）",
+      "source_url": "https://www.metro.ed.jp/nogei-h/school_life/activities.html",
+      "as_of": "2026-09-28",
+      "results": []
+    },
+    {
+      "name": "男子バスケットボール部",
+      "kind": "運動",
+      "days_note": "火・水・金曜日（水曜奇数週はトレーニング）。土日は練習試合や公式戦など",
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "学科でしぼった農業大会のため1段低く読む。2025年度6月に3位入賞したが、直近3年で他に実績の記載なし（学校部活動ページ）",
+      "source_url": "https://www.metro.ed.jp/nogei-h/activities/club_9/index.html",
+      "as_of": "2026-09-28",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "農業大会",
+          "level": "その他",
+          "result": "3位入賞",
+          "happened_on": "2025-06-23",
+          "source_url": "https://www.metro.ed.jp/nogei-h/activities/club_9/index.html"
+        }
+      ]
+    },
+    {
+      "name": "馬術部",
+      "kind": "運動",
+      "days_note": "毎日",
+      "days_per_week": 7,
+      "weekend": "土日",
+      "tier": 1,
+      "tier_basis": "都立学校における部活動特別強化プロジェクト（Premier Club）Tier2指定（東京都教育委員会、学校案内2027）。加えて2023年度に関東・全国大会へ4回出場（関東馬術トーナメント戦4月、関東馬術選手権6月、全日本高等学校馬術競技大会＝インターハイ団体戦7月、関東自馬競技大会9月）と「2回以上」を満たす（学校部活動ページ）",
+      "source_url": "https://www.metro.ed.jp/nogei-h/school_life/activities.html",
+      "as_of": "2026-09-28",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "第74回関東高等学校馬術トーナメント戦",
+          "level": "関東",
+          "result": "出場",
+          "happened_on": "2023-04-28",
+          "source_url": "https://www.metro.ed.jp/nogei-h/school_life/activities.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "第66回関東高等学校馬術選手権及び第34回全日本高等学校馬術選手権大会関東地区予選",
+          "level": "関東",
+          "result": "出場",
+          "happened_on": "2023-06-09",
+          "source_url": "https://www.metro.ed.jp/nogei-h/school_life/activities.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "第57回全日本高等学校馬術競技大会（インターハイ：団体戦）",
+          "level": "全国",
+          "result": "出場",
+          "happened_on": "2023-07-24",
+          "source_url": "https://www.metro.ed.jp/nogei-h/school_life/activities.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "第59回関東高等学校自馬競技大会",
+          "level": "関東",
+          "result": "出場",
+          "happened_on": "2023-09-22",
+          "source_url": "https://www.metro.ed.jp/nogei-h/school_life/activities.html"
+        }
+      ]
+    },
+    {
+      "name": "バドミントン部",
+      "kind": "運動",
+      "days_note": "月曜日・水曜日・金曜日・土曜日",
+      "days_per_week": 4,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "学科でしぼった農業6校大会のため1段低く読む。2025年度6月に男子Aチーム3位・女子チーム準優勝だが、直近3年で他に実績の記載なし（学校部活動ページ）",
+      "source_url": "https://www.metro.ed.jp/nogei-h/school_life/activities.html",
+      "as_of": "2026-09-28",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "農業6校大会",
+          "level": "その他",
+          "result": "男子Aチーム3位・女子チーム準優勝",
+          "source_url": "https://www.metro.ed.jp/nogei-h/school_life/activities.html"
+        }
+      ]
+    },
+    {
+      "name": "ダンス部",
+      "kind": "運動",
+      "days_note": "月・木 週2日",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "週2日、直近3年の大会成績の記載なし（学校部活動ページ）",
+      "source_url": "https://www.metro.ed.jp/nogei-h/school_life/activities.html",
+      "as_of": "2026-09-28",
+      "results": []
+    },
+    {
+      "name": "演劇部",
+      "kind": "文化",
+      "days_note": "月・火・水・金・土",
+      "days_per_week": 5,
+      "weekend": "土",
+      "source_url": "https://www.metro.ed.jp/nogei-h/school_life/activities.html",
+      "as_of": "2026-09-28",
+      "results": []
+    },
+    {
+      "name": "音楽部",
+      "kind": "文化",
+      "days_note": "月曜日・水曜日・金曜日",
+      "days_per_week": 3,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "週3日、農芸祭でのライブ等のみでコンクール等の記載なし（学校部活動ページ）",
+      "source_url": "https://www.metro.ed.jp/nogei-h/school_life/activities.html",
+      "as_of": "2026-09-28",
+      "results": []
+    },
+    {
+      "name": "外国研究部",
+      "kind": "文化",
+      "days_note": "金曜日",
+      "days_per_week": 1,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "週1日、農芸祭での展示のみでコンクール等の記載なし（学校部活動ページ）",
+      "source_url": "https://www.metro.ed.jp/nogei-h/school_life/activities.html",
+      "as_of": "2026-09-28",
+      "results": []
+    },
+    {
+      "name": "家庭科部",
+      "kind": "文化",
+      "days_note": "火曜日・水曜日の放課後",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "週2日、農芸祭での製造販売のみでコンクール等の記載なし（学校部活動ページ）",
+      "source_url": "https://www.metro.ed.jp/nogei-h/school_life/activities.html",
+      "as_of": "2026-09-28",
+      "results": []
+    },
+    {
+      "name": "茶道部",
+      "kind": "文化",
+      "days_note": "週1回",
+      "days_per_week": 1,
+      "tier": 4,
+      "tier_basis": "週1日、大会・コンクール等の記載なし（学校部活動ページ）",
+      "source_url": "https://www.metro.ed.jp/nogei-h/school_life/activities.html",
+      "as_of": "2026-09-28",
+      "results": []
+    },
+    {
+      "name": "生物部",
+      "kind": "文化",
+      "days_note": "火曜日",
+      "days_per_week": 1,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "週1日、大会・コンクール等の記載なし（学校部活動ページ）",
+      "source_url": "https://www.metro.ed.jp/nogei-h/school_life/activities.html",
+      "as_of": "2026-09-28",
+      "results": []
+    },
+    {
+      "name": "美術部",
+      "kind": "文化",
+      "days_note": "月曜と木曜の週二回",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "週2日、校内展示会のみでコンクール等の記載なし（学校部活動ページ）",
+      "source_url": "https://www.metro.ed.jp/nogei-h/school_life/activities.html",
+      "as_of": "2026-09-28",
+      "results": []
+    },
+    {
+      "name": "漫画イラスト部",
+      "kind": "文化",
+      "days_note": "月・木曜日の放課後",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "週2日、農芸祭での展示のみでコンクール等の記載なし（学校部活動ページ）",
+      "source_url": "https://www.metro.ed.jp/nogei-h/school_life/activities.html",
+      "as_of": "2026-09-28",
+      "results": []
+    },
+    {
+      "name": "和太鼓部",
+      "kind": "文化",
+      "days_note": "火曜日・木曜日",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "週2日、文化祭・地域の祭りへの出演のみでコンクール等の記載なし（学校部活動ページ）",
+      "source_url": "https://www.metro.ed.jp/nogei-h/school_life/activities.html",
+      "as_of": "2026-09-28",
+      "results": []
+    },
+    {
+      "name": "果樹研究部",
+      "kind": "文化",
+      "days_note": "火曜日・金曜日",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "週2日、果樹の授業の延長のみで大会・コンクール等の記載なし（学校部活動ページ）",
+      "source_url": "https://www.metro.ed.jp/nogei-h/school_life/activities.html",
+      "as_of": "2026-09-28",
+      "results": []
+    },
+    {
+      "name": "草花研究部",
+      "kind": "文化",
+      "source_url": "https://www.metro.ed.jp/nogei-h/school_life/activities.html",
+      "as_of": "2026-09-28",
+      "results": []
+    },
+    {
+      "name": "植物バイオテクノロジー研究部",
+      "kind": "文化",
+      "days_note": "火曜日・木曜日",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "週2日、研究テーマの記載のみで大会・コンクール等の記載なし（学校部活動ページ）",
+      "source_url": "https://www.metro.ed.jp/nogei-h/school_life/activities.html",
+      "as_of": "2026-09-28",
+      "results": []
+    },
+    {
+      "name": "野菜研究部",
+      "kind": "文化",
+      "days_note": "月曜日・水曜日・金曜日",
+      "days_per_week": 3,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "週3日、大会・コンクール等の記載なし（学校部活動ページ）",
+      "source_url": "https://www.metro.ed.jp/nogei-h/school_life/activities.html",
+      "as_of": "2026-09-28",
+      "results": []
+    },
+    {
+      "name": "製菓製パン研究部",
+      "kind": "文化",
+      "days_note": "月に一度。土曜日",
+      "weekend": "土",
+      "tier": 4,
+      "tier_basis": "月1回のみの活動で大会・コンクール等の記載なし（学校部活動ページ）",
+      "source_url": "https://www.metro.ed.jp/nogei-h/school_life/activities.html",
+      "as_of": "2026-09-28",
+      "results": []
+    },
+    {
+      "name": "農産加工研究部",
+      "kind": "文化",
+      "days_note": "月1回ミーティング、週1回各班の研究",
+      "days_per_week": 1,
+      "tier": 4,
+      "tier_basis": "週1日程度、大会・コンクール等の記載なし（学校部活動ページ）",
+      "source_url": "https://www.metro.ed.jp/nogei-h/school_life/activities.html",
+      "as_of": "2026-09-28",
+      "results": []
+    },
+    {
+      "name": "造園測量部",
+      "kind": "文化",
+      "days_note": "火曜日・木曜日",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "週2日、農芸祭に向けた準備のみで大会・コンクール等の記載なし（学校部活動ページ）",
+      "source_url": "https://www.metro.ed.jp/nogei-h/school_life/activities.html",
+      "as_of": "2026-09-28",
+      "results": []
+    }
+  ],
+  "designated_universities": [],
+  "events": [
+    {
+      "kind": "その他",
+      "period_label": "2021年12月",
+      "happened_on": "2021-12-19",
+      "summary": "創立120周年・定時制70周年記念式典を挙行",
+      "source_url": "https://www.metro.ed.jp/nogei-h/our_school/history.html"
+    }
+  ],
+  "unresolved": [
+    "推薦選抜の応募倍率（exam_ratio）：学校サイトの入試案内は東京都教育委員会のページへのリンクのみで、農芸単独の推薦倍率は未確認",
+    "指定校推薦の大学名一覧：進路指導・パンフレットには合格実績（大学別人数）はあるが、指定校の一覧そのものは非公開（学校経営報告に大学84校・52関連学部という校数のみ）",
+    "在校生の男女別人数（students）：現在の在校生数を男女別に公表した資料が見当たらない（卒業生の進路先内訳の男女数のみ公表）",
+    "部活動加入率（club_join_rate）の具体的な%：学校経営報告に「加入率の向上」という記述はあるが数値目標表に無い"
+  ],
+  "conflicts": [
+    "進路決定率：令和7年度学校経営報告の本文は「令和7年度の進路決定率は91%」と書くが、同じ資料の数値目標表では「卒業時進路決定率」85.5%（令和7年度）、「第一志望決定率」91%（令和7年度）と分けており、本文の91%は第一志望決定率と同じ値。career_decided_rateには卒業時進路決定率の85.5%を採用した"
+  ]
+}

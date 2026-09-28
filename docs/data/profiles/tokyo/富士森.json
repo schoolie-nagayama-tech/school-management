@@ -1,0 +1,797 @@
+{
+  "prefecture": "東京都",
+  "school_name": "富士森",
+  "official_url": "https://www.metro.ed.jp/fujimori-h/",
+  "researched_at": "2026-09-28",
+  "stats": [
+    {
+      "metric": "university_count",
+      "item": "国公立",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 0,
+      "source_url": "https://www.metro.ed.jp/fujimori-h/img_sub/pamphlet/pamphlet-pdffile-642.pdf",
+      "source_label": "富士森高校 学校案内パンフレット（2027年度版）p.10 3年間の主な合格実績",
+      "as_of": "2026-09",
+      "note": "R7列（2025年度卒業=現役）。国公立大学合計は金沢大学・鳥取大学のみで各0名"
+    },
+    {
+      "metric": "university_count",
+      "item": "早慶上理",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 4,
+      "source_url": "https://www.metro.ed.jp/fujimori-h/img_sub/pamphlet/pamphlet-pdffile-642.pdf",
+      "source_label": "富士森高校 学校案内パンフレット（2027年度版）p.10 3年間の主な合格実績",
+      "as_of": "2026-09",
+      "note": "大学別の表から合算（早稲田1・慶應3・上智0・東京理科0）"
+    },
+    {
+      "metric": "university_count",
+      "item": "GMARCH",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 14,
+      "source_url": "https://www.metro.ed.jp/fujimori-h/img_sub/pamphlet/pamphlet-pdffile-642.pdf",
+      "source_label": "富士森高校 学校案内パンフレット（2027年度版）p.10 3年間の主な合格実績",
+      "as_of": "2026-09",
+      "note": "大学別の表から合算（学習院0・明治1・青山学院1・立教0・中央6・法政6）"
+    },
+    {
+      "metric": "university_count",
+      "item": "成成明武",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 5,
+      "source_url": "https://www.metro.ed.jp/fujimori-h/img_sub/pamphlet/pamphlet-pdffile-642.pdf",
+      "source_label": "富士森高校 学校案内パンフレット（2027年度版）p.10 3年間の主な合格実績",
+      "as_of": "2026-09",
+      "note": "大学別の表から合算（成蹊3・成城0・明治学院1・武蔵1）"
+    },
+    {
+      "metric": "university_count",
+      "item": "日東駒専",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 43,
+      "source_url": "https://www.metro.ed.jp/fujimori-h/img_sub/pamphlet/pamphlet-pdffile-642.pdf",
+      "source_label": "富士森高校 学校案内パンフレット（2027年度版）p.10 3年間の主な合格実績",
+      "as_of": "2026-09",
+      "note": "大学別の表から合算（日本17・東洋6・駒澤8・専修12）"
+    },
+    {
+      "metric": "university_count",
+      "item": "合計",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 400,
+      "source_url": "https://www.metro.ed.jp/fujimori-h/img_sub/pamphlet/pamphlet-pdffile-642.pdf",
+      "source_label": "富士森高校 学校案内パンフレット（2027年度版）p.10 3年間の主な合格実績",
+      "as_of": "2026-09",
+      "note": "国公立0名＋私立400名（学校が表に付した合計値）"
+    },
+    {
+      "metric": "university_count",
+      "item": "明星大学",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 50,
+      "source_url": "https://www.metro.ed.jp/fujimori-h/img_sub/pamphlet/pamphlet-pdffile-642.pdf",
+      "source_label": "富士森高校 学校案内パンフレット（2027年度版）p.10 3年間の主な合格実績",
+      "as_of": "2026-09",
+      "note": ""
+    },
+    {
+      "metric": "university_count",
+      "item": "帝京大学",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 47,
+      "source_url": "https://www.metro.ed.jp/fujimori-h/img_sub/pamphlet/pamphlet-pdffile-642.pdf",
+      "source_label": "富士森高校 学校案内パンフレット（2027年度版）p.10 3年間の主な合格実績",
+      "as_of": "2026-09",
+      "note": ""
+    },
+    {
+      "metric": "university_count",
+      "item": "東京経済大学",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 32,
+      "source_url": "https://www.metro.ed.jp/fujimori-h/img_sub/pamphlet/pamphlet-pdffile-642.pdf",
+      "source_label": "富士森高校 学校案内パンフレット（2027年度版）p.10 3年間の主な合格実績",
+      "as_of": "2026-09",
+      "note": ""
+    },
+    {
+      "metric": "university_count",
+      "item": "日本大学",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 17,
+      "source_url": "https://www.metro.ed.jp/fujimori-h/img_sub/pamphlet/pamphlet-pdffile-642.pdf",
+      "source_label": "富士森高校 学校案内パンフレット（2027年度版）p.10 3年間の主な合格実績",
+      "as_of": "2026-09",
+      "note": ""
+    },
+    {
+      "metric": "exam_ratio",
+      "item": "推薦",
+      "basis": "",
+      "fiscal_year": 2026,
+      "value_num": 3,
+      "source_url": "https://www.metro.ed.jp/fujimori-h/pages/2026/01/freepage_235.html",
+      "source_label": "富士森高校 校長ブログ「気づきの森」240本目：令和8年度推薦に基づく選抜が無事に終了しました",
+      "as_of": "2026-01-27",
+      "note": "応募倍率か受検倍率かは本文に明記なし。「他校と比べても比較的高い倍率」「3.0倍という倍率」とだけ記載"
+    },
+    {
+      "metric": "designation",
+      "item": "地域探究推進事業アソシエイト校",
+      "basis": "",
+      "fiscal_year": 2024,
+      "value_text": "八王子市の地域探究推進事業アソシエイト校に指定。八王子市役所・子ども家庭部青少年若者課主催「八王子高校探究コンソーシアム」（市内高校5校参加）に参加し、鹿島建設がアドバイザーとして連携",
+      "source_url": "https://www.metro.ed.jp/fujimori-h/img_sub/令和６年度_ 学校経営計画.pdf",
+      "source_label": "富士森高校 令和6年度学校経営計画",
+      "as_of": "2024-04",
+      "note": "令和6年度計画時点の記載。直近年度の継続状況は未確認"
+    },
+    {
+      "metric": "uniform",
+      "item": "",
+      "basis": "",
+      "fiscal_year": 2025,
+      "value_text": "ブレザー。女子はスカート（任意でスラックス選択可）、男子はスラックス。ネクタイ・リボン着用（式典はネクタイのみ）。校章バッジを左襟に着用。夏季（5〜10月）は略装可",
+      "source_url": "https://www.metro.ed.jp/fujimori-h/img_sub/07生徒心得_1.pdf",
+      "source_label": "富士森高校 生徒心得（令和7年度）",
+      "as_of": "2025-04",
+      "note": "パンフレットでは女子スカートはピンクのチェック柄で校章ロゴ入り、ポケット脇に男子ブルー・女子ピンクのワンポイントと紹介"
+    },
+    {
+      "metric": "rules_summary",
+      "item": "",
+      "basis": "",
+      "fiscal_year": 2025,
+      "value_text": "頭髪の染色・脱色・パーマ・奇抜な髪型は禁止。ピアス・ネックレス等の装飾品や化粧は禁止。スマホはルールを守って使用し、誹謗中傷や動画投稿は特別指導の対象。飲酒喫煙は電子タバコも含め禁止。アルバイトの規定記載なし",
+      "source_url": "https://www.metro.ed.jp/fujimori-h/img_sub/07生徒心得_1.pdf",
+      "source_label": "富士森高校 生徒心得（令和7年度）",
+      "as_of": "2025-04",
+      "note": ""
+    }
+  ],
+  "clubs": [
+    {
+      "name": "硬式野球部",
+      "kind": "運動",
+      "days_note": "月・水・木・金・土・日の週6日",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2023〜2025年の夏の西東京大会は3〜4回戦で敗退（最も勝ち進んだ2023年夏は3勝して4回戦敗退）、都大会上位進出の記録なし（一球速報.com）",
+      "source_url": "https://baseball.omyutech.com/teamTop.action?teamId=12021",
+      "as_of": "2026-09",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "第105回全国高等学校野球選手権記念西東京大会",
+          "level": "都県",
+          "result": "2回戦・3回戦を勝ち3勝して4回戦敗退（桜美林に0-6）",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=12021&year=2023"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "第106回全国高等学校野球選手権西東京大会",
+          "level": "都県",
+          "result": "2回戦で桐朋に9-2で勝利、3回戦で東大和南に3-4で敗退",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=12021&year=2024"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第107回全国高等学校野球選手権西東京大会",
+          "level": "都県",
+          "result": "2回戦で錦城に2-1で勝利、3回戦で工学院大付に0-3で敗退",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=12021&year=2025"
+        }
+      ]
+    },
+    {
+      "name": "吹奏楽部",
+      "kind": "文化",
+      "days_note": "基本毎日（曜日指定ではなく活動の様子を見ながらOFF日を設定）",
+      "weekend": "",
+      "tier": 2,
+      "tier_basis": "2025年度 東京都高等学校吹奏楽コンクールA組で金賞・都大会進出（東京都高等学校吹奏楽連盟公式結果）。2024年度も同コンクールA組で金賞（都大会進出なし）",
+      "source_url": "https://www.metro.ed.jp/fujimori-h/activities/club_2/index.html",
+      "as_of": "2025-08",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "第65回東京都高等学校吹奏楽コンクールA組",
+          "level": "都県",
+          "result": "金賞・都大会進出",
+          "happened_on": "2025-08-10",
+          "source_url": "https://tokousuiren.com/wp/wp-content/uploads/2025/08/10A.pdf"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "第64回東京都高等学校吹奏楽コンクールA組",
+          "level": "都県",
+          "result": "金賞（都大会進出なし）",
+          "happened_on": "2024-08-13",
+          "source_url": "https://tokousuiren.com/wp/wp-content/uploads/2024/08/b6f95390732796040c9ac7d5976206f3.pdf"
+        }
+      ]
+    },
+    {
+      "name": "サッカー部",
+      "kind": "運動",
+      "days_note": "火、水、金、土、日",
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2026年度 高円宮杯U-18サッカーリーグ東京のT1〜T5いずれにも所属なし（支部リーグ相当のため段階3）",
+      "source_url": "https://www.tleague-u18.com/team.php?dy=2026&dt=3",
+      "as_of": "2026-09"
+    },
+    {
+      "name": "女子バスケットボール部",
+      "kind": "運動",
+      "days_note": "月・水・木（体育館練習）、土・日（体育館練習または練習試合・大会）",
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2025・2026年度 夏季大会でブロック優勝（M・Tブロック）。ブロック内の順位で都ベスト8ではないため段階3（見直しで2→3）",
+      "source_url": "https://www.metro.ed.jp/fujimori-h/activities/club_4/index.html",
+      "as_of": "2026-09",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "令和7年度東京都高等学校女子バスケットボール夏季大会",
+          "level": "都県",
+          "result": "Mブロック優勝",
+          "happened_on": "2025-08-20",
+          "source_url": "https://www.metro.ed.jp/fujimori-h/activities/2025/08/clubentry_147.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "関東大会予選",
+          "level": "都県",
+          "result": "3回戦を勝ち4回戦敗退、東京都ベスト56",
+          "happened_on": "2025-04-28",
+          "source_url": "https://www.metro.ed.jp/fujimori-h/activities/2025/04/clubentry_124.html"
+        }
+      ]
+    },
+    {
+      "name": "ダンス部",
+      "kind": "運動",
+      "days_note": "火・木・金・土・日",
+      "weekend": "土日",
+      "tier": 2,
+      "tier_basis": "2025年8月 日本高校ダンス部選手権〈DANCE STADIUM〉東京都大会で準優勝し全国大会準決勝に進出（民間主催）。2025年11月 HIGH SCHOOL DANCE COMPETITION 2026 EAST vol.1で優秀賞（7位）",
+      "source_url": "https://www.metro.ed.jp/fujimori-h/activities/club_6/index.html",
+      "as_of": "2026-09",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "第18回日本高校ダンス部選手権 夏の公式全国大会 東京都大会〈DANCE STADIUM〉",
+          "level": "全国",
+          "result": "東京都大会準優勝、全国大会準決勝進出",
+          "happened_on": "2025-08-02",
+          "source_url": "https://www.metro.ed.jp/fujimori-h/activities/2025/08/18_dance_stadium.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "HIGH SCHOOL DANCE COMPETITION 2026 EAST vol.1",
+          "level": "地区",
+          "result": "優秀賞（第7位）",
+          "happened_on": "2025-11-09",
+          "source_url": "https://www.metro.ed.jp/fujimori-h/activities/2025/11/high_school_dance_competition_7.html"
+        }
+      ]
+    },
+    {
+      "name": "空手道部",
+      "kind": "運動",
+      "days_note": "月・火・水・木・金と、授業やイベント・大会等のある土日祝",
+      "weekend": "土日",
+      "tier": 1,
+      "tier_basis": "2024〜2026年度、春季大会で男女団体組手が3位以内に入り毎年関東大会に出場（3年連続）。2024年度は女子団体組手が関東大会ベスト16（学校公式サイト「大会実績」）",
+      "source_url": "https://www.metro.ed.jp/fujimori-h/activities/club_3/index.html",
+      "as_of": "2026-07",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "東京都高等学校空手道大会（春季大会）",
+          "level": "都県",
+          "result": "女子団体組手3位・男子団体組手3位→関東大会出場",
+          "source_url": "https://www.metro.ed.jp/fujimori-h/activities/club_3/index.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第54回関東高等学校空手道大会",
+          "level": "関東",
+          "result": "女子団体組手・男子団体組手ともに敢闘",
+          "happened_on": "2025-06-30",
+          "source_url": "https://www.metro.ed.jp/fujimori-h/activities/club_3/index.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "第53回関東高等学校空手道大会",
+          "level": "関東",
+          "result": "女子団体組手がベスト16",
+          "source_url": "https://www.metro.ed.jp/fujimori-h/activities/club_3/index.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "東京都高等学校空手道大会（秋季大会）",
+          "level": "都県",
+          "result": "女子団体組手（3人制）優勝→関東選抜大会出場",
+          "happened_on": "2025-11-18",
+          "source_url": "https://www.metro.ed.jp/fujimori-h/activities/2025/11/clubentry_9_1.html"
+        }
+      ]
+    },
+    {
+      "name": "バドミントン部（女子）",
+      "kind": "運動",
+      "weekend": "",
+      "tier": 3,
+      "tier_basis": "2025年度 新人大会団体 西東京ベスト8（都ベスト16相当・1回）。都県ベスト16〜32が複数回に届かないため段階3（見直しで2→3）",
+      "source_url": "https://www.metro.ed.jp/fujimori-h/school_life/activities.html",
+      "as_of": "2026-09",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "新人大会兼全国高等学校選抜大会都予選（団体）",
+          "level": "都県",
+          "result": "西東京ベスト8",
+          "source_url": "https://www.metro.ed.jp/fujimori-h/school_life/activities.html"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "全国高等学校総合体育大会東京都予選大会（団体）",
+          "level": "都県",
+          "result": "西東京ベスト16",
+          "source_url": "https://www.metro.ed.jp/fujimori-h/school_life/activities.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "関東公立高等学校バドミントン大会都予選",
+          "level": "都県",
+          "result": "1位（公立校限定の予選）",
+          "source_url": "https://www.metro.ed.jp/fujimori-h/school_life/activities.html"
+        }
+      ]
+    },
+    {
+      "name": "バドミントン部（男子）",
+      "kind": "運動",
+      "weekend": "",
+      "tier": 3,
+      "tier_basis": "2025・2026年度 団体で西東京ベスト32（都ベスト64相当）。都県ベスト16〜32に届かないため段階3（見直しで2→3）",
+      "source_url": "https://www.metro.ed.jp/fujimori-h/school_life/activities.html",
+      "as_of": "2026-09",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "新人大会兼全国高等学校選抜大会都予選大会（団体）",
+          "level": "都県",
+          "result": "西東京ベスト32",
+          "source_url": "https://www.metro.ed.jp/fujimori-h/school_life/activities.html"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "全国高等学校総合体育大会東京都予選大会（団体）",
+          "level": "都県",
+          "result": "西東京ベスト32",
+          "source_url": "https://www.metro.ed.jp/fujimori-h/school_life/activities.html"
+        }
+      ]
+    },
+    {
+      "name": "硬式テニス部",
+      "kind": "運動",
+      "days_note": "月〜土に練習（平日のどこかで男女別に休みあり）、日曜は試合や練習試合",
+      "weekend": "土日",
+      "tier": 2,
+      "tier_basis": "2024〜2026年度、団体戦で東京都ベスト32〜56が男女とも複数回。都立対抗テニス選手権大会は男子ベスト16（2025年度）、女子3位（2026年度、都立限定大会のため1段低く評価）（学校公式サイト）",
+      "source_url": "https://www.metro.ed.jp/fujimori-h/activities/club_7/index.html",
+      "as_of": "2026-08",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "都立対抗テニス選手権大会（団体）",
+          "level": "都県",
+          "result": "女子3位",
+          "happened_on": "2026-07-29",
+          "source_url": "https://www.metro.ed.jp/fujimori-h/activities/club_7/index.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "都立対抗テニス選手権大会（団体）",
+          "level": "都県",
+          "result": "男女ともベスト16",
+          "source_url": "https://www.metro.ed.jp/fujimori-h/activities/club_7/index.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "新人戦（団体）",
+          "level": "都県",
+          "result": "男女とも東京都ベスト32",
+          "source_url": "https://www.metro.ed.jp/fujimori-h/activities/club_7/index.html"
+        }
+      ]
+    },
+    {
+      "name": "ソフトテニス部",
+      "kind": "運動",
+      "days_note": "平日4日＋土曜",
+      "weekend": "土",
+      "source_url": "https://www.metro.ed.jp/fujimori-h/school_life/activities.html",
+      "as_of": "2026-09"
+    },
+    {
+      "name": "男子バスケットボール部",
+      "kind": "運動",
+      "days_note": "火・水・金・土・日",
+      "weekend": "土日",
+      "source_url": "https://www.metro.ed.jp/fujimori-h/school_life/activities.html",
+      "as_of": "2026-09"
+    },
+    {
+      "name": "女子バレーボール部",
+      "kind": "運動",
+      "days_note": "火・水（隔週）・木・土or日",
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2025・2026年度の春季大会兼関東大会予選で東京都ベスト48・2部大会ベスト32どまり（学校公式サイト）",
+      "source_url": "https://www.metro.ed.jp/fujimori-h/activities/club_11/index.html",
+      "as_of": "2026-08"
+    },
+    {
+      "name": "水泳部",
+      "kind": "運動",
+      "days_note": "月火木金土（土曜は土曜授業がある日のみ）、大会のある土日",
+      "weekend": "試合のみ",
+      "tier": 2,
+      "tier_basis": "2023年度新人水泳競技大会で女子100mバタフライ5位、2024年度春季水泳競技大会で女子200mバタフライ6位（学校公式サイト。都大会の個人種目のため段階2どまり）",
+      "source_url": "https://www.metro.ed.jp/fujimori-h/activities/club_21/index.html",
+      "as_of": "2026-06"
+    },
+    {
+      "name": "剣道部",
+      "kind": "運動",
+      "days_note": "水・土",
+      "weekend": "土",
+      "source_url": "https://www.metro.ed.jp/fujimori-h/school_life/activities.html",
+      "as_of": "2026-09"
+    },
+    {
+      "name": "卓球部",
+      "kind": "運動",
+      "days_note": "月・水・金・（土）",
+      "weekend": "土",
+      "source_url": "https://www.metro.ed.jp/fujimori-h/school_life/activities.html",
+      "as_of": "2026-09"
+    },
+    {
+      "name": "陸上競技部",
+      "kind": "運動",
+      "days_note": "月・火・水・金・土（大会がある日は日曜日も）",
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "支部総体・学年別大会・多摩選手権等いずれも地区レベルどまりで、都大会進出の記録がない（学校公式サイト「大会実績」）",
+      "source_url": "https://www.metro.ed.jp/fujimori-h/activities/club/index.html",
+      "as_of": "2026-07"
+    },
+    {
+      "name": "アウトドア部",
+      "kind": "運動",
+      "days_note": "火・木・休日・長期休暇等",
+      "weekend": "",
+      "source_url": "https://www.metro.ed.jp/fujimori-h/school_life/activities.html",
+      "as_of": "2026-09"
+    },
+    {
+      "name": "華道部",
+      "kind": "文化",
+      "days_note": "年間25回（基本金曜日）",
+      "source_url": "https://www.metro.ed.jp/fujimori-h/school_life/activities.html",
+      "as_of": "2026-09"
+    },
+    {
+      "name": "茶道部",
+      "kind": "文化",
+      "days_note": "火曜日",
+      "source_url": "https://www.metro.ed.jp/fujimori-h/school_life/activities.html",
+      "as_of": "2026-09"
+    },
+    {
+      "name": "漫画研究部",
+      "kind": "文化",
+      "days_note": "水・木曜",
+      "source_url": "https://www.metro.ed.jp/fujimori-h/school_life/activities.html",
+      "as_of": "2026-09"
+    },
+    {
+      "name": "天文気象部",
+      "kind": "文化",
+      "days_note": "毎週木曜日（天体望遠鏡の操作勉強会）、月1回の夜間観測会",
+      "source_url": "https://www.metro.ed.jp/fujimori-h/school_life/activities.html",
+      "as_of": "2026-09"
+    },
+    {
+      "name": "製菓部",
+      "kind": "文化",
+      "days_note": "毎週金曜日",
+      "source_url": "https://www.metro.ed.jp/fujimori-h/school_life/activities.html",
+      "as_of": "2026-09"
+    },
+    {
+      "name": "ボランティア部",
+      "kind": "文化",
+      "source_url": "https://www.metro.ed.jp/fujimori-h/school_life/activities.html",
+      "as_of": "2026-09"
+    },
+    {
+      "name": "パソコン部",
+      "kind": "文化",
+      "days_note": "毎週水曜日・木曜日",
+      "source_url": "https://www.metro.ed.jp/fujimori-h/school_life/activities.html",
+      "as_of": "2026-09"
+    },
+    {
+      "name": "演劇部",
+      "kind": "文化",
+      "days_note": "毎週水・金曜",
+      "source_url": "https://www.metro.ed.jp/fujimori-h/school_life/activities.html",
+      "as_of": "2026-09"
+    },
+    {
+      "name": "文芸部",
+      "kind": "文化",
+      "days_note": "毎週月・金曜日",
+      "source_url": "https://www.metro.ed.jp/fujimori-h/school_life/activities.html",
+      "as_of": "2026-09"
+    },
+    {
+      "name": "美術部",
+      "kind": "文化",
+      "days_note": "火曜日・金曜日",
+      "source_url": "https://www.metro.ed.jp/fujimori-h/school_life/activities.html",
+      "as_of": "2026-09"
+    },
+    {
+      "name": "軽音楽部",
+      "kind": "文化",
+      "days_note": "平日はバンド単位で週1回程度、休日は月1回程度",
+      "tier": 3,
+      "tier_basis": "2025・2026年度 都のコンテスト・フェスティバルで決勝進出（2025年度は奨励賞）。上位の賞ではないため段階3（見直しで2→3）",
+      "source_url": "https://www.metro.ed.jp/fujimori-h/school_life/activities.html",
+      "as_of": "2026-09"
+    },
+    {
+      "name": "写真同好会",
+      "kind": "同好会",
+      "days_note": "不定期",
+      "source_url": "https://www.metro.ed.jp/fujimori-h/school_life/activities.html",
+      "as_of": "2026-09"
+    },
+    {
+      "name": "競技かるた部",
+      "kind": "文化",
+      "days_note": "水・金（15:20〜17:00）",
+      "source_url": "https://www.metro.ed.jp/fujimori-h/school_life/activities.html",
+      "as_of": "2026-09"
+    },
+    {
+      "name": "囲碁・将棋サークル",
+      "kind": "同好会",
+      "source_url": "https://www.metro.ed.jp/fujimori-h/school_life/activities.html",
+      "as_of": "2026-09"
+    }
+  ],
+  "designated_universities": [
+    {
+      "university": "中央大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/fujimori-h/img_sub/pamphlet/pamphlet-pdffile-642.pdf",
+      "note": "主な指定校推薦（令和7年度入試）大学の部"
+    },
+    {
+      "university": "日本大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/fujimori-h/img_sub/pamphlet/pamphlet-pdffile-642.pdf",
+      "note": "主な指定校推薦（令和7年度入試）大学の部"
+    },
+    {
+      "university": "東洋大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/fujimori-h/img_sub/pamphlet/pamphlet-pdffile-642.pdf",
+      "note": "主な指定校推薦（令和7年度入試）大学の部"
+    },
+    {
+      "university": "駒澤大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/fujimori-h/img_sub/pamphlet/pamphlet-pdffile-642.pdf",
+      "note": "主な指定校推薦（令和7年度入試）大学の部"
+    },
+    {
+      "university": "専修大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/fujimori-h/img_sub/pamphlet/pamphlet-pdffile-642.pdf",
+      "note": "主な指定校推薦（令和7年度入試）大学の部"
+    },
+    {
+      "university": "東京都市大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/fujimori-h/img_sub/pamphlet/pamphlet-pdffile-642.pdf",
+      "note": "主な指定校推薦（令和7年度入試）大学の部"
+    },
+    {
+      "university": "工学院大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/fujimori-h/img_sub/pamphlet/pamphlet-pdffile-642.pdf",
+      "note": "主な指定校推薦（令和7年度入試）大学の部"
+    },
+    {
+      "university": "東京電機大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/fujimori-h/img_sub/pamphlet/pamphlet-pdffile-642.pdf",
+      "note": "主な指定校推薦（令和7年度入試）大学の部"
+    },
+    {
+      "university": "東京経済大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/fujimori-h/img_sub/pamphlet/pamphlet-pdffile-642.pdf",
+      "note": "主な指定校推薦（令和7年度入試）大学の部"
+    },
+    {
+      "university": "東京農業大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/fujimori-h/img_sub/pamphlet/pamphlet-pdffile-642.pdf",
+      "note": "主な指定校推薦（令和7年度入試）大学の部"
+    },
+    {
+      "university": "東京工科大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/fujimori-h/img_sub/pamphlet/pamphlet-pdffile-642.pdf",
+      "note": "主な指定校推薦（令和7年度入試）大学の部"
+    },
+    {
+      "university": "大東文化大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/fujimori-h/img_sub/pamphlet/pamphlet-pdffile-642.pdf",
+      "note": "主な指定校推薦（令和7年度入試）大学の部"
+    },
+    {
+      "university": "東海大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/fujimori-h/img_sub/pamphlet/pamphlet-pdffile-642.pdf",
+      "note": "主な指定校推薦（令和7年度入試）大学の部"
+    },
+    {
+      "university": "亜細亜大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/fujimori-h/img_sub/pamphlet/pamphlet-pdffile-642.pdf",
+      "note": "主な指定校推薦（令和7年度入試）大学の部"
+    },
+    {
+      "university": "帝京大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/fujimori-h/img_sub/pamphlet/pamphlet-pdffile-642.pdf",
+      "note": "主な指定校推薦（令和7年度入試）大学の部"
+    },
+    {
+      "university": "国士舘大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/fujimori-h/img_sub/pamphlet/pamphlet-pdffile-642.pdf",
+      "note": "主な指定校推薦（令和7年度入試）大学の部"
+    },
+    {
+      "university": "大妻女子大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/fujimori-h/img_sub/pamphlet/pamphlet-pdffile-642.pdf",
+      "note": "主な指定校推薦（令和7年度入試）大学の部"
+    },
+    {
+      "university": "実践女子大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/fujimori-h/img_sub/pamphlet/pamphlet-pdffile-642.pdf",
+      "note": "主な指定校推薦（令和7年度入試）大学の部"
+    },
+    {
+      "university": "創価大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/fujimori-h/img_sub/pamphlet/pamphlet-pdffile-642.pdf",
+      "note": "主な指定校推薦（令和7年度入試）大学の部"
+    },
+    {
+      "university": "昭和音楽大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/fujimori-h/img_sub/pamphlet/pamphlet-pdffile-642.pdf",
+      "note": "主な指定校推薦（令和7年度入試）大学の部"
+    },
+    {
+      "university": "神奈川大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/fujimori-h/img_sub/pamphlet/pamphlet-pdffile-642.pdf",
+      "note": "主な指定校推薦（令和7年度入試）大学の部"
+    },
+    {
+      "university": "明星大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/fujimori-h/img_sub/pamphlet/pamphlet-pdffile-642.pdf",
+      "note": "主な指定校推薦（令和7年度入試）大学の部"
+    },
+    {
+      "university": "武蔵野大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/fujimori-h/img_sub/pamphlet/pamphlet-pdffile-642.pdf",
+      "note": "主な指定校推薦（令和7年度入試）大学の部"
+    },
+    {
+      "university": "玉川大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/fujimori-h/img_sub/pamphlet/pamphlet-pdffile-642.pdf",
+      "note": "主な指定校推薦（令和7年度入試）大学の部"
+    },
+    {
+      "university": "拓殖大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/fujimori-h/img_sub/pamphlet/pamphlet-pdffile-642.pdf",
+      "note": "主な指定校推薦（令和7年度入試）大学の部"
+    },
+    {
+      "university": "東京家政大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/fujimori-h/img_sub/pamphlet/pamphlet-pdffile-642.pdf",
+      "note": "主な指定校推薦（令和7年度入試）大学の部"
+    },
+    {
+      "university": "日本体育大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/fujimori-h/img_sub/pamphlet/pamphlet-pdffile-642.pdf",
+      "note": "主な指定校推薦（令和7年度入試）大学の部"
+    },
+    {
+      "university": "東京医療保健大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/fujimori-h/img_sub/pamphlet/pamphlet-pdffile-642.pdf",
+      "note": "主な指定校推薦（令和7年度入試）看護系の部"
+    },
+    {
+      "university": "東京純心大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/fujimori-h/img_sub/pamphlet/pamphlet-pdffile-642.pdf",
+      "note": "主な指定校推薦（令和7年度入試）看護系の部"
+    },
+    {
+      "university": "駒沢女子大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/fujimori-h/img_sub/pamphlet/pamphlet-pdffile-642.pdf",
+      "note": "主な指定校推薦（令和7年度入試）看護系の部"
+    },
+    {
+      "university": "東京医療学院大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/fujimori-h/img_sub/pamphlet/pamphlet-pdffile-642.pdf",
+      "note": "主な指定校推薦（令和7年度入試）看護系の部"
+    },
+    {
+      "university": "杏林大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/fujimori-h/img_sub/pamphlet/pamphlet-pdffile-642.pdf",
+      "note": "主な指定校推薦（令和7年度入試）看護系の部"
+    }
+  ],
+  "events": [],
+  "unresolved": [
+    "部活動加入率・進路決定率・生徒/保護者の学校生活満足度の実数値：学校経営報告（直近年度）が公開されておらず不明（令和6年度学校経営計画は目標値のみ、令和7年度学校運営連絡協議会報告にも数値の記載なし）",
+    "学級数の変動（3年間の主な現役合格先PDFの注記で2022・2024年度は8クラス、2023年度は7クラスとある）の経緯：都教委の学級増減発表を確認できず",
+    "制服リニューアル（パンフレットで生徒人気投票により現行デザインに決定と紹介）の実施年度：不明",
+    "競技かるた部の大会成績（パンフレットに「全国競技かるた学生選手権大会E組の部3位入賞」とあるが年度不明）：学校サイトの部活動ページには年度入りの結果記載なし",
+    "ボランティア部・囲碁将棋サークルの活動日：学校公式サイトの部活動一覧に名前はあるが活動日等の記載なし",
+    "男子バスケットボール部の大会成績：市内大会（八王子市高校男子バスケットボール秋季大会）の言及のみで都大会レベルの成績は見当たらず"
+  ],
+  "conflicts": []
+}
