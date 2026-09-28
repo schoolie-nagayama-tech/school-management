@@ -105,9 +105,15 @@ interface Props {
   /** 保存が成功したあとに呼ばれる。親（InterviewWorkspace）が④現状の確認「志望校との差」の
    *  材料を再取得し、保存内容をページ再読み込みなしで即座に反映するために使う */
   onSaved?: () => void;
+  /**
+   * 生徒ハブに埋め込むとき true。カードの枠・見出し・面談向けの補足文を外し、
+   * 志望の行を横に並べる。★ハブ側に「志望校」の見出しが既にあり、二重になるため。
+   * 既定（false）は面談ページの見た目のまま。
+   */
+  embedded?: boolean;
 }
 
-export function TargetSchoolsPanel({ studentId, schoolId, onSaved }: Props) {
+export function TargetSchoolsPanel({ studentId, schoolId, onSaved, embedded = false }: Props) {
   const [rows, setRows] = useState<FormRow[]>(RANKS.map(emptyRow));
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -278,6 +284,179 @@ export function TargetSchoolsPanel({ studentId, schoolId, onSaved }: Props) {
     }
   };
 
+  const body = loading ? (
+    <div className="flex items-center gap-2 py-4 text-sm text-text-muted">
+      <Loader2 className="h-4 w-4 animate-spin" />
+      読み込み中...
+    </div>
+  ) : (
+    <div className="flex flex-col gap-4">
+      {/* 埋め込み（生徒ハブ）では全幅を使うので行を横に並べる。面談では縦1列のまま */}
+      <div
+        className={
+          embedded ? 'grid gap-x-5 gap-y-4 sm:grid-cols-2 xl:grid-cols-3' : 'flex flex-col gap-4'
+        }
+      >
+        {rows
+          .filter(
+            (row, i) =>
+              row.rank <= ALWAYS_SHOWN_RANKS ||
+              row.schoolName.trim() ||
+              rows[i - 1]?.schoolName.trim()
+          )
+          .map((row) => (
+            <div key={row.rank} className="flex flex-col gap-1.5">
+              <div className="flex items-center justify-between gap-2">
+                <label
+                  htmlFor={`target-school-${row.rank}`}
+                  className="text-xs font-medium text-text-muted"
+                >
+                  第{row.rank}志望
+                  {row.sourceLabel && (
+                    <span className="ml-1.5 font-normal text-text-faint">
+                      {row.sourceLabel}から
+                    </span>
+                  )}
+                </label>
+                {/* ★入力欄は増やさずボタン1つで付け外しする（教室長の要望）。志望順位とは別の印で、
+                      私立なら④の判定が併願の基準になる。学校名が空の行には付けられない */}
+                <button
+                  type="button"
+                  aria-pressed={row.isHeigan}
+                  disabled={!row.schoolName.trim()}
+                  onClick={() => handleToggleHeigan(row.rank)}
+                  title="併願で押さえる学校として印を付ける"
+                  className={`rounded-full border px-2 py-0.5 text-xs transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-40 ${
+                    row.isHeigan
+                      ? 'border-info bg-info-subtle font-medium text-info'
+                      : 'border-border text-text-muted hover:bg-surface'
+                  }`}
+                >
+                  併願
+                </button>
+              </div>
+              <div className="relative">
+                <input
+                  id={`target-school-${row.rank}`}
+                  type="text"
+                  value={row.schoolName}
+                  onChange={(e) => handleNameChange(row.rank, e.target.value)}
+                  onFocus={() => row.schoolName.trim() && setOpenRank(row.rank)}
+                  placeholder="学校名を入力"
+                  className="w-full rounded-lg border border-border bg-surface-raised px-3 py-2 text-sm text-text-body placeholder-text-faint transition-colors duration-150 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+                {openRank === row.rank && (
+                  <>
+                    <div
+                      className="fixed inset-0 z-10"
+                      aria-hidden
+                      onClick={() => setOpenRank(null)}
+                    />
+                    <div className="absolute left-0 right-0 top-full z-20 mt-1 max-h-52 overflow-y-auto rounded-lg border border-border bg-surface-raised shadow-lg">
+                      {searchingRank === row.rank ? (
+                        <div className="py-3 text-center text-xs text-text-muted">検索中...</div>
+                      ) : (candidates[row.rank] || []).length === 0 ? (
+                        <div className="py-3 text-center text-xs text-text-muted">
+                          該当する高校がありません（名前だけでも保存できる）
+                        </div>
+                      ) : (
+                        <ul className="py-1">
+                          {(candidates[row.rank] || []).map((c) => (
+                            <li key={c.id}>
+                              <button
+                                type="button"
+                                onClick={() => handleSelectCandidate(row.rank, c)}
+                                className="block w-full px-3 py-2 text-left text-sm hover:bg-surface"
+                              >
+                                {c.schoolName}
+                                {c.course && (
+                                  <span className="text-text-muted">（{c.course}）</span>
+                                )}
+                                <span className="ml-1 text-xs text-text-faint">
+                                  {[
+                                    // 同名・似た名前の学校を取り違えないよう、都県と設置区分を添える
+                                    c.establishment === '公立'
+                                      ? prefectureShort(c.prefecture)
+                                      : `${prefectureShort(c.prefecture)}${c.establishment}`,
+                                    c.municipality,
+                                    c.naishin != null
+                                      ? formatNaishin(
+                                          c.naishin,
+                                          displayNaishinMax(c.prefecture, c.naishinMax),
+                                          '内申'
+                                        )
+                                      : null,
+                                    hensachiText(c.hensachi, c.hensachiByGender),
+                                  ]
+                                    .filter(Boolean)
+                                    .join(' ・ ')}
+                                </span>
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {row.highSchoolId && row.master ? (
+                <div className="flex items-start gap-1.5 text-xs text-success">
+                  <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                  <span>
+                    マスタに一致 ――{' '}
+                    {formatNaishin(
+                      row.master.naishin,
+                      displayNaishinMax(row.master.prefecture, row.master.naishinMax)
+                    )}
+                    ・
+                    {hensachiText(row.master.hensachi, row.master.hensachiByGender) ??
+                      '偏差値は未設定'}
+                    {row.master.establishment && row.master.establishment !== '公立'
+                      ? '・推薦と併願優遇の判定'
+                      : ''}
+                    が④に出る
+                    {row.master.verifiedAt == null && '（紙との突き合わせ未確認）'}
+                  </span>
+                </div>
+              ) : row.schoolName.trim() ? (
+                <div className="flex items-start gap-1.5 text-xs text-warning">
+                  <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                  <span>マスタに無い。名前だけ残る</span>
+                </div>
+              ) : null}
+
+              <input
+                type="text"
+                value={row.reason}
+                onChange={(e) => handleReasonChange(row.rank, e.target.value)}
+                placeholder="志望の理由（面談で聞いた言葉のまま・任意）"
+                className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-xs text-text-body placeholder-text-faint transition-colors duration-150 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+            </div>
+          ))}
+      </div>
+
+      {error && <p className="text-sm text-danger">{error}</p>}
+      {savedMessage && <p className="text-sm text-success">{savedMessage}</p>}
+
+      <div className="flex items-center gap-2">
+        <Button type="button" size="sm" onClick={handleSave} disabled={saving}>
+          {saving ? '保存中...' : '保存する'}
+        </Button>
+      </div>
+
+      {!embedded && (
+        <p className="text-xs leading-relaxed text-text-faint">
+          マスタは都立・神奈川県立と、冊子に載っている私立・国立。無い学校は名前だけ残る。
+        </p>
+      )}
+    </div>
+  );
+
+  if (embedded) return body;
+
   return (
     <Card>
       <CardHeader>
@@ -286,171 +465,7 @@ export function TargetSchoolsPanel({ studentId, schoolId, onSaved }: Props) {
           <span className="text-xs text-text-faint">面談の②で聞いて、その場で入れる</span>
         </div>
       </CardHeader>
-      <CardContent>
-        {loading ? (
-          <div className="flex items-center gap-2 py-4 text-sm text-text-muted">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            読み込み中...
-          </div>
-        ) : (
-          <div className="flex flex-col gap-4">
-            {rows
-              .filter(
-                (row, i) =>
-                  row.rank <= ALWAYS_SHOWN_RANKS ||
-                  row.schoolName.trim() ||
-                  rows[i - 1]?.schoolName.trim()
-              )
-              .map((row) => (
-                <div key={row.rank} className="flex flex-col gap-1.5">
-                  <div className="flex items-center justify-between gap-2">
-                    <label
-                      htmlFor={`target-school-${row.rank}`}
-                      className="text-xs font-medium text-text-muted"
-                    >
-                      第{row.rank}志望
-                      {row.sourceLabel && (
-                        <span className="ml-1.5 font-normal text-text-faint">
-                          {row.sourceLabel}から
-                        </span>
-                      )}
-                    </label>
-                    {/* ★入力欄は増やさずボタン1つで付け外しする（教室長の要望）。志望順位とは別の印で、
-                      私立なら④の判定が併願の基準になる。学校名が空の行には付けられない */}
-                    <button
-                      type="button"
-                      aria-pressed={row.isHeigan}
-                      disabled={!row.schoolName.trim()}
-                      onClick={() => handleToggleHeigan(row.rank)}
-                      title="併願で押さえる学校として印を付ける"
-                      className={`rounded-full border px-2 py-0.5 text-xs transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-40 ${
-                        row.isHeigan
-                          ? 'border-info bg-info-subtle font-medium text-info'
-                          : 'border-border text-text-muted hover:bg-surface'
-                      }`}
-                    >
-                      併願
-                    </button>
-                  </div>
-                  <div className="relative">
-                    <input
-                      id={`target-school-${row.rank}`}
-                      type="text"
-                      value={row.schoolName}
-                      onChange={(e) => handleNameChange(row.rank, e.target.value)}
-                      onFocus={() => row.schoolName.trim() && setOpenRank(row.rank)}
-                      placeholder="学校名を入力"
-                      className="w-full rounded-lg border border-border bg-surface-raised px-3 py-2 text-sm text-text-body placeholder-text-faint transition-colors duration-150 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary"
-                    />
-                    {openRank === row.rank && (
-                      <>
-                        <div
-                          className="fixed inset-0 z-10"
-                          aria-hidden
-                          onClick={() => setOpenRank(null)}
-                        />
-                        <div className="absolute left-0 right-0 top-full z-20 mt-1 max-h-52 overflow-y-auto rounded-lg border border-border bg-surface-raised shadow-lg">
-                          {searchingRank === row.rank ? (
-                            <div className="py-3 text-center text-xs text-text-muted">
-                              検索中...
-                            </div>
-                          ) : (candidates[row.rank] || []).length === 0 ? (
-                            <div className="py-3 text-center text-xs text-text-muted">
-                              該当する高校がありません（名前だけでも保存できる）
-                            </div>
-                          ) : (
-                            <ul className="py-1">
-                              {(candidates[row.rank] || []).map((c) => (
-                                <li key={c.id}>
-                                  <button
-                                    type="button"
-                                    onClick={() => handleSelectCandidate(row.rank, c)}
-                                    className="block w-full px-3 py-2 text-left text-sm hover:bg-surface"
-                                  >
-                                    {c.schoolName}
-                                    {c.course && (
-                                      <span className="text-text-muted">（{c.course}）</span>
-                                    )}
-                                    <span className="ml-1 text-xs text-text-faint">
-                                      {[
-                                        // 同名・似た名前の学校を取り違えないよう、都県と設置区分を添える
-                                        c.establishment === '公立'
-                                          ? prefectureShort(c.prefecture)
-                                          : `${prefectureShort(c.prefecture)}${c.establishment}`,
-                                        c.municipality,
-                                        c.naishin != null
-                                          ? formatNaishin(
-                                              c.naishin,
-                                              displayNaishinMax(c.prefecture, c.naishinMax),
-                                              '内申'
-                                            )
-                                          : null,
-                                        hensachiText(c.hensachi, c.hensachiByGender),
-                                      ]
-                                        .filter(Boolean)
-                                        .join(' ・ ')}
-                                    </span>
-                                  </button>
-                                </li>
-                              ))}
-                            </ul>
-                          )}
-                        </div>
-                      </>
-                    )}
-                  </div>
-
-                  {row.highSchoolId && row.master ? (
-                    <div className="flex items-start gap-1.5 text-xs text-success">
-                      <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                      <span>
-                        マスタに一致 ――{' '}
-                        {formatNaishin(
-                          row.master.naishin,
-                          displayNaishinMax(row.master.prefecture, row.master.naishinMax)
-                        )}
-                        ・
-                        {hensachiText(row.master.hensachi, row.master.hensachiByGender) ??
-                          '偏差値は未設定'}
-                        {row.master.establishment && row.master.establishment !== '公立'
-                          ? '・推薦と併願優遇の判定'
-                          : ''}
-                        が④に出る
-                        {row.master.verifiedAt == null && '（紙との突き合わせ未確認）'}
-                      </span>
-                    </div>
-                  ) : row.schoolName.trim() ? (
-                    <div className="flex items-start gap-1.5 text-xs text-warning">
-                      <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                      <span>マスタに無い。名前だけ残る</span>
-                    </div>
-                  ) : null}
-
-                  <input
-                    type="text"
-                    value={row.reason}
-                    onChange={(e) => handleReasonChange(row.rank, e.target.value)}
-                    placeholder="志望の理由（面談で聞いた言葉のまま・任意）"
-                    className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-xs text-text-body placeholder-text-faint transition-colors duration-150 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary"
-                  />
-                </div>
-              ))}
-
-            {error && <p className="text-sm text-danger">{error}</p>}
-            {savedMessage && <p className="text-sm text-success">{savedMessage}</p>}
-
-            <div className="flex items-center gap-2">
-              <Button type="button" size="sm" onClick={handleSave} disabled={saving}>
-                {saving ? '保存中...' : '保存する'}
-              </Button>
-            </div>
-
-            <p className="text-xs leading-relaxed text-text-faint">
-              マスタは都立・神奈川県立と、冊子に載っている私立・国立。無い学校は名前だけ残る。
-            </p>
-          </div>
-        )}
-      </CardContent>
+      <CardContent>{body}</CardContent>
     </Card>
   );
 }

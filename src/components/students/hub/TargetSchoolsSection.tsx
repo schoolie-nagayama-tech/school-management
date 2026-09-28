@@ -25,7 +25,6 @@ import {
 import { TargetSchoolMap } from '@/app/interview/TargetSchoolMap';
 import { buildMockSchoolLines } from '@/app/interview/interview.shared';
 import { useHubAssessments, useHubTargetSchools } from './HubDataContext';
-import { Unframed } from './InterviewPanels';
 
 interface TargetSchoolsSectionProps {
   studentId: string;
@@ -58,67 +57,71 @@ export function TargetSchoolsSection({ studentId, schoolId, gender }: TargetScho
     [mockSchools, assessments, targetSchools]
   );
 
+  // 提案がまだ出ない生徒（模試の偏差値が無い等）では、表と地図の枠ごと出さない。
+  // ★空の枠と「模試の偏差値が入ると…」の説明だけが大きく残り、横の空白になっていた（2026-09-28 指摘）
+  const hasProposals =
+    !proposals.loading && (proposals.rows.length > 0 || proposals.privateRows.length > 0);
+  const hasMockLines = mockSchoolLines.tell.length > 0;
+
   return (
     <div className="flex flex-col">
-      {/* 上段: 入力 ｜ 提案の表。1100px 未満は縦に積む */}
-      <div className="grid grid-cols-1 items-start min-[1100px]:grid-cols-[minmax(0,420px)_minmax(0,1fr)]">
-        <Unframed>
-          {/* 保存したら志望校を取り直し、右の表と下の地図にその場で反映する（面談と同じ） */}
-          <TargetSchoolsPanel
-            studentId={studentId}
-            schoolId={schoolId}
-            onSaved={refetchTargetSchools}
-          />
-        </Unframed>
-        <div className="flex min-w-0 flex-col gap-4 border-t border-border-subtle px-4 py-4 min-[1100px]:border-l min-[1100px]:border-t-0">
-          <TargetProposalTable
-            state={proposals}
-            selectedId={selectedProposalId}
-            onSelect={setSelectedProposalId}
-            compareIds={compareIds}
-            onToggleCompare={toggleCompare}
-          />
-          {mockSchoolLines.tell.length > 0 && (
-            <div className="flex flex-col gap-1">
-              <span className="text-[13px] font-bold text-text-heading">模試の志望校</span>
-              {mockSchoolLines.tell.map((t, i) => (
-                <p
-                  key={i}
-                  className="m-0 text-[12.5px] leading-snug text-text-body [overflow-wrap:anywhere]"
-                >
-                  {t}
-                </p>
-              ))}
-            </div>
-          )}
-        </div>
+      {/* 上段: 志望校の入力を全幅で。行は横に並べる（embedded）。
+          見出し・補足文はハブの「志望校」見出しと重なるので出さない */}
+      <div className="px-4 py-4">
+        {/* 保存したら志望校を取り直し、下の表と地図にその場で反映する（面談と同じ） */}
+        <TargetSchoolsPanel
+          studentId={studentId}
+          schoolId={schoolId}
+          onSaved={refetchTargetSchools}
+          embedded
+        />
       </div>
 
-      {/* 下段: 私立の比較 ｜ 地図。比べる私立が無いあいだは地図を全幅にする
-          （PrivateComparePanel は空なら何も描かない） */}
-      <div
-        className={`grid grid-cols-1 items-start gap-4 border-t border-border-subtle px-4 py-4 ${
-          compareItems.length > 0 ? 'lg:grid-cols-2' : ''
-        }`}
-      >
-        {compareItems.length > 0 && (
-          <div className="min-w-0">
+      {/* 下段: 提案の表（＋模試の志望校・私立の比較）｜ 地図 を左右に。狭い画面は縦に積む */}
+      {(hasProposals || hasMockLines) && (
+        <div className="grid grid-cols-1 items-start gap-5 border-t border-border-subtle px-4 py-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
+          <div className="flex min-w-0 flex-col gap-4">
+            {hasProposals && (
+              <TargetProposalTable
+                state={proposals}
+                selectedId={selectedProposalId}
+                onSelect={setSelectedProposalId}
+                compareIds={compareIds}
+                onToggleCompare={toggleCompare}
+              />
+            )}
+            {hasMockLines && (
+              <div className="flex flex-col gap-1">
+                <span className="text-[13px] font-bold text-text-heading">模試の志望校</span>
+                {mockSchoolLines.tell.map((t, i) => (
+                  <p
+                    key={i}
+                    className="m-0 text-[12.5px] leading-snug text-text-body [overflow-wrap:anywhere]"
+                  >
+                    {t}
+                  </p>
+                ))}
+              </div>
+            )}
+            {/* 基準を比べる私立（空なら何も描かない部品） */}
             <PrivateComparePanel
               items={compareItems}
               onRemove={toggleCompare}
               onClear={() => setCompareIds([])}
             />
           </div>
-        )}
-        <div className="min-w-0">
-          <TargetSchoolMap
-            rows={proposals.rows}
-            privateRows={proposals.privateRows}
-            origin={proposals.origin}
-            selectedId={selectedProposalId}
-          />
+          {hasProposals && (
+            <div className="min-w-0">
+              <TargetSchoolMap
+                rows={proposals.rows}
+                privateRows={proposals.privateRows}
+                origin={proposals.origin}
+                selectedId={selectedProposalId}
+              />
+            </div>
+          )}
         </div>
-      </div>
+      )}
     </div>
   );
 }
