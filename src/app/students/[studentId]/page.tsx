@@ -134,7 +134,7 @@ export default function StudentHubPage() {
           {/* 上部だけ2カラム（左=気にすること / 右=基本情報 約300px）。1100px 未満で右が下に落ちる。
             ★sticky にしない。右カラムを追従させたら本文とスクロールが連動しないと不評だった */}
           <div className="grid items-start gap-3 min-[1100px]:grid-cols-[minmax(0,1fr)_300px]">
-            <AttentionSection studentId={student.id} />
+            <AttentionSection studentId={student.id} schoolId={student.school_id} />
             <BasicInfoCard student={student} />
           </div>
 

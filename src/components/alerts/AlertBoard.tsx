@@ -28,6 +28,7 @@ import {
 } from '@/types/alerts';
 import type { AlertType, AlertSeverity } from '@/types/alerts';
 import { whenNetworkIdle } from '@/lib/utils/networkIdle';
+import { alertTypesHiddenForRole } from '@/lib/alerts/studentAttention';
 import {
   groupAlertsBySeries,
   groupByStudentThenSeries,
@@ -108,6 +109,9 @@ function toRestoreEntry(alert: Alert): StudentAlerts {
     alerts: [alert],
   };
 }
+
+/** 再読み込みで入れ替える Heavy の種別（コンポーネント外に置き、useCallback の依存にしない） */
+const HEAVY_ALERT_TYPES = ['score_drop', 'score_missing', 'exam_overdue'] as const;
 
 const SCHOOL_COLORS = [
   { bg: 'bg-sky-100', text: 'text-sky-700', border: 'border-sky-200' },
@@ -369,7 +373,8 @@ export function AlertBoard({ className = '', initialData }: AlertBoardProps) {
   // 逆に「面談更新」は講師にのみ表示するポジティブ通知のため、非講師（教室長以上）では除外する。
   // 取得・dismiss は raw な studentAlerts を使い、表示系のみこの絞り込みビューを参照する。
   const visibleStudentAlerts = useMemo(() => {
-    const hiddenTypes = isTeacher ? TEACHER_HIDDEN_ALERT_TYPES : TEACHER_ONLY_ALERT_TYPES;
+    // ★生徒ハブの「注意すること」も同じ関数で絞る（一覧とハブで出る種別をずらさないため）
+    const hiddenTypes = alertTypesHiddenForRole(isTeacher);
     return studentAlerts
       .map((sa) => ({
         ...sa,
