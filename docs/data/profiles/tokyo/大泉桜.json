@@ -1,0 +1,683 @@
+{
+  "prefecture": "東京都",
+  "school_name": "大泉桜",
+  "official_url": "https://www.metro.ed.jp/oizumisakura-h/",
+  "researched_at": "2026-09-27",
+  "stats": [
+    {
+      "metric": "university_count",
+      "item": "国公立",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 0,
+      "source_url": "https://www.metro.ed.jp/oizumisakura-h/img_sub/令和7年度過去3年合格実績.pdf",
+      "source_label": "大泉桜高校 過去3年 進路合格実績（延べ数）",
+      "as_of": "2026-03",
+      "note": "大学別の表（R7列）に国公立大学の記載なし。大学別の表から合算"
+    },
+    {
+      "metric": "university_count",
+      "item": "早慶上理",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 0,
+      "source_url": "https://www.metro.ed.jp/oizumisakura-h/img_sub/令和7年度過去3年合格実績.pdf",
+      "source_label": "大泉桜高校 過去3年 進路合格実績（延べ数）",
+      "as_of": "2026-03",
+      "note": "大学別の表（R7列）に早稲田・慶應・上智・東京理科の記載なし。大学別の表から合算"
+    },
+    {
+      "metric": "university_count",
+      "item": "GMARCH",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 0,
+      "source_url": "https://www.metro.ed.jp/oizumisakura-h/img_sub/令和7年度過去3年合格実績.pdf",
+      "source_label": "大泉桜高校 過去3年 進路合格実績（延べ数）",
+      "as_of": "2026-03",
+      "note": "大学別の表（R7列）に学習院・明治・青山学院・立教・中央・法政の記載なし。大学別の表から合算"
+    },
+    {
+      "metric": "university_count",
+      "item": "成成明武",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 1,
+      "source_url": "https://www.metro.ed.jp/oizumisakura-h/img_sub/令和7年度過去3年合格実績.pdf",
+      "source_label": "大泉桜高校 過去3年 進路合格実績（延べ数）",
+      "as_of": "2026-03",
+      "note": "武蔵大学1名。大学別の表から合算"
+    },
+    {
+      "metric": "university_count",
+      "item": "日東駒専",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 8,
+      "source_url": "https://www.metro.ed.jp/oizumisakura-h/img_sub/令和7年度過去3年合格実績.pdf",
+      "source_label": "大泉桜高校 過去3年 進路合格実績（延べ数）",
+      "as_of": "2026-03",
+      "note": "日本大学4名（一般1・芸術学部3）＋東洋大学4名。大学別の表から合算"
+    },
+    {
+      "metric": "university_count",
+      "item": "合計",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 84,
+      "source_url": "https://www.metro.ed.jp/oizumisakura-h/img_sub/令和7年度過去3年合格実績.pdf",
+      "source_label": "大泉桜高校 過去3年 進路合格実績（延べ数）",
+      "as_of": "2026-03",
+      "note": "表の「大学合計」欄の数字（うち指定校推薦33名）"
+    },
+    {
+      "metric": "university_count",
+      "item": "合計",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 76,
+      "source_url": "https://www.metro.ed.jp/oizumisakura-h/img_sub/令和7年度進路合格実績.pdf",
+      "source_label": "大泉桜高校 令和7年度 進路合格実績（19期生）",
+      "as_of": "2026-03",
+      "note": "進路決定者内訳（実人数）の「大学」の人数。延べ数（84名）とは別集計"
+    },
+    {
+      "metric": "university_count",
+      "item": "目白大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 6,
+      "source_url": "https://www.metro.ed.jp/oizumisakura-h/img_sub/令和7年度過去3年合格実績.pdf",
+      "source_label": "大泉桜高校 過去3年 進路合格実績（延べ数）",
+      "as_of": "2026-03",
+      "note": "延べ数で最多。うち指定校推薦3名"
+    },
+    {
+      "metric": "university_count",
+      "item": "亜細亜大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 4,
+      "source_url": "https://www.metro.ed.jp/oizumisakura-h/img_sub/令和7年度過去3年合格実績.pdf",
+      "source_label": "大泉桜高校 過去3年 進路合格実績（延べ数）",
+      "as_of": "2026-03",
+      "note": "うち指定校推薦2名"
+    },
+    {
+      "metric": "university_count",
+      "item": "多摩美術大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 4,
+      "source_url": "https://www.metro.ed.jp/oizumisakura-h/img_sub/令和7年度過去3年合格実績.pdf",
+      "source_label": "大泉桜高校 過去3年 進路合格実績（延べ数）",
+      "as_of": "2026-03",
+      "note": "うち既卒1名"
+    },
+    {
+      "metric": "university_count",
+      "item": "東京工芸大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 4,
+      "source_url": "https://www.metro.ed.jp/oizumisakura-h/img_sub/令和7年度過去3年合格実績.pdf",
+      "source_label": "大泉桜高校 過去3年 進路合格実績（延べ数）",
+      "as_of": "2026-03",
+      "note": "うち指定校推薦2名"
+    },
+    {
+      "metric": "career_decided_rate",
+      "item": "",
+      "fiscal_year": 2025,
+      "value_num": 86.1,
+      "source_url": "https://www.metro.ed.jp/oizumisakura-h/img_sub/080709学校HP用）経営計画（08）.pdf",
+      "source_label": "大泉桜高校 令和8年度 学校経営計画",
+      "as_of": "2026-04-01",
+      "note": "19期生（令和7年度卒）。同時期の学校経営報告は72.4%と別の数値を出している（conflicts参照）"
+    },
+    {
+      "metric": "club_join_rate",
+      "item": "",
+      "fiscal_year": 2025,
+      "value_num": 84.3,
+      "source_url": "https://www.metro.ed.jp/oizumisakura-h/img_sub/080709学校HP用）経営計画（08）.pdf",
+      "source_label": "大泉桜高校 令和8年度 学校経営計画",
+      "as_of": "2026-04-01",
+      "note": "学校経営報告・学校経営計画とも同じ84.3%"
+    },
+    {
+      "metric": "satisfaction",
+      "item": "生徒:入学して良かった",
+      "fiscal_year": 2025,
+      "value_num": 86.3,
+      "source_url": "https://www.metro.ed.jp/oizumisakura-h/img_sub/080709学校HP用）経営報告（07）.pdf",
+      "source_label": "大泉桜高校 令和7年度 学校経営報告",
+      "as_of": "2026-03-31",
+      "note": "学校評価アンケート。学校経営報告・学校経営計画とも同じ86.3%"
+    },
+    {
+      "metric": "satisfaction",
+      "item": "保護者:入学させて良かった",
+      "fiscal_year": 2025,
+      "value_num": 88,
+      "source_url": "https://www.metro.ed.jp/oizumisakura-h/img_sub/080709学校HP用）経営報告（07）.pdf",
+      "source_label": "大泉桜高校 令和7年度 学校経営報告",
+      "as_of": "2026-03-31",
+      "note": "学校評価アンケート"
+    },
+    {
+      "metric": "satisfaction",
+      "item": "生徒:進路選択に生かされている",
+      "fiscal_year": 2025,
+      "value_num": 87.9,
+      "source_url": "https://www.metro.ed.jp/oizumisakura-h/img_sub/080709学校HP用）経営計画（08）.pdf",
+      "source_label": "大泉桜高校 令和8年度 学校経営計画",
+      "as_of": "2026-04-01",
+      "note": "学校経営報告は同じ項目を90.9%としている（conflicts参照）"
+    },
+    {
+      "metric": "exam_ratio",
+      "item": "一次募集（一般）",
+      "fiscal_year": 2026,
+      "value_num": 0.92,
+      "source_url": "https://www.metro.ed.jp/oizumisakura-h/img_sub/080709学校HP用）経営計画（08）.pdf",
+      "source_label": "大泉桜高校 令和8年度 学校経営計画",
+      "as_of": "2026-04-01",
+      "note": "応募倍率（一次募集）。同じ0.92倍を学校経営報告は「令和7年度実績」、学校経営計画は「令和8年度実績」と別の年度で表記している（conflicts参照）。入学年度2026として登録"
+    },
+    {
+      "metric": "uniform",
+      "item": "",
+      "fiscal_year": 2026,
+      "value_text": "冬服はチャコールグレーのブレザーにスラックスかスカート、夏服は白Yシャツにグレーのスラックスかスカート（夏は白ポロシャツも可）。ネクタイは1種類・リボンは3種類で、男女問わずネクタイ・スラックスを選べる",
+      "source_url": "https://www.metro.ed.jp/oizumisakura-h/img_sub/学校案内2027_低解像度.pdf",
+      "source_label": "大泉桜高校 学校案内パンフレット2027",
+      "as_of": "2026-07",
+      "note": ""
+    }
+  ],
+  "clubs": [
+    {
+      "name": "女子バスケットボール部",
+      "kind": "運動",
+      "days_note": "週4日",
+      "days_per_week": 4,
+      "source_url": "https://www.metro.ed.jp/oizumisakura-h/school_life/activities.html",
+      "as_of": "2026-09-27"
+    },
+    {
+      "name": "男子バスケットボール部",
+      "kind": "運動",
+      "days_note": "週4日",
+      "days_per_week": 4,
+      "source_url": "https://www.metro.ed.jp/oizumisakura-h/school_life/activities.html",
+      "as_of": "2026-09-27"
+    },
+    {
+      "name": "女子硬式テニス部",
+      "kind": "運動",
+      "days_note": "週4日",
+      "days_per_week": 4,
+      "source_url": "https://www.metro.ed.jp/oizumisakura-h/school_life/activities.html",
+      "as_of": "2026-09-27"
+    },
+    {
+      "name": "男子硬式テニス部",
+      "kind": "運動",
+      "days_note": "週4日",
+      "days_per_week": 4,
+      "source_url": "https://www.metro.ed.jp/oizumisakura-h/school_life/activities.html",
+      "as_of": "2026-09-27"
+    },
+    {
+      "name": "女子サッカー部",
+      "kind": "運動",
+      "days_note": "週3日",
+      "days_per_week": 3,
+      "tier": 4,
+      "tier_basis": "活動日は週3日で、大会成績の記載なし（部活動ページの記述は「初心者・経験者歓迎」のみ）",
+      "source_url": "https://www.metro.ed.jp/oizumisakura-h/school_life/activities.html",
+      "as_of": "2026-09-27"
+    },
+    {
+      "name": "男子サッカー部",
+      "kind": "運動",
+      "days_note": "週4日",
+      "days_per_week": 4,
+      "tier": 3,
+      "tier_basis": "2026年度 高円宮杯JFA U-18サッカーリーグ東京のT1〜T5（dt=1〜5）参加チーム一覧に大泉桜の登録なし（支部リーグ扱い）",
+      "source_url": "https://www.metro.ed.jp/oizumisakura-h/school_life/activities.html",
+      "as_of": "2026-09-27"
+    },
+    {
+      "name": "バレーボール部（女子）",
+      "kind": "運動",
+      "days_note": "週4日",
+      "days_per_week": 4,
+      "source_url": "https://www.metro.ed.jp/oizumisakura-h/school_life/activities.html",
+      "as_of": "2026-09-27"
+    },
+    {
+      "name": "バドミントン部",
+      "kind": "運動",
+      "days_note": "週3日（試合前は土曜日活動、試合は日曜日が多い）",
+      "days_per_week": 3,
+      "weekend": "土日",
+      "tier": 4,
+      "tier_basis": "活動日は週3日で、「公式戦団体戦1勝を目指す」との目標のみ、実績の記載なし",
+      "source_url": "https://www.metro.ed.jp/oizumisakura-h/school_life/activities.html",
+      "as_of": "2026-09-27"
+    },
+    {
+      "name": "ソフトボール部（女子）",
+      "kind": "運動",
+      "days_note": "週2日",
+      "days_per_week": 2,
+      "tier": 4,
+      "tier_basis": "活動日は週2日で、他校との合同チームで活動しているのみ、大会成績の記載なし",
+      "source_url": "https://www.metro.ed.jp/oizumisakura-h/school_life/activities.html",
+      "as_of": "2026-09-27"
+    },
+    {
+      "name": "ダンス部",
+      "kind": "運動",
+      "days_note": "週4日",
+      "days_per_week": 4,
+      "source_url": "https://www.metro.ed.jp/oizumisakura-h/school_life/activities.html",
+      "as_of": "2026-09-27"
+    },
+    {
+      "name": "剣道部",
+      "kind": "運動",
+      "days_note": "週4日",
+      "days_per_week": 4,
+      "source_url": "https://www.metro.ed.jp/oizumisakura-h/school_life/activities.html",
+      "as_of": "2026-09-27"
+    },
+    {
+      "name": "陸上競技部",
+      "kind": "運動",
+      "days_note": "週3日",
+      "days_per_week": 3,
+      "tier": 4,
+      "tier_basis": "活動日は週3日で、「体験入部随時受付」のみの記載、大会成績の記載なし",
+      "source_url": "https://www.metro.ed.jp/oizumisakura-h/school_life/activities.html",
+      "as_of": "2026-09-27"
+    },
+    {
+      "name": "フェンシング部",
+      "kind": "運動",
+      "days_note": "週4日",
+      "days_per_week": 4,
+      "tier": 2,
+      "tier_basis": "2025年度 関東大会に男女とも出場、関東選抜大会で女子サーブル5位（学校経営報告）。直近3年で確認できた関東大会級の実績は令和7年度の2件のみ",
+      "source_url": "https://www.metro.ed.jp/oizumisakura-h/school_life/activities.html",
+      "as_of": "2026-09-27",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "関東高等学校フェンシング選手権大会",
+          "level": "関東",
+          "result": "男女とも出場",
+          "source_url": "https://www.metro.ed.jp/oizumisakura-h/img_sub/080709学校HP用）経営報告（07）.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "関東選抜大会",
+          "level": "関東",
+          "result": "女子サーブル5位",
+          "source_url": "https://www.metro.ed.jp/oizumisakura-h/img_sub/080709学校HP用）経営報告（07）.pdf"
+        }
+      ]
+    },
+    {
+      "name": "美術部",
+      "kind": "文化",
+      "days_note": "週5日",
+      "days_per_week": 5,
+      "tier": 3,
+      "tier_basis": "2025年度 東京都明るい選挙ポスターコンクールで東京都優秀賞2・入選1（学校経営報告）。誰でも応募できる啓発のコンクールで美術の大会ではないため段階3（見直しで2→3）",
+      "source_url": "https://www.metro.ed.jp/oizumisakura-h/school_life/activities.html",
+      "as_of": "2026-09-27",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "東京都明るい選挙ポスターコンクール",
+          "level": "都県",
+          "result": "東京都優秀賞2名・入選1名",
+          "source_url": "https://www.metro.ed.jp/oizumisakura-h/img_sub/080709学校HP用）経営報告（07）.pdf"
+        }
+      ]
+    },
+    {
+      "name": "イラスト部",
+      "kind": "文化",
+      "days_note": "週3日",
+      "days_per_week": 3,
+      "tier": 4,
+      "tier_basis": "活動日は週3日で、大会成績の記載なし（部誌発行・外部講師の講習会のみ）",
+      "source_url": "https://www.metro.ed.jp/oizumisakura-h/school_life/activities.html",
+      "as_of": "2026-09-27"
+    },
+    {
+      "name": "吹奏楽部",
+      "kind": "文化",
+      "days_note": "週4（5）日",
+      "days_per_week": 4.5,
+      "tier": 2,
+      "tier_basis": "2025年度 東京都高等学校吹奏楽コンクールC組で金賞、東京都高等学校アンサンブルコンテスト管楽四重奏で銀賞（学校経営報告）",
+      "source_url": "https://www.metro.ed.jp/oizumisakura-h/school_life/activities.html",
+      "as_of": "2026-09-27",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "東京都高等学校吹奏楽コンクール C組",
+          "level": "都県",
+          "result": "金賞",
+          "source_url": "https://www.metro.ed.jp/oizumisakura-h/img_sub/080709学校HP用）経営報告（07）.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "東京都高等学校アンサンブルコンテスト 管楽四重奏",
+          "level": "都県",
+          "result": "銀賞",
+          "source_url": "https://www.metro.ed.jp/oizumisakura-h/img_sub/080709学校HP用）経営報告（07）.pdf"
+        }
+      ]
+    },
+    {
+      "name": "合唱部",
+      "kind": "文化",
+      "days_note": "週2日",
+      "days_per_week": 2,
+      "tier": 4,
+      "tier_basis": "活動日は週2日。部活動ページに武蔵丘高校と合同で地区大会・中央大会に出場との記述はあるが年度が特定できず、根拠にしなかった",
+      "source_url": "https://www.metro.ed.jp/oizumisakura-h/school_life/activities.html",
+      "as_of": "2026-09-27"
+    },
+    {
+      "name": "手話部",
+      "kind": "文化",
+      "days_note": "週2日",
+      "days_per_week": 2,
+      "tier": 4,
+      "tier_basis": "活動日は週2日。部活動ページに「今年も全国大会にチャレンジします」とあるが、達成した結果や年度が明確でなく根拠にしなかった",
+      "source_url": "https://www.metro.ed.jp/oizumisakura-h/school_life/activities.html",
+      "as_of": "2026-09-27"
+    },
+    {
+      "name": "クッキング部",
+      "kind": "文化",
+      "days_note": "週2日",
+      "days_per_week": 2,
+      "tier": 4,
+      "tier_basis": "活動日は週2日で、大会成績の記載なし",
+      "source_url": "https://www.metro.ed.jp/oizumisakura-h/school_life/activities.html",
+      "as_of": "2026-09-27"
+    },
+    {
+      "name": "演劇部",
+      "kind": "文化",
+      "days_note": "週3日",
+      "days_per_week": 3,
+      "tier": 4,
+      "tier_basis": "活動日は週3日で、創作劇の制作過程のみの記載、大会成績の記載なし",
+      "source_url": "https://www.metro.ed.jp/oizumisakura-h/school_life/activities.html",
+      "as_of": "2026-09-27"
+    },
+    {
+      "name": "茶道部",
+      "kind": "文化",
+      "days_note": "週2日",
+      "days_per_week": 2,
+      "tier": 4,
+      "tier_basis": "活動日は週2日。「都内の学校全部が集まる大会に参加」との記述はあるが年度が特定できず、根拠にしなかった",
+      "source_url": "https://www.metro.ed.jp/oizumisakura-h/school_life/activities.html",
+      "as_of": "2026-09-27"
+    },
+    {
+      "name": "文芸同好会",
+      "kind": "同好会",
+      "days_note": "週2日",
+      "days_per_week": 2,
+      "tier": 4,
+      "tier_basis": "活動日は週2日で、大会成績の記載なし（文化祭での部誌発行のみ）",
+      "source_url": "https://www.metro.ed.jp/oizumisakura-h/school_life/activities.html",
+      "as_of": "2026-09-27"
+    },
+    {
+      "name": "パソコン部",
+      "kind": "文化",
+      "days_note": "週1日",
+      "days_per_week": 1,
+      "tier": 4,
+      "tier_basis": "活動日は週1日で、大会成績の記載なし",
+      "source_url": "https://www.metro.ed.jp/oizumisakura-h/school_life/activities.html",
+      "as_of": "2026-09-27"
+    },
+    {
+      "name": "被服部",
+      "kind": "文化",
+      "days_note": "週2日",
+      "days_per_week": 2,
+      "tier": 4,
+      "tier_basis": "活動日は週2日で、大会成績の記載なし（ファッションショーは校内発表）",
+      "source_url": "https://www.metro.ed.jp/oizumisakura-h/school_life/activities.html",
+      "as_of": "2026-09-27"
+    },
+    {
+      "name": "理科研究部",
+      "kind": "文化",
+      "days_note": "週1日",
+      "days_per_week": 1,
+      "tier": 4,
+      "tier_basis": "活動日は週1日で、大会成績の記載なし（文化祭での発表のみ）",
+      "source_url": "https://www.metro.ed.jp/oizumisakura-h/school_life/activities.html",
+      "as_of": "2026-09-27"
+    },
+    {
+      "name": "写真部",
+      "kind": "文化",
+      "days_note": "週2日",
+      "days_per_week": 2,
+      "tier": 4,
+      "tier_basis": "活動日は週2日で、大会成績の記載なし（文化祭での展示のみ）",
+      "source_url": "https://www.metro.ed.jp/oizumisakura-h/school_life/activities.html",
+      "as_of": "2026-09-27"
+    },
+    {
+      "name": "ボランティア部",
+      "kind": "文化",
+      "days_note": "不定期",
+      "source_url": "https://www.metro.ed.jp/oizumisakura-h/school_life/activities.html",
+      "as_of": "2026-09-27"
+    },
+    {
+      "name": "現代視覚文化研究部",
+      "kind": "文化",
+      "days_note": "週3日",
+      "days_per_week": 3,
+      "tier": 4,
+      "tier_basis": "活動日は週3日で、大会成績の記載なし（文化祭での部誌発行のみ）",
+      "source_url": "https://www.metro.ed.jp/oizumisakura-h/school_life/activities.html",
+      "as_of": "2026-09-27"
+    },
+    {
+      "name": "アコースティックギター部",
+      "kind": "文化",
+      "days_note": "週3日",
+      "days_per_week": 3,
+      "tier": 4,
+      "tier_basis": "活動日は週3日で、大会成績の記載なし",
+      "source_url": "https://www.metro.ed.jp/oizumisakura-h/school_life/activities.html",
+      "as_of": "2026-09-27"
+    },
+    {
+      "name": "百人一首同好会",
+      "kind": "同好会",
+      "days_note": "週1日",
+      "days_per_week": 1,
+      "tier": 4,
+      "tier_basis": "活動日は週1日で、大会成績の記載なし",
+      "source_url": "https://www.metro.ed.jp/oizumisakura-h/school_life/activities.html",
+      "as_of": "2026-09-27"
+    }
+  ],
+  "designated_universities": [
+    {
+      "university": "亜細亜大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/oizumisakura-h/img_sub/学校案内2027_低解像度.pdf",
+      "note": "学校案内パンフレット「主な指定校推薦枠（令和7年度実績）」"
+    },
+    {
+      "university": "跡見学園女子大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/oizumisakura-h/img_sub/学校案内2027_低解像度.pdf",
+      "note": ""
+    },
+    {
+      "university": "桜美林大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/oizumisakura-h/img_sub/学校案内2027_低解像度.pdf",
+      "note": ""
+    },
+    {
+      "university": "大妻女子大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/oizumisakura-h/img_sub/学校案内2027_低解像度.pdf",
+      "note": ""
+    },
+    {
+      "university": "嘉悦大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/oizumisakura-h/img_sub/学校案内2027_低解像度.pdf",
+      "note": ""
+    },
+    {
+      "university": "杏林大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/oizumisakura-h/img_sub/学校案内2027_低解像度.pdf",
+      "note": ""
+    },
+    {
+      "university": "十文字学園女子大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/oizumisakura-h/img_sub/学校案内2027_低解像度.pdf",
+      "note": ""
+    },
+    {
+      "university": "淑徳大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/oizumisakura-h/img_sub/学校案内2027_低解像度.pdf",
+      "note": ""
+    },
+    {
+      "university": "日本栄養大学（女子栄養大学）",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/oizumisakura-h/img_sub/学校案内2027_低解像度.pdf",
+      "note": ""
+    },
+    {
+      "university": "女子美術大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/oizumisakura-h/img_sub/学校案内2027_低解像度.pdf",
+      "note": ""
+    },
+    {
+      "university": "白百合女子大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/oizumisakura-h/img_sub/学校案内2027_低解像度.pdf",
+      "note": ""
+    },
+    {
+      "university": "大正大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/oizumisakura-h/img_sub/学校案内2027_低解像度.pdf",
+      "note": ""
+    },
+    {
+      "university": "大東文化大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/oizumisakura-h/img_sub/学校案内2027_低解像度.pdf",
+      "note": ""
+    },
+    {
+      "university": "拓殖大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/oizumisakura-h/img_sub/学校案内2027_低解像度.pdf",
+      "note": ""
+    },
+    {
+      "university": "東京家政大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/oizumisakura-h/img_sub/学校案内2027_低解像度.pdf",
+      "note": ""
+    },
+    {
+      "university": "東京工芸大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/oizumisakura-h/img_sub/学校案内2027_低解像度.pdf",
+      "note": ""
+    },
+    {
+      "university": "東京造形大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/oizumisakura-h/img_sub/学校案内2027_低解像度.pdf",
+      "note": ""
+    },
+    {
+      "university": "東京電機大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/oizumisakura-h/img_sub/学校案内2027_低解像度.pdf",
+      "note": ""
+    },
+    {
+      "university": "東洋大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/oizumisakura-h/img_sub/学校案内2027_低解像度.pdf",
+      "note": ""
+    },
+    {
+      "university": "二松学舎大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/oizumisakura-h/img_sub/学校案内2027_低解像度.pdf",
+      "note": ""
+    },
+    {
+      "university": "日本社会事業大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/oizumisakura-h/img_sub/学校案内2027_低解像度.pdf",
+      "note": ""
+    },
+    {
+      "university": "武蔵大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/oizumisakura-h/img_sub/学校案内2027_低解像度.pdf",
+      "note": ""
+    },
+    {
+      "university": "目白大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/oizumisakura-h/img_sub/学校案内2027_低解像度.pdf",
+      "note": "パンフレットは「など」として続き、これが全部ではない"
+    }
+  ],
+  "events": [],
+  "unresolved": [
+    "校則（頭髪・スマホ・アルバイトの規定）：公式サイトに校則・生徒心得の専用ページ・PDFが見当たらず確認できなかった",
+    "推薦選抜の応募倍率・受検倍率：応募状況ページ（admission/application.html）が404で確認できなかった",
+    "男女別の生徒数：公式に男女別人数を公開していない（過去5ヵ年在籍者数は学年合計のみ）",
+    "看護・福祉・教育系進学者数（学校経営計画の独自区分。令和7年度実績25名）・文系理系大学・短大の合格者実績（同57名）：手引きの大学群定義（国公立/早慶上理/GMARCH/成成明武/日東駒専）に対応しないため記録しなかった",
+    "四年制大学進学率（学校経営報告・学校経営計画独自の%指標）：手引きのmetricに該当する項目がなく、かつ資料間で数値が34.5%・43.4%・49.7%（現役進学率）とばらついたため記録しなかった",
+    "指導形態の強化指定（Tokyo GE-NET EE・学力向上進学重点校エントリー校・SSHなど）：学校経営計画・パンフレットに記載が見当たらず、指定なしと判断した",
+    "学級増減：都教委「令和8年度東京都立高等学校等の第一学年生徒の募集人員等について」の一覧表で本校の増減を個別に確認できなかった"
+  ],
+  "conflicts": [
+    "進路決定率（19期生・令和7年度）：学校経営報告（2026-03-31付）は72.4%、学校経営計画（2026-04-01付）は86.1%。学校経営計画の数値を採用した",
+    "生徒:進路選択に生かされていると感じている割合（令和7年度）：学校経営報告は90.9%、学校経営計画は87.9%。学校経営計画の数値を採用した",
+    "美術系大学等現役合格者数（令和7年度）：学校経営報告の本文は「33名」、同じ報告の数値目標欄は「20名」、学校経営計画の数値目標欄は「24名」と、資料内・資料間で三通りの数字がある。いずれも記録しなかった",
+    "四年制大学（現役）進学率（令和7年度・19期生）：学校経営報告の本文は「49.7%」、同じ報告の数値目標欄は「34.5%」、学校経営計画の数値目標欄は「43.4%」と三通りの数字がある",
+    "応募倍率0.92倍の年度表記：学校経営報告は「令和7年度実績」、学校経営計画は「令和8年度実績」と、同じ数値に別の年度ラベルを付けている。学校経営計画の系列（令和6年度1.13倍→令和7年度1.22倍→令和8年度0.92倍）の方が時系列として整合するため、入学年度2026として登録した"
+  ]
+}

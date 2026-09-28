@@ -1,0 +1,581 @@
+{
+  "prefecture": "東京都",
+  "school_name": "府中工科",
+  "official_url": "https://www.metro.ed.jp/fuchukoka-h/",
+  "researched_at": "2026-09-27",
+  "stats": [
+    {
+      "metric": "exam_ratio",
+      "item": "推薦",
+      "basis": "",
+      "fiscal_year": 2026,
+      "value_num": 1.60,
+      "source_url": "https://www.metro.ed.jp/fuchukoka-h/assets/filelink/filelink-pdffile-34768.pdf",
+      "source_label": "府中工科高等学校 令和7年度 学校経営報告",
+      "as_of": "2026-03-31",
+      "note": "応募倍率"
+    },
+    {
+      "metric": "exam_ratio",
+      "item": "推薦",
+      "basis": "",
+      "fiscal_year": 2025,
+      "value_num": 1.63,
+      "source_url": "https://www.metro.ed.jp/fuchukoka-h/assets/filelink/filelink-pdffile-34768.pdf",
+      "source_label": "府中工科高等学校 令和7年度 学校経営報告",
+      "as_of": "2026-03-31",
+      "note": "応募倍率（前年度分として同資料に記載）"
+    },
+    {
+      "metric": "exam_ratio",
+      "item": "学力選抜（一般相当）",
+      "basis": "",
+      "fiscal_year": 2026,
+      "value_num": 0.95,
+      "source_url": "https://www.metro.ed.jp/fuchukoka-h/assets/filelink/filelink-pdffile-34768.pdf",
+      "source_label": "府中工科高等学校 令和7年度 学校経営報告",
+      "as_of": "2026-03-31",
+      "note": "応募倍率。手引きの項目は「推薦」だが、学力選抜の倍率も同資料に記載があるため参考記録"
+    },
+    {
+      "metric": "exam_ratio",
+      "item": "学力選抜（一般相当）",
+      "basis": "",
+      "fiscal_year": 2025,
+      "value_num": 1.10,
+      "source_url": "https://www.metro.ed.jp/fuchukoka-h/assets/filelink/filelink-pdffile-34768.pdf",
+      "source_label": "府中工科高等学校 令和7年度 学校経営報告",
+      "as_of": "2026-03-31",
+      "note": "応募倍率（前年度分として同資料に記載）"
+    },
+    {
+      "metric": "club_join_rate",
+      "item": "",
+      "basis": "",
+      "fiscal_year": 2025,
+      "value_num": 70.3,
+      "source_url": "https://www.metro.ed.jp/fuchukoka-h/assets/filelink/filelink-pdffile-34768.pdf",
+      "source_label": "府中工科高等学校 令和7年度 学校経営報告",
+      "as_of": "2026-03-31",
+      "note": "目標85%・前年度95.1%に対し70.3%。資格取得同好会加入者の減が影響と学校側は分析"
+    },
+    {
+      "metric": "satisfaction",
+      "item": "生徒:学校生活",
+      "basis": "",
+      "fiscal_year": 2025,
+      "value_num": 82.1,
+      "source_url": "https://www.metro.ed.jp/fuchukoka-h/assets/filelink/filelink-pdffile-34768.pdf",
+      "source_label": "府中工科高等学校 令和7年度 学校経営報告",
+      "as_of": "2026-03-31",
+      "note": "学校評価アンケートの肯定回答率"
+    },
+    {
+      "metric": "satisfaction",
+      "item": "保護者:学校生活",
+      "basis": "",
+      "fiscal_year": 2025,
+      "value_num": 93.5,
+      "source_url": "https://www.metro.ed.jp/fuchukoka-h/assets/filelink/filelink-pdffile-34768.pdf",
+      "source_label": "府中工科高等学校 令和7年度 学校経営報告",
+      "as_of": "2026-03-31",
+      "note": "学校評価アンケートの肯定回答率"
+    },
+    {
+      "metric": "designation",
+      "item": "情報技術科P-TECH事業",
+      "basis": "",
+      "fiscal_year": 2025,
+      "value_text": "情報技術科がTokyo P-TECH事業を活用。企業・専門学校と連携したメンタリングや企業・学校訪問を実施し、P-TECHクラス3年生30名中28名が情報関連の上級学校へ進学",
+      "source_url": "https://www.metro.ed.jp/fuchukoka-h/assets/filelink/filelink-pdffile-34768.pdf",
+      "source_label": "府中工科高等学校 令和7年度 学校経営報告",
+      "as_of": "2026-03-31",
+      "note": ""
+    },
+    {
+      "metric": "university_count",
+      "item": "合計",
+      "basis": "実進学",
+      "fiscal_year": 2024,
+      "value_num": 27,
+      "source_url": "https://www.metro.ed.jp/fuchukoka-h/assets/2025進路状況.pdf",
+      "source_label": "府中工科高等学校 令和6年度（令和7年3月卒業）進路状況",
+      "as_of": "2025-04-01",
+      "note": "卒業者163名（うち女子4名）中の大学・短大進学者数（うち女子1名）。国公立・早慶上理・GMARCHに該当する大学への進学は0名。大学別内訳表の合計は26名で1名の差がある（conflicts参照）"
+    },
+    {
+      "metric": "university_count",
+      "item": "成成明武",
+      "basis": "実進学",
+      "fiscal_year": 2024,
+      "value_num": 1,
+      "source_url": "https://www.metro.ed.jp/fuchukoka-h/assets/2025進路状況.pdf",
+      "source_label": "府中工科高等学校 令和6年度（令和7年3月卒業）進路状況",
+      "as_of": "2025-04-01",
+      "note": "明治学院大学1名（情報技術科）。大学別の表から合算"
+    },
+    {
+      "metric": "university_count",
+      "item": "日東駒専",
+      "basis": "実進学",
+      "fiscal_year": 2024,
+      "value_num": 1,
+      "source_url": "https://www.metro.ed.jp/fuchukoka-h/assets/2025進路状況.pdf",
+      "source_label": "府中工科高等学校 令和6年度（令和7年3月卒業）進路状況",
+      "as_of": "2025-04-01",
+      "note": "東洋大学1名（情報技術科）。大学別の表から合算"
+    },
+    {
+      "metric": "university_count",
+      "item": "東京工科大学",
+      "basis": "実進学",
+      "fiscal_year": 2024,
+      "value_num": 3,
+      "source_url": "https://www.metro.ed.jp/fuchukoka-h/assets/2025進路状況.pdf",
+      "source_label": "府中工科高等学校 令和6年度（令和7年3月卒業）進路状況",
+      "as_of": "2025-04-01",
+      "note": "情報技術科3名"
+    },
+    {
+      "metric": "university_count",
+      "item": "駿河台大学",
+      "basis": "実進学",
+      "fiscal_year": 2024,
+      "value_num": 3,
+      "source_url": "https://www.metro.ed.jp/fuchukoka-h/assets/2025進路状況.pdf",
+      "source_label": "府中工科高等学校 令和6年度（令和7年3月卒業）進路状況",
+      "as_of": "2025-04-01",
+      "note": "工業技術科2名・情報技術科1名"
+    },
+    {
+      "metric": "university_count",
+      "item": "拓殖大学",
+      "basis": "実進学",
+      "fiscal_year": 2024,
+      "value_num": 3,
+      "source_url": "https://www.metro.ed.jp/fuchukoka-h/assets/2025進路状況.pdf",
+      "source_label": "府中工科高等学校 令和6年度（令和7年3月卒業）進路状況",
+      "as_of": "2025-04-01",
+      "note": "工業技術科1名・電気科2名"
+    },
+    {
+      "metric": "university_count",
+      "item": "神奈川工科大学",
+      "basis": "実進学",
+      "fiscal_year": 2024,
+      "value_num": 2,
+      "source_url": "https://www.metro.ed.jp/fuchukoka-h/assets/2025進路状況.pdf",
+      "source_label": "府中工科高等学校 令和6年度（令和7年3月卒業）進路状況",
+      "as_of": "2025-04-01",
+      "note": "電気科2名。残り14校は各1名ずつのため上位5には含めず"
+    },
+    {
+      "metric": "uniform",
+      "item": "",
+      "basis": "",
+      "fiscal_year": 2026,
+      "value_text": "ブレザー・ベスト（任意）・ズボンまたはスカート・えんじ色ネクタイ。夏服（5〜10月）はブレザー・ネクタイ省略可、指定ポロシャツ（紺または白）も可。",
+      "source_url": "https://www.metro.ed.jp/fuchukoka-h/assets/生徒心得.pdf",
+      "source_label": "府中工科高等学校 R8年度生徒心得",
+      "as_of": "2026-09-27",
+      "note": ""
+    },
+    {
+      "metric": "rules_summary",
+      "item": "",
+      "basis": "",
+      "fiscal_year": 2026,
+      "value_text": "頭髪は染色・脱色・パーマ禁止、耳や襟にかからない長さ（女子は除く）。スマホは授業中以外は使用可。アルバイトは平日原則禁止（届出制で例外あり）。化粧・ピアス等の装飾品も禁止。",
+      "source_url": "https://www.metro.ed.jp/fuchukoka-h/assets/生徒心得.pdf",
+      "source_label": "府中工科高等学校 R8年度生徒心得",
+      "as_of": "2026-09-27",
+      "note": ""
+    }
+  ],
+  "clubs": [
+    {
+      "name": "硬式野球部",
+      "kind": "運動",
+      "days_note": "火・金の週2日（年末年始は10日程度休日あり）。シーズン中（3月〜11月）の土・日は原則として練習試合",
+      "days_per_week": 2,
+      "weekend": "土日",
+      "tier": 2,
+      "tier_basis": "2024年夏（西東京大会）ベスト16。「今大会は都立高校は五回戦が最高」と部活動ページに明記され、その年の都立で最上位（学校公式ブログ・学校案内パンフレットで一致）",
+      "source_url": "https://www.metro.ed.jp/fuchukoka-h/activities/cat2074/index.html",
+      "as_of": "2026-09-27",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "令和5年度秋季東京都高等学校野球大会",
+          "level": "都県",
+          "result": "ブロック予選優勝・本大会出場、本大会1回戦敗退（2-12、対 創価、5回コールド）",
+          "happened_on": "2023-10-08",
+          "source_url": "https://www.metro.ed.jp/fuchukoka-h/activities/cat2074/index.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "令和6年度春季東京都高等学校野球大会",
+          "level": "都県",
+          "result": "1回戦勝利（8-7×、対 駿台学園、延長10回タイブレーク）、2回戦敗退（2-4、対 明大中野）",
+          "happened_on": "2024-04-04",
+          "source_url": "https://www.metro.ed.jp/fuchukoka-h/activities/cat2074/index.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "第106回全国高等学校野球選手権西東京大会",
+          "level": "都県",
+          "result": "2〜4回戦を突破し5回戦で敗退（1-5、対 日大三）。ベスト16",
+          "happened_on": "2024-07-20",
+          "source_url": "https://www.metro.ed.jp/fuchukoka-h/activities/cat2074/index.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "秋季東京都大会",
+          "level": "都県",
+          "result": "1回戦勝利（5-3、対 実践学園）、2回戦敗退（0-9、対 関東第一）",
+          "happened_on": "2025-10-18",
+          "source_url": "https://www.metro.ed.jp/fuchukoka-h/activities/2025/10/clubentry_8.html"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "第108回全国高等学校野球選手権西東京大会",
+          "level": "都県",
+          "result": "1回戦勝利（12-2、対 石神井）、2回戦敗退（6-7×、対 町田）",
+          "happened_on": "2026-07-14",
+          "source_url": "https://www.metro.ed.jp/fuchukoka-h/activities/2026/07/108.html"
+        }
+      ]
+    },
+    {
+      "name": "陸上競技部",
+      "kind": "運動",
+      "days_note": "月・火・水・金・土（春季・夏季・冬季休業中は別日程）",
+      "days_per_week": 5,
+      "weekend": "土",
+      "source_url": "https://www.metro.ed.jp/fuchukoka-h/activities/cat2073/index.html",
+      "as_of": "2026-09-27"
+    },
+    {
+      "name": "サッカー部",
+      "kind": "運動",
+      "days_note": "火・水・木・金（土日のいずれかに練習試合）",
+      "days_per_week": 4,
+      "weekend": "試合のみ",
+      "tier": 3,
+      "tier_basis": "2026年度 高円宮杯U-18サッカーリーグ東京のT1〜T5いずれにも所属なし＝支部リーグ相当（tleague-u18.com team.php dt=1〜5、dy=2026で確認）",
+      "source_url": "https://www.metro.ed.jp/fuchukoka-h/activities/cat2072/index.html",
+      "as_of": "2026-09-27"
+    },
+    {
+      "name": "硬式テニス部",
+      "kind": "運動",
+      "days_note": "月・火・水・金・土・（日）",
+      "days_per_week": 5.5,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "都立限定大会（1段低く判定）の都立対抗テニス大会（団体戦）は2024年1回戦敗退、2025年は1回戦勝利も2回戦は部員不足で棄権。2025年5月の都高校テニス選手権大会（団体・都立限定でない）は2回戦敗退で、いずれもベスト8には届かず（部活動ページ）",
+      "source_url": "https://www.metro.ed.jp/fuchukoka-h/activities/cat2071/index.html",
+      "as_of": "2026-09-27",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "都立対抗テニス大会（団体戦）",
+          "level": "都県",
+          "result": "1回戦敗退（1-4、対 南多摩中等教育）",
+          "happened_on": "2024-07-14",
+          "source_url": "https://www.metro.ed.jp/fuchukoka-h/activities/2024/07/r6_7_19.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "東京都高等学校テニス選手権大会（団体の部）",
+          "level": "都県",
+          "result": "2回戦敗退（1-2、対 調布北）",
+          "happened_on": "2025-05-11",
+          "source_url": "https://www.metro.ed.jp/fuchukoka-h/activities/2025/08/1.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "都立対抗テニス大会（団体戦）",
+          "level": "都県",
+          "result": "1回戦勝利（3-2、対 八王子東）、2回戦は部員不足のため棄権",
+          "happened_on": "2025-07-13",
+          "source_url": "https://www.metro.ed.jp/fuchukoka-h/activities/2025/08/1.html"
+        }
+      ]
+    },
+    {
+      "name": "バスケットボール部",
+      "kind": "運動",
+      "days_note": "日・火・水・木・金・土",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "tier": 2,
+      "tier_basis": "2025年度 東京都立工業高等学校スポーツ大会（学科限定大会のため1段低く判定）でベスト8（3回戦で総合工科に敗退）。春季大会兼関東大会東京都予選は3回戦（都立桜町に敗退）",
+      "source_url": "https://www.metro.ed.jp/fuchukoka-h/activities/cat2069/index.html",
+      "as_of": "2026-09-27",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "令和7年度春季大会兼関東大会東京都予選",
+          "level": "都県",
+          "result": "1回戦勝利（100-54、対 都立青井）、2回戦勝利（72-28、対 東洋）、3回戦敗退（73-99、対 都立桜町）",
+          "happened_on": "2025-04-27",
+          "source_url": "https://www.metro.ed.jp/fuchukoka-h/activities/2025/04/7.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "令和7年度東京都立工業高等学校スポーツ大会",
+          "level": "都県",
+          "result": "1回戦勝利（127-28、対 足立工科）、2回戦勝利（75-58、対 墨田工科B）、3回戦敗退（54-70、対 総合工科）。工業大会ベスト8",
+          "happened_on": "2025-09-14",
+          "source_url": "https://www.metro.ed.jp/fuchukoka-h/activities/2025/09/7_1.html"
+        }
+      ]
+    },
+    {
+      "name": "バドミントン部",
+      "kind": "運動",
+      "days_note": "月・火・水・金（放課後）、火曜日はトレーニング日、土・日はチーム内紅白戦・他校との合同練習・練習試合",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2025年3月 東京都高校バドミントン新人戦Ⅱ部西ブロック大会（個人）準優勝。都大会本戦ではなくⅡ部のブロック（地区）大会のため段階2の基準（都県大会ベスト8等）には届かず",
+      "source_url": "https://www.metro.ed.jp/fuchukoka-h/activities/cat2068/index.html",
+      "as_of": "2026-09-27",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "東京都高等学校バドミントン新人戦Ⅱ部西ブロック大会（個人）",
+          "level": "地区",
+          "result": "個人準優勝",
+          "happened_on": "2025-03-16",
+          "source_url": "https://www.metro.ed.jp/fuchukoka-h/activities/2025/03/clubentry_1.html"
+        }
+      ]
+    },
+    {
+      "name": "卓球部",
+      "kind": "運動",
+      "days_note": "月・火・木・土",
+      "days_per_week": 4,
+      "weekend": "土",
+      "tier": 2,
+      "tier_basis": "2026年2月 第26回工業高校生スポーツ大会・卓球競技大会（学科限定大会のため1段低く判定）で団体戦3位・個人戦ベスト8（部活動ページ・学校案内パンフレット）",
+      "source_url": "https://www.metro.ed.jp/fuchukoka-h/activities/cat2066_1/index.html",
+      "as_of": "2026-09-27",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "第26回工業高校生スポーツ大会・卓球競技大会",
+          "level": "都県",
+          "result": "団体戦3位、個人戦ベスト8（2名）",
+          "happened_on": "2026-02-12",
+          "source_url": "https://www.metro.ed.jp/fuchukoka-h/activities/2026/02/8_3.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "国公立大会",
+          "level": "都県",
+          "result": "学校対抗ベスト32",
+          "source_url": "https://www.metro.ed.jp/fuchukoka-h/assets/府中工科高校学校案内_3.pdf"
+        }
+      ]
+    },
+    {
+      "name": "ウェイトトレーニング部",
+      "kind": "運動",
+      "days_note": "月・水・金",
+      "days_per_week": 3,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "週3日の活動で、大会等の実績記載なし",
+      "source_url": "https://www.metro.ed.jp/fuchukoka-h/activities/cat2067/index.html",
+      "as_of": "2026-09-27"
+    },
+    {
+      "name": "水泳部",
+      "kind": "運動",
+      "days_note": "月・火・木（夏休み中は月・火・木・金の4日間）",
+      "days_per_week": 3,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "週3日の活動で、大会等の実績記載なし（高体連水泳専門部主要5大会等への参加のみ記載）",
+      "source_url": "https://www.metro.ed.jp/fuchukoka-h/activities/cat2065/index.html",
+      "as_of": "2026-09-27"
+    },
+    {
+      "name": "剣道部",
+      "kind": "運動",
+      "days_note": "火・水・金",
+      "days_per_week": 3,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "週3日の活動で、大会等の実績記載なし（「団体戦2回戦進出を目指す」「工業高校大会優勝を目指す」は目標であり実績ではない）",
+      "source_url": "https://www.metro.ed.jp/fuchukoka-h/activities/cat2075/index.html",
+      "as_of": "2026-09-27"
+    },
+    {
+      "name": "自動車整備部",
+      "kind": "文化",
+      "days_note": "基本的に火・木・金（大会前などはほぼ毎日）",
+      "days_per_week": 3,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "週3日の活動で、大会等の実績記載なし（Hondaエコマイレッジチャレンジ全国大会は「出場を目指して」おり目標段階で、実際の出場・結果の記載なし）",
+      "source_url": "https://www.metro.ed.jp/fuchukoka-h/activities/cat2063/index.html",
+      "as_of": "2026-09-27"
+    },
+    {
+      "name": "軽音楽部",
+      "kind": "文化",
+      "days_note": "月曜日から金曜日",
+      "days_per_week": 5,
+      "weekend": "なし",
+      "source_url": "https://www.metro.ed.jp/fuchukoka-h/activities/cat2062/index.html",
+      "as_of": "2026-09-27"
+    },
+    {
+      "name": "写真部",
+      "kind": "文化",
+      "days_note": "ほぼ毎日",
+      "source_url": "https://www.metro.ed.jp/fuchukoka-h/activities/cat2061/index.html",
+      "as_of": "2026-09-27"
+    },
+    {
+      "name": "パソコン部",
+      "kind": "文化",
+      "days_note": "月・火・水・木・金・土",
+      "days_per_week": 6,
+      "weekend": "土",
+      "source_url": "https://www.metro.ed.jp/fuchukoka-h/activities/cat2060/index.html",
+      "as_of": "2026-09-27"
+    },
+    {
+      "name": "英会話部",
+      "kind": "文化",
+      "days_note": "火・木",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "週2日の活動で、大会等の実績記載なし",
+      "source_url": "https://www.metro.ed.jp/fuchukoka-h/activities/cat2059/index.html",
+      "as_of": "2026-09-27"
+    },
+    {
+      "name": "茶道部",
+      "kind": "文化",
+      "days_note": "木曜日（月に2回程度）。夏季休業中や文化祭前は稽古日が増える",
+      "days_per_week": 0.5,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "週0.5日程度の活動で、大会等の実績記載なし（茶会への参加はあるが競技会ではない）",
+      "source_url": "https://www.metro.ed.jp/fuchukoka-h/activities/cat2058/index.html",
+      "as_of": "2026-09-27"
+    },
+    {
+      "name": "マンガ研究部",
+      "kind": "文化",
+      "days_note": "月・水・金",
+      "days_per_week": 3,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "週3日の活動で、大会等の実績記載なし",
+      "source_url": "https://www.metro.ed.jp/fuchukoka-h/activities/cat2057/index.html",
+      "as_of": "2026-09-27"
+    },
+    {
+      "name": "囲碁将棋部",
+      "kind": "文化",
+      "days_note": "火・木",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "週2日の活動で、大会等の実績記載なし",
+      "source_url": "https://www.metro.ed.jp/fuchukoka-h/activities/cat2056/index.html",
+      "as_of": "2026-09-27"
+    },
+    {
+      "name": "鉄道研究部",
+      "kind": "文化",
+      "days_note": "金曜日（年に数回土曜日）",
+      "days_per_week": 1,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "週1日程度の活動で、大会等の実績記載なし（鉄道模型コンテストへの出展はあるが結果の記載なし）",
+      "source_url": "https://www.metro.ed.jp/fuchukoka-h/activities/cat2055/index.html",
+      "as_of": "2026-09-27"
+    },
+    {
+      "name": "情報技術部",
+      "kind": "文化",
+      "days_note": "月・火・水・金",
+      "days_per_week": 4,
+      "weekend": "なし",
+      "source_url": "https://www.metro.ed.jp/fuchukoka-h/activities/cat2054/index.html",
+      "as_of": "2026-09-27"
+    },
+    {
+      "name": "CAD部",
+      "kind": "文化",
+      "days_note": "火・木",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "週2日の活動で、大会等の実績記載なし",
+      "source_url": "https://www.metro.ed.jp/fuchukoka-h/school_life/activities.html",
+      "as_of": "2026-09-27"
+    },
+    {
+      "name": "模型部",
+      "kind": "文化",
+      "days_note": "月・水・金",
+      "days_per_week": 3,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "週3日の活動で、大会等の実績記載なし",
+      "source_url": "https://www.metro.ed.jp/fuchukoka-h/school_life/activities.html",
+      "as_of": "2026-09-27"
+    }
+  ],
+  "designated_universities": [
+    { "university": "麻布大学", "fiscal_year": 2025, "source_url": "https://www.metro.ed.jp/fuchukoka-h/assets/府中工科高校学校案内_3.pdf", "note": "「学校指定校推薦大学」一覧より（令和7年度参考）" },
+    { "university": "神奈川工科大学", "fiscal_year": 2025, "source_url": "https://www.metro.ed.jp/fuchukoka-h/assets/府中工科高校学校案内_3.pdf", "note": "「学校指定校推薦大学」一覧より（令和7年度参考）" },
+    { "university": "国士舘大学", "fiscal_year": 2025, "source_url": "https://www.metro.ed.jp/fuchukoka-h/assets/府中工科高校学校案内_3.pdf", "note": "「学校指定校推薦大学」一覧より（令和7年度参考）" },
+    { "university": "湘南工科大学", "fiscal_year": 2025, "source_url": "https://www.metro.ed.jp/fuchukoka-h/assets/府中工科高校学校案内_3.pdf", "note": "「学校指定校推薦大学」一覧より（令和7年度参考）" },
+    { "university": "駿河台大学", "fiscal_year": 2025, "source_url": "https://www.metro.ed.jp/fuchukoka-h/assets/府中工科高校学校案内_3.pdf", "note": "「学校指定校推薦大学」一覧より（令和7年度参考）" },
+    { "university": "西武文理大学", "fiscal_year": 2025, "source_url": "https://www.metro.ed.jp/fuchukoka-h/assets/府中工科高校学校案内_3.pdf", "note": "「学校指定校推薦大学」一覧より（令和7年度参考）" },
+    { "university": "高千穂大学", "fiscal_year": 2025, "source_url": "https://www.metro.ed.jp/fuchukoka-h/assets/府中工科高校学校案内_3.pdf", "note": "「学校指定校推薦大学」一覧より（令和7年度参考）" },
+    { "university": "拓殖大学", "fiscal_year": 2025, "source_url": "https://www.metro.ed.jp/fuchukoka-h/assets/府中工科高校学校案内_3.pdf", "note": "「学校指定校推薦大学」一覧より（令和7年度参考）" },
+    { "university": "多摩大学", "fiscal_year": 2025, "source_url": "https://www.metro.ed.jp/fuchukoka-h/assets/府中工科高校学校案内_3.pdf", "note": "「学校指定校推薦大学」一覧より（令和7年度参考）" },
+    { "university": "帝京科学大学", "fiscal_year": 2025, "source_url": "https://www.metro.ed.jp/fuchukoka-h/assets/府中工科高校学校案内_3.pdf", "note": "「学校指定校推薦大学」一覧より（令和7年度参考）" },
+    { "university": "東海大学", "fiscal_year": 2025, "source_url": "https://www.metro.ed.jp/fuchukoka-h/assets/府中工科高校学校案内_3.pdf", "note": "「学校指定校推薦大学」一覧より（令和7年度参考）" },
+    { "university": "東京工科大学", "fiscal_year": 2025, "source_url": "https://www.metro.ed.jp/fuchukoka-h/assets/府中工科高校学校案内_3.pdf", "note": "「学校指定校推薦大学」一覧より（令和7年度参考）" },
+    { "university": "東京工芸大学", "fiscal_year": 2025, "source_url": "https://www.metro.ed.jp/fuchukoka-h/assets/府中工科高校学校案内_3.pdf", "note": "「学校指定校推薦大学」一覧より（令和7年度参考）" },
+    { "university": "東京電機大学", "fiscal_year": 2025, "source_url": "https://www.metro.ed.jp/fuchukoka-h/assets/府中工科高校学校案内_3.pdf", "note": "「学校指定校推薦大学」一覧より（令和7年度参考）" },
+    { "university": "東洋大学", "fiscal_year": 2025, "source_url": "https://www.metro.ed.jp/fuchukoka-h/assets/府中工科高校学校案内_3.pdf", "note": "「学校指定校推薦大学」一覧より（令和7年度参考）" },
+    { "university": "日本工業大学", "fiscal_year": 2025, "source_url": "https://www.metro.ed.jp/fuchukoka-h/assets/府中工科高校学校案内_3.pdf", "note": "「学校指定校推薦大学」一覧より（令和7年度参考）" },
+    { "university": "日本文化大学", "fiscal_year": 2025, "source_url": "https://www.metro.ed.jp/fuchukoka-h/assets/府中工科高校学校案内_3.pdf", "note": "「学校指定校推薦大学」一覧より（令和7年度参考）" },
+    { "university": "明星大学", "fiscal_year": 2025, "source_url": "https://www.metro.ed.jp/fuchukoka-h/assets/府中工科高校学校案内_3.pdf", "note": "「学校指定校推薦大学」一覧より（令和7年度参考）" },
+    { "university": "和光大学", "fiscal_year": 2025, "source_url": "https://www.metro.ed.jp/fuchukoka-h/assets/府中工科高校学校案内_3.pdf", "note": "「学校指定校推薦大学」一覧より（令和7年度参考）" }
+  ],
+  "events": [
+    {
+      "kind": "その他",
+      "period_label": "令和5年4月1日から",
+      "happened_on": "2023-04-01",
+      "summary": "都立工業高校15校の名称変更に伴い「東京都立府中工業高等学校」から「東京都立府中工科高等学校」に改称",
+      "source_url": "https://www.kyoiku.metro.tokyo.lg.jp/press/press_release/2022/release20220623_04.html"
+    }
+  ],
+  "unresolved": [
+    "男女別の全校生徒数：公式サイト・学校案内パンフレットに全校の男女別人数の記載なし（進路状況PDFの卒業生集計には女子内訳の記載があるが、全校生徒数ではない）",
+    "進路決定率（合算）：学校経営報告R7には就職内定率100%・進学決定率97%と別々に記載され、合算した「進路決定率」としての記載はなし",
+    "陸上競技部の大会成績：部活動ページの活動内容欄に「全国高等学校総合体育大会出場」とあるが、文脈上これはスローガン（掛け声）であり実績の記載ではないため採用せず。他に大会結果の記載箇所なし",
+    "サッカー部「工業大会初優勝」の年度：部活動ページに年の記載がなく、掲載されている12月25日（金）・28日（月）の曜日から2020年度の可能性が高いが確証がないため不採用（2026年度は執筆時点で未到来のため除外）",
+    "情報技術部・パソコン部・写真部・軽音楽部：部活動ページに大会・コンクール等の実績記載がなく、活動日が週4日以上（写真部は「ほぼ毎日」）のため段階4の基準（活動日が週3日以下）にも当てはまらず、段階を付けず",
+    "CAD部・模型部の個別ブログ：部ごとのカテゴリページ（cat2064・cat2070相当）が存在せず、部活動一覧ページの活動日以外の情報なし"
+  ],
+  "conflicts": [
+    "大学・短大進学者数：令和6年度進路状況PDFのクラス別集計表では27名（うち女子1名）だが、大学名別の内訳表を合算すると26名で1名の差がある（短大等の記載漏れの可能性）"
+  ]
+}
