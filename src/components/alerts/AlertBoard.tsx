@@ -110,9 +110,6 @@ function toRestoreEntry(alert: Alert): StudentAlerts {
   };
 }
 
-/** 再読み込みで入れ替える Heavy の種別（コンポーネント外に置き、useCallback の依存にしない） */
-const HEAVY_ALERT_TYPES = ['score_drop', 'score_missing', 'exam_overdue'] as const;
-
 const SCHOOL_COLORS = [
   { bg: 'bg-sky-100', text: 'text-sky-700', border: 'border-sky-200' },
   { bg: 'bg-emerald-100', text: 'text-emerald-700', border: 'border-emerald-200' },
