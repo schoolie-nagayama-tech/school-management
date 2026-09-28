@@ -229,30 +229,6 @@
       "source_label": "生徒心得 IX.校外生活／X.服装規定 2.頭髪",
       "as_of": "2026-09-24",
       "note": ""
-    },
-    {
-      "metric": "students",
-      "item": "",
-      "sex": "male",
-      "basis": "",
-      "fiscal_year": 2025,
-      "value_num": 174,
-      "source_url": "https://www.metro.ed.jp/tanashi-h/assets/令和９年度入学生用学校案内.pdf",
-      "source_label": "学校案内パンフレット 卒業生進路概況（令和7年度）",
-      "as_of": "2026-03-31",
-      "note": "令和7年度（令和8年3月）卒業生の男女数（男174・女128・計302）。在校生全学年の男女内訳ではなく卒業学年（3年生）の人数。"
-    },
-    {
-      "metric": "students",
-      "item": "",
-      "sex": "female",
-      "basis": "",
-      "fiscal_year": 2025,
-      "value_num": 128,
-      "source_url": "https://www.metro.ed.jp/tanashi-h/assets/令和９年度入学生用学校案内.pdf",
-      "source_label": "学校案内パンフレット 卒業生進路概況（令和7年度）",
-      "as_of": "2026-03-31",
-      "note": "令和7年度（令和8年3月）卒業生の男女数。在校生全学年の男女内訳ではなく卒業学年（3年生）の人数。"
     }
   ],
   "clubs": [
@@ -881,32 +857,162 @@
     }
   ],
   "designated_universities": [
-    { "university": "学習院大学", "fiscal_year": 2025, "source_url": "https://www.metro.ed.jp/tanashi-h/assets/令和９年度入学生用学校案内.pdf", "note": "学校案内パンフレット「指定校推薦大学・短大（令和7年度実績）」。ほか100を超える大学・短期大学があるが、パンフレットには一部のみ列挙。" },
-    { "university": "成蹊大学", "fiscal_year": 2025, "source_url": "https://www.metro.ed.jp/tanashi-h/assets/令和９年度入学生用学校案内.pdf", "note": "同上" },
-    { "university": "武蔵大学", "fiscal_year": 2025, "source_url": "https://www.metro.ed.jp/tanashi-h/assets/令和９年度入学生用学校案内.pdf", "note": "同上" },
-    { "university": "駒澤大学", "fiscal_year": 2025, "source_url": "https://www.metro.ed.jp/tanashi-h/assets/令和９年度入学生用学校案内.pdf", "note": "同上" },
-    { "university": "東洋大学", "fiscal_year": 2025, "source_url": "https://www.metro.ed.jp/tanashi-h/assets/令和９年度入学生用学校案内.pdf", "note": "同上" },
-    { "university": "日本大学", "fiscal_year": 2025, "source_url": "https://www.metro.ed.jp/tanashi-h/assets/令和９年度入学生用学校案内.pdf", "note": "同上" },
-    { "university": "東京経済大学", "fiscal_year": 2025, "source_url": "https://www.metro.ed.jp/tanashi-h/assets/令和９年度入学生用学校案内.pdf", "note": "同上" },
-    { "university": "武蔵野大学", "fiscal_year": 2025, "source_url": "https://www.metro.ed.jp/tanashi-h/assets/令和９年度入学生用学校案内.pdf", "note": "同上" },
-    { "university": "亜細亜大学", "fiscal_year": 2025, "source_url": "https://www.metro.ed.jp/tanashi-h/assets/令和９年度入学生用学校案内.pdf", "note": "同上" },
-    { "university": "明星大学", "fiscal_year": 2025, "source_url": "https://www.metro.ed.jp/tanashi-h/assets/令和９年度入学生用学校案内.pdf", "note": "同上" },
-    { "university": "工学院大学", "fiscal_year": 2025, "source_url": "https://www.metro.ed.jp/tanashi-h/assets/令和９年度入学生用学校案内.pdf", "note": "同上" },
-    { "university": "東京電機大学", "fiscal_year": 2025, "source_url": "https://www.metro.ed.jp/tanashi-h/assets/令和９年度入学生用学校案内.pdf", "note": "同上" },
-    { "university": "東京工科大学", "fiscal_year": 2025, "source_url": "https://www.metro.ed.jp/tanashi-h/assets/令和９年度入学生用学校案内.pdf", "note": "同上" },
-    { "university": "創価大学", "fiscal_year": 2025, "source_url": "https://www.metro.ed.jp/tanashi-h/assets/令和９年度入学生用学校案内.pdf", "note": "同上" },
-    { "university": "国士舘大学", "fiscal_year": 2025, "source_url": "https://www.metro.ed.jp/tanashi-h/assets/令和９年度入学生用学校案内.pdf", "note": "同上" },
-    { "university": "立正大学", "fiscal_year": 2025, "source_url": "https://www.metro.ed.jp/tanashi-h/assets/令和９年度入学生用学校案内.pdf", "note": "同上" },
-    { "university": "大東文化大学", "fiscal_year": 2025, "source_url": "https://www.metro.ed.jp/tanashi-h/assets/令和９年度入学生用学校案内.pdf", "note": "同上" },
-    { "university": "帝京大学", "fiscal_year": 2025, "source_url": "https://www.metro.ed.jp/tanashi-h/assets/令和９年度入学生用学校案内.pdf", "note": "同上" },
-    { "university": "桜美林大学", "fiscal_year": 2025, "source_url": "https://www.metro.ed.jp/tanashi-h/assets/令和９年度入学生用学校案内.pdf", "note": "同上" },
-    { "university": "拓殖大学", "fiscal_year": 2025, "source_url": "https://www.metro.ed.jp/tanashi-h/assets/令和９年度入学生用学校案内.pdf", "note": "同上" },
-    { "university": "杏林大学", "fiscal_year": 2025, "source_url": "https://www.metro.ed.jp/tanashi-h/assets/令和９年度入学生用学校案内.pdf", "note": "同上" },
-    { "university": "白梅学園大学", "fiscal_year": 2025, "source_url": "https://www.metro.ed.jp/tanashi-h/assets/令和９年度入学生用学校案内.pdf", "note": "同上" },
-    { "university": "女子栄養大学", "fiscal_year": 2025, "source_url": "https://www.metro.ed.jp/tanashi-h/assets/令和９年度入学生用学校案内.pdf", "note": "パンフレット表記は「日本栄養」。学校法人の通称と見られるため大学名は女子栄養大学とした。" },
-    { "university": "大妻女子大学", "fiscal_year": 2025, "source_url": "https://www.metro.ed.jp/tanashi-h/assets/令和９年度入学生用学校案内.pdf", "note": "同上" },
-    { "university": "共立女子大学", "fiscal_year": 2025, "source_url": "https://www.metro.ed.jp/tanashi-h/assets/令和９年度入学生用学校案内.pdf", "note": "同上" },
-    { "university": "実践女子大学", "fiscal_year": 2025, "source_url": "https://www.metro.ed.jp/tanashi-h/assets/令和９年度入学生用学校案内.pdf", "note": "同上" }
+    {
+      "university": "学習院大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/tanashi-h/assets/令和９年度入学生用学校案内.pdf",
+      "note": "学校案内パンフレット「指定校推薦大学・短大（令和7年度実績）」。ほか100を超える大学・短期大学があるが、パンフレットには一部のみ列挙。"
+    },
+    {
+      "university": "成蹊大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/tanashi-h/assets/令和９年度入学生用学校案内.pdf",
+      "note": "同上"
+    },
+    {
+      "university": "武蔵大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/tanashi-h/assets/令和９年度入学生用学校案内.pdf",
+      "note": "同上"
+    },
+    {
+      "university": "駒澤大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/tanashi-h/assets/令和９年度入学生用学校案内.pdf",
+      "note": "同上"
+    },
+    {
+      "university": "東洋大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/tanashi-h/assets/令和９年度入学生用学校案内.pdf",
+      "note": "同上"
+    },
+    {
+      "university": "日本大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/tanashi-h/assets/令和９年度入学生用学校案内.pdf",
+      "note": "同上"
+    },
+    {
+      "university": "東京経済大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/tanashi-h/assets/令和９年度入学生用学校案内.pdf",
+      "note": "同上"
+    },
+    {
+      "university": "武蔵野大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/tanashi-h/assets/令和９年度入学生用学校案内.pdf",
+      "note": "同上"
+    },
+    {
+      "university": "亜細亜大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/tanashi-h/assets/令和９年度入学生用学校案内.pdf",
+      "note": "同上"
+    },
+    {
+      "university": "明星大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/tanashi-h/assets/令和９年度入学生用学校案内.pdf",
+      "note": "同上"
+    },
+    {
+      "university": "工学院大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/tanashi-h/assets/令和９年度入学生用学校案内.pdf",
+      "note": "同上"
+    },
+    {
+      "university": "東京電機大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/tanashi-h/assets/令和９年度入学生用学校案内.pdf",
+      "note": "同上"
+    },
+    {
+      "university": "東京工科大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/tanashi-h/assets/令和９年度入学生用学校案内.pdf",
+      "note": "同上"
+    },
+    {
+      "university": "創価大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/tanashi-h/assets/令和９年度入学生用学校案内.pdf",
+      "note": "同上"
+    },
+    {
+      "university": "国士舘大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/tanashi-h/assets/令和９年度入学生用学校案内.pdf",
+      "note": "同上"
+    },
+    {
+      "university": "立正大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/tanashi-h/assets/令和９年度入学生用学校案内.pdf",
+      "note": "同上"
+    },
+    {
+      "university": "大東文化大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/tanashi-h/assets/令和９年度入学生用学校案内.pdf",
+      "note": "同上"
+    },
+    {
+      "university": "帝京大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/tanashi-h/assets/令和９年度入学生用学校案内.pdf",
+      "note": "同上"
+    },
+    {
+      "university": "桜美林大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/tanashi-h/assets/令和９年度入学生用学校案内.pdf",
+      "note": "同上"
+    },
+    {
+      "university": "拓殖大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/tanashi-h/assets/令和９年度入学生用学校案内.pdf",
+      "note": "同上"
+    },
+    {
+      "university": "杏林大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/tanashi-h/assets/令和９年度入学生用学校案内.pdf",
+      "note": "同上"
+    },
+    {
+      "university": "白梅学園大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/tanashi-h/assets/令和９年度入学生用学校案内.pdf",
+      "note": "同上"
+    },
+    {
+      "university": "女子栄養大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/tanashi-h/assets/令和９年度入学生用学校案内.pdf",
+      "note": "パンフレット表記は「日本栄養」。学校法人の通称と見られるため大学名は女子栄養大学とした。"
+    },
+    {
+      "university": "大妻女子大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/tanashi-h/assets/令和９年度入学生用学校案内.pdf",
+      "note": "同上"
+    },
+    {
+      "university": "共立女子大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/tanashi-h/assets/令和９年度入学生用学校案内.pdf",
+      "note": "同上"
+    },
+    {
+      "university": "実践女子大学",
+      "fiscal_year": 2025,
+      "source_url": "https://www.metro.ed.jp/tanashi-h/assets/令和９年度入学生用学校案内.pdf",
+      "note": "同上"
+    }
   ],
   "events": [
     {
@@ -928,7 +1034,8 @@
     "女子ハンドボール部・演劇部・科学部：活動日または大会成績の記載が乏しく、部活動の強さの段階を付けなかった。",
     "指定校推薦の全大学名：学校案内パンフレットには「100を超える大学・短期大学」とあるが、明記されているのは一部のみで全リストは非公開。",
     "在校生の学年別・男女別在籍数：公式資料に記載なし。卒業生（令和7年度3学年分）の男女数のみ判明。",
-    "制服の記載（生徒心得内）が令和8年度の新デザイン変更後の内容かどうか：学校案内パンフレットは「令和8年度から新しい制服に変わりました」とするが、生徒心得PDFに改定日の記載がなく確認できなかった。"
+    "制服の記載（生徒心得内）が令和8年度の新デザイン変更後の内容かどうか：学校案内パンフレットは「令和8年度から新しい制服に変わりました」とするが、生徒心得PDFに改定日の記載がなく確認できなかった。",
+    "男女別の在籍生徒数：資料にあるのは卒業生の男女別で在籍数ではないため入れていない"
   ],
   "conflicts": [
     "男子テニス部：関東公立高等学校テニス選手権大会（2026年度）の結果が、学校案内パンフレット（令和9年度入学生用）では「準優勝」、部活動ページのニュース（2026/08/25付）では「男子団体優勝」となっており食い違う。部活動ページの方が日付・内容とも具体的なため、段階判定は部活動ページの情報を主に用いた。",

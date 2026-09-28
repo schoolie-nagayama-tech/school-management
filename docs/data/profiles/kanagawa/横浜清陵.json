@@ -1,0 +1,794 @@
+{
+  "prefecture": "神奈川県",
+  "school_name": "横浜清陵",
+  "official_url": "https://www.pen-kanagawa.ed.jp/y-seiryo-h/",
+  "researched_at": "2026-09-28",
+  "stats": [
+    {
+      "metric": "university_count",
+      "item": "国公立",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 2,
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-seiryo-h/shinro/documents/r8hakkou_shinrojisseki.pdf",
+      "source_label": "横浜清陵高等学校 3年間の進学先一覧（令和8年3月卒業・7期生、令和7年度合格者数）",
+      "as_of": "2026-03",
+      "note": "大学別の表から合算（神奈川県立保健福祉2・都留文科0）。表に「延べ」の明記はないが、同じ表の進学者数列（実進学）と別立てになっており、合格者数は延べと判断した。"
+    },
+    {
+      "metric": "university_count",
+      "item": "早慶上理",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 0,
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-seiryo-h/shinro/documents/r8hakkou_shinrojisseki.pdf",
+      "source_label": "横浜清陵高等学校 3年間の進学先一覧（令和8年3月卒業・7期生、令和7年度合格者数）",
+      "as_of": "2026-03",
+      "note": "大学別の表に早稲田・慶應義塾・上智・東京理科のいずれも記載なし。"
+    },
+    {
+      "metric": "university_count",
+      "item": "GMARCH",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 7,
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-seiryo-h/shinro/documents/r8hakkou_shinrojisseki.pdf",
+      "source_label": "横浜清陵高等学校 3年間の進学先一覧（令和8年3月卒業・7期生、令和7年度合格者数）",
+      "as_of": "2026-03",
+      "note": "大学別の表から合算（学習院1・明治1・青山学院0・立教2・中央1・法政2）。"
+    },
+    {
+      "metric": "university_count",
+      "item": "成成明武",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 14,
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-seiryo-h/shinro/documents/r8hakkou_shinrojisseki.pdf",
+      "source_label": "横浜清陵高等学校 3年間の進学先一覧（令和8年3月卒業・7期生、令和7年度合格者数）",
+      "as_of": "2026-03",
+      "note": "大学別の表から合算（成蹊1・成城1・明治学院11・武蔵1）。"
+    },
+    {
+      "metric": "university_count",
+      "item": "日東駒専",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 74,
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-seiryo-h/shinro/documents/r8hakkou_shinrojisseki.pdf",
+      "source_label": "横浜清陵高等学校 3年間の進学先一覧（令和8年3月卒業・7期生、令和7年度合格者数）",
+      "as_of": "2026-03",
+      "note": "大学別の表から合算（日本28・東洋9・駒澤10・専修27）。"
+    },
+    {
+      "metric": "university_count",
+      "item": "合計",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 202,
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-seiryo-h/shinro/documents/r8hakkou_shinrojisseki.pdf",
+      "source_label": "横浜清陵高等学校 3年間の進学先一覧（令和8年3月卒業・7期生）「1．全体的な状況」表",
+      "as_of": "2026-03",
+      "note": "卒業生303名のうち4年制大学進学者数202名（67％）。学校自身が公表した数（実進学）。短期大学12名（4％）・専門学校等59名（19％）・就職4名（1％）・その他進学準備26名（9％）。"
+    },
+    {
+      "metric": "university_count",
+      "item": "合計",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 298,
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-seiryo-h/shinro/documents/r8hakkou_shinrojisseki.pdf",
+      "source_label": "横浜清陵高等学校 3年間の進学先一覧（令和8年3月卒業・7期生、令和7年度合格者数）",
+      "as_of": "2026-03",
+      "note": "大学別の表（4年制大学）の合格者数列を全校名分合算した数値。同じ表の進学者数列を合算すると191名で、学校公表の実進学202名（合計行）と一致しない（conflictsに記載）。"
+    },
+    {
+      "metric": "university_count",
+      "item": "神奈川大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 49,
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-seiryo-h/shinro/documents/r8hakkou_shinrojisseki.pdf",
+      "source_label": "横浜清陵高等学校 3年間の進学先一覧（令和8年3月卒業・7期生、令和7年度合格者数）",
+      "as_of": "2026-03",
+      "note": "令和7年度で最多の合格大学。"
+    },
+    {
+      "metric": "university_count",
+      "item": "日本大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 28,
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-seiryo-h/shinro/documents/r8hakkou_shinrojisseki.pdf",
+      "source_label": "横浜清陵高等学校 3年間の進学先一覧（令和8年3月卒業・7期生、令和7年度合格者数）",
+      "as_of": "2026-03",
+      "note": ""
+    },
+    {
+      "metric": "university_count",
+      "item": "専修大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 27,
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-seiryo-h/shinro/documents/r8hakkou_shinrojisseki.pdf",
+      "source_label": "横浜清陵高等学校 3年間の進学先一覧（令和8年3月卒業・7期生、令和7年度合格者数）",
+      "as_of": "2026-03",
+      "note": ""
+    },
+    {
+      "metric": "university_count",
+      "item": "関東学院大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 24,
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-seiryo-h/shinro/documents/r8hakkou_shinrojisseki.pdf",
+      "source_label": "横浜清陵高等学校 3年間の進学先一覧（令和8年3月卒業・7期生、令和7年度合格者数）",
+      "as_of": "2026-03",
+      "note": ""
+    },
+    {
+      "metric": "university_count",
+      "item": "東海大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 18,
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-seiryo-h/shinro/documents/r8hakkou_shinrojisseki.pdf",
+      "source_label": "横浜清陵高等学校 3年間の進学先一覧（令和8年3月卒業・7期生、令和7年度合格者数）",
+      "as_of": "2026-03",
+      "note": ""
+    },
+    {
+      "metric": "satisfaction",
+      "item": "卒業生:学校生活",
+      "basis": "",
+      "fiscal_year": 2025,
+      "value_num": 93.4,
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-seiryo-h/nyugaku/documents/seiryopamphlet.pdf",
+      "source_label": "横浜清陵高等学校 学校案内パンフレット（令和8年度版）「卒業生に聞いた本校の満足度」",
+      "as_of": "2026-06",
+      "note": "パンフレットに調査対象年度の明記はない。隣接ページの「令和7年度進路状況」円グラフ（4年制大学67％、進学先一覧PDFの数値と一致）と同じ卒業生コホートを指すとみられるため、卒業年度2025として記録した。学校評価報告書（令和7年度・神奈川県様式）には項目別のアンケート結果（例：将来の夢や希望を持てたか95％）はあるが、guideの「学校生活」満足度の定型数値は掲載されていない。"
+    },
+    {
+      "metric": "designation",
+      "item": "教育課程研究開発校（「総合的な探究の時間」に係る研究）",
+      "basis": "",
+      "fiscal_year": 2022,
+      "value_text": "神奈川県教育委員会指定。指定期間は令和4年度～令和6年度（2022〜2024年度）の3年間。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-seiryo-h/gaiyou/enkaku.html",
+      "source_label": "横浜清陵高等学校 設置形態・沿革「令和4年度指定事業」の表",
+      "as_of": "2025-08-21",
+      "note": "学校案内パンフレット（令和8年度版、2026年作成）は「教育課程研究開発校に指定されており、…研究に取り組んでいます」と現在進行形で記載するが、沿革ページの指定期間は令和6年度まで。期間延長の公式発表は確認できなかった（conflictsに記載）。"
+    },
+    {
+      "metric": "designation",
+      "item": "在県外国人等特別募集",
+      "basis": "",
+      "fiscal_year": 2026,
+      "value_text": "来日して6年以内の、外国につながりのある生徒を対象とした入学者選抜の特別募集枠。パンフレット記載時点で1年次13名・2年次13名・3年次12名が在籍し、一般募集枠の生徒と同じクラスで学校生活を送る。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-seiryo-h/nyugaku/documents/seiryopamphlet.pdf",
+      "source_label": "横浜清陵高等学校 学校案内パンフレット（令和8年度版）「横浜清陵の在県外国人生徒」",
+      "as_of": "2026-06",
+      "note": "指定というより入学者選抜の特別な募集区分。学力向上進学重点校（エントリー校）等の指定は公式サイト・パンフレットに記載を確認できなかった。"
+    },
+    {
+      "metric": "uniform",
+      "item": "",
+      "basis": "",
+      "fiscal_year": 2026,
+      "value_text": "紺のブレザーにスラックスまたはスカート。Aタイプ（スラックス＋ネクタイ）とBタイプ（スカート＋リボンタイ）のどちらも選べる（性別で固定しない）。シャツは青無地基本（白も可）。5/1〜10/31は略装可（ポロシャツ可、タイ省略可）。改造不可（スカート丈詰めも含む）。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-seiryo-h/hogosha/documents/hukusou.pdf",
+      "source_label": "横浜清陵高等学校 学校生活の心得「6．服装等について」",
+      "as_of": "2026-04-21",
+      "note": ""
+    },
+    {
+      "metric": "rules_summary",
+      "item": "",
+      "basis": "",
+      "fiscal_year": 2026,
+      "value_text": "頭髪は染色・脱色・エクステ禁止。バイク・自動車の登下校及び制服での乗車は禁止。自転車通学は原則禁止（最寄り駅までの区間・片道1km以上等の条件を満たせば特例許可）。スマートフォン等の校内持込は可だが授業中の無許可使用は禁止、SNSへの個人情報・非公開行事情報の掲載禁止。アルバイトは保護者同意のうえ「アルバイト届」提出の届出制。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-seiryo-h/hogosha/documents/gakkouseikatu.pdf",
+      "source_label": "横浜清陵高等学校 学校生活の心得「4．学校生活について」",
+      "as_of": "2026-04-21",
+      "note": ""
+    }
+  ],
+  "clubs": [
+    {
+      "name": "硬式野球部",
+      "kind": "運動",
+      "days_note": "週6日",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "tier": 1,
+      "tier_basis": "2024年春季・秋季の神奈川県大会でいずれも準々決勝敗退（都県大会ベスト8）。2025年は第97回選抜高等学校野球大会（センバツ甲子園）に21世紀枠で神奈川県勢として初めて選出され、県立高校としては1954年春の湘南以来71年ぶりの甲子園出場（1回戦敗退）。都県大会ベスト8以上2回に加え全国大会出場も直近3年で達成しており、段階1の条件（2回以上）を満たす。2026年夏はシード校として4回戦まで4連勝しベスト16（5回戦で慶応に4-5で敗退）。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-seiryo-h/seikatsu/undoubu.html",
+      "as_of": "2026-07-03",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "令和8年度神奈川県高等学校野球秋季県大会",
+          "level": "都県",
+          "result": "2回戦勝利（上矢部に9-0）、3回戦敗退（平塚学園に0-11）",
+          "happened_on": "2026-09-12",
+          "source_url": "https://baseball.omyutech.com/CupHomePageTeamSchedule.action?teamId=12293&cupId=20260000401"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "第108回全国高等学校野球選手権神奈川大会",
+          "level": "都県",
+          "result": "2回戦〜4回戦で3連勝（麻溝台・横須賀大津・多摩）、5回戦敗退（ベスト16、慶応に4-5）",
+          "happened_on": "2026-07-18",
+          "source_url": "https://baseball.omyutech.com/CupHomePageTeamSchedule.action?teamId=12293&cupId=20260013579"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "令和8年度神奈川県高等学校野球春季県大会",
+          "level": "都県",
+          "result": "2回戦・3回戦勝利、4回戦敗退（慶應義塾に2-12）",
+          "happened_on": "2026-04-18",
+          "source_url": "https://baseball.omyutech.com/CupHomePageTeamSchedule.action?teamId=12293&cupId=20260007465"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "令和7年度神奈川県高等学校野球秋季県大会",
+          "level": "都県",
+          "result": "1回戦勝利（鶴嶺に4-0）、2回戦敗退（鎌倉学園に0-5）",
+          "happened_on": "2025-09-07",
+          "source_url": "https://baseball.omyutech.com/CupHomePageTeamSchedule.action?teamId=12293&cupId=20250005743"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第107回全国高等学校野球選手権神奈川大会",
+          "level": "都県",
+          "result": "2回戦・3回戦勝利、4回戦敗退（星槎国際湘南に0-4）",
+          "happened_on": "2025-07-18",
+          "source_url": "https://baseball.omyutech.com/CupHomePageTeamSchedule.action?teamId=12293&cupId=20250000302"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "令和7年度神奈川県高等学校野球春季県大会",
+          "level": "都県",
+          "result": "3回戦勝利（横浜栄に3-2）、4回戦敗退（川和に0-7）",
+          "happened_on": "2025-04-19",
+          "source_url": "https://baseball.omyutech.com/CupHomePageTeamSchedule.action?teamId=12293&cupId=20250024190"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第97回選抜高等学校野球大会（21世紀枠・神奈川県勢初）",
+          "level": "全国",
+          "result": "1回戦敗退（広島商に2-10）",
+          "happened_on": "2025-03-21",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-seiryo-h/seiryosenbatsuinfo.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "令和6年度神奈川県高等学校野球秋季県大会",
+          "level": "都県",
+          "result": "2回戦〜4回戦で3連勝、準々決勝敗退（都県ベスト8、東海大相模に0-5）",
+          "happened_on": "2024-09-28",
+          "source_url": "https://baseball.omyutech.com/CupHomePageTeamSchedule.action?teamId=12293&cupId=20240012872"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "第106回全国高等学校野球選手権神奈川大会",
+          "level": "都県",
+          "result": "2回戦勝利（相模原中等教育に11-2）、3回戦敗退（横浜創学館に5-6）",
+          "happened_on": "2024-07-13",
+          "source_url": "https://baseball.omyutech.com/CupHomePageTeamSchedule.action?teamId=12293&cupId=20240009752"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "令和6年度神奈川県高等学校野球春季県大会",
+          "level": "都県",
+          "result": "2回戦〜4回戦で3連勝、準々決勝敗退（都県ベスト8、向上に3-4）",
+          "happened_on": "2024-04-27",
+          "source_url": "https://baseball.omyutech.com/CupHomePageTeamSchedule.action?teamId=12293&cupId=20240008751"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "令和5年度神奈川県高等学校野球秋季県大会",
+          "level": "都県",
+          "result": "2回戦勝利（追浜に11-3）、3回戦敗退（法政二に7-9）",
+          "happened_on": "2023-09-16",
+          "source_url": "https://baseball.omyutech.com/CupHomePageTeamSchedule.action?teamId=12293&cupId=20230007306"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "第105回全国高等学校野球選手権記念神奈川大会",
+          "level": "都県",
+          "result": "1回戦勝利（藤沢西に8-1）、2回戦敗退（向上に1-3）",
+          "happened_on": "2023-07-10",
+          "source_url": "https://baseball.omyutech.com/CupHomePageTeamSchedule.action?teamId=12293&cupId=20230006682"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "令和5年度神奈川県高等学校野球春季県大会",
+          "level": "都県",
+          "result": "2回戦勝利（大磯に12-0）、3回戦敗退（横浜創学館に1-4）",
+          "happened_on": "2023-04-16",
+          "source_url": "https://baseball.omyutech.com/CupHomePageTeamSchedule.action?teamId=12293&cupId=20230005358"
+        }
+      ]
+    },
+    {
+      "name": "ライフル射撃部",
+      "kind": "運動",
+      "days_note": "火、水、木、金",
+      "days_per_week": 4,
+      "weekend": "なし",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-seiryo-h/seikatsu/undoubu.html",
+      "as_of": "2026-07-03",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "関東大会（種目・年度は学校サイトに明記なし）",
+          "level": "関東",
+          "result": "4大会連続出場",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-seiryo-h/seikatsu/undoubu.html"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "国民スポーツ大会神奈川県予選",
+          "level": "都県",
+          "result": "2位",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-seiryo-h/seikatsu/undoubu.html"
+        }
+      ]
+    },
+    {
+      "name": "体操競技部",
+      "kind": "運動",
+      "days_note": "火、水、木、土、日",
+      "days_per_week": 5,
+      "weekend": "土日",
+      "tier": 2,
+      "tier_basis": "「関東高等学校体操競技大会県予選会 女子団体5位」（学校サイト、年度明記なし）。都県大会5位はベスト8以内にあたるが1回のみの実績のため段階2。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-seiryo-h/seikatsu/undoubu.html",
+      "as_of": "2026-07-03",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "関東高等学校体操競技大会県予選会",
+          "level": "都県",
+          "result": "女子団体5位",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-seiryo-h/seikatsu/undoubu.html"
+        }
+      ]
+    },
+    {
+      "name": "ソフトボール部",
+      "kind": "運動",
+      "days_note": "水、木、土（午後）※日に試合が入ることあり",
+      "days_per_week": 3,
+      "weekend": "土",
+      "tier": 2,
+      "tier_basis": "「令和7年度神奈川県民体育大会ソフトボール競技少年男子の部 準優勝」（学校サイト）。県レベルの大会で準優勝という都県ベスト8以上に相当する好成績だが1回のみの実績のため段階2。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-seiryo-h/seikatsu/undoubu.html",
+      "as_of": "2026-07-03",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "神奈川県民体育大会ソフトボール競技少年男子の部",
+          "level": "都県",
+          "result": "準優勝",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-seiryo-h/seikatsu/undoubu.html"
+        }
+      ]
+    },
+    {
+      "name": "サッカー部",
+      "kind": "運動",
+      "days_note": "週6日",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "学校サイトに「高円宮杯 JFA U18 サッカーリーグ K5」と明記。手引きのリーグ判定表で神奈川K5は段階3（活動日が週3日以下なら4だが週6日のため3のまま）。新人戦はグループ1位でシード権を獲得したが決勝トーナメント初戦（シード決定2回戦）の結果は不明。インターハイ一次予選は準決勝進出止まり。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-seiryo-h/seikatsu/undoubu.html",
+      "as_of": "2026-07-03",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "高円宮杯JFA U-18サッカーリーグ神奈川",
+          "level": "都県",
+          "result": "K5所属",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-seiryo-h/seikatsu/undoubu.html"
+        }
+      ]
+    },
+    {
+      "name": "男子バスケットボール部",
+      "kind": "運動",
+      "days_note": "週5〜6日",
+      "days_per_week": 5.5,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "「関東大会予選 2回戦突破」（学校サイト、年度明記なし）にとどまり、都県ベスト8・16相当の記録は確認できない。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-seiryo-h/seikatsu/undoubu.html",
+      "as_of": "2026-07-03"
+    },
+    {
+      "name": "女子バスケットボール部",
+      "kind": "運動",
+      "days_note": "週5日",
+      "days_per_week": 5,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "「単独チームで試合に出ています」（学校サイト）とあるのみで具体的な順位の記載はない。大会には出場しているとみられるため段階3。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-seiryo-h/seikatsu/undoubu.html",
+      "as_of": "2026-07-03"
+    },
+    {
+      "name": "バドミントン部",
+      "kind": "運動",
+      "days_note": "月〜日（土日はどちらか1日）",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "「男子ダブルス 第4地区ベスト16、女子シングルス 第4地区ベスト16」（学校サイト）。地区大会の順位であり県大会の順位として読めないため段階3にとどめた。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-seiryo-h/seikatsu/undoubu.html",
+      "as_of": "2026-07-03",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "地区大会（第4地区、種目・年度は学校サイトに明記なし）",
+          "level": "地区",
+          "result": "男子ダブルスベスト16、女子シングルスベスト16",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-seiryo-h/seikatsu/undoubu.html"
+        }
+      ]
+    },
+    {
+      "name": "陸上競技部",
+      "kind": "運動",
+      "days_note": "月、火、木、金、土",
+      "days_per_week": 5,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "「走高跳 県大会出場」（学校サイト）のみで順位の記載がなく、個人種目の県入賞（8位以内）には該当しないため段階3。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-seiryo-h/seikatsu/undoubu.html",
+      "as_of": "2026-07-03"
+    },
+    {
+      "name": "ソフトテニス部",
+      "kind": "運動",
+      "days_note": "男子：月、木　女子：月、木、金、土",
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "「県大会出場、個人戦ベスト16」（学校サイト）。個人種目の県ベスト16は8位以内の入賞に届かないため段階3。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-seiryo-h/seikatsu/undoubu.html",
+      "as_of": "2026-07-03"
+    },
+    {
+      "name": "硬式テニス部",
+      "kind": "運動",
+      "days_note": "火〜金、土または日",
+      "days_per_week": 5,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "「10部リーグ準優勝、9部リーグ昇格」（学校サイト）。横浜地区テニスリーグの下位区分（10部）での成績であり、県大会の順位ではないため段階3にとどめた。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-seiryo-h/seikatsu/undoubu.html",
+      "as_of": "2026-07-03"
+    },
+    {
+      "name": "水泳部",
+      "kind": "運動",
+      "days_note": "夏は火〜土、冬は火〜金",
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "「市大会、県大会、新人戦」（学校サイト）と大会参加は確認できるが、具体的な順位の記載がないため段階3。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-seiryo-h/seikatsu/undoubu.html",
+      "as_of": "2026-07-03"
+    },
+    {
+      "name": "バレーボール部",
+      "kind": "運動",
+      "days_note": "月、木",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日が週2日で、実績は「市民大会出場」（学校サイト）にとどまり目立った大会成績がないため段階4。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-seiryo-h/seikatsu/undoubu.html",
+      "as_of": "2026-07-03"
+    },
+    {
+      "name": "剣道部",
+      "kind": "運動",
+      "days_note": "金",
+      "days_per_week": 1,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日は週1日、部員1名。実績は「大会出場・昇段審査合格等」（学校サイト）と具体性がなく目立った大会成績がないため段階4。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-seiryo-h/seikatsu/undoubu.html",
+      "as_of": "2026-07-03"
+    },
+    {
+      "name": "ダンス部",
+      "kind": "運動",
+      "days_note": "月、水、金",
+      "days_per_week": 3,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日は週3日以下。実績は「校内ライブ開催、文化祭での発表、地域イベントへの参加」（学校サイト）と大会成績を伴う活動ではないため段階4。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-seiryo-h/seikatsu/undoubu.html",
+      "as_of": "2026-07-03"
+    },
+    {
+      "name": "ワンダーフォーゲル部",
+      "kind": "運動",
+      "days_note": "水、金　登山は月1回",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日は週2日程度（登山月1回）。活動内容は「丹沢や三浦半島などの山に登っています」（学校サイト）で大会成績を伴わないため段階4。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-seiryo-h/seikatsu/undoubu.html",
+      "as_of": "2026-07-03"
+    },
+    {
+      "name": "卓球部",
+      "kind": "運動",
+      "days_note": "月、木",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日は週2日。「女子シングルス インターハイ県予選出場、男子シングルス 横浜地区予選出場」（学校サイト）と出場のみで目立った大会成績がないため段階4。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-seiryo-h/seikatsu/undoubu.html",
+      "as_of": "2026-07-03"
+    },
+    {
+      "name": "フットサル同好会",
+      "kind": "同好会",
+      "days_note": "毎週水曜日、日曜日",
+      "days_per_week": 2,
+      "weekend": "日",
+      "tier": 4,
+      "tier_basis": "活動日は週2日。実績「adidas大会6位」（学校サイト）は民間企業（アディダス）主催の大会で、順位も上位ではないため段階4にとどめた。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-seiryo-h/seikatsu/undoubu.html",
+      "as_of": "2026-07-03"
+    },
+    {
+      "name": "レスリング部",
+      "kind": "運動",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-seiryo-h/seikatsu/undoubu.html",
+      "as_of": "2026-07-03",
+      "note": "学校サイトに「現在部員0名です」と注記があるのみで、活動日・実績とも記載なし。"
+    },
+    {
+      "name": "吹奏楽部",
+      "kind": "文化",
+      "days_note": "火、水、金、日（本番前は木、土も活動）",
+      "days_per_week": 4,
+      "weekend": "日",
+      "tier": 3,
+      "tier_basis": "「2025年度横浜市吹奏楽コンクール銀賞」（学校サイト）。横浜市（地区）大会の銀賞であり、県代表選出や金賞・最上位の賞ではないため段階3。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-seiryo-h/seikatsu/bunkabu.html",
+      "as_of": "2026-06-25",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "横浜市吹奏楽コンクール",
+          "level": "地区",
+          "result": "銀賞",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-seiryo-h/seikatsu/bunkabu.html"
+        }
+      ]
+    },
+    {
+      "name": "書道部",
+      "kind": "文化",
+      "days_note": "月、木",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "tier": 3,
+      "tier_basis": "第62回高等学校書道展（2025年度）で書道専門部会長賞・特賞。展示型の書道展で最上位の賞ではないため段階3（見直しで2→3）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-seiryo-h/seikatsu/bunkabu.html",
+      "as_of": "2026-06-25",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "第62回高等学校書道展（主催団体の詳細は不明）",
+          "level": "その他",
+          "result": "書道専門部会長賞、特賞",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-seiryo-h/seikatsu/bunkabu.html"
+        }
+      ]
+    },
+    {
+      "name": "写真部",
+      "kind": "文化",
+      "days_note": "不定期",
+      "weekend": "なし",
+      "tier": 3,
+      "tier_basis": "「江ノ島鎌倉写真コンテストなど、各コンテストでの入選」（学校サイト）。展示型のコンテストへの入選にとどまり代表選出や最上位の賞ではないため段階3。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-seiryo-h/seikatsu/bunkabu.html",
+      "as_of": "2026-06-25",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "江ノ島鎌倉写真コンテスト等",
+          "level": "その他",
+          "result": "入選",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-seiryo-h/seikatsu/bunkabu.html"
+        }
+      ]
+    },
+    {
+      "name": "合唱部",
+      "kind": "文化",
+      "days_note": "金",
+      "days_per_week": 1,
+      "weekend": "なし",
+      "tier": 3,
+      "tier_basis": "「NHK全国合唱コンクール神奈川県コンクール出場」（学校サイト）。県コンクールへの出場は確認できるが順位・代表選出の記載はないため段階3。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-seiryo-h/seikatsu/bunkabu.html",
+      "as_of": "2026-06-25",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "NHK全国合唱コンクール神奈川県コンクール",
+          "level": "都県",
+          "result": "出場",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-seiryo-h/seikatsu/bunkabu.html"
+        }
+      ]
+    },
+    {
+      "name": "文芸部",
+      "kind": "文化",
+      "days_note": "水",
+      "days_per_week": 1,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日は週1日。実績は学校サイトで「特になし」と明記されているため段階4。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-seiryo-h/seikatsu/bunkabu.html",
+      "as_of": "2026-06-25"
+    },
+    {
+      "name": "茶道部",
+      "kind": "文化",
+      "days_note": "水",
+      "days_per_week": 1,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日は週1日。実績は「文化祭でのお茶会」（学校サイト）で、大会・コンクールを伴う活動ではないため段階4。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-seiryo-h/seikatsu/bunkabu.html",
+      "as_of": "2026-06-25"
+    },
+    {
+      "name": "美術部",
+      "kind": "文化",
+      "days_note": "火、水、金",
+      "days_per_week": 3,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日は週3日。実績は「作品制作、高校美術展などのコンクールへの参加、文化祭展示」（学校サイト）で、参加のみで入選等の結果は記載がないため段階4。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-seiryo-h/seikatsu/bunkabu.html",
+      "as_of": "2026-06-25"
+    },
+    {
+      "name": "軽音楽部",
+      "kind": "文化",
+      "days_note": "バンドごと曜日固定の週1回。1年生は週1回の基礎練習も別途あり",
+      "days_per_week": 1,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日は週1回（基礎練習を含めても週2回程度）。実績は「校内ライブ8回開催、文化祭、合宿」（学校サイト）で、コンクール等の大会成績を伴わないため段階4。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-seiryo-h/seikatsu/bunkabu.html",
+      "as_of": "2026-06-25"
+    },
+    {
+      "name": "自然科学部",
+      "kind": "文化",
+      "days_note": "水",
+      "days_per_week": 1,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日は週1日。実績は学校サイトで「なし」と明記されているため段階4。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-seiryo-h/seikatsu/bunkabu.html",
+      "as_of": "2026-06-25"
+    },
+    {
+      "name": "漫画研究部",
+      "kind": "文化",
+      "days_note": "火、水、金",
+      "days_per_week": 3,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日は週3日。実績は「年2回の部誌作成」（学校サイト）で、コンクール等の大会成績を伴わないため段階4。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-seiryo-h/seikatsu/bunkabu.html",
+      "as_of": "2026-06-25"
+    },
+    {
+      "name": "クッキング部",
+      "kind": "文化",
+      "days_note": "水",
+      "days_per_week": 1,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日は週1日。実績は学校サイトで「特になし」と明記されているため段階4。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-seiryo-h/seikatsu/bunkabu.html",
+      "as_of": "2026-06-25"
+    },
+    {
+      "name": "鉄道研究同好会",
+      "kind": "同好会",
+      "days_note": "金",
+      "days_per_week": 1,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日は週1日。実績は「撮影会、文化祭展示など」（学校サイト）で、大会・コンクールを伴う活動ではないため段階4。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-seiryo-h/seikatsu/bunkabu.html",
+      "as_of": "2026-06-25"
+    },
+    {
+      "name": "国際交流部",
+      "kind": "文化",
+      "days_note": "不定期",
+      "weekend": "なし",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-seiryo-h/seikatsu/bunkabu.html",
+      "as_of": "2026-06-25",
+      "note": "活動日が「不定期」とのみ記載で週あたりの日数が特定できないため段階を付けていない。活動内容は文化祭展示・料理会・在県説明会の手伝いなど（学校サイト）。"
+    },
+    {
+      "name": "パソコン部",
+      "kind": "文化",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-seiryo-h/seikatsu/bunkabu.html",
+      "as_of": "2026-06-25",
+      "note": "学校サイトに「現在部員0名です」と注記があるのみ。"
+    },
+    {
+      "name": "ロボティクス同好会",
+      "kind": "同好会",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-seiryo-h/seikatsu/bunkabu.html",
+      "as_of": "2026-06-25",
+      "note": "学校サイトに「現在部員0名です」と注記があるのみ。"
+    },
+    {
+      "name": "メディア研究同好会",
+      "kind": "同好会",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-seiryo-h/seikatsu/bunkabu.html",
+      "as_of": "2026-06-25",
+      "note": "学校サイトに「現在部員0名です」と注記があるのみ。"
+    },
+    {
+      "name": "JRC同好会",
+      "kind": "同好会",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-seiryo-h/seikatsu/bunkabu.html",
+      "as_of": "2026-06-25",
+      "note": "学校サイトに「現在部員0名です」と注記があるのみ。"
+    }
+  ],
+  "designated_universities": [],
+  "events": [
+    {
+      "kind": "指定",
+      "period_label": "令和4年度〜令和6年度（2022〜2024年度）",
+      "summary": "神奈川県教育委員会より「総合的な探究の時間」に係る研究の教育課程研究開発校に指定された。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-seiryo-h/gaiyou/enkaku.html"
+    },
+    {
+      "kind": "その他",
+      "period_label": "2025年1月",
+      "happened_on": "2025-01-24",
+      "summary": "硬式野球部が第97回選抜高等学校野球大会（春のセンバツ甲子園）に神奈川県勢初の21世紀枠で選出され、県立高校としては71年ぶりの甲子園出場となった。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-seiryo-h/seiryosenbatsuinfo.html"
+    }
+  ],
+  "unresolved": [
+    "推薦の倍率：神奈川県公立高校入試は共通選抜のみで推薦単独の選考区分がないため対象外",
+    "部活動加入率：公式資料に「加入率」として算出・公表された数値は見当たらない",
+    "進路決定率：卒業生数・進学者数・就職者数の内訳（3年間の進学先一覧PDF）はあるが、学校が公式に「進路決定率」として算出・公表した数値は見当たらないため記載しなかった",
+    "指定校推薦の大学一覧：学校案内パンフレット・進路ページのいずれにも「指定校推薦」として大学名を挙げた一覧の掲載は見当たらなかった",
+    "在校生（全校）の男女別人数：入学者数の男女別（学年ごと）は沿革ページにあるが、現在の全校在籍者数を男女別に示す公式資料は見当たらなかった",
+    "一般／指定校推薦／公募推薦／総合型の入試方式別の進学割合（admission_route_share）：公式資料に見当たらなかった",
+    "学級数の増減：2020年以降の公式な学級増減の発表は見当たらなかった（沿革ページに現況22学級の記載はあるが、増減の経緯は不明）",
+    "国際交流部の週あたり活動日数：学校サイトの記載が「不定期」のみで日数を特定できなかった",
+    "ライフル射撃部「4大会連続関東大会出場」・体操競技部「女子団体5位」・書道部の受賞の具体的な年度：学校サイト（部活動紹介ページ）に年度の明記がなく、直近3年に該当するかを厳密には確認できなかった（ページ更新日は2026年7月・6月）",
+    "ライフル射撃部：「4大会連続関東大会出場」「国民スポーツ大会県予選2位」は年度が書かれていないため段階を付けていない（見直しで外した）",
+    "男女別：沿革ページの令和7年度入学者（男104・女175）は在籍生徒数ではないため入れていない（在籍の男女は県の生徒数統計で取込済み）"
+  ],
+  "conflicts": [
+    "教育課程研究開発校の指定期間：沿革ページ（更新日2025-08-21）は指定期間を「令和4年度〜令和6年度」の3年間と明記するが、学校案内パンフレット（令和8年度版、2026年作成）は「教育課程研究開発校に指定されており、…研究に取り組んでいます」と現在も継続しているかのように記載しており、期間延長の公式発表は確認できなかった。",
+    "4年制大学進学者数：学校が公表した「3年間の進学先一覧」PDFの合計表は実進学202名（卒業生303名の67％）とする一方、同じPDFの大学別表（進学者数列）を全校名分合算すると191名にしかならず一致しない。なお大学別表の合格者数列（延べ）を合算すると298名になる。",
+    "学校案内パンフレット（令和8年度版）の「4年制大学」合格大学名一覧には東京理科・福岡教育・秋田県立などの大学名が挙がっているが、3年間の進学先一覧PDF（令和5〜7年度の大学別表）にはこれらの大学の記載がない。パンフレットの一覧は複数年度にまたがる主な進学先である可能性がある。"
+  ]
+}

@@ -100,7 +100,8 @@
       "source_url": "https://www.metro.ed.jp/nagayama-h/our_school/history.html",
       "source_label": "沿革ページ 第55回入学式",
       "as_of": "2026-04-07",
-      "note": "令和8年度入学者（新入生8学級）の人数。全校在籍者の男女内訳ではない（unresolved参照）。"
+      "note": "令和8年度入学者（新入生8学級）の人数。全校在籍者の男女内訳ではない（unresolved参照）。（入学時の人数なので1年生として持つ）",
+      "grade": 1
     },
     {
       "metric": "students",
@@ -110,7 +111,8 @@
       "source_url": "https://www.metro.ed.jp/nagayama-h/our_school/history.html",
       "source_label": "沿革ページ 第55回入学式",
       "as_of": "2026-04-07",
-      "note": "令和8年度入学者（新入生8学級）の人数。全校在籍者の男女内訳ではない（unresolved参照）。"
+      "note": "令和8年度入学者（新入生8学級）の人数。全校在籍者の男女内訳ではない（unresolved参照）。（入学時の人数なので1年生として持つ）",
+      "grade": 1
     },
     {
       "metric": "uniform",
@@ -734,94 +736,534 @@
     }
   ],
   "designated_universities": [
-    { "university": "麻布大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "学校案内「スクールガイド2027」p.7「主な指定校推薦大学・短大・就職分野」（大学350名以上指定あり）" },
-    { "university": "亜細亜大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
-    { "university": "跡見学園女子大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
-    { "university": "浦和大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
-    { "university": "桜美林大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
-    { "university": "大妻女子大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
-    { "university": "嘉悦大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
-    { "university": "神奈川大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
-    { "university": "神奈川工科大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
-    { "university": "川村学園女子大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
-    { "university": "関東学院大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
-    { "university": "共栄大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
-    { "university": "杏林大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
-    { "university": "国士舘大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
-    { "university": "駒沢女子大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
-    { "university": "相模女子大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
-    { "university": "実践女子大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
-    { "university": "十文字学園女子大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
-    { "university": "淑徳大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
-    { "university": "松蔭大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
-    { "university": "城西国際大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
-    { "university": "城西大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
-    { "university": "尚美学園大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
-    { "university": "昭和音楽大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
-    { "university": "白梅学園大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
-    { "university": "白百合女子大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
-    { "university": "駿河台大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
-    { "university": "杉野服飾大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
-    { "university": "聖学院大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
-    { "university": "清泉女子大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
-    { "university": "聖徳大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
-    { "university": "西武文理大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
-    { "university": "洗足学園音楽大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
-    { "university": "大東文化大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
-    { "university": "高千穂大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
-    { "university": "拓殖大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
-    { "university": "多摩大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
-    { "university": "帝京大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
-    { "university": "帝京科学大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
-    { "university": "帝京平成大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
-    { "university": "田園調布学園大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
-    { "university": "桐蔭横浜大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
-    { "university": "東京医療学院大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
-    { "university": "東京医療保健大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
-    { "university": "東京家政学院大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
-    { "university": "東京家政大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
-    { "university": "東京工科大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
-    { "university": "東京工芸大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
-    { "university": "東京純心大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
-    { "university": "東京女子体育大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
-    { "university": "東京富士大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
-    { "university": "東京保健医療専門職大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
-    { "university": "東都大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
-    { "university": "東洋学園大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
-    { "university": "東洋英和女学院大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
-    { "university": "日本獣医生命科学大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
-    { "university": "日本女子体育大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
-    { "university": "日本文化大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
-    { "university": "日本薬科大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
-    { "university": "文化学園大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
-    { "university": "文京学院大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
-    { "university": "武蔵野音楽大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
-    { "university": "明星大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
-    { "university": "目白大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
-    { "university": "ものつくり大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
-    { "university": "ヤマザキ動物看護大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
-    { "university": "横浜美術大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
-    { "university": "立正大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
-    { "university": "和光大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
-    { "university": "和泉短期大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "学校案内「スクールガイド2027」p.7「主な指定校推薦大学・短大・就職分野」（短大100名以上指定あり）" },
-    { "university": "大妻女子大学短期大学部", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
-    { "university": "共立女子短期大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
-    { "university": "駒沢女子短期大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
-    { "university": "実践女子短期大学部", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
-    { "university": "湘北短期大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
-    { "university": "昭和音楽大学短期大学部", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
-    { "university": "女子栄養大学短期大学部", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
-    { "university": "白梅学園短期大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上（共学と付記）" },
-    { "university": "洗足こども短期大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
-    { "university": "鶴見大学短期大学部", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
-    { "university": "帝京短期大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
-    { "university": "帝京大学短期大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
-    { "university": "戸板女子短期大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
-    { "university": "東京交通短期大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
-    { "university": "東京女子体育短期大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
-    { "university": "新渡戸文化短期大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
-    { "university": "目白大学短期大学部", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" },
-    { "university": "山野美容芸術短期大学", "fiscal_year": null, "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf", "note": "同上" }
+    {
+      "university": "麻布大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf",
+      "note": "学校案内「スクールガイド2027」p.7「主な指定校推薦大学・短大・就職分野」（大学350名以上指定あり）"
+    },
+    {
+      "university": "亜細亜大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf",
+      "note": "同上"
+    },
+    {
+      "university": "跡見学園女子大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf",
+      "note": "同上"
+    },
+    {
+      "university": "浦和大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf",
+      "note": "同上"
+    },
+    {
+      "university": "桜美林大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf",
+      "note": "同上"
+    },
+    {
+      "university": "大妻女子大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf",
+      "note": "同上"
+    },
+    {
+      "university": "嘉悦大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf",
+      "note": "同上"
+    },
+    {
+      "university": "神奈川大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf",
+      "note": "同上"
+    },
+    {
+      "university": "神奈川工科大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf",
+      "note": "同上"
+    },
+    {
+      "university": "川村学園女子大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf",
+      "note": "同上"
+    },
+    {
+      "university": "関東学院大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf",
+      "note": "同上"
+    },
+    {
+      "university": "共栄大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf",
+      "note": "同上"
+    },
+    {
+      "university": "杏林大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf",
+      "note": "同上"
+    },
+    {
+      "university": "国士舘大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf",
+      "note": "同上"
+    },
+    {
+      "university": "駒沢女子大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf",
+      "note": "同上"
+    },
+    {
+      "university": "相模女子大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf",
+      "note": "同上"
+    },
+    {
+      "university": "実践女子大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf",
+      "note": "同上"
+    },
+    {
+      "university": "十文字学園女子大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf",
+      "note": "同上"
+    },
+    {
+      "university": "淑徳大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf",
+      "note": "同上"
+    },
+    {
+      "university": "松蔭大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf",
+      "note": "同上"
+    },
+    {
+      "university": "城西国際大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf",
+      "note": "同上"
+    },
+    {
+      "university": "城西大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf",
+      "note": "同上"
+    },
+    {
+      "university": "尚美学園大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf",
+      "note": "同上"
+    },
+    {
+      "university": "昭和音楽大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf",
+      "note": "同上"
+    },
+    {
+      "university": "白梅学園大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf",
+      "note": "同上"
+    },
+    {
+      "university": "白百合女子大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf",
+      "note": "同上"
+    },
+    {
+      "university": "駿河台大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf",
+      "note": "同上"
+    },
+    {
+      "university": "杉野服飾大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf",
+      "note": "同上"
+    },
+    {
+      "university": "聖学院大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf",
+      "note": "同上"
+    },
+    {
+      "university": "清泉女子大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf",
+      "note": "同上"
+    },
+    {
+      "university": "聖徳大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf",
+      "note": "同上"
+    },
+    {
+      "university": "西武文理大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf",
+      "note": "同上"
+    },
+    {
+      "university": "洗足学園音楽大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf",
+      "note": "同上"
+    },
+    {
+      "university": "大東文化大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf",
+      "note": "同上"
+    },
+    {
+      "university": "高千穂大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf",
+      "note": "同上"
+    },
+    {
+      "university": "拓殖大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf",
+      "note": "同上"
+    },
+    {
+      "university": "多摩大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf",
+      "note": "同上"
+    },
+    {
+      "university": "帝京大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf",
+      "note": "同上"
+    },
+    {
+      "university": "帝京科学大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf",
+      "note": "同上"
+    },
+    {
+      "university": "帝京平成大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf",
+      "note": "同上"
+    },
+    {
+      "university": "田園調布学園大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf",
+      "note": "同上"
+    },
+    {
+      "university": "桐蔭横浜大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf",
+      "note": "同上"
+    },
+    {
+      "university": "東京医療学院大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf",
+      "note": "同上"
+    },
+    {
+      "university": "東京医療保健大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf",
+      "note": "同上"
+    },
+    {
+      "university": "東京家政学院大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf",
+      "note": "同上"
+    },
+    {
+      "university": "東京家政大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf",
+      "note": "同上"
+    },
+    {
+      "university": "東京工科大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf",
+      "note": "同上"
+    },
+    {
+      "university": "東京工芸大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf",
+      "note": "同上"
+    },
+    {
+      "university": "東京純心大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf",
+      "note": "同上"
+    },
+    {
+      "university": "東京女子体育大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf",
+      "note": "同上"
+    },
+    {
+      "university": "東京富士大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf",
+      "note": "同上"
+    },
+    {
+      "university": "東京保健医療専門職大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf",
+      "note": "同上"
+    },
+    {
+      "university": "東都大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf",
+      "note": "同上"
+    },
+    {
+      "university": "東洋学園大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf",
+      "note": "同上"
+    },
+    {
+      "university": "東洋英和女学院大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf",
+      "note": "同上"
+    },
+    {
+      "university": "日本獣医生命科学大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf",
+      "note": "同上"
+    },
+    {
+      "university": "日本女子体育大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf",
+      "note": "同上"
+    },
+    {
+      "university": "日本文化大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf",
+      "note": "同上"
+    },
+    {
+      "university": "日本薬科大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf",
+      "note": "同上"
+    },
+    {
+      "university": "文化学園大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf",
+      "note": "同上"
+    },
+    {
+      "university": "文京学院大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf",
+      "note": "同上"
+    },
+    {
+      "university": "武蔵野音楽大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf",
+      "note": "同上"
+    },
+    {
+      "university": "明星大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf",
+      "note": "同上"
+    },
+    {
+      "university": "目白大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf",
+      "note": "同上"
+    },
+    {
+      "university": "ものつくり大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf",
+      "note": "同上"
+    },
+    {
+      "university": "ヤマザキ動物看護大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf",
+      "note": "同上"
+    },
+    {
+      "university": "横浜美術大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf",
+      "note": "同上"
+    },
+    {
+      "university": "立正大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf",
+      "note": "同上"
+    },
+    {
+      "university": "和光大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf",
+      "note": "同上"
+    },
+    {
+      "university": "和泉短期大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf",
+      "note": "学校案内「スクールガイド2027」p.7「主な指定校推薦大学・短大・就職分野」（短大100名以上指定あり）"
+    },
+    {
+      "university": "大妻女子大学短期大学部",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf",
+      "note": "同上"
+    },
+    {
+      "university": "共立女子短期大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf",
+      "note": "同上"
+    },
+    {
+      "university": "駒沢女子短期大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf",
+      "note": "同上"
+    },
+    {
+      "university": "実践女子短期大学部",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf",
+      "note": "同上"
+    },
+    {
+      "university": "湘北短期大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf",
+      "note": "同上"
+    },
+    {
+      "university": "昭和音楽大学短期大学部",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf",
+      "note": "同上"
+    },
+    {
+      "university": "女子栄養大学短期大学部",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf",
+      "note": "同上"
+    },
+    {
+      "university": "白梅学園短期大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf",
+      "note": "同上（共学と付記）"
+    },
+    {
+      "university": "洗足こども短期大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf",
+      "note": "同上"
+    },
+    {
+      "university": "鶴見大学短期大学部",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf",
+      "note": "同上"
+    },
+    {
+      "university": "帝京短期大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf",
+      "note": "同上"
+    },
+    {
+      "university": "帝京大学短期大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf",
+      "note": "同上"
+    },
+    {
+      "university": "戸板女子短期大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf",
+      "note": "同上"
+    },
+    {
+      "university": "東京交通短期大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf",
+      "note": "同上"
+    },
+    {
+      "university": "東京女子体育短期大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf",
+      "note": "同上"
+    },
+    {
+      "university": "新渡戸文化短期大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf",
+      "note": "同上"
+    },
+    {
+      "university": "目白大学短期大学部",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf",
+      "note": "同上"
+    },
+    {
+      "university": "山野美容芸術短期大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/nagayama-h/assets/pamphlet/pamphlet-pdffile-3727.pdf",
+      "note": "同上"
+    }
   ],
   "events": [
     {

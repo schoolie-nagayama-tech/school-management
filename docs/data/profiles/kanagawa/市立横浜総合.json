@@ -1,0 +1,646 @@
+{
+  "prefecture": "神奈川県",
+  "school_name": "市立横浜総合",
+  "official_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-sogo/",
+  "researched_at": "2026-09-28",
+  "stats": [
+    {
+      "metric": "university_count",
+      "item": "国公立",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 0,
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-sogo/index.cfm/1,1639,c,html/1639/20260723-130400.pdf",
+      "source_label": "横浜総合高等学校 2025年度進路先状況、進路実績一覧表（2026年3月卒業生の主な進路先）",
+      "as_of": "2026-03-31",
+      "note": "大学別合格者一覧に国公立大学の記載なし。大学別の表から合算。"
+    },
+    {
+      "metric": "university_count",
+      "item": "早慶上理",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 0,
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-sogo/index.cfm/1,1639,c,html/1639/20260723-130400.pdf",
+      "source_label": "横浜総合高等学校 2025年度進路先状況、進路実績一覧表（2026年3月卒業生の主な進路先）",
+      "as_of": "2026-03-31",
+      "note": "早稲田・慶應・上智・東京理科の記載なし。大学別の表から合算。"
+    },
+    {
+      "metric": "university_count",
+      "item": "GMARCH",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 0,
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-sogo/index.cfm/1,1639,c,html/1639/20260723-130400.pdf",
+      "source_label": "横浜総合高等学校 2025年度進路先状況、進路実績一覧表（2026年3月卒業生の主な進路先）",
+      "as_of": "2026-03-31",
+      "note": "学習院・明治・青山学院・立教・中央・法政の記載なし。大学別の表から合算。"
+    },
+    {
+      "metric": "university_count",
+      "item": "成成明武",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 0,
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-sogo/index.cfm/1,1639,c,html/1639/20260723-130400.pdf",
+      "source_label": "横浜総合高等学校 2025年度進路先状況、進路実績一覧表（2026年3月卒業生の主な進路先）",
+      "as_of": "2026-03-31",
+      "note": "成蹊・成城・明治学院・武蔵のうち明治学院大学のみ記載（1名）。※明治学院大学は成成明武の枠でも日東駒専の枠でもないため、この項目にのみ計上。大学別の表から合算。"
+    },
+    {
+      "metric": "university_count",
+      "item": "日東駒専",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 1,
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-sogo/index.cfm/1,1639,c,html/1639/20260723-130400.pdf",
+      "source_label": "横浜総合高等学校 2025年度進路先状況、進路実績一覧表（2026年3月卒業生の主な進路先）",
+      "as_of": "2026-03-31",
+      "note": "駒澤大学1名のみ。日本・東洋・専修の記載なし。大学別の表から合算。"
+    },
+    {
+      "metric": "university_count",
+      "item": "合計",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 40,
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-sogo/index.cfm/1,1639,c,html/1639/20260723-130400.pdf",
+      "source_label": "横浜総合高等学校 2025年度進路先状況、進路実績一覧表",
+      "as_of": "2026-03-31",
+      "note": "2026年3月卒業生（231名）のうち大学進学40名（表の「大学」列の実績値）。本校は三部制定時制・単位制のため3〜6年在籍する生徒が混在し、卒業までの年数で人数が変わる点に注意。"
+    },
+    {
+      "metric": "university_count",
+      "item": "関東学院大学",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 6,
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-sogo/index.cfm/1,1639,c,html/1639/20260723-130400.pdf",
+      "source_label": "横浜総合高等学校 2025年度進路先状況、進路実績一覧表（2026年3月卒業生の主な進路先）",
+      "as_of": "2026-03-31",
+      "note": "進学・合格が多い大学の上位5つのうち1位。"
+    },
+    {
+      "metric": "university_count",
+      "item": "神奈川大学",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 5,
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-sogo/index.cfm/1,1639,c,html/1639/20260723-130400.pdf",
+      "source_label": "横浜総合高等学校 2025年度進路先状況、進路実績一覧表（2026年3月卒業生の主な進路先）",
+      "as_of": "2026-03-31",
+      "note": "進学・合格が多い大学の上位5つのうち2位。"
+    },
+    {
+      "metric": "university_count",
+      "item": "桜美林大学",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 4,
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-sogo/index.cfm/1,1639,c,html/1639/20260723-130400.pdf",
+      "source_label": "横浜総合高等学校 2025年度進路先状況、進路実績一覧表（2026年3月卒業生の主な進路先）",
+      "as_of": "2026-03-31",
+      "note": "進学・合格が多い大学の上位5つのうち3位。"
+    },
+    {
+      "metric": "university_count",
+      "item": "京都芸術大学",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 2,
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-sogo/index.cfm/1,1639,c,html/1639/20260723-130400.pdf",
+      "source_label": "横浜総合高等学校 2025年度進路先状況、進路実績一覧表（2026年3月卒業生の主な進路先）",
+      "as_of": "2026-03-31",
+      "note": "進学・合格が多い大学の上位5つのうち4位（田園調布学園大学と同数）。"
+    },
+    {
+      "metric": "university_count",
+      "item": "田園調布学園大学",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 2,
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-sogo/index.cfm/1,1639,c,html/1639/20260723-130400.pdf",
+      "source_label": "横浜総合高等学校 2025年度進路先状況、進路実績一覧表（2026年3月卒業生の主な進路先）",
+      "as_of": "2026-03-31",
+      "note": "進学・合格が多い大学の上位5つのうち5位（京都芸術大学と同数）。"
+    },
+    {
+      "metric": "satisfaction",
+      "item": "生徒:授業",
+      "basis": "",
+      "fiscal_year": 2025,
+      "value_num": 85,
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-sogo/index.cfm/1,1238,c,html/1238/20260514-153743.pdf",
+      "source_label": "横浜市立横浜総合高等学校 令和7年度学校評価集計表（授業評価アンケート 科目全体 n=2,447）",
+      "as_of": "2026-05-14",
+      "note": "設問「授業に参加することは楽しい」の肯定率（1_そう思う＋2_ややそう思う）。学校評価報告書でも85.0%が言及されている。本校の学校評価アンケートには「学校生活」全体の満足度を問う設問がないため、生徒:学校生活・保護者:学校生活のsatisfactionは計上していない（unresolvedに記載）。"
+    },
+    {
+      "metric": "students",
+      "item": "",
+      "basis": "",
+      "sex": "male",
+      "fiscal_year": 2026,
+      "value_num": 475,
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-sogo/index.cfm/1,0,42,189,html",
+      "source_label": "横浜総合高等学校 在籍生徒数",
+      "as_of": "2026-04-01",
+      "note": "Ⅰ部・Ⅱ部・Ⅲ部・全入学年度の合計（在籍生徒数ページの合計欄）。"
+    },
+    {
+      "metric": "students",
+      "item": "",
+      "basis": "",
+      "sex": "female",
+      "fiscal_year": 2026,
+      "value_num": 527,
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-sogo/index.cfm/1,0,42,189,html",
+      "source_label": "横浜総合高等学校 在籍生徒数",
+      "as_of": "2026-04-01",
+      "note": "Ⅰ部・Ⅱ部・Ⅲ部・全入学年度の合計（在籍生徒数ページの合計欄）。"
+    }
+  ],
+  "clubs": [
+    {
+      "name": "剣道部",
+      "kind": "運動",
+      "days_note": "土曜日・日曜日（隔日・メインは土曜日の午前）、月1〜3回出稽古あり",
+      "days_per_week": 1,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2025年度 全国高等学校定時制通信制剣道大会 男子個人ベスト8（1回）。全国1回は段階2、定通限定大会のため1段低く読み段階3（見直しで2→3）",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-sogo/index.cfm/1,1825,44,196,html",
+      "as_of": "2024-12-25",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "全国高等学校定時制通信制剣道大会 神奈川県予選会",
+          "level": "都県",
+          "result": "男子個人 優勝（全国大会出場）・男子個人 ベスト16、男子団体3位（横浜明朋・神奈川総合産業との合同チーム）",
+          "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-sogo/index.cfm/1,1825,44,196,html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "全国高等学校定時制通信制剣道大会",
+          "level": "全国",
+          "result": "男子個人 ベスト8",
+          "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-sogo/index.cfm/1,1825,44,196,html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "全国高等学校定時制通信制剣道大会 神奈川県予選会",
+          "level": "都県",
+          "result": "男子団体 準優勝（横浜明朋・大和商業との合同チーム）、女子個人 準優勝",
+          "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-sogo/index.cfm/1,1825,44,196,html"
+        }
+      ]
+    },
+    {
+      "name": "サッカー部",
+      "kind": "運動",
+      "days_note": "月・水・木・土・日（土日は基本的に片方OFF）",
+      "days_per_week": 4.5,
+      "weekend": "土日",
+      "tier": 2,
+      "tier_basis": "2026年度 全国高等学校定時制通信制サッカー大会 全国大会 準優勝（合同チームでなく横浜総合単独。学校サイト部活動ページ）。高円宮杯U-18サッカーリーグ神奈川K1〜K6（2026年度、https://www.kanagawa-fa.gr.jp/cms/u18-league/2026/div1〜6/）には横浜総合の登録が確認できず、全日制中心のリーグには参加していない模様。定時制通信制限定大会での実績のため1段低く読み、段階2が上限。",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-sogo/index.cfm/1,1817,44,196,html",
+      "as_of": "2026-08-18",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "全国高等学校定時制通信制サッカー大会 神奈川県予選",
+          "level": "都県",
+          "result": "3位（全国大会出場）",
+          "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-sogo/index.cfm/1,1817,44,196,html"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "全国高等学校定時制通信制サッカー大会",
+          "level": "全国",
+          "result": "準優勝",
+          "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-sogo/index.cfm/1,1817,44,196,html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "全国高等学校定時制通信制サッカー大会",
+          "level": "全国",
+          "result": "ベスト16",
+          "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-sogo/index.cfm/1,1817,44,196,html"
+        }
+      ]
+    },
+    {
+      "name": "ソフトテニス部",
+      "kind": "運動",
+      "days_note": "月・水・木・土（日祝は大会等が入ることあり）",
+      "days_per_week": 4,
+      "weekend": "土",
+      "tier": 2,
+      "tier_basis": "2024年度 全国高等学校定時制通信制ソフトテニス大会 全国大会 男子団体準優勝、2023年度 同全国大会 女子団体3位（学校サイト部活動ページ）。定時制通信制限定大会のためいずれもベスト8以上到達で段階2が上限。",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-sogo/index.cfm/1,2121,44,196,html",
+      "as_of": "2024-05-21",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "全国高等学校定時制通信制ソフトテニス大会 神奈川県予選会",
+          "level": "都県",
+          "result": "女子個人 優勝、男子個人 ベスト4",
+          "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-sogo/index.cfm/1,2121,44,196,html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "全国高等学校定時制通信制ソフトテニス大会",
+          "level": "全国",
+          "result": "男子団体 準優勝",
+          "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-sogo/index.cfm/1,2121,44,196,html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "全国高等学校定時制通信制ソフトテニス大会",
+          "level": "全国",
+          "result": "女子団体 3位、男子団体 5位",
+          "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-sogo/index.cfm/1,2121,44,196,html"
+        }
+      ]
+    },
+    {
+      "name": "ダンス部",
+      "kind": "運動",
+      "days_note": "水曜日・金曜日 12:10〜12:35",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "週2日以下の活動で、横総祭・卒業生を送る会等の発表のみ。大会出場の記載なし。",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-sogo/index.cfm/1,1826,44,196,html",
+      "as_of": "2024-07-26",
+      "results": []
+    },
+    {
+      "name": "軟式野球部",
+      "kind": "運動",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-sogo/index.cfm/1,3049,44,196,html",
+      "as_of": "2023-06-13",
+      "results": []
+    },
+    {
+      "name": "男子・女子バスケットボール部",
+      "kind": "運動",
+      "days_note": "火・水・木・土（大会日程により変更あり）",
+      "days_per_week": 4,
+      "weekend": "土",
+      "tier": 2,
+      "tier_basis": "女子：2023年度・2025年度の全国高等学校定時制通信制体育大会でいずれも全国大会ベスト8（2025年度は神奈川県予選も合同チームで優勝）。定時制通信制限定大会のためベスト8到達で段階2が上限。男子は2025年度時点で県予選止まり。女子の結果は合同チームによるもの（学校サイト部活動ページに明記）。",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-sogo/index.cfm/1,3048,44,196,html",
+      "as_of": "2022-08-05",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "全国高等学校定時制通信制体育大会",
+          "level": "全国",
+          "result": "女子 ベスト8（神奈川県予選は合同チームで優勝）",
+          "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-sogo/index.cfm/1,3048,44,196,html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "全国高等学校定時制通信制体育大会",
+          "level": "全国",
+          "result": "女子 2年連続出場（神奈川県予選は合同チームで優勝）、男子 神奈川県予選 準優勝",
+          "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-sogo/index.cfm/1,3048,44,196,html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "全国高等学校定時制通信制体育大会",
+          "level": "全国",
+          "result": "女子 ベスト8（合同チーム）、男子 神奈川県予選3位",
+          "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-sogo/index.cfm/1,3048,44,196,html"
+        }
+      ]
+    },
+    {
+      "name": "男子・女子バドミントン部",
+      "kind": "運動",
+      "days_note": "月・火・木・金・土（水・日は基本なし）",
+      "days_per_week": 5,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "2025年度 全国高等学校定時制通信制体育大会 女子団体3位・男子団体準優勝（全国1回）。全国1回は段階2、定通限定大会のため1段低く読み段階3（見直しで2→3）",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-sogo/index.cfm/1,1811,44,196,html",
+      "as_of": "2025-12-04",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "全国高等学校定時制通信制体育大会",
+          "level": "全国",
+          "result": "女子団体 3位、男子団体 準優勝",
+          "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-sogo/index.cfm/1,1811,44,196,html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "横浜市立高等学校総合体育大会",
+          "level": "地区",
+          "result": "女子シングルス 優勝・3位、男子シングルス 優勝、男子団体 3位",
+          "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-sogo/index.cfm/1,1811,44,196,html"
+        }
+      ]
+    },
+    {
+      "name": "ボクシング部",
+      "kind": "運動",
+      "days_note": "水・木（15:00〜、3・7・8月は13:00〜）・土（13:00〜）",
+      "days_per_week": 3,
+      "weekend": "土",
+      "tier": 1,
+      "tier_basis": "個人種目。2024年度 関東高等学校ボクシング大会でピン級・フライ級ともに2位、2025年度 関東高等学校ボクシング大会（ぐんま）フライ級優勝、関東選抜高等学校ボクシング大会フライ級3位。定通限定でない一般大会（関東大会）で2年連続の上位入賞のため段階1。",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-sogo/index.cfm/1,1822,44,196,html",
+      "as_of": "2024-06-26",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "関東高等学校ボクシング大会（ぐんま）",
+          "level": "関東",
+          "result": "フライ級 優勝",
+          "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-sogo/index.cfm/1,1822,44,196,html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "関東選抜高等学校ボクシング大会",
+          "level": "関東",
+          "result": "フライ級 3位",
+          "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-sogo/index.cfm/1,1822,44,196,html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "全国高等学校ボクシング大会 神奈川県予選",
+          "level": "都県",
+          "result": "フライ級 準優勝、ライトウェルター級 準優勝",
+          "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-sogo/index.cfm/1,1822,44,196,html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "関東高等学校ボクシング大会",
+          "level": "関東",
+          "result": "ピン級 2位、フライ級 2位",
+          "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-sogo/index.cfm/1,1822,44,196,html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "関東ボクシング選抜大会",
+          "level": "関東",
+          "result": "フライ級 優勝",
+          "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-sogo/index.cfm/1,1822,44,196,html"
+        }
+      ]
+    },
+    {
+      "name": "男子・女子陸上競技部",
+      "kind": "運動",
+      "days_note": "月・水・金 16:30〜17:05、土 9:00〜13:00",
+      "days_per_week": 4,
+      "weekend": "土",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-sogo/index.cfm/1,1824,44,196,html",
+      "as_of": "2021-09-27",
+      "results": []
+    },
+    {
+      "name": "うた部",
+      "kind": "文化",
+      "days_note": "火・金 12:10〜12:35、土 12:30〜16:30",
+      "days_per_week": 3,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "2025年度 神奈川県高等学校定通芸術祭・合唱の部 最優秀賞（学校案内パンフレット令和8年度版）。定時制通信制限定の大会のため1段低く読み、段階3。",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-sogo/index.cfm/1,1831,44,196,html",
+      "as_of": "2023-07-26",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "神奈川県高等学校定通芸術祭 合唱の部",
+          "level": "都県",
+          "result": "最優秀賞",
+          "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-sogo/index.cfm/1,2502,c,html/2502/20260625-171942.pdf"
+        }
+      ]
+    },
+    {
+      "name": "企画部",
+      "kind": "文化",
+      "days_note": "不定期（福島県矢祭町での農業体験、地域行事への参加など）",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-sogo/index.cfm/1,2167,44,196,html",
+      "as_of": "2024-06-05",
+      "results": []
+    },
+    {
+      "name": "軽音楽部",
+      "kind": "文化",
+      "days_note": "木 15:00〜19:00、土 14:00〜17:00",
+      "days_per_week": 2,
+      "weekend": "土",
+      "tier": 4,
+      "tier_basis": "週2日の活動で、横総祭・地域イベント等での発表が中心。コンクール等での受賞の記載なし。",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-sogo/index.cfm/1,1833,44,196,html",
+      "as_of": "2024-05-23",
+      "results": []
+    },
+    {
+      "name": "書道部",
+      "kind": "文化",
+      "days_note": "各自の空き時間に制作、木曜昼休みは全員集合",
+      "tier": 3,
+      "tier_basis": "2025年度 神奈川県高等学校総合文化祭 書道展 個人特選、県定通作品展 最優秀賞（定通限定）。展示型の書道展で最上位の賞ではないため段階3（見直しで2→3）",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-sogo/index.cfm/1,1836,44,196,html",
+      "as_of": "2022-09-30",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "神奈川県高等学校総合文化祭 第62回高等学校書道展",
+          "level": "都県",
+          "result": "個人 特選",
+          "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-sogo/index.cfm/1,2502,c,html/2502/20260625-171942.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "神奈川県高等学校定通作品展",
+          "level": "都県",
+          "result": "最優秀賞",
+          "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-sogo/index.cfm/1,2502,c,html/2502/20260625-171942.pdf"
+        }
+      ]
+    },
+    {
+      "name": "吹奏楽部",
+      "kind": "文化",
+      "days_note": "水 14:55〜17:00、土 9:30〜12:30",
+      "days_per_week": 2,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "2025年度 神奈川県高等学校定通芸術祭・合奏の部 最優秀賞（学校案内パンフレット令和8年度版）。定時制通信制限定大会のため1段低く読み、段階3。前年度（2024年度・第55回同芸術祭）は努力賞（学校サイト部活動ページ）。",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-sogo/index.cfm/1,1828,44,196,html",
+      "as_of": "2023-08-18",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "神奈川県高等学校定通芸術祭 合奏の部",
+          "level": "都県",
+          "result": "最優秀賞",
+          "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-sogo/index.cfm/1,2502,c,html/2502/20260625-171942.pdf"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "第55回定通芸術祭 合奏の部",
+          "level": "都県",
+          "result": "努力賞",
+          "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-sogo/index.cfm/1,1828,44,196,html"
+        }
+      ]
+    },
+    {
+      "name": "脱出ゲーム部",
+      "kind": "文化",
+      "days_note": "16:30〜18:00（曜日の記載なし）",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-sogo/index.cfm/1,3052,44,196,html",
+      "as_of": "2023-07-28",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "リアル脱出ゲーム甲子園（民間主催）",
+          "level": "その他",
+          "result": "予選敗退",
+          "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-sogo/index.cfm/1,3052,44,196,html"
+        }
+      ]
+    },
+    {
+      "name": "鉄道研究部",
+      "kind": "文化",
+      "days_note": "不定期（校外中心）",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-sogo/index.cfm/1,2083,44,196,html",
+      "as_of": "2026-01-09",
+      "results": []
+    },
+    {
+      "name": "ビジネス資格研究部",
+      "kind": "文化",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-sogo/index.cfm/1,1806,44,196,html",
+      "as_of": "2024-07-23",
+      "results": []
+    },
+    {
+      "name": "美術部",
+      "kind": "文化",
+      "days_note": "自習制作は昼休み・夕方休みに随時、ミーティングは月曜12:10〜13:00",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-sogo/index.cfm/1,1829,44,196,html",
+      "as_of": "2023-06-14",
+      "results": []
+    },
+    {
+      "name": "ボランティア部",
+      "kind": "文化",
+      "days_note": "水・金 12:05〜12:35、16:35〜17:05",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "週2日の活動で、公園清掃・地域イベント参加などのボランティア活動。競技的な大会実績の対象外。",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-sogo/index.cfm/1,1830,44,196,html",
+      "as_of": "2026-08-03",
+      "results": []
+    },
+    {
+      "name": "パワー同好会",
+      "kind": "運動",
+      "days_note": "火・水・金 12:10〜13:00",
+      "days_per_week": 3,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "週3日の活動で、各自のトレーニングが中心。大会実績の記載なし。",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-sogo/index.cfm/1,1840,44,196,html",
+      "as_of": "2024-07-23",
+      "results": []
+    },
+    {
+      "name": "百人一首同好会",
+      "kind": "文化",
+      "days_note": "火 16:45〜18:00",
+      "days_per_week": 1,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "週1日の活動で、大会実績の記載なし。",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-sogo/index.cfm/1,2754,44,196,html",
+      "as_of": "2022-01-11",
+      "results": []
+    },
+    {
+      "name": "漫画・イラスト研究同好会",
+      "kind": "文化",
+      "days_note": "月・水・金 12:10〜12:50",
+      "days_per_week": 3,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "週3日の活動で、コミックマーケット参加や横総祭での展示・販売が中心。競技的な大会実績の記載なし。",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-sogo/index.cfm/1,1842,44,196,html",
+      "as_of": "2026-01-09",
+      "results": []
+    },
+    {
+      "name": "写真部",
+      "kind": "文化",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-sogo/index.cfm/1,2502,c,html/2502/20260625-171942.pdf",
+      "as_of": "2026-06-25",
+      "results": []
+    },
+    {
+      "name": "ウォーキング同好会",
+      "kind": "運動",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-sogo/index.cfm/1,2502,c,html/2502/20260625-171942.pdf",
+      "as_of": "2026-06-25",
+      "results": []
+    },
+    {
+      "name": "硬式テニス同好会",
+      "kind": "運動",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-sogo/index.cfm/1,2502,c,html/2502/20260625-171942.pdf",
+      "as_of": "2026-06-25",
+      "results": []
+    },
+    {
+      "name": "創作工房同好会",
+      "kind": "文化",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-sogo/index.cfm/1,2502,c,html/2502/20260625-171942.pdf",
+      "as_of": "2026-06-25",
+      "results": []
+    },
+    {
+      "name": "化学同好会",
+      "kind": "文化",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-sogo/index.cfm/1,2502,c,html/2502/20260625-171942.pdf",
+      "as_of": "2026-06-25",
+      "results": []
+    },
+    {
+      "name": "ハンドメイド同好会",
+      "kind": "文化",
+      "source_url": "https://www.edu.city.yokohama.lg.jp/school/hs/y-sogo/index.cfm/1,2502,c,html/2502/20260625-171942.pdf",
+      "as_of": "2026-06-25",
+      "results": []
+    }
+  ],
+  "designated_universities": [],
+  "events": [],
+  "unresolved": [
+    "制服：学校紹介・学校生活ページ、学校案内パンフレットのいずれにも制服に関する記載が見当たらない（三部制定時制のため私服の可能性があるが未確認）。",
+    "rules_summary（校則・生徒心得）：校則・生徒心得のページが見当たらない。",
+    "admission_route_share（一般・指定校推薦・公募推薦・総合型の割合）：進路先状況PDFに人数の内訳はあるが、大学進学者について入試方式別の割合としては明記されていない。",
+    "career_decided_rate（進路決定率）：進路先状況PDFに進路先ごとの人数・平均人数はあるが「決定率」として明記された数値は見当たらない。",
+    "club_join_rate（部活動加入率）：加入率として明記された数値は見当たらない。学校評価アンケートの「生徒会行事や委員会活動、部活動等に主体的に参加している」設問（1+2で生徒69.3%）は加入率ではなく参加意識の設問のため使用しなかった。",
+    "exam_ratio（推薦の倍率）：受検生の方へ・学校経営ページに応募倍率・受検倍率の数値が見当たらない（本校は三部制定時制のため入試制度が全日制と異なる可能性がある）。",
+    "designation（学力向上進学重点校等の指定）：本校（三部制定時制総合学科）に該当する指定の記載は見当たらない。",
+    "指定校推薦の大学一覧：進路状況ページ・学校案内パンフレットに「指定校推薦」の見出しでの大学名一覧は見当たらない（進路実績＝合格・進学した大学名の一覧のみ確認）。取り違えないよう指定校推薦の記載は今回計上していない。",
+    "軟式野球部：部活動ページが「準備中」で活動日・実績とも情報がない。",
+    "ビジネス資格研究部：部活動ページに活動日・実績の記載がない。",
+    "写真部・ウォーキング同好会・硬式テニス同好会・創作工房同好会・化学同好会・ハンドメイド同好会：学校案内パンフレット（令和8年度版）の部活動一覧に名前はあるが、学校サイトに個別の部活動ページが見当たらず、活動日・実績とも確認できない。",
+    "鉄道研究部・脱出ゲーム部・企画部・美術部・男子女子陸上競技部：活動日または直近3年（2023年度以降）の大会・コンクール実績が確認できないため、部活動の強さの段階を付けていない。"
+  ],
+  "conflicts": [
+    "部活動の一覧：学校サイト「部活動一覧」ページ（2026年時点、22件。企画部を含む）と、学校案内パンフレット（令和8年度版、2026年6月25日付、写真部・ウォーキング同好会・硬式テニス同好会・創作工房同好会・化学同好会・ハンドメイド同好会を含むが企画部を含まない）とで、掲載されている部・同好会の一覧が一致しない。両方の情報源に基づき列挙した。"
+  ]
+}

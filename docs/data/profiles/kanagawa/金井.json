@@ -1,0 +1,746 @@
+{
+  "prefecture": "神奈川県",
+  "school_name": "金井",
+  "official_url": "https://www.pen-kanagawa.ed.jp/kanai-h/",
+  "researched_at": "2026-09-28",
+  "stats": [
+    {
+      "metric": "university_count",
+      "item": "国公立",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 4,
+      "source_url": "https://www.pen-kanagawa.ed.jp/kanai-h/shinro/documents/r7shinro.pdf",
+      "source_label": "神奈川県立金井高等学校 令和7年度卒業生 進路概況（大学合格者数）",
+      "as_of": "2026-03-31",
+      "note": "大学合格者数（含推薦）表の国公立大学合計（49期生＝令和7年度）"
+    },
+    {
+      "metric": "university_count",
+      "item": "早慶上理",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 0,
+      "source_url": "https://www.pen-kanagawa.ed.jp/kanai-h/shinro/documents/r7shinro.pdf",
+      "source_label": "神奈川県立金井高等学校 令和7年度卒業生 進路概況（大学合格者数）",
+      "as_of": "2026-03-31",
+      "note": "大学別の表から合算（早稲田・慶應・上智は掲載なし、東京理科は49期生の欄が0）"
+    },
+    {
+      "metric": "university_count",
+      "item": "GMARCH",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 13,
+      "source_url": "https://www.pen-kanagawa.ed.jp/kanai-h/shinro/documents/r7shinro.pdf",
+      "source_label": "神奈川県立金井高等学校 令和7年度卒業生 進路概況（大学合格者数）",
+      "as_of": "2026-03-31",
+      "note": "大学別の表から合算（学習院1・明治学院を除く明治0・青山学院4・立教3・中央0・法政5）"
+    },
+    {
+      "metric": "university_count",
+      "item": "成成明武",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 11,
+      "source_url": "https://www.pen-kanagawa.ed.jp/kanai-h/shinro/documents/r7shinro.pdf",
+      "source_label": "神奈川県立金井高等学校 令和7年度卒業生 進路概況（大学合格者数）",
+      "as_of": "2026-03-31",
+      "note": "大学別の表から合算（成蹊0・成城0・明治学院11・武蔵0）"
+    },
+    {
+      "metric": "university_count",
+      "item": "日東駒専",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 57,
+      "source_url": "https://www.pen-kanagawa.ed.jp/kanai-h/shinro/documents/r7shinro.pdf",
+      "source_label": "神奈川県立金井高等学校 令和7年度卒業生 進路概況（大学合格者数）",
+      "as_of": "2026-03-31",
+      "note": "大学別の表から合算（日本20・東洋5・駒澤12・専修20）。日本の内数2名、専修の内数1名は過年度卒業"
+    },
+    {
+      "metric": "university_count",
+      "item": "合計",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 395,
+      "source_url": "https://www.pen-kanagawa.ed.jp/kanai-h/shinro/documents/r7shinro.pdf",
+      "source_label": "神奈川県立金井高等学校 令和7年度卒業生 進路概況（大学合格者数）",
+      "as_of": "2026-03-31",
+      "note": "国公立大学合計4＋私立大学合計391の合算。私立391の内数8名は過年度卒業（浪人等）"
+    },
+    {
+      "metric": "university_count",
+      "item": "合計",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 232,
+      "source_url": "https://www.pen-kanagawa.ed.jp/kanai-h/shinro/documents/r7shinro.pdf",
+      "source_label": "神奈川県立金井高等学校 令和7年度卒業生 進路概況（卒業年度別進路状況）",
+      "as_of": "2026-03-31",
+      "note": "卒業年度別進路状況表の「大学」欄（49期生307名中232名、75.6%）。短大・専修学校等は含まない"
+    },
+    {
+      "metric": "university_count",
+      "item": "関東学院大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 59,
+      "source_url": "https://www.pen-kanagawa.ed.jp/kanai-h/shinro/documents/r7shinro.pdf",
+      "source_label": "神奈川県立金井高等学校 令和7年度卒業生 進路概況（大学合格者数）",
+      "as_of": "2026-03-31",
+      "note": "内数1名は過年度卒業"
+    },
+    {
+      "metric": "university_count",
+      "item": "神奈川大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 54,
+      "source_url": "https://www.pen-kanagawa.ed.jp/kanai-h/shinro/documents/r7shinro.pdf",
+      "source_label": "神奈川県立金井高等学校 令和7年度卒業生 進路概況（大学合格者数）",
+      "as_of": "2026-03-31",
+      "note": "内数1名は過年度卒業"
+    },
+    {
+      "metric": "university_count",
+      "item": "東海大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 23,
+      "source_url": "https://www.pen-kanagawa.ed.jp/kanai-h/shinro/documents/r7shinro.pdf",
+      "source_label": "神奈川県立金井高等学校 令和7年度卒業生 進路概況（大学合格者数）",
+      "as_of": "2026-03-31",
+      "note": ""
+    },
+    {
+      "metric": "university_count",
+      "item": "日本大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 20,
+      "source_url": "https://www.pen-kanagawa.ed.jp/kanai-h/shinro/documents/r7shinro.pdf",
+      "source_label": "神奈川県立金井高等学校 令和7年度卒業生 進路概況（大学合格者数）",
+      "as_of": "2026-03-31",
+      "note": "内数2名は過年度卒業"
+    },
+    {
+      "metric": "university_count",
+      "item": "専修大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 20,
+      "source_url": "https://www.pen-kanagawa.ed.jp/kanai-h/shinro/documents/r7shinro.pdf",
+      "source_label": "神奈川県立金井高等学校 令和7年度卒業生 進路概況（大学合格者数）",
+      "as_of": "2026-03-31",
+      "note": "内数1名は過年度卒業"
+    },
+    {
+      "metric": "satisfaction",
+      "item": "生徒:授業評価",
+      "basis": "",
+      "fiscal_year": 2025,
+      "value_num": 80,
+      "source_url": "https://www.pen-kanagawa.ed.jp/kanai-h/gaiyou/documents/r7gakkouhyoukakekka.pdf",
+      "source_label": "金井高等学校 令和7年度 学校評価報告書（目標設定・実施結果）",
+      "as_of": "2026-03-25",
+      "note": "「生徒による授業評価における満足度80%を維持しているか」の校内評価。達成状況は「維持することができた」"
+    }
+  ],
+  "clubs": [
+    {
+      "name": "硬式野球部",
+      "kind": "運動",
+      "days_note": "月・水・木・金：放課後（住電グラウンド）、土・日・祝：主に練習試合・大会、朝練 週2〜3回",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2025・2026年度とも選手権大会神奈川大会3回戦、春季・秋季県大会は地区予選を突破して2回戦どまり（野球部ページ）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kanai-h/seikatsu/bukatsu/baseball.html",
+      "as_of": "2026-09-14",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "全国高等学校野球選手権神奈川大会",
+          "level": "都県",
+          "result": "3回戦敗退",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kanai-h/seikatsu/bukatsu/baseball.html"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "神奈川県高等学校野球春季県大会",
+          "level": "都県",
+          "result": "地区予選突破、県大会2回戦敗退",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kanai-h/seikatsu/bukatsu/baseball.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "全国高等学校野球選手権神奈川大会",
+          "level": "都県",
+          "result": "3回戦敗退",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kanai-h/seikatsu/bukatsu/baseball.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "神奈川県高等学校野球秋季県大会",
+          "level": "都県",
+          "result": "地区予選突破、県大会2回戦敗退",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kanai-h/seikatsu/bukatsu/baseball.html"
+        }
+      ]
+    },
+    {
+      "name": "サッカー部",
+      "kind": "運動",
+      "days_note": "月〜日（月は個人練習、火〜金はトレーニング、土日は練習試合中心）",
+      "days_per_week": 7,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2026年度 高円宮杯U-18サッカーリーグ神奈川 K5所属（Aチーム、神奈川県サッカー協会U-18リーグ組み合わせページ）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kanai-h/seikatsu/bukatsu/soccer.html",
+      "as_of": "2024-02-08",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "関東高校サッカー大会 神奈川県2次予選",
+          "level": "都県",
+          "result": "0-4で敗退",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kanai-h/seikatsu/bukatsu/soccer.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "神奈川県高校サッカー新人大会（横浜地区）",
+          "level": "地区",
+          "result": "1次予選リーグ1位も2次予選で敗退",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kanai-h/seikatsu/bukatsu/soccer.html"
+        }
+      ]
+    },
+    {
+      "name": "男子バスケットボール部",
+      "kind": "運動",
+      "days_note": "平日4日、土・日3時間程度",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2025年度 総合体育大会南支部予選ブロック優勝で県大会出場も神奈川県予選ベスト40どまり（男子バスケットボール部ページ）。ブロック優勝・決勝進出は地区大会相当のため段階を1段低く読んだ",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kanai-h/seikatsu/bukatsu/m_basketball.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "関東大会南支部予選",
+          "level": "地区",
+          "result": "ブロック決勝進出",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kanai-h/seikatsu/bukatsu/m_basketball.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "総合体育大会南支部予選／神奈川県予選",
+          "level": "都県",
+          "result": "南支部予選ブロック優勝で県大会出場、県予選はベスト40",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kanai-h/seikatsu/bukatsu/m_basketball.html"
+        }
+      ]
+    },
+    {
+      "name": "女子バスケットボール部",
+      "kind": "運動",
+      "days_note": "平日：基本練習、休日：ゲーム形式・練習試合",
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2025・2026年度とも関東大会南支部予選・総体南支部予選は1〜2回戦どまり（女子バスケットボール部ページ）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kanai-h/seikatsu/bukatsu/f_basketball.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "関東大会南支部予選",
+          "level": "地区",
+          "result": "2回戦敗退",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kanai-h/seikatsu/bukatsu/f_basketball.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "関東大会南支部予選",
+          "level": "地区",
+          "result": "2回戦敗退（代表決定戦で敗退）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kanai-h/seikatsu/bukatsu/f_basketball.html"
+        }
+      ]
+    },
+    {
+      "name": "男子ソフトテニス部",
+      "kind": "運動",
+      "days_note": "月:OFF、火〜金:放課後、土日:午前午後半日",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kanai-h/seikatsu/bukatsu/m_softtennis.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "女子ソフトテニス部",
+      "kind": "運動",
+      "days_note": "月:OFF、火〜金:放課後、土日:午前午後半日",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kanai-h/seikatsu/bukatsu/f_softtennis.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "男子バドミントン部",
+      "kind": "運動",
+      "days_note": "週4日（平日3日、休日1日：土または日のいずれか）",
+      "days_per_week": 4,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "2025・2026年度とも県総体地区予選・新人大会は2〜3回戦（地区予選）どまり（男子バドミントン部ページ）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kanai-h/seikatsu/bukatsu/m_badminton.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "神奈川県高校総体地区予選",
+          "level": "地区",
+          "result": "2回戦敗退",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kanai-h/seikatsu/bukatsu/m_badminton.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "神奈川県高等学校バドミントン新人大会",
+          "level": "都県",
+          "result": "3回戦敗退",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kanai-h/seikatsu/bukatsu/m_badminton.html"
+        }
+      ]
+    },
+    {
+      "name": "女子バドミントン部",
+      "kind": "運動",
+      "days_note": "週4日（平日3日、休日1日：土または日のいずれか）",
+      "days_per_week": 4,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "2025・2026年度とも県総体地区予選・新人大会・関東大会地区予選は2〜3回戦（地区予選）どまり（女子バドミントン部ページ）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kanai-h/seikatsu/bukatsu/f_badminton.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "神奈川県高校総体地区予選",
+          "level": "地区",
+          "result": "3回戦敗退",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kanai-h/seikatsu/bukatsu/f_badminton.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "神奈川県関東大会地区予選",
+          "level": "地区",
+          "result": "2回戦敗退",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kanai-h/seikatsu/bukatsu/f_badminton.html"
+        }
+      ]
+    },
+    {
+      "name": "男子テニス部",
+      "kind": "運動",
+      "days_note": "月・火・水・金・土",
+      "days_per_week": 5,
+      "weekend": "土",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kanai-h/seikatsu/bukatsu/m_tennis.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "女子テニス部",
+      "kind": "運動",
+      "days_note": "月・火・水・金・土",
+      "days_per_week": 5,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "2025・2026年度とも神奈川県高等学校新人大会で個人戦本戦出場（順位の記載なし）（女子テニス部ページ）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kanai-h/seikatsu/bukatsu/f_tennis.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "神奈川県高等学校新人大会",
+          "level": "都県",
+          "result": "個人ダブルス本戦出場",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kanai-h/seikatsu/bukatsu/f_tennis.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "神奈川県高等学校新人大会",
+          "level": "都県",
+          "result": "個人シングルス本戦出場",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kanai-h/seikatsu/bukatsu/f_tennis.html"
+        }
+      ]
+    },
+    {
+      "name": "男子バレーボール部",
+      "kind": "運動",
+      "days_note": "平日3日、土日3時間程度",
+      "days_per_week": 5,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2024・2025年度とも横浜市内選手権はベスト8（市内大会のため1段低く読む）、新人戦は県大会出場どまり（男子バレーボール部ページ）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kanai-h/seikatsu/bukatsu/m_volleyball.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "横浜市内選手権大会",
+          "level": "地区",
+          "result": "ベスト8",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kanai-h/seikatsu/bukatsu/m_volleyball.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "横浜市内選手権大会",
+          "level": "地区",
+          "result": "ベスト8",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kanai-h/seikatsu/bukatsu/m_volleyball.html"
+        }
+      ]
+    },
+    {
+      "name": "女子バレーボール部",
+      "kind": "運動",
+      "days_note": "火・木・金:体育館、水:住友電工体育館、土日:遠征・練習、月:休み",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kanai-h/seikatsu/bukatsu/f_volleyball.html",
+      "as_of": "2026-09-24"
+    },
+    {
+      "name": "男子ハンドボール部",
+      "kind": "運動",
+      "days_note": "月:OFF、火〜金:放課後グラウンド、土日:午前または午後グラウンド",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2023年度 神奈川県ハンドボール選手権大会3回戦進出、新人大会2回戦（男子ハンドボール部ページ）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kanai-h/seikatsu/bukatsu/m_handball.html",
+      "as_of": "2024-02-09",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "神奈川県ハンドボール選手権大会",
+          "level": "都県",
+          "result": "3回戦進出",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kanai-h/seikatsu/bukatsu/m_handball.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "関東高等学校ハンドボール大会 神奈川県予選会",
+          "level": "都県",
+          "result": "2回戦",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kanai-h/seikatsu/bukatsu/m_handball.html"
+        }
+      ]
+    },
+    {
+      "name": "女子ハンドボール部",
+      "kind": "運動",
+      "days_note": "月:OFF、火〜金:放課後グラウンド、土日:午前または午後グラウンド",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2023年度 神奈川県高等学校ハンドボール新人大会2回戦進出（女子ハンドボール部ページ）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kanai-h/seikatsu/bukatsu/f_handball.html",
+      "as_of": "2024-02-09",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "神奈川県高等学校ハンドボール新人大会",
+          "level": "都県",
+          "result": "2回戦進出",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kanai-h/seikatsu/bukatsu/f_handball.html"
+        }
+      ]
+    },
+    {
+      "name": "卓球部",
+      "kind": "運動",
+      "days_note": "火・水・木:放課後、金:体力作り、土:午前中",
+      "days_per_week": 5,
+      "weekend": "土",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kanai-h/seikatsu/bukatsu/tabletennis.html",
+      "as_of": "2020-12-25"
+    },
+    {
+      "name": "剣道部",
+      "kind": "運動",
+      "days_note": "月・火・木・金:放課後、土:隔週",
+      "days_per_week": 4.5,
+      "weekend": "土",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kanai-h/seikatsu/bukatsu/kendo.html",
+      "as_of": "2022-11-22"
+    },
+    {
+      "name": "山岳部",
+      "kind": "運動",
+      "days_note": "水・金:部室か校外、土日:月1回程度山行、月火木:なし",
+      "days_per_week": 2.5,
+      "weekend": "試合のみ",
+      "tier": 4,
+      "tier_basis": "活動日は水・金中心で週3日以下、山行記録のみで大会成績の記載なし（山岳部ページ）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kanai-h/seikatsu/bukatsu/sangaku.html",
+      "as_of": "2024-02-26"
+    },
+    {
+      "name": "弓道部",
+      "kind": "運動",
+      "days_note": "月:自主練、火〜金:通常練習、土日:いずれか（大会時は両方、土曜日が多い）",
+      "days_per_week": 5,
+      "weekend": "土日",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kanai-h/seikatsu/bukatsu/kyudo.html",
+      "as_of": "2023-01-30"
+    },
+    {
+      "name": "ダンス部",
+      "kind": "運動",
+      "days_note": "月・火・木:放課後、土（第2・4を除く）:午前",
+      "weekend": "土",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kanai-h/seikatsu/bukatsu/dance.html",
+      "as_of": "2024-07-18"
+    },
+    {
+      "name": "チアリーディング部",
+      "kind": "運動",
+      "days_note": "月・火・水・金:放課後",
+      "days_per_week": 4,
+      "weekend": "なし",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kanai-h/seikatsu/bukatsu/cheer.html",
+      "as_of": "2020-12-25"
+    },
+    {
+      "name": "陸上競技部",
+      "kind": "運動",
+      "days_note": "短・長距離ブロック:月火水金土、投てきブロック:火水金土日",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "tier": 1,
+      "tier_basis": "2025・2026年度と続けて関東・全国大会に出場（2025年度:U18陸上競技大会（全国選抜）女子やり投出場、関東選手権・関東総体で女子混成7種入賞／2026年度:全国高校総体（インターハイ）女子砲丸投決勝進出、南関東総体女子やり投優勝）（陸上競技部ページ）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kanai-h/seikatsu/bukatsu/rikujou.html",
+      "as_of": "2026-09-24",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "全国高等学校総合体育大会（インターハイ、滋賀）",
+          "level": "全国",
+          "result": "女子砲丸投 決勝進出",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kanai-h/seikatsu/bukatsu/rikujou.html"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "南関東総合体育大会（茨城）",
+          "level": "関東",
+          "result": "女子やり投 優勝",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kanai-h/seikatsu/bukatsu/rikujou.html"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "神奈川県総合体育大会",
+          "level": "都県",
+          "result": "19種目出場（うち9種目入賞）。女子やり投優勝、男子砲丸投・走高跳とも2位",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kanai-h/seikatsu/bukatsu/rikujou.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "U18陸上競技大会（全国選抜）",
+          "level": "全国",
+          "result": "女子やり投 出場",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kanai-h/seikatsu/bukatsu/rikujou.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "関東選手権",
+          "level": "関東",
+          "result": "女子混成7種競技 5位",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kanai-h/seikatsu/bukatsu/rikujou.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "県新人大会",
+          "level": "都県",
+          "result": "17種目出場中5種目入賞。女子やり投優勝",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kanai-h/seikatsu/bukatsu/rikujou.html"
+        }
+      ]
+    },
+    {
+      "name": "吹奏楽部",
+      "kind": "文化",
+      "days_note": "毎日、各教室・音楽室にて練習（休養日 年間104日）",
+      "days_per_week": 7,
+      "weekend": "土日",
+      "tier": 1,
+      "tier_basis": "東関東吹奏楽コンクールに2023〜2026年度と4年連続出場（関東大会、2回以上）。2026年度は第28回全日本高等学校吹奏楽大会（全国）出場も決定（吹奏楽部ページ）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kanai-h/seikatsu/bukatsu/brassband.html",
+      "as_of": "2026-08-17",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "第75回神奈川県吹奏楽コンクール高等学校Bの部",
+          "level": "都県",
+          "result": "金賞",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kanai-h/seikatsu/bukatsu/brassband.html"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "第28回全日本高等学校吹奏楽大会in横浜",
+          "level": "全国",
+          "result": "出場決定",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kanai-h/seikatsu/bukatsu/brassband.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第31回東関東吹奏楽コンクール高等学校Bの部",
+          "level": "関東",
+          "result": "銀賞",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kanai-h/seikatsu/bukatsu/brassband.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "第30回東関東吹奏楽コンクール高等学校Bの部",
+          "level": "関東",
+          "result": "銅賞",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kanai-h/seikatsu/bukatsu/brassband.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "第29回東関東吹奏楽コンクール高等学校Bの部",
+          "level": "関東",
+          "result": "銀賞",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kanai-h/seikatsu/bukatsu/brassband.html"
+        }
+      ]
+    },
+    {
+      "name": "放送部",
+      "kind": "文化",
+      "days_note": "月・水・金:放課後放送室",
+      "days_per_week": 3,
+      "weekend": "なし",
+      "tier": 1,
+      "tier_basis": "NHK杯全国高校放送コンテストの全国大会に2023・2024年度と2年連続出場（2023年度は準決勝、2024年度は準々決勝）。全国大会出場が2回以上のため段階1（放送部ページ）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kanai-h/seikatsu/bukatsu/broadcast.html",
+      "as_of": "2025-04-08",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "第71回NHK杯全国高校放送コンテスト",
+          "level": "都県",
+          "result": "神奈川県大会朗読部門5位入賞",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kanai-h/seikatsu/bukatsu/broadcast.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "第71回NHK杯全国高校放送コンテスト",
+          "level": "全国",
+          "result": "全国大会出場、準々決勝",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kanai-h/seikatsu/bukatsu/broadcast.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "第58回アンデパンダン大会",
+          "level": "都県",
+          "result": "朗読B部門3位、朗読F部門6位",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kanai-h/seikatsu/bukatsu/broadcast.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "第70回NHK杯全国高校放送コンテスト",
+          "level": "全国",
+          "result": "神奈川県大会朗読部門4位入賞を経て全国大会出場、準決勝",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kanai-h/seikatsu/bukatsu/broadcast.html"
+        }
+      ]
+    },
+    {
+      "name": "美術部",
+      "kind": "文化",
+      "days_note": "月・火・木・金:放課後",
+      "days_per_week": 4,
+      "weekend": "なし",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kanai-h/seikatsu/bukatsu/art.html",
+      "as_of": "2021-01-07"
+    },
+    {
+      "name": "写真部",
+      "kind": "文化",
+      "days_note": "不定期で撮影会を土・日に実施",
+      "weekend": "土日",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kanai-h/seikatsu/bukatsu/photo.html",
+      "as_of": "2022-11-21"
+    },
+    {
+      "name": "理科部",
+      "kind": "文化",
+      "days_note": "火曜日と木曜日",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日は火・木の週2日。活動実績はゲーム制作やアロマキャンドル作りなど体験活動のみで大会成績の記載なし（理科部ページ）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kanai-h/seikatsu/bukatsu/science.html",
+      "as_of": "2022-12-13"
+    },
+    {
+      "name": "茶道部",
+      "kind": "文化",
+      "days_note": "木・金:放課後作法室",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日は木・金の週2日。活動実績はお茶席・呈茶の担当のみで大会成績の記載なし（茶道部ページ）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kanai-h/seikatsu/bukatsu/sado.html",
+      "as_of": "2021-01-07"
+    },
+    {
+      "name": "軽音楽部",
+      "kind": "文化",
+      "days_note": "月曜日〜金曜日（各バンド週1、2回）",
+      "weekend": "なし",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kanai-h/seikatsu/bukatsu/music.html",
+      "as_of": "2022-11-22"
+    },
+    {
+      "name": "合唱部",
+      "kind": "文化",
+      "days_note": "火・水・木:視聴覚室（放課後）、月・金・土・日:OFF",
+      "days_per_week": 3,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日は火・水・木の週3日。2023年度以降の大会成績の記載なし（合唱部ページ）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kanai-h/seikatsu/bukatsu/gassho.html",
+      "as_of": "2022-11-22"
+    }
+  ],
+  "designated_universities": [],
+  "events": [
+    {
+      "kind": "統合",
+      "period_label": "2029年度（令和11年度）入学生から募集停止、2031年度（令和13年度）に統合",
+      "summary": "舞岡高校との再編・統合が決定。舞岡高校の敷地・施設を活用し、2031年度に全日制普通科の新校として統合する。金井高校は2029年度以降の入学生の募集を停止する。",
+      "source_url": "https://www.pref.kanagawa.jp/documents/8302/jissikeikaku-3ki-r7kaitei.pdf",
+      "note": "神奈川県立高校改革実施計画（III期）の一部改定。校長挨拶（校長室からページ、2026年4月）でも同内容を告知"
+    },
+    {
+      "kind": "制服",
+      "period_label": "2023年度（令和5年度）入学生から",
+      "summary": "制服を紺サージの旧デザインから、グレー×ブルー基調（毛30%ポリエステル70%）の新デザインに変更した。夏は学校指定ポロシャツ（白または紺）も選べる。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kanai-h/seikatsu/seihuku.html"
+    }
+  ],
+  "unresolved": [
+    "校則（頭髪・スマートフォン・アルバイト等の規定）：公式サイトに生徒心得・校則の掲載ページが見当たらない（学校生活関連ページ、学校紹介動画ページを確認）",
+    "指定校推薦の大学一覧：学校案内パンフレット等が公式サイトで見当たらず、公式な一覧を確認できなかった（進路ページ・特色ページを確認）",
+    "入試の倍率（推薦）：神奈川県公立高校入試は共通選抜のみで推薦区分が無いため、東京都のような推薦倍率の資料は存在しない（入試情報ページで確認）",
+    "進路決定率・入試方式別割合：進路概況資料に卒業年度別の人数は掲載されているが、進路決定率や一般・指定校推薦・総合型の割合を明示した資料は見当たらなかった",
+    "生徒の男女別人数：公式サイトに学校全体の男女別生徒数を示す資料が見当たらなかった（学校要覧に類するページなし）"
+  ],
+  "conflicts": []
+}

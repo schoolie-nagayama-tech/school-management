@@ -292,7 +292,8 @@
       "source_url": "https://www.metro.ed.jp/hachiojihigashi-h/our_school/history.html",
       "source_label": "東京都立八王子東高等学校 沿革 2026年4月7日 第51回入学式",
       "as_of": "2026-04-07",
-      "note": "入学者数(在籍生徒数ではない)。"
+      "note": "入学者数(在籍生徒数ではない)。（入学時の人数なので1年生として持つ）",
+      "grade": 1
     },
     {
       "metric": "students",
@@ -303,7 +304,8 @@
       "source_url": "https://www.metro.ed.jp/hachiojihigashi-h/our_school/history.html",
       "source_label": "東京都立八王子東高等学校 沿革 2026年4月7日 第51回入学式",
       "as_of": "2026-04-07",
-      "note": "入学者数(在籍生徒数ではない)。"
+      "note": "入学者数(在籍生徒数ではない)。（入学時の人数なので1年生として持つ）",
+      "grade": 1
     },
     {
       "metric": "uniform",

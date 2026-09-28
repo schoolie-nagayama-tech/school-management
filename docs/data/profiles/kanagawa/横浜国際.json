@@ -168,7 +168,8 @@
       "source_url": "https://www.pen-kanagawa.ed.jp/yokohamakokusai-h/gaiyou/enkaku.html",
       "source_label": "横浜国際高校 設置形態・沿革（第14回入学式）",
       "as_of": "2021-04",
-      "note": "令和3年度入学生（16期生182名）の内訳。国際科43名・IBコース9名の合計。令和4年度入学生以降は性別内訳の公表なし。"
+      "note": "令和3年度入学生（16期生182名）の内訳。国際科43名・IBコース9名の合計。令和4年度入学生以降は性別内訳の公表なし。（入学時の人数なので1年生として持つ）",
+      "grade": 1
     },
     {
       "metric": "students",
@@ -180,7 +181,8 @@
       "source_url": "https://www.pen-kanagawa.ed.jp/yokohamakokusai-h/gaiyou/enkaku.html",
       "source_label": "横浜国際高校 設置形態・沿革（第14回入学式）",
       "as_of": "2021-04",
-      "note": "令和3年度入学生（16期生182名）の内訳。国際科114名・IBコース16名の合計。令和4年度入学生以降は性別内訳の公表なし。"
+      "note": "令和3年度入学生（16期生182名）の内訳。国際科114名・IBコース16名の合計。令和4年度入学生以降は性別内訳の公表なし。（入学時の人数なので1年生として持つ）",
+      "grade": 1
     },
     {
       "metric": "uniform",

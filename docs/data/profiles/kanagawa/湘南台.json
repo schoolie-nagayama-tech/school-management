@@ -1,0 +1,625 @@
+{
+  "prefecture": "神奈川県",
+  "school_name": "湘南台",
+  "official_url": "https://www.pen-kanagawa.ed.jp/shonandai-h/",
+  "researched_at": "2026-09-28",
+  "stats": [
+    {
+      "metric": "university_count",
+      "item": "合計",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 173,
+      "source_url": "https://www.pen-kanagawa.ed.jp/shonandai-h/shinro/shinrogs.html",
+      "source_label": "湘南台高校 進路実績（令和7年度卒業生の進路状況）",
+      "as_of": "2026-03",
+      "note": "「令和7年度卒業生の進路状況」の「大学」の人数（短期大学6・専門学校等45・その他27を除く、大学全体の実進学者数）。卒業生総数の記載はなく、career_decided_rate は算出不能（unresolved参照）。"
+    },
+    {
+      "metric": "university_count",
+      "item": "国公立",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 3,
+      "source_url": "https://www.pen-kanagawa.ed.jp/shonandai-h/shinro/shinrogs.html",
+      "source_label": "湘南台高校 進路実績（令和7年度卒業生の主な合格先）",
+      "as_of": "2026-03",
+      "note": "「主な合格先」の一覧から合算（横浜国立大学1・福島大学1・神奈川県立保健福祉大学1。短期大学部・看護大学校等の非4年制は除外）。一覧は末尾が「他」で終わる部分列挙のため、実際の合格者数はこれより多い可能性がある（unresolved参照）。"
+    },
+    {
+      "metric": "university_count",
+      "item": "早慶上理",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 1,
+      "source_url": "https://www.pen-kanagawa.ed.jp/shonandai-h/shinro/shinrogs.html",
+      "source_label": "湘南台高校 進路実績（令和7年度卒業生の主な合格先）",
+      "as_of": "2026-03",
+      "note": "「主な合格先」の一覧から合算（早稲田大学1）。慶應義塾・上智・東京理科は一覧に記載なし。一覧は部分列挙のため、実際は0でない可能性がある（unresolved参照）。"
+    },
+    {
+      "metric": "university_count",
+      "item": "GMARCH",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 30,
+      "source_url": "https://www.pen-kanagawa.ed.jp/shonandai-h/shinro/shinrogs.html",
+      "source_label": "湘南台高校 進路実績（令和7年度卒業生の主な合格先）",
+      "as_of": "2026-03",
+      "note": "「主な合格先」の一覧から合算（青山学院3・中央6・法政15・明治5・立教1）。学習院は一覧に記載なし。一覧は部分列挙（unresolved参照）。"
+    },
+    {
+      "metric": "university_count",
+      "item": "成成明武",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 9,
+      "source_url": "https://www.pen-kanagawa.ed.jp/shonandai-h/shinro/shinrogs.html",
+      "source_label": "湘南台高校 進路実績（令和7年度卒業生の主な合格先）",
+      "as_of": "2026-03",
+      "note": "「主な合格先」の一覧から合算（明治学院9）。成蹊・成城・武蔵は一覧に記載なし。一覧は部分列挙（unresolved参照）。"
+    },
+    {
+      "metric": "university_count",
+      "item": "日東駒専",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 67,
+      "source_url": "https://www.pen-kanagawa.ed.jp/shonandai-h/shinro/shinrogs.html",
+      "source_label": "湘南台高校 進路実績（令和7年度卒業生の主な合格先）",
+      "as_of": "2026-03",
+      "note": "「主な合格先」の一覧から合算（日本17・東洋5・駒澤16・専修29）。"
+    },
+    {
+      "metric": "university_count",
+      "item": "神奈川大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 32,
+      "source_url": "https://www.pen-kanagawa.ed.jp/shonandai-h/shinro/shinrogs.html",
+      "source_label": "湘南台高校 進路実績（令和7年度卒業生の主な合格先）",
+      "as_of": "2026-03",
+      "note": "「主な合格先」の一覧から。令和7年度で最多の合格大学。"
+    },
+    {
+      "metric": "university_count",
+      "item": "専修大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 29,
+      "source_url": "https://www.pen-kanagawa.ed.jp/shonandai-h/shinro/shinrogs.html",
+      "source_label": "湘南台高校 進路実績（令和7年度卒業生の主な合格先）",
+      "as_of": "2026-03",
+      "note": ""
+    },
+    {
+      "metric": "university_count",
+      "item": "東海大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 25,
+      "source_url": "https://www.pen-kanagawa.ed.jp/shonandai-h/shinro/shinrogs.html",
+      "source_label": "湘南台高校 進路実績（令和7年度卒業生の主な合格先）",
+      "as_of": "2026-03",
+      "note": ""
+    },
+    {
+      "metric": "university_count",
+      "item": "日本大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 17,
+      "source_url": "https://www.pen-kanagawa.ed.jp/shonandai-h/shinro/shinrogs.html",
+      "source_label": "湘南台高校 進路実績（令和7年度卒業生の主な合格先）",
+      "as_of": "2026-03",
+      "note": ""
+    },
+    {
+      "metric": "university_count",
+      "item": "駒澤大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 16,
+      "source_url": "https://www.pen-kanagawa.ed.jp/shonandai-h/shinro/shinrogs.html",
+      "source_label": "湘南台高校 進路実績（令和7年度卒業生の主な合格先）",
+      "as_of": "2026-03",
+      "note": ""
+    },
+    {
+      "metric": "designation",
+      "item": "インクルーシブ教育実践推進校",
+      "basis": "",
+      "fiscal_year": 2020,
+      "value_text": "神奈川県教育委員会指定（令和2年度＝2020年度から）。知的障がいのある生徒を対象とした特別募集を実施。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shonandai-h/tokushoku/inclusive.html",
+      "source_label": "湘南台高校 インクルーシブ教育実践推進校",
+      "as_of": "2025-06-04"
+    },
+    {
+      "metric": "uniform",
+      "item": "",
+      "basis": "",
+      "fiscal_year": 2021,
+      "value_text": "ブレザー型・濃紺。下衣はスラックスまたは濃紺スカート（裾に緑の1本ライン）。ネクタイは緑地×紺グレー/紺地×緑グレーの指定柄から選択。夏季軽装（5/1〜10/31）はポロシャツ・ハーフパンツ可。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shonandai-h/gaiyou/documents/2021kokoroe.pdf",
+      "source_label": "湘南台高校 生徒の心得",
+      "as_of": "2021-05-28"
+    },
+    {
+      "metric": "rules_summary",
+      "item": "",
+      "basis": "",
+      "fiscal_year": 2021,
+      "value_text": "頭髪はパーマ・染色・脱色不可。アクセサリー・化粧不可。スマホは授業中原則不可、試験中は電源off。アルバイトは保護者承諾＋届出必須、制服不可、酒類提供店・22時以降不可。夜間外出は22時までに帰宅。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shonandai-h/gaiyou/documents/2021kokoroe.pdf",
+      "source_label": "湘南台高校 生徒の心得",
+      "as_of": "2021-05-28"
+    }
+  ],
+  "clubs": [
+    {
+      "name": "野球部",
+      "kind": "運動",
+      "days_note": "火曜日〜金曜日：練習、土曜日・日曜日：練習/練習試合",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "一球速報で2023〜2026年度の大会結果を確認。夏（全国選手権神奈川大会）は毎年1〜2回戦で敗退（2023年2-12、2024年1-4、2025年4-6、2026年1-8）、2023年度春季県大会も1回戦敗退（10-19）。秋季県大会の出場記録は一球速報に見当たらない。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shonandai-h/seikatsu/baseball.html",
+      "as_of": "2026-06-08",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "神奈川県高等学校野球春季県大会",
+          "level": "都県",
+          "result": "1回戦敗退（10-19 菅）",
+          "happened_on": "2023-04-08",
+          "source_url": "https://baseball.omyutech.com/CupHomePageTeamSchedule.action?teamId=12183&cupId=20230005358"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "第105回全国高等学校野球選手権記念神奈川大会",
+          "level": "都県",
+          "result": "2回戦敗退（2-12 光明相模原）",
+          "happened_on": "2023-07-10",
+          "source_url": "https://baseball.omyutech.com/CupHomePageTeamSchedule.action?teamId=12183&cupId=20230006682"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "第106回全国高等学校野球選手権神奈川大会",
+          "level": "都県",
+          "result": "2回戦敗退（1-4 足柄）",
+          "happened_on": "2024-07-11",
+          "source_url": "https://baseball.omyutech.com/CupHomePageTeamSchedule.action?teamId=12183&cupId=20240009752"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第107回全国高等学校野球選手権神奈川大会",
+          "level": "都県",
+          "result": "1回戦敗退（4-6 鶴見大付）",
+          "happened_on": "2025-07-09",
+          "source_url": "https://baseball.omyutech.com/CupHomePageTeamSchedule.action?teamId=12183&cupId=20250000302"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "第108回全国高等学校野球選手権神奈川大会",
+          "level": "都県",
+          "result": "2回戦敗退（1-8 住吉）",
+          "happened_on": "2026-07-09",
+          "source_url": "https://baseball.omyutech.com/CupHomePageTeamSchedule.action?teamId=12183&cupId=20260013579"
+        }
+      ]
+    },
+    {
+      "name": "サッカー部(男)",
+      "kind": "運動",
+      "days_note": "月16-18・火オフ・水16-18・木16-18またはオフ・金16-18・土公式戦練習試合・日公式戦練習試合",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2026年度 高円宮杯JFA U-18サッカーリーグ神奈川 K6所属。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shonandai-h/seikatsu/soccer_m.html",
+      "as_of": "2025-09-11",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "神奈川県U-18サッカーリーグ K6",
+          "level": "都県",
+          "result": "所属リーグでの公式戦（順位は資料に記載なし）",
+          "source_url": "https://www.kanagawa-fa.gr.jp/cms/u18-league/club/shonandai/"
+        }
+      ]
+    },
+    {
+      "name": "サッカー部(女)",
+      "kind": "運動",
+      "tier": 2,
+      "tier_basis": "2025年度 神奈川県高校女子サッカー選手権大会で県ベスト8（1回）。総体は2回戦敗退にとどまり、ベスト8以上の複数回実績はない。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shonandai-h/seikatsu/soccer_g.html",
+      "as_of": "2026-07-23",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "神奈川県高校総体女子サッカー大会",
+          "level": "都県",
+          "result": "2回戦敗退",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shonandai-h/seikatsu/soccer_g.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "神奈川県高校女子サッカー選手権大会",
+          "level": "都県",
+          "result": "県ベスト8",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shonandai-h/seikatsu/soccer_g.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "神奈川県U18女子サッカーリーグ 3部Aリーグ",
+          "level": "都県",
+          "result": "3位",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shonandai-h/seikatsu/soccer_g.html"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "神奈川県高校総体女子サッカー大会",
+          "level": "都県",
+          "result": "2回戦敗退",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shonandai-h/seikatsu/soccer_g.html"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "神奈川県高校女子サッカー選手権大会",
+          "level": "都県",
+          "result": "2回戦敗退",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shonandai-h/seikatsu/soccer_g.html"
+        }
+      ]
+    },
+    {
+      "name": "テニス部",
+      "kind": "運動",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shonandai-h/seikatsu/tennis.html",
+      "as_of": "2026-06-08",
+      "results": []
+    },
+    {
+      "name": "バドミントン部",
+      "kind": "運動",
+      "days_note": "火曜日はOFF。火・木曜日に朝の活動あり（自由参加）。土日は時期により活動を縮小。",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shonandai-h/seikatsu/badminton.html",
+      "as_of": "2025-07-23",
+      "results": []
+    },
+    {
+      "name": "バレーボール部",
+      "kind": "運動",
+      "days_note": "月16:00-17:30、火水金16:00-18:30、木オフ、土練習試合・公式戦、日公式戦・オフ",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shonandai-h/seikatsu/volleyball.html",
+      "as_of": "2026-06-10",
+      "results": []
+    },
+    {
+      "name": "ソフトボール部",
+      "kind": "運動",
+      "days_note": "月・火・木・金・土（平日1日・土日どちらかはOFF）",
+      "days_per_week": 5,
+      "weekend": "土",
+      "tier": 2,
+      "tier_basis": "2023年度秋季新人大会でベスト8（合同チーム、1回）。2023〜2026年度に県大会ベスト16が複数回（合同チームまたは単独チーム）。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shonandai-h/seikatsu/softball.html",
+      "as_of": "2026-06-22",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "神奈川県高等学校秋季新人ソフトボール大会兼全国高等学校ソフトボール選抜大会神奈川県予選会",
+          "level": "都県",
+          "result": "ベスト8（湘南台・上溝南・綾瀬合同チーム）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shonandai-h/seikatsu/softball.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "神奈川県高等学校総合体育大会ソフトボール競技兼全国高等学校総合体育大会ソフトボール競技神奈川県予選会",
+          "level": "都県",
+          "result": "ベスト16（6年ぶりの単独チームとして出場）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shonandai-h/seikatsu/softball.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "神奈川県高等学校春季ソフトボール大会兼関東高等学校ソフトボール大会神奈川県予選会",
+          "level": "都県",
+          "result": "ベスト16（湘南台・平塚農商合同チーム）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shonandai-h/seikatsu/softball.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "神奈川県民体育大会ソフトボール競技",
+          "level": "都県",
+          "result": "ベスト16（湘南台・藤沢清流・高浜合同チーム）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shonandai-h/seikatsu/softball.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "神奈川県高等学校秋季新人ソフトボール大会兼全国高等学校ソフトボール選抜大会神奈川県予選会",
+          "level": "都県",
+          "result": "ベスト16",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shonandai-h/seikatsu/softball.html"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "神奈川県高等学校春季ソフトボール大会兼関東高等学校ソフトボール大会神奈川県予選会",
+          "level": "都県",
+          "result": "ベスト16（湘南台・藤沢清流合同チーム）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shonandai-h/seikatsu/softball.html"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "神奈川県高等学校総合体育大会ソフトボール競技兼全国高等学校総合体育大会ソフトボール競技神奈川県予選会",
+          "level": "都県",
+          "result": "ベスト16（湘南台・藤沢清流・鵠沼合同チーム）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shonandai-h/seikatsu/softball.html"
+        }
+      ]
+    },
+    {
+      "name": "バスケットボール部",
+      "kind": "運動",
+      "days_note": "練習日 月・火・木・金 土日 練習試合・公式戦（土日は時期により縮小）",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2026年度、湘南地区夏季大会・インターハイ西支部予選ともに男女とも初戦〜2回戦で敗退（地区・支部予選止まりで県大会での上位実績なし）。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shonandai-h/seikatsu/basketball.html",
+      "as_of": "2026-09-04",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "インターハイ西支部予選",
+          "level": "地区",
+          "result": "男子2回戦敗退（42-83 鎌倉）、女子1回戦敗退（55-78 小田原東）",
+          "happened_on": "2026-05-17",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shonandai-h/seikatsu/basketball.html"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "湘南地区夏季大会",
+          "level": "地区",
+          "result": "男子1回戦敗退（42-74 湘南学園）、女子1回戦勝利後2回戦敗退（18-54 アレセイア）",
+          "happened_on": "2026-07-25",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shonandai-h/seikatsu/basketball.html"
+        }
+      ]
+    },
+    {
+      "name": "ハンドボール部",
+      "kind": "運動",
+      "days_note": "月火木金16-18、水オフ、土公式戦・練習試合、日オフ",
+      "days_per_week": 5,
+      "weekend": "土",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shonandai-h/seikatsu/handball.html",
+      "as_of": "2026-04-16",
+      "results": []
+    },
+    {
+      "name": "ダンス部",
+      "kind": "運動",
+      "days_note": "週5日（水曜、日曜がOFF）",
+      "days_per_week": 5,
+      "weekend": "土",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shonandai-h/seikatsu/dance.html",
+      "as_of": "2026-06-08",
+      "results": []
+    },
+    {
+      "name": "陸上競技部",
+      "kind": "運動",
+      "days_note": "月・火・木・金・土（水・日はOFF）。朝練は火・木。",
+      "days_per_week": 5,
+      "weekend": "土",
+      "tier": 2,
+      "tier_basis": "2025年度、男子円盤投げで関東高等学校陸上競技大会に出場（県総体は2位）。関東大会出場は1回のみのため段階1には満たない（段階2）。他は地区大会（湘南地区・藤沢市・中郡）の実績が中心。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shonandai-h/seikatsu/trackandfield.html",
+      "as_of": "2026-06-08",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "神奈川県高等学校総合体育大会陸上競技大会",
+          "level": "都県",
+          "result": "男子円盤投げ2位",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shonandai-h/seikatsu/trackandfield.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "関東高等学校陸上競技大会",
+          "level": "関東",
+          "result": "男子円盤投げ出場",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shonandai-h/seikatsu/trackandfield.html"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "神奈川県高等学校総合体育大会陸上競技大会",
+          "level": "都県",
+          "result": "女子100mH8位、女子400mH8位",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shonandai-h/seikatsu/trackandfield.html"
+        }
+      ]
+    },
+    {
+      "name": "美術部",
+      "kind": "文化",
+      "days_note": "月・火・水曜日",
+      "days_per_week": 3,
+      "tier": 4,
+      "tier_basis": "活動日は週3日。共同制作・ポスター制作・コンテスト参加はあるが、受賞・入賞の記載はない。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shonandai-h/seikatsu/art.html",
+      "as_of": "2026-06-08",
+      "results": []
+    },
+    {
+      "name": "合唱部",
+      "kind": "文化",
+      "days_note": "毎週月・火・水・木曜日（土日なし）",
+      "days_per_week": 4,
+      "source_url": "https://www.pen-kanagawa.ed.jp/shonandai-h/seikatsu/chorus.html",
+      "as_of": "2026-09-04",
+      "results": []
+    },
+    {
+      "name": "コンピュータ部",
+      "kind": "文化",
+      "days_note": "週2日程度（文化祭前などは多くなる可能性あり）",
+      "days_per_week": 2,
+      "tier": 4,
+      "tier_basis": "活動日は週2日。コンテスト・大会実績の記載はない。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shonandai-h/seikatsu/computer.html",
+      "as_of": "2026-06-22",
+      "results": []
+    },
+    {
+      "name": "演劇部",
+      "kind": "文化",
+      "days_note": "月・水・金（土日祝日は公演前・公演当日のみ活動）",
+      "days_per_week": 3,
+      "tier": 4,
+      "tier_basis": "活動日は週3日。湘南横須賀三浦地区演劇発表会での受賞（創作脚本賞・優秀俳優賞等）は年度の記載がなく、直近3年の根拠として使えない。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shonandai-h/seikatsu/enkgeki.html",
+      "as_of": "2026-06-08",
+      "results": []
+    },
+    {
+      "name": "イラスト部",
+      "kind": "文化",
+      "days_note": "毎週水・木・金の放課後（休日に外部イベント出展もあり）",
+      "days_per_week": 3,
+      "tier": 4,
+      "tier_basis": "活動日は週3日。外部イベントへの出展はあるが、コンテストでの受賞・入賞の記載はない。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shonandai-h/seikatsu/illustration.html",
+      "as_of": "2026-06-08",
+      "results": []
+    },
+    {
+      "name": "吹奏楽部",
+      "kind": "文化",
+      "tier": 1,
+      "tier_basis": "直近3年で全国大会上位が複数回。2023年度マーチングバンド全国大会グランプリ・文部科学大臣賞、2024年度特別演奏演技（2年連続日本一の団体のみに与えられる出場枠）、2025年度金賞受賞。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shonandai-h/seikatsu/marchingband.html",
+      "as_of": "2026-06-08",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "第51回マーチングバンド全国大会",
+          "level": "全国",
+          "result": "グランプリ・文部科学大臣賞受賞",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shonandai-h/seikatsu/marchingband.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "第52回マーチングバンド全国大会",
+          "level": "全国",
+          "result": "特別演奏演技（2年連続日本一の団体のみに与えられる出場枠）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shonandai-h/seikatsu/marchingband.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第53回マーチングバンド全国大会",
+          "level": "全国",
+          "result": "金賞受賞",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shonandai-h/seikatsu/marchingband.html"
+        }
+      ]
+    },
+    {
+      "name": "自然科学部",
+      "kind": "文化",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shonandai-h/seikatsu/naturalscience.html",
+      "as_of": "2026-06-17",
+      "results": []
+    },
+    {
+      "name": "書道部",
+      "kind": "文化",
+      "days_note": "月・水・木（行事や書道展、イベント前は随時活動）",
+      "days_per_week": 3,
+      "tier": 2,
+      "tier_basis": "2023〜2025年度、県総合文化祭高等学校書道展で高文連会長賞を3年連続受賞（県内最上位クラスの賞）。全国大会（高校生国際美術展）は2025年度に佳作止まりで、全国上位入賞の実績はない。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shonandai-h/seikatsu/shodou.html",
+      "as_of": "2026-06-22",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "神奈川県総合文化祭第60回高等学校書道展",
+          "level": "都県",
+          "result": "高文連会長賞（1名）・特選（2名）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shonandai-h/seikatsu/shodou.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "神奈川県総合文化祭第61回高等学校書道展",
+          "level": "都県",
+          "result": "高文連会長賞（1名）・特選（2名）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shonandai-h/seikatsu/shodou.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "神奈川県総合文化祭第62回高等学校書道展",
+          "level": "都県",
+          "result": "団体優秀賞・高文連会長賞（1名）・特選（1名）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shonandai-h/seikatsu/shodou.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第26回高校生国際美術展 書の部",
+          "level": "全国",
+          "result": "佳作（1名）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shonandai-h/seikatsu/shodou.html"
+        }
+      ]
+    },
+    {
+      "name": "茶道部",
+      "kind": "文化",
+      "days_note": "火・木曜日",
+      "days_per_week": 2,
+      "tier": 4,
+      "tier_basis": "活動日は週2日。文化祭・地域行事での茶会が中心で、コンクール・大会の実績記載はない。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shonandai-h/seikatsu/teaceremony.html",
+      "as_of": "2026-06-08",
+      "results": []
+    },
+    {
+      "name": "料理研究部",
+      "kind": "文化",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shonandai-h/seikatsu/bukatu.html",
+      "as_of": "2026-06-08",
+      "results": []
+    },
+    {
+      "name": "ボランティア部",
+      "kind": "文化",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shonandai-h/seikatsu/bukatu.html",
+      "as_of": "2026-06-08",
+      "results": []
+    }
+  ],
+  "designated_universities": [],
+  "events": [],
+  "unresolved": [
+    "指定校推薦の大学名：進路ページ・学校サイトとも公開が見つからなかった。",
+    "大学群別の合格実績（国公立・早慶上理・GMARCH・成成明武・日東駒専）は、進路ページの「主な合格先」（末尾が「他」で終わる部分列挙）から合算したもので、一覧に載っていない大学の合格者数は反映できていない。実際の値はこれより多い可能性がある。",
+    "大学別合格者数（延べ）の「合計」：主な合格先が部分列挙のため算出できなかった。",
+    "career_decided_rate：進路ページに卒業生総数の記載がなく算出できなかった。",
+    "推薦入試の応募・受検倍率（exam_ratio/推薦）：神奈川県公立高校入試は共通選抜のみで、東京都のような別立ての推薦選抜がないため対象データなし。",
+    "部活動加入率（club_join_rate）：学校評価報告書（県様式、文章のみで数値なし）・学校サイトとも数値の記載がなかった。",
+    "男女別生徒数（students）：学校サイト・パンフレットに数値の記載を確認できなかった。",
+    "満足度（satisfaction）：学校評価報告書（令和6年度実施結果）は文章のみで、満足度の数値の記載はなかった。",
+    "バドミントン部の実績（男女とも県大会団体ベスト16）は年度の記載がなく、直近3年の根拠として使えないため段階を付けなかった。",
+    "料理研究部・ボランティア部：部活動一覧ページ（bukatu.html）に名前はあるが、個別紹介ページ（cooking.html・volunteer.html）がいずれも404で内容を確認できなかった。",
+    "テニス部・自然科学部：個別紹介ページの本文が空欄（部員数・活動日・実績のいずれも記載なし）で、詳細を確認できなかった。",
+    "サッカー部(女)・吹奏楽部：個別紹介ページに活動日の記載がなく確認できなかった。",
+    "演劇部の地区大会受賞（湘南横須賀三浦地区演劇発表会の創作脚本賞・優秀俳優賞等）は年度の記載がなく、直近3年の根拠として使えないため段階を付けなかった。"
+  ],
+  "conflicts": []
+}
