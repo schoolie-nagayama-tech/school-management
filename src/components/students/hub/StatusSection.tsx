@@ -3,9 +3,12 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useMasterData } from '@/contexts/MasterDataContext';
 import { getStudentScheduleEntries } from '@/lib/api/schedule';
-import { getProposalsByStudent } from '@/lib/api/proposals';
-import { getKoushuEnrollmentsByStudent } from '@/lib/api/seasonalCourses';
-import { groupStudentKoushu, type StudentKoushuPeriodGroup } from '@/lib/studentKoushuSummary';
+import { getKoushuEnrollmentsByStudent, type KoushuEnrollment } from '@/lib/api/seasonalCourses';
+import {
+  getSeasonalProposalSummaryByStudent,
+  type SeasonalProposalSeasonSummary,
+} from '@/lib/api/seasonalProposalSummary';
+import { koushuFiscalYear, mergeKoushuSeasons } from '@/app/interview/interview.shared';
 import { whenNetworkIdle } from '@/lib/utils/networkIdle';
 import type { ScheduleEntry } from '@/types/schedule';
 import { HubSection } from './HubSection';
@@ -23,7 +26,7 @@ import {
   buildLastInterviewMetric,
   buildNextLessonMetric,
   buildProgressMetric,
-  buildRegularTestMetric,
+  buildRecentTestMetric,
   type HubStatusMetric,
 } from './hubStatus';
 
@@ -39,7 +42,7 @@ const NEXT_LESSON_RANGE_DAYS = 60;
  *
  * 正典: docs/student-hub-plan.md §3 ／ 見た目: public/student-hub-mock.html の「今の状態」
  * ★カード1枚の中を罫線で区切るだけにし、中にカードを作らない（モックの方針）。
- * ★色は対応が要るものだけ（停滞がある進行表の黄）。赤は使わない（赤は「注意すること」のアラートが担う）。
+ * ★色は対応が要るものだけ（進行表の停滞している科目の行の黄）。赤は使わない（赤は「注意すること」のアラートが担う）。
  * ★各指標は下の該当セクションへのページ内リンク。数字の中身は下のセクションで確かめる。
  *
  * 取得（2回取らない）:
@@ -47,8 +50,11 @@ const NEXT_LESSON_RANGE_DAYS = 60;
  *   進行表は重いので whenNetworkIdle の後に取り始める。
  * - 授業予定は、予定表の部品（StudentScheduleCalendar）が表示中の月だけを自分で取るので共有しない。
  *   ここでは今日から60日先までに絞って取る。
- * - 講習は、講習欄の StudentKoushuTab が自分で取る（部品は変えない）ので、ここでは同じ関数を別に1回呼ぶ。
- *   ★二重になるのは承知のうえ。StudentKoushuTab は見えてから読み込むので、開いた直後は重ならない。
+ * - 講習は、面談の受講の枠と同じ材料（提案書の期のまとめ getSeasonalProposalSummaryByStudent ＋
+ *   koushu_enrollments）を取り、同じ mergeKoushuSeasons で期ごとにまとめる。
+ *   ★講習欄の StudentKoushuTab とは共有しない。あちらは提案書を1件ずつ（テキスト・テーマ・状態）出す部品で、
+ *     別の関数（getProposalsByStudent）で行そのものを取る。ここで要るのは期ごとの科目×コマの合計で、
+ *     面談と同じ数字にするには面談と同じ関数で取るほうが確か。
  *   ページ上部の取得が捌けてから取る（講習は急いで見るものではない）。
  */
 export function StatusSection({ studentId }: { studentId: string }) {
@@ -68,8 +74,13 @@ export function StatusSection({ studentId }: { studentId: string }) {
 
   const [entries, setEntries] = useState<ScheduleEntry[] | null>(null);
   const [entriesFailed, setEntriesFailed] = useState(false);
-  const [koushu, setKoushu] = useState<StudentKoushuPeriodGroup[] | null>(null);
+  const [koushu, setKoushu] = useState<{
+    summaries: SeasonalProposalSeasonSummary[];
+    enrollments: KoushuEnrollment[];
+  } | null>(null);
   const [koushuFailed, setKoushuFailed] = useState(false);
+  // 年度は4月始まり（1〜3月は前年度）。面談の受講の枠と同じ規則
+  const fiscalYear = koushuFiscalYear(now);
 
   useEffect(() => {
     let cancelled = false;
@@ -94,15 +105,18 @@ export function StatusSection({ studentId }: { studentId: string }) {
     let cancelled = false;
     void whenNetworkIdle().then(() => {
       if (cancelled) return;
-      // 取り方とまとめ方は StudentKoushuTab と同じ（今期＝その先頭の期、の判定を揃えるため）
-      Promise.all([getProposalsByStudent(studentId), getKoushuEnrollmentsByStudent(studentId)])
-        .then(([proposals, enrollments]) => {
-          if (!cancelled) setKoushu(groupStudentKoushu(proposals, enrollments));
+      // 取り方は面談（InterviewWorkspace）と同じ。受講の枠と同じ数字にするため
+      Promise.all([
+        getSeasonalProposalSummaryByStudent(studentId),
+        getKoushuEnrollmentsByStudent(studentId),
+      ])
+        .then(([summaries, enrollments]) => {
+          if (!cancelled) setKoushu({ summaries, enrollments });
         })
         .catch(() => {
           if (cancelled) return;
           setKoushuFailed(true);
-          setKoushu([]);
+          setKoushu({ summaries: [], enrollments: [] });
         });
     });
     return () => {
@@ -118,7 +132,7 @@ export function StatusSection({ studentId }: { studentId: string }) {
       : entriesFailed
         ? failed
         : buildNextLessonMetric(entries, now, subjectNames, NEXT_LESSON_RANGE_DAYS);
-  const regularTest = scoresLoading ? null : buildRegularTestMetric(assessments);
+  const recentTest = scoresLoading ? null : buildRecentTestMetric(assessments);
   const lastInterview = interviewsLoading
     ? null
     : interviewsFailed
@@ -126,7 +140,20 @@ export function StatusSection({ studentId }: { studentId: string }) {
       : buildLastInterviewMetric(interviews);
   const discipline = disciplineLoading ? null : buildDisciplineMetric(sessions, now);
   const progressMetric = progressLoading ? null : buildProgressMetric(progress.textbookData);
-  const koushuMetric = koushu === null ? null : koushuFailed ? failed : buildKoushuMetric(koushu);
+  // koushu_enrollments の科目は id で入っているので、名前は全体のマスタから引く（面談と同じ）
+  const koushuMetric =
+    koushu === null
+      ? null
+      : koushuFailed
+        ? failed
+        : buildKoushuMetric(
+            mergeKoushuSeasons(
+              koushu.summaries,
+              koushu.enrollments,
+              Object.fromEntries(subjectNames)
+            ),
+            fiscalYear
+          );
 
   return (
     <HubSection
@@ -148,7 +175,7 @@ export function StatusSection({ studentId }: { studentId: string }) {
           }
           metric={nextLesson}
         />
-        <Tile href="#sec-scores" label="直近の定期テスト" metric={regularTest} />
+        <Tile href="#sec-scores" label="直近のテスト" metric={recentTest} />
         <Tile href="#sec-interview" label="前回の面談" metric={lastInterview} />
         <Tile href="#sec-discipline" label="今月の宿題・遅刻" metric={discipline} />
         <Tile href="#sec-progress" label="進行表" metric={progressMetric} />
@@ -192,16 +219,48 @@ function Tile({
         </div>
       ) : (
         <>
-          <div
-            className={`mt-px font-bold leading-[1.35] tabular-nums [overflow-wrap:anywhere] ${valueSize} ${valueColor}`}
-          >
-            {metric.value ?? '—'}
-          </div>
+          {metric.rows && metric.rows.length > 0 ? (
+            // 進行表の科目ごとの行。1行が長い（科目・テキスト名・単元）ので、大きな数字の代わりに本文の大きさで並べる
+            <ul className="mt-0.5 space-y-0.5">
+              {metric.rows.map((row, i) => (
+                <li
+                  key={i}
+                  className={`text-[13px] font-medium leading-snug [overflow-wrap:anywhere] ${
+                    row.tone === 'warning' ? 'text-warning' : 'text-text-heading'
+                  }`}
+                >
+                  {row.text}
+                  {row.note && <span className="ml-1.5 text-[11px] font-bold">{row.note}</span>}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <div
+              className={`mt-px font-bold leading-[1.35] tabular-nums [overflow-wrap:anywhere] ${valueSize} ${valueColor}`}
+            >
+              {metric.value ?? '—'}
+            </div>
+          )}
           {metric.sub.map((line, i) => (
             <div key={i} className="mt-px text-xs text-text-faint [overflow-wrap:anywhere]">
               {line}
             </div>
           ))}
+          {/* 別の話題の行（模試）。上の定期テストの補足と続けて読まないよう、少し間を空ける */}
+          {metric.secondary && metric.secondary.length > 0 && (
+            <div className="mt-1.5">
+              {metric.secondary.map((line, i) => (
+                <div
+                  key={i}
+                  className={`text-xs [overflow-wrap:anywhere] ${
+                    i === 0 ? 'font-medium text-text-body' : 'mt-px text-text-faint'
+                  }`}
+                >
+                  {line}
+                </div>
+              ))}
+            </div>
+          )}
         </>
       )}
     </a>

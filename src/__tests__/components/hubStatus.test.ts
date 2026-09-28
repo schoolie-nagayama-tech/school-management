@@ -4,15 +4,20 @@ import {
   buildKoushuMetric,
   buildLastInterviewMetric,
   buildNextLessonMetric,
+  buildMockLines,
   buildProgressMetric,
+  buildRecentTestMetric,
   buildRegularTestMetric,
   formatSignedDiff,
+  koushuTakenThisYear,
   pickNextLesson,
+  reachedUnitTitle,
 } from '@/components/students/hub/hubStatus';
+import { pickLiveTextbookDetails, type KoushuSeasonBucket } from '@/app/interview/interview.shared';
+import { formatKoushuEnrollment } from '@/lib/interview/story';
 import type { ScheduleEntry } from '@/types/schedule';
 import type { AssessmentWithScores, StudentInterview } from '@/types/database';
 import type { TextbookProgressData } from '@/app/interview/ProgressPanel';
-import type { StudentKoushuPeriodGroup } from '@/lib/studentKoushuSummary';
 
 /* ---------- 次回授業 ---------- */
 
@@ -168,7 +173,7 @@ describe('buildRegularTestMetric', () => {
   it('定期テストが無ければ「—」（模試・内申は見ない）', () => {
     const m = buildRegularTestMetric([test('m', 'venue', null, FULL_A, 'mock')]);
     expect(m.value).toBeNull();
-    expect(m.sub).toEqual(['記録なし']);
+    expect(m.sub).toEqual(['定期テストの記録なし']);
   });
 
   it('差の符号', () => {
@@ -249,102 +254,223 @@ describe('buildDisciplineMetric', () => {
   });
 });
 
+/* ---------- 直近のテスト：模試 ---------- */
+
+function mock(
+  id: string,
+  exam_month: string,
+  scores: Record<string, number | null>
+): AssessmentWithScores {
+  return {
+    ...test(id, 'venue', null, scores, 'mock'),
+    exam_month,
+  } as AssessmentWithScores;
+}
+
+describe('buildMockLines', () => {
+  it('5科の偏差値と前回比・日付と模試名', () => {
+    expect(
+      buildMockLines([
+        mock('new', '2026-08-01', { hensa_5: 52.1, hensa_3: 55 }),
+        mock('old', '2026-06-01', { hensa_5: 54.4 }),
+      ])
+    ).toEqual(['模試 偏差値52.1（5科）・前回比 −2.3', '2026-08 会場模試']);
+  });
+
+  it('5科が無ければ3科と明記する', () => {
+    expect(buildMockLines([mock('new', '2026-08-01', { hensa_3: 48 })])).toEqual([
+      '模試 偏差値48（3科）',
+      '2026-08 会場模試',
+    ]);
+  });
+
+  it('前回比は同じ種類（5科どうし・3科どうし）の1つ前とだけ比べる', () => {
+    const lines = buildMockLines([
+      mock('new', '2026-08-01', { hensa_5: 52 }),
+      mock('mid', '2026-07-01', { hensa_3: 60 }), // 3科だけ → 5科の前回にしない
+      mock('old', '2026-06-01', { hensa_5: 50 }),
+    ]);
+    expect(lines[0]).toBe('模試 偏差値52（5科）・前回比 +2');
+    const noSameKind = buildMockLines([
+      mock('a', '2026-08-01', { hensa_5: 52 }),
+      mock('b', '2026-06-01', { hensa_3: 50 }),
+    ]);
+    expect(noSameKind[0]).toBe('模試 偏差値52（5科）');
+  });
+
+  it('偏差値が未入力の模試は飛ばす。模試が無ければ行を出さない', () => {
+    expect(
+      buildMockLines([
+        mock('noHensa', '2026-09-01', { english: 60 }),
+        mock('old', '2026-06-01', { hensa_5: 50 }),
+      ])[1]
+    ).toBe('2026-06 会場模試');
+    expect(buildMockLines([test('r', 'term1_final', '2026-07-05', FULL_A)])).toEqual([]);
+  });
+
+  it('直近のテストは定期テストの下に模試の行を添える。模試が無ければ添えない', () => {
+    const withMock = buildRecentTestMetric([
+      test('r', 'term1_final', '2026-07-05', FULL_A),
+      mock('m', '2026-08-01', { hensa_5: 52.1 }),
+    ]);
+    expect(withMock.value).toBe('312');
+    expect(withMock.secondary).toEqual(['模試 偏差値52.1（5科）', '2026-08 会場模試']);
+    const noMock = buildRecentTestMetric([test('r', 'term1_final', '2026-07-05', FULL_A)]);
+    expect(noMock.secondary).toBeUndefined();
+    // 定期テストが無く模試だけでも、模試の行は出す
+    const mockOnly = buildRecentTestMetric([mock('m', '2026-08-01', { hensa_5: 50 })]);
+    expect(mockOnly.value).toBeNull();
+    expect(mockOnly.sub).toEqual(['定期テストの記録なし']);
+    expect(mockOnly.secondary?.[0]).toBe('模試 偏差値50（5科）');
+  });
+});
+
 /* ---------- 進行表 ---------- */
 
-function textbook(id: string, lessonDates: string[]): TextbookProgressData {
+/** units: [単元名, 授業日の配列]（並びがそのまま sort_order） */
+function textbook(
+  id: string,
+  subject: string,
+  units: [string, string[]][],
+  sortOrder: number | null = null
+): TextbookProgressData {
   return {
-    textbook: { id, textbook: { name: `教材${id}`, subject: '数学' } },
-    rows: [{ progress: { lessons: lessonDates.map((d) => ({ lesson_date: d })) } }],
+    textbook: { id, sort_order: sortOrder, textbook: { name: `教材${id}`, subject } },
+    rows: units.map(([title, dates], i) => ({
+      title,
+      sort_order: i,
+      progress: { lessons: dates.map((d) => ({ lesson_date: d })) },
+    })),
   } as unknown as TextbookProgressData;
 }
+
+describe('reachedUnitTitle', () => {
+  it('1回目を実施した単元のうち、並びで最も先のもの（最後に授業をした単元ではない）', () => {
+    // 復習で一次関数に戻っても（9/20）、到達は二次関数のまま
+    const tb = textbook('a', 'math', [
+      ['一次関数', ['2026-09-01', '2026-09-20']],
+      ['二次関数', ['2026-09-10']],
+      ['図形', []],
+    ]);
+    expect(reachedUnitTitle(tb.rows)).toBe('二次関数');
+    expect(reachedUnitTitle(textbook('b', 'math', [['x', []]]).rows)).toBeNull();
+  });
+});
 
 describe('buildProgressMetric', () => {
   afterEach(() => {
     vi.useRealTimers();
   });
 
-  it('停滞（最終指導から14日超）が1冊以上なら黄', () => {
+  it('科目ごとの LIVE は面談④の pickLiveTextbookDetails と同じ1冊（講習の冊子は混ざらない）', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 8, 28, 10, 0));
+    const data = [
+      textbook('regular', 'math', [['二次関数', ['2026-09-25']]], 0),
+      textbook('summer', 'math', [['夏の総復習', ['2026-08-20']]], 1), // 講習の冊子（古い）
+      textbook('eng', 'english', [['過去形', ['2026-09-20']]], 2),
+    ];
+    const m = buildProgressMetric(data);
+    expect(pickLiveTextbookDetails(data).map((d) => d.name)).toEqual(['教材regular', '教材eng']);
+    expect(m.rows?.map((r) => r.text)).toEqual([
+      '数学 教材regular ｜ 二次関数まで',
+      '英語 教材eng ｜ 過去形まで',
+    ]);
+    expect(m.value).toBeNull();
+    expect(m.tone).toBe('neutral');
+    expect(m.rows?.every((r) => r.tone === 'neutral' && r.note === null)).toBe(true);
+  });
+
+  it('停滞（最終指導から14日超）の行だけ黄で「停滞 N日」', () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date(2026, 8, 28, 10, 0));
     const m = buildProgressMetric([
-      textbook('a', ['2026-09-25']),
-      textbook('b', ['2026-09-01']), // 27日前 → 停滞
-      textbook('c', ['2026-09-20']),
-      textbook('d', []), // 指導記録なしは停滞に数えない（進行表と同じ）
+      textbook('a', 'math', [['二次関数', ['2026-09-25']]]),
+      textbook('b', 'english', [['過去形', ['2026-09-01']]]), // 27日前 → 停滞
     ]);
-    expect(m.value).toBe('4冊中 1冊が停滞');
-    expect(m.tone).toBe('warning');
-  });
-
-  it('停滞が無ければ中立', () => {
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date(2026, 8, 28, 10, 0));
-    const m = buildProgressMetric([textbook('a', ['2026-09-25'])]);
-    expect(m.value).toBe('1冊中 停滞なし');
+    expect(m.rows?.[0]).toEqual({
+      text: '数学 教材a ｜ 二次関数まで',
+      note: null,
+      tone: 'neutral',
+    });
+    expect(m.rows?.[1]).toEqual({
+      text: '英語 教材b ｜ 過去形まで',
+      note: '停滞 27日',
+      tone: 'warning',
+    });
     expect(m.tone).toBe('neutral');
   });
 
-  it('管理中のテキストが無ければ「—」', () => {
-    const m = buildProgressMetric([]);
+  it('4科目以上は3科目まで出し「ほか N科目」', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 8, 28, 10, 0));
+    const m = buildProgressMetric([
+      textbook('a', 'math', [['u', ['2026-09-25']]]),
+      textbook('b', 'english', [['u', ['2026-09-25']]]),
+      textbook('c', 'japanese', [['u', ['2026-09-25']]]),
+      textbook('d', 'science', [['u', ['2026-09-25']]]),
+      textbook('e', 'social', [['u', ['2026-09-25']]]),
+    ]);
+    expect(m.rows).toHaveLength(3);
+    expect(m.sub).toEqual(['ほか 2科目']);
+  });
+
+  it('LIVE が無ければ（授業記録のあるテキストが無ければ）「—」', () => {
+    expect(buildProgressMetric([])).toMatchObject({ value: null, sub: ['進行中のテキストなし'] });
+    const m = buildProgressMetric([textbook('a', 'math', [['u', []]])]);
     expect(m.value).toBeNull();
-    expect(m.sub).toEqual(['管理中のテキストなし']);
+    expect(m.rows).toBeUndefined();
+    expect(m.sub).toEqual(['進行中のテキストなし']);
   });
 });
 
 /* ---------- 講習 ---------- */
 
-function group(
-  label: string,
-  statuses: ('draft' | 'sent' | 'approved')[],
-  enrollments = 0
-): StudentKoushuPeriodGroup {
-  return {
-    key: label,
-    season: 'winter',
-    year: 2026,
-    label,
-    proposals: statuses.map((status, i) => ({
-      id: `${label}-${i}`,
-      textbookName: 't',
-      subject: null,
-      theme: '',
-      status,
-      proposedKoma: 1,
-      appliedKoma: null,
-    })),
-    enrollments: Array.from({ length: enrollments }, () => ({
-      formation: 'individual',
-      komaCount: 1,
-      komaBySubject: {},
-    })),
-    totalProposedKoma: 0,
-    totalAppliedKoma: 0,
-  } as StudentKoushuPeriodGroup;
+function bucket(
+  year: number,
+  season: string,
+  status: KoushuSeasonBucket['status'],
+  komaBySubject: Record<string, number>
+): KoushuSeasonBucket {
+  const totalKoma = Object.values(komaBySubject).reduce((a, b) => a + b, 0);
+  return { year, season, status, komaBySubject, totalKoma };
 }
 
 describe('buildKoushuMetric', () => {
-  it('先頭の期（講習欄の一番上）の提案書の状態', () => {
-    const m = buildKoushuMetric([
-      group('2026 冬期講習', ['draft', 'draft']),
-      group('2026 夏期講習', ['approved']),
-    ]);
+  const buckets = [
+    bucket(2026, 'winter', 'draft', { 数学: 10 }), // 提案書の下書き → 受講していない
+    bucket(2026, 'summer', 'approved', { 英語: 12, 数学: 4 }),
+    bucket(2026, 'spring', 'approved', { 英語: 8, 数学: 4 }),
+    bucket(2025, 'winter', 'approved', { 英語: 20 }), // 前年度
+  ];
+
+  it('今年度の直近に受講した期を大きく、科目とコマ（計）を下に、それより前の期をさらに下に', () => {
+    const m = buildKoushuMetric(buckets, 2026);
+    expect(m.value).toBe('2026 夏期講習');
+    expect(m.sub).toEqual(['英語 12コマ・数学 4コマ（計16）', '春期 英語 8・数学 4']);
+    expect(m.tone).toBe('neutral');
+  });
+
+  it('受講した期の決まりは面談の受講の枠（formatKoushuEnrollment）と同じ', () => {
+    const hub = koushuTakenThisYear(buckets, 2026).map((b) => b.season);
+    // 面談は今期を除くので、どの季節にも当たらない値を渡して全期で比べる
+    const interview = formatKoushuEnrollment(buckets, 2026, '');
+    expect(hub).toEqual(['spring', 'summer']);
+    expect(interview.map((k) => k.season)).toEqual(['春期', '夏期']);
+  });
+
+  it('今期でも申込済なら直近として出す', () => {
+    const m = buildKoushuMetric(
+      [bucket(2026, 'winter', 'approved', { 数学: 6 }), ...buckets.slice(1)],
+      2026
+    );
     expect(m.value).toBe('2026 冬期講習');
-    expect(m.sub).toEqual(['提案書 下書き']);
+    expect(m.sub).toEqual(['数学 6コマ（計6）', '春期 英語 8・数学 4 ／ 夏期 英語 12・数学 4']);
   });
 
-  it('状態が混ざれば件数を並べる', () => {
-    const m = buildKoushuMetric([group('2026 冬期講習', ['approved', 'draft', 'draft'])]);
-    expect(m.sub).toEqual(['提案書 下書き 2・公開 1']);
-  });
-
-  it('申込だけの期', () => {
-    const m = buildKoushuMetric([group('冬期講習', [], 1)]);
-    expect(m.sub).toEqual(['申込のみ（提案書なし）']);
-  });
-
-  it('講習の記録が無ければ「—」', () => {
-    const m = buildKoushuMetric([]);
+  it('今年度の受講が無ければ「—」と面談と同じ文言', () => {
+    const m = buildKoushuMetric([bucket(2025, 'winter', 'approved', { 英語: 20 })], 2026);
     expect(m.value).toBeNull();
-    expect(m.sub).toEqual(['記録なし']);
+    expect(m.sub).toEqual(['2026年度の受講なし']);
   });
 });
