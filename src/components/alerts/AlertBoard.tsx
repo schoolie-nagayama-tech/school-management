@@ -7,6 +7,7 @@ import {
   getAlertsHeavy,
   mergeStudentAlerts,
   invalidateAlertCache,
+  isHeavyAlertType,
 } from '@/lib/api/alerts';
 import type { StudentAlerts, Alert } from '@/types/alerts';
 import { useAuth } from '@/contexts/AuthContext';
@@ -14,7 +15,7 @@ import { useMasterData } from '@/contexts/MasterDataContext';
 import { useToast } from '@/hooks/useToast';
 import { GRADE_LABELS } from '@/types/database';
 import { ChevronDown, ChevronUp, Info, AlertTriangle, X } from 'lucide-react';
-import { InlineLoading } from '@/components/ui';
+import { InlineLoading, ToastContainer } from '@/components/ui';
 import { supabase } from '@/lib/supabase';
 import { dismissAlert } from '@/lib/api/alerts';
 import {
@@ -122,7 +123,10 @@ const SCHOOL_COLORS = [
 export function AlertBoard({ className = '', initialData }: AlertBoardProps) {
   const { getSelectedSchoolIds, selectedSchoolId, profile } = useAuth();
   const { schools } = useMasterData();
-  const { success, error: toastError } = useToast();
+  // ★useToast はこのコンポーネント内に state を持つだけで、描画は呼び出し側の責任。
+  // 置き場所（/students・/home）の ToastContainer は各ページ自身の useToast の state を描くので、
+  // ここで出したトーストは届かない。そのため AlertBoard 自身が ToastContainer を描く（各 return）。
+  const { toasts, removeToast, success, error: toastError } = useToast();
   // 初期データがあれば SSR 事前取得済みの Light アラートをそのまま表示する
   const [studentAlerts, setStudentAlerts] = useState<StudentAlerts[]>(
     initialData?.studentAlerts ?? []
@@ -254,8 +258,6 @@ export function AlertBoard({ className = '', initialData }: AlertBoardProps) {
     void whenNetworkIdle().then(startHeavy);
   }, [getSelectedSchoolIds, toastError]);
 
-  const HEAVY_ALERT_TYPES = ['score_drop', 'score_missing', 'exam_overdue'] as const;
-
   /** Heavy アラートのみ再取得（成績・テスト関連） */
   const retryHeavyAlerts = useCallback(async () => {
     const schoolIds = getSelectedSchoolIds();
@@ -266,11 +268,11 @@ export function AlertBoard({ className = '', initialData }: AlertBoardProps) {
       const heavyAlerts = await getAlertsHeavy(schoolIds, { skipCache: true });
       setStudentAlerts((prev) => {
         const withoutHeavy = prev
+          // 入れ替える種別は alerts.ts の Light/Heavy 分割から引く（ここで手並べしない）。
+          // 宿題・遅刻は alert_key に累積回数を含むため、残すと回数違いの行が二重に並ぶ。
           .map((sa) => ({
             ...sa,
-            alerts: sa.alerts.filter(
-              (a) => !(HEAVY_ALERT_TYPES as readonly string[]).includes(a.alert_type)
-            ),
+            alerts: sa.alerts.filter((a) => !isHeavyAlertType(a.alert_type)),
           }))
           .filter((sa) => sa.alerts.length > 0);
         return mergeStudentAlerts(withoutHeavy, heavyAlerts);
@@ -469,24 +471,35 @@ export function AlertBoard({ className = '', initialData }: AlertBoardProps) {
     );
   };
 
+  // どの表示状態でもトーストは出す。最後の1件を対応済みにすると「項目なし」表示に切り替わるが、
+  // その「対応済みにしました」もここで描かないと消える。
+  const toastContainer = <ToastContainer toasts={toasts} onRemove={removeToast} />;
+
   if (isLoading) {
     return (
-      <div className={`bg-[#f8f8f8] rounded-xl border border-gray-200 p-4 ${className}`}>
-        <InlineLoading label="アラートを読み込み中..." />
-      </div>
+      <>
+        {toastContainer}
+        <div className={`bg-[#f8f8f8] rounded-xl border border-gray-200 p-4 ${className}`}>
+          <InlineLoading label="アラートを読み込み中..." />
+        </div>
+      </>
     );
   }
 
   if (totalAlerts === 0) {
     return (
-      <div className={`bg-[#f8f8f8] rounded-xl border border-gray-200 p-4 ${className}`}>
-        <div className="text-center text-sm text-gray-500">対応が必要な項目はありません</div>
-      </div>
+      <>
+        {toastContainer}
+        <div className={`bg-[#f8f8f8] rounded-xl border border-gray-200 p-4 ${className}`}>
+          <div className="text-center text-sm text-gray-500">対応が必要な項目はありません</div>
+        </div>
+      </>
     );
   }
 
   return (
     <div className={`bg-[#f8f8f8] rounded-xl border border-gray-200 overflow-hidden ${className}`}>
+      {toastContainer}
       {/* ヘッダー */}
       <div className="flex items-center justify-between p-4 bg-[#ffebee] border-b border-[#ffcdd2]">
         <div className="flex items-center gap-2 flex-wrap">

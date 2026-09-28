@@ -1272,24 +1272,42 @@ export const ALERT_DEFINITIONS: Record<
   interview_recent: { level: 'info', evaluator: buildInterviewRecentCandidates },
 };
 
-/** Light 用の alert types */
-const LIGHT_ALERT_TYPES: AlertType[] = [
-  'interview_overdue',
-  'application_overdue',
-  'interview_task',
-  'schedule_change_unapplied',
-  'interview_recent',
-];
+/**
+ * 各 alert type を Light（先に出す軽い取得）と Heavy（後から裏で取る重い取得）のどちらで作るか。
+ *
+ * ★Record<AlertType, …> にしているのは、型を足したときに分類し忘れるとコンパイルで落とすため。
+ * 以前は Light/Heavy を配列で手並べしていて、画面側（AlertBoard の再読み込み）にも同じ一覧の
+ * 古い写しがあり、Heavy に宿題・遅刻・講習準備を足した際に画面側だけ取り残された。
+ * 画面側は HEAVY_ALERT_TYPES / isHeavyAlertType を import して使い、自前で並べないこと。
+ */
+const ALERT_FETCH_TIER: Record<AlertType, 'light' | 'heavy'> = {
+  interview_overdue: 'light',
+  application_overdue: 'light',
+  interview_task: 'light',
+  schedule_change_unapplied: 'light',
+  interview_recent: 'light',
+  score_drop: 'heavy',
+  score_missing: 'heavy',
+  exam_overdue: 'heavy',
+  homework_not_done: 'heavy',
+  tardy: 'heavy',
+  course_prep_overdue: 'heavy',
+};
 
-/** Heavy 用の alert types */
-const HEAVY_ALERT_TYPES: AlertType[] = [
-  'score_drop',
-  'score_missing',
-  'exam_overdue',
-  'homework_not_done',
-  'tardy',
-  'course_prep_overdue',
-];
+/** Light 用の alert types */
+export const LIGHT_ALERT_TYPES: readonly AlertType[] = (
+  Object.keys(ALERT_FETCH_TIER) as AlertType[]
+).filter((type) => ALERT_FETCH_TIER[type] === 'light');
+
+/** Heavy 用の alert types（getAlertsHeavy が返すのはこの種別だけ） */
+export const HEAVY_ALERT_TYPES: readonly AlertType[] = (
+  Object.keys(ALERT_FETCH_TIER) as AlertType[]
+).filter((type) => ALERT_FETCH_TIER[type] === 'heavy');
+
+/** その alert type が Heavy 取得（getAlertsHeavy）で作られるか */
+export function isHeavyAlertType(type: string): boolean {
+  return (ALERT_FETCH_TIER as Record<string, 'light' | 'heavy' | undefined>)[type] === 'heavy';
+}
 
 /**
  * 全アラート候補を生成（pure、dismiss 未考慮、ALERT_DEFINITIONS 駆動）
@@ -1687,14 +1705,14 @@ function toFullSources(partial: Partial<AlertSources>): AlertSources {
   };
 }
 
-/** Light アラートの candidates を構築（3タイプのみ、ALERT_DEFINITIONS 駆動） */
+/** Light アラートの candidates を構築（LIGHT_ALERT_TYPES のみ、ALERT_DEFINITIONS 駆動） */
 function buildAlertCandidatesLight(sources: Partial<AlertSources>): Alert[] {
   if (!sources.students?.length) return [];
   const full = toFullSources(sources);
   return LIGHT_ALERT_TYPES.flatMap((type) => ALERT_DEFINITIONS[type].evaluator(full));
 }
 
-/** Heavy アラートの candidates を構築（3タイプのみ、ALERT_DEFINITIONS 駆動） */
+/** Heavy アラートの candidates を構築（HEAVY_ALERT_TYPES のみ、ALERT_DEFINITIONS 駆動） */
 function buildAlertCandidatesHeavy(sources: Partial<AlertSources>): Alert[] {
   if (!sources.students?.length) return [];
   const full = toFullSources(sources);
@@ -1707,7 +1725,7 @@ export interface GetAlertsOptions {
 }
 
 /**
- * Light アラートのみ取得（速い：interview_overdue, application_overdue, interview_task）
+ * Light アラートのみ取得（速い。種別は LIGHT_ALERT_TYPES）
  *
  * @param client - RLS 認証済みのサーバークライアント（省略時はブラウザ用シングルトン）。
  *                 サーバー実行時は createSupabaseServerClient() の戻り値を渡すこと。
@@ -1754,7 +1772,7 @@ export async function getAlertsLight(
 }
 
 /**
- * Heavy アラートのみ取得（重い：score_drop, score_missing, exam_overdue）
+ * Heavy アラートのみ取得（重い。種別は HEAVY_ALERT_TYPES）
  */
 export async function getAlertsHeavy(
   schoolIds: string[],
