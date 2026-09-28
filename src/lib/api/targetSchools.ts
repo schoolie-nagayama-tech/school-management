@@ -51,7 +51,7 @@ export interface TargetSchoolMaster {
   accessLines: string[];
 }
 
-/** 生徒1人の志望校1件（第1〜3志望のいずれか） */
+/** 生徒1人の志望校1件（第1〜5志望のいずれか） */
 export interface TargetSchoolRow {
   id: string;
   rank: number;
@@ -64,6 +64,10 @@ export interface TargetSchoolRow {
    * 私立なら④の判定を併願の基準で出す。
    */
   isHeigan: boolean;
+  /** 模試の取り込みで入った行ならその模試。手で入れた・学校を直した行は null */
+  sourceAssessmentId?: string | null;
+  /** 模試から入った行の出どころ（「模試 2026年10月」）。手で入れた行は null */
+  sourceLabel?: string | null;
   updatedAt: string;
   // マスタに当たったときだけ入る。当たらなければ null（＝自由記述のまま）。
   master: TargetSchoolMaster | null;
@@ -76,6 +80,12 @@ export interface TargetSchoolInput {
   highSchoolId: string | null;
   reason: string | null;
   isHeigan: boolean;
+  /**
+   * 模試から入った行の印。★学校を手で直したら null にして渡す（呼び出し側の責任）。
+   *   取り込みはこの印で「模試の後に手で直した志望校」を見分ける（mockTargetPlan.ts）。
+   *   省略＝手で入れた行（null）。
+   */
+  sourceAssessmentId?: string | null;
 }
 
 /** 高校マスタの検索結果（最新年度のめやすを添えたもの） */
@@ -210,7 +220,7 @@ function toMaster(
 }
 
 /**
- * 生徒の志望校（第1〜3志望）を rank 昇順で取得する。
+ * 生徒の志望校（第1〜5志望）を rank 昇順で取得する。
  * high_schools・high_school_standards（最新年度）を結合し、必要内申・必要偏差値・
  * 出典ラベル・verified_at も一緒に返す。
  */
@@ -230,6 +240,22 @@ export async function getStudentTargetSchools(studentId: string): Promise<Target
     new Set(rows.map((r) => r.high_school_id).filter((id): id is string => Boolean(id)))
   );
 
+  // 模試から入った行の出どころ（模試の月）。★行は最大5件なので模試も最大5件
+  const sourceIds = Array.from(
+    new Set(rows.map((r) => r.source_assessment_id).filter((id): id is string => Boolean(id)))
+  );
+  const sourceLabelById = new Map<string, string>();
+  if (sourceIds.length > 0) {
+    const { data: srcRows } = await supabase
+      .from('assessments')
+      .select('id, exam_month')
+      .in('id', sourceIds);
+    for (const a of (srcRows || []) as { id: string; exam_month: string | null }[]) {
+      const m = a.exam_month?.match(/^(\d{4})-(\d{2})/);
+      sourceLabelById.set(a.id, m ? `模試 ${m[1]}年${Number(m[2])}月` : '模試');
+    }
+  }
+
   let schoolsById = new Map<string, HighSchoolRow>();
   let standards: HighSchoolStandardRow[] = [];
   let rulesBySchool = new Map<string, AdmissionRule[]>();
@@ -242,7 +268,7 @@ export async function getStudentTargetSchools(studentId: string): Promise<Target
         .select('*')
         .in('high_school_id', highSchoolIds)
         .order('source_year', { ascending: false }),
-      // 志望校は最大3校なので、基準の行数は多くても数十行（1000行の切り捨てには届かない）
+      // 志望校は最大5校なので、基準の行数は多くても数十行（1000行の切り捨てには届かない）
       supabase.from('high_school_admission_rules').select('*').in('high_school_id', highSchoolIds),
     ]);
 
@@ -276,6 +302,10 @@ export async function getStudentTargetSchools(studentId: string): Promise<Target
       reason: row.reason,
       // ★列を足す前の行・マイグレーション未適用の環境では undefined になりうるので false に寄せる
       isHeigan: row.is_heigan ?? false,
+      sourceAssessmentId: row.source_assessment_id ?? null,
+      sourceLabel: row.source_assessment_id
+        ? (sourceLabelById.get(row.source_assessment_id) ?? '模試')
+        : null,
       updatedAt: row.updated_at,
       master: toMaster(school, latest, rules),
     };
@@ -283,7 +313,7 @@ export async function getStudentTargetSchools(studentId: string): Promise<Target
 }
 
 /**
- * 生徒の志望校（第1〜3志望）をまとめて保存する。
+ * 生徒の志望校（第1〜5志望）をまとめて保存する。
  *
  * - school_name が空の rank は削除する（＝その志望順位を未入力に戻す）。
  * - 残りは (student_id, rank) の UNIQUE 制約に対して upsert する。
@@ -308,6 +338,7 @@ export async function saveStudentTargetSchools(
       high_school_id: r.highSchoolId,
       reason: r.reason?.trim() || null,
       is_heigan: r.isHeigan,
+      source_assessment_id: r.sourceAssessmentId ?? null,
     }));
 
   if (ranksToDelete.length > 0) {

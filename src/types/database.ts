@@ -3853,6 +3853,8 @@ export type Database = {
           reason: string | null;
           // 併願で押さえる学校の印（志望順位とは別）。20260927130000_student_target_schools_heigan.sql
           is_heigan: boolean;
+          // 模試の取り込みで入った行ならその模試。手で入れた行は NULL。20260928120000_*.sql
+          source_assessment_id: string | null;
           updated_by: string | null;
           created_at: string;
           updated_at: string;
@@ -3866,6 +3868,7 @@ export type Database = {
           high_school_id?: string | null;
           reason?: string | null;
           is_heigan?: boolean;
+          source_assessment_id?: string | null;
           updated_by?: string | null;
           created_at?: string;
           updated_at?: string;
@@ -3879,6 +3882,7 @@ export type Database = {
           high_school_id?: string | null;
           reason?: string | null;
           is_heigan?: boolean;
+          source_assessment_id?: string | null;
           updated_by?: string | null;
           created_at?: string;
           updated_at?: string;

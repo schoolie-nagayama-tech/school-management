@@ -4,17 +4,25 @@ import { useState, useMemo, useRef, useCallback, useEffect } from 'react';
 import { Modal, Button } from '@/components/ui';
 import { createAssessmentRow, updateScore } from '@/lib/api/assessments';
 import {
-  countTargetSchoolsByStudents,
-  fillTargetSchoolsFromMock,
+  applyMockTargetSchools,
   getHighSchoolKeysByNames,
+  getTargetSchoolsByStudents,
   insertAssessmentTargetSchools,
   type MockSchoolToSave,
 } from '@/lib/api/mockTargetSchools';
+import {
+  planTargetSchoolsFromMock,
+  type CurrentTargetRow,
+  type TargetPlan,
+  type TargetPlanKind,
+} from '@/lib/scores/mockTargetPlan';
 // ★読み取り（パース）は純関数にして lib へ出した。テストはそちらを直接叩く
 import { parseFileRows, parsePastedData, type ParsedMockRow } from '@/lib/scores/mockImportParse';
 import {
   formatPossibility,
+  mastersForSlot,
   matchMockSchoolName,
+  mockSchoolShortName,
   splitMockSchoolName,
   type HighSchoolKeyRow,
 } from '@/lib/scores/mockSchools';
@@ -31,6 +39,18 @@ interface MockPasteImportModalProps {
 }
 
 type InputMode = 'file' | 'paste';
+
+/** 反映の種類の札 */
+const PLAN_KIND_LABEL: Record<Exclude<TargetPlanKind, 'none'>, string> = {
+  new: '新規',
+  change: '差し替え',
+  same: '同じ',
+};
+const PLAN_KIND_CLASS: Record<Exclude<TargetPlanKind, 'none'>, string> = {
+  new: 'bg-info-subtle text-info',
+  change: 'bg-warning-subtle text-warning',
+  same: 'bg-surface-hover text-text-muted',
+};
 
 export function MockPasteImportModal({
   isOpen,
@@ -53,21 +73,31 @@ export function MockPasteImportModal({
     success: number;
     failed: number;
     skipped: number;
-    /** 志望校が未登録だったので模試の公立校を入れた生徒の数 */
+    /** 志望校が空だったので模試の志望校を入れた生徒の数 */
     filled: number;
+    /** 志望校を模試の志望校に差し替えた生徒の名前 */
+    replaced: string[];
+    /** プレビューの後に志望校が直されていたので、反映しなかった生徒の数 */
+    conflicted: number;
     /** 成績は入ったが、模試の志望校の保存に失敗した生徒の数 */
     schoolFailed: number;
   } | null>(null);
   /**
-   * 志望校が未登録の生徒に、模試の公立の志望校（1〜3枠）を第1〜3志望として入れるか。
-   * ★既定はON。志望校が空のままだと面談の④で「志望校との差」が出ず、模試には書いてあるのに
-   *   面談の前に誰かが打ち直す手間になっている。既に1件でも入っている生徒には触らない。
+   * 模試の志望校を、生徒の志望校に反映するか（全体のスイッチ）。
+   * ★既定はON。志望校は模試のたびに変わるので、取り込みで最新にしたい（教室長 2026-09-28）。
+   *   ただし黙って書き換えない。生徒ごとに前後を見せ、チェックで外せる（mockTargetPlan.ts）。
    */
-  const [fillTargetSchools, setFillTargetSchools] = useState(true);
+  const [applyTargets, setApplyTargets] = useState(true);
+  /** 生徒ごとのチェックを人が変えたもの。無ければ計画の既定（defaultApply） */
+  const [applyOverrides, setApplyOverrides] = useState<Record<string, boolean>>({});
   /** 模試に出てきた学校名で引いた高校マスタ（当ての材料） */
   const [masterRows, setMasterRows] = useState<HighSchoolKeyRow[]>([]);
-  /** 生徒ID→志望校の登録件数。null＝まだ読めていない */
-  const [targetCounts, setTargetCounts] = useState<Map<string, number> | null>(null);
+  /** 生徒ID→いまの志望校。null＝まだ読めていない */
+  const [currentTargets, setCurrentTargets] = useState<Map<string, CurrentTargetRow[]> | null>(
+    null
+  );
+  /** いまの志望校が読めなかった。★読めないまま反映すると前後を見せずに書き換えるので、反映を止める */
+  const [targetsError, setTargetsError] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const activeStudents = useMemo(
@@ -86,15 +116,11 @@ export function MockPasteImportModal({
 
   const matchedCount = parsed.filter((r) => r.matchedStudent).length;
 
-  // 当てに使う高校マスタを、模試に出てきた公立の学校名だけ引く（全件は読まない）
-  const publicSchoolNamesKey = useMemo(
+  // 当てに使う高校マスタを、模試に出てきた学校名だけ引く（全件は読まない）。私立の枠も引く
+  const schoolNamesKey = useMemo(
     () =>
       Array.from(
-        new Set(
-          parsed.flatMap((r) =>
-            r.schools.filter((c) => c.isPublic).map((c) => splitMockSchoolName(c.nameRaw).school)
-          )
-        )
+        new Set(parsed.flatMap((r) => r.schools.map((c) => splitMockSchoolName(c.nameRaw).school)))
       )
         .sort()
         .join('|'),
@@ -102,7 +128,7 @@ export function MockPasteImportModal({
   );
   // ★名前の集合が変わったときだけ引き直す（貼り付けの1文字ごとに引かない）
   useEffect(() => {
-    const names = publicSchoolNamesKey ? publicSchoolNamesKey.split('|') : [];
+    const names = schoolNamesKey ? schoolNamesKey.split('|') : [];
     let alive = true;
     getHighSchoolKeysByNames(names)
       .then((rows) => {
@@ -114,7 +140,7 @@ export function MockPasteImportModal({
     return () => {
       alive = false;
     };
-  }, [publicSchoolNamesKey]);
+  }, [schoolNamesKey]);
 
   const matchedStudentIdsKey = useMemo(
     () =>
@@ -127,19 +153,19 @@ export function MockPasteImportModal({
   );
   useEffect(() => {
     const ids = matchedStudentIdsKey ? matchedStudentIdsKey.split('|') : [];
+    setTargetsError(false);
     if (ids.length === 0) {
-      setTargetCounts(new Map());
+      setCurrentTargets(new Map());
       return;
     }
     let alive = true;
-    setTargetCounts(null);
-    countTargetSchoolsByStudents(ids)
+    setCurrentTargets(null);
+    getTargetSchoolsByStudents(ids)
       .then((m) => {
-        if (alive) setTargetCounts(m);
+        if (alive) setCurrentTargets(m);
       })
-      // 読めなければ「入る数」を出さない（数えられないものを数えたように見せない）
       .catch(() => {
-        if (alive) setTargetCounts(null);
+        if (alive) setTargetsError(true);
       });
     return () => {
       alive = false;
@@ -148,7 +174,8 @@ export function MockPasteImportModal({
 
   /**
    * 1行ぶんの志望校を、保存する形（マスタに当てた結果つき）にする。
-   * ★当てるのは公立の枠だけ。私立はマスタに無いので、当てにいくと同名の公立に誤って当たりうる。
+   * ★1〜3枠は公立のマスタだけ、4〜5枠は私立・国立のマスタだけに当てる（mastersForSlot。
+   *   同じ名前の公立と私立がある）。
    * ★都県は生徒の教室から決める（「多摩」は東京と神奈川の両方にある）。
    */
   const schoolsToSave = useCallback(
@@ -156,30 +183,53 @@ export function MockPasteImportModal({
       const region = regionOfSchool(row.matchedStudent?.school_id);
       const prefer = REGION_LABEL[region ?? 'tokyo'];
       return row.schools.map((c) => {
-        const m = c.isPublic ? matchMockSchoolName(c.nameRaw, masterRows, prefer) : null;
+        const m = matchMockSchoolName(c.nameRaw, mastersForSlot(masterRows, c.isPublic), prefer);
         return {
           ...c,
-          highSchoolId: m?.highSchoolId ?? null,
-          // ★志望校の自動登録では、マスタに当たればマスタの名前（志望校の入力欄と同じ形）、
-          //   当たらなければ模試に書かれたままの名前を入れる
-          schoolName: m?.highSchoolId ? m.schoolName : c.nameRaw,
+          highSchoolId: m.highSchoolId,
+          // ★志望校に入れる名前は、マスタに当たればマスタの名前（志望校の入力欄と同じ形）、
+          //   当たらなければ模試の名前を面談で読む形にしたもの（「駒沢学園女子（特進）」）
+          schoolName: m.highSchoolId ? m.schoolName : mockSchoolShortName(c.nameRaw),
         };
       });
     },
     [masterRows]
   );
 
-  /** 志望校が未登録で、模試に公立の志望校がある生徒（＝取り込むと志望校が入る生徒）の数 */
-  const willFillCount = useMemo(() => {
-    if (!targetCounts) return null;
-    const ids = new Set<string>();
+  /** 生徒ID→志望校の反映の計画（前後・既定のチェック）。いまの志望校が読めるまでは空 */
+  const plans = useMemo(() => {
+    const m = new Map<string, TargetPlan>();
+    if (!currentTargets) return m;
+    const examMonthOrNull = examMonth || null;
     for (const r of parsed) {
       const id = r.matchedStudent?.id;
-      if (!id || (targetCounts.get(id) ?? 0) > 0) continue;
-      if (r.schools.some((c) => c.isPublic)) ids.add(id);
+      if (!id) continue;
+      m.set(
+        id,
+        planTargetSchoolsFromMock(currentTargets.get(id) ?? [], schoolsToSave(r), examMonthOrNull)
+      );
     }
-    return ids.size;
-  }, [parsed, targetCounts]);
+    return m;
+  }, [parsed, currentTargets, schoolsToSave, examMonth]);
+
+  const willApply = useCallback(
+    (studentId: string): boolean => {
+      const plan = plans.get(studentId);
+      if (!plan || plan.kind === 'none' || plan.kind === 'same') return false;
+      return applyOverrides[studentId] ?? plan.defaultApply;
+    },
+    [plans, applyOverrides]
+  );
+
+  const planCounts = useMemo(() => {
+    const c = { new: 0, change: 0, same: 0, applyChange: 0 };
+    plans.forEach((p, id) => {
+      if (p.kind === 'none') return;
+      c[p.kind]++;
+      if (p.kind === 'change' && willApply(id)) c.applyChange++;
+    });
+    return c;
+  }, [plans, willApply]);
   const unmatchedCount = parsed.filter((r) => !r.matchedStudent).length;
 
   const processFiles = useCallback(async (files: File[]) => {
@@ -291,6 +341,8 @@ export function MockPasteImportModal({
     let success = 0;
     let failed = 0;
     let filled = 0;
+    let conflicted = 0;
+    const replaced: string[] = [];
     let schoolFailed = 0;
 
     for (const row of importable) {
@@ -324,9 +376,18 @@ export function MockPasteImportModal({
               student.school_id,
               schools
             );
-            if (fillTargetSchools) {
-              const n = await fillTargetSchoolsFromMock(student.id, student.school_id, schools);
-              if (n > 0) filled++;
+            const plan = plans.get(student.id);
+            if (applyTargets && currentTargets && plan && willApply(student.id)) {
+              const r = await applyMockTargetSchools(
+                student.id,
+                student.school_id,
+                assessment.id,
+                plan.rows,
+                currentTargets.get(student.id) ?? []
+              );
+              if (r === 'conflict') conflicted++;
+              else if (plan.kind === 'new') filled++;
+              else replaced.push(`${student.last_name} ${student.first_name}`);
             }
           } catch (e) {
             console.error('Mock school import failed for', row.originalName, e);
@@ -339,7 +400,15 @@ export function MockPasteImportModal({
       }
     }
 
-    setImportResult({ success, failed, skipped: unmatchedCount, filled, schoolFailed });
+    setImportResult({
+      success,
+      failed,
+      skipped: unmatchedCount,
+      filled,
+      replaced,
+      conflicted,
+      schoolFailed,
+    });
     setIsImporting(false);
 
     if (success > 0) {
@@ -353,6 +422,7 @@ export function MockPasteImportModal({
     setFileName('');
     setFileError('');
     setImportResult(null);
+    setApplyOverrides({});
     onClose();
   };
 
@@ -500,25 +570,54 @@ export function MockPasteImportModal({
               )}
             </div>
 
-            {/* 志望校の自動登録。★既にある志望校は上書きしない（fillTargetSchoolsFromMock） */}
-            <label className="flex items-start gap-2 text-xs text-text-body">
-              <input
-                type="checkbox"
-                checked={fillTargetSchools}
-                onChange={(e) => setFillTargetSchools(e.target.checked)}
-                className="mt-0.5"
-              />
-              <span>
-                志望校が未登録の生徒には、模試の公立の志望校を第1〜3志望として登録する
-                <span className="ml-1 text-text-muted">
-                  {willFillCount === null
-                    ? '（登録状況を確認中）'
-                    : fillTargetSchools
-                      ? `（${willFillCount}名に志望校が入ります）`
-                      : `（対象 ${willFillCount}名）`}
+            {/* 志望校への反映。★黙って書き換えない：生徒ごとの前後を表の「志望校に反映」列で見せる */}
+            <div className="flex flex-col gap-1 rounded-lg border border-border px-3 py-2 text-xs text-text-body">
+              <label className="flex items-start gap-2">
+                <input
+                  type="checkbox"
+                  checked={applyTargets && !targetsError}
+                  disabled={targetsError}
+                  onChange={(e) => setApplyTargets(e.target.checked)}
+                  className="mt-0.5"
+                />
+                <span>
+                  <span className="font-medium">模試の志望校を、生徒の志望校に反映する</span>
+                  <span className="ml-1 text-text-muted">
+                    （公立・私立とも枠の順に第1〜第5志望。併願の印は付けない）
+                  </span>
                 </span>
-              </span>
-            </label>
+              </label>
+              {targetsError ? (
+                <span className="text-danger">
+                  いまの志望校が読めなかったので、今回は反映しません（成績と模試の志望校は入ります）
+                </span>
+              ) : currentTargets === null ? (
+                <span className="text-text-muted">いまの志望校を確認中…</span>
+              ) : (
+                applyTargets && (
+                  <span className="flex flex-wrap gap-3 text-text-muted">
+                    <span>
+                      <span className={`mr-1 rounded-full px-1.5 ${PLAN_KIND_CLASS.new}`}>
+                        新規
+                      </span>
+                      {planCounts.new}名（志望校が空）
+                    </span>
+                    <span>
+                      <span className={`mr-1 rounded-full px-1.5 ${PLAN_KIND_CLASS.change}`}>
+                        差し替え
+                      </span>
+                      {planCounts.change}名（うち反映 {planCounts.applyChange}名）
+                    </span>
+                    <span>
+                      <span className={`mr-1 rounded-full px-1.5 ${PLAN_KIND_CLASS.same}`}>
+                        同じ
+                      </span>
+                      {planCounts.same}名
+                    </span>
+                  </span>
+                )
+              )}
+            </div>
 
             <div className="overflow-x-auto max-h-[340px] overflow-y-auto rounded-lg border border-border">
               <table className="w-full text-sm border-collapse">
@@ -554,6 +653,11 @@ export function MockPasteImportModal({
                     <th className="px-2 py-1.5 text-left text-xs font-medium text-text-muted">
                       志望校
                     </th>
+                    {applyTargets && !targetsError && (
+                      <th className="px-2 py-1.5 text-left text-xs font-medium text-text-muted">
+                        志望校に反映
+                      </th>
+                    )}
                   </tr>
                 </thead>
                 <tbody>
@@ -616,6 +720,18 @@ export function MockPasteImportModal({
                               </div>
                             ))}
                       </td>
+                      {applyTargets && !targetsError && (
+                        <td className="min-w-[240px] px-2 py-1.5 text-xs">
+                          <PlanCell
+                            plan={row.matchedStudent ? plans.get(row.matchedStudent.id) : undefined}
+                            checked={row.matchedStudent ? willApply(row.matchedStudent.id) : false}
+                            onToggle={(v) => {
+                              const id = row.matchedStudent?.id;
+                              if (id) setApplyOverrides((prev) => ({ ...prev, [id]: v }));
+                            }}
+                          />
+                        </td>
+                      )}
                     </tr>
                   ))}
                 </tbody>
@@ -628,7 +744,9 @@ export function MockPasteImportModal({
         {importResult && (
           <div
             className={`p-3 rounded-lg text-sm ${
-              importResult.failed > 0 || importResult.schoolFailed > 0
+              importResult.failed > 0 ||
+              importResult.schoolFailed > 0 ||
+              importResult.conflicted > 0
                 ? 'bg-amber-50 text-amber-800 border border-amber-200'
                 : 'bg-green-50 text-green-800 border border-green-200'
             }`}
@@ -636,7 +754,11 @@ export function MockPasteImportModal({
             取り込み完了: {importResult.success}名成功
             {importResult.failed > 0 && `、${importResult.failed}名失敗`}
             {importResult.skipped > 0 && `、${importResult.skipped}名スキップ（未マッチ）`}
-            {importResult.filled > 0 && `。志望校を${importResult.filled}名に登録しました`}
+            {importResult.filled > 0 && `。志望校を${importResult.filled}名に新しく入れました`}
+            {importResult.replaced.length > 0 &&
+              `。志望校を${importResult.replaced.length}名差し替えました（${importResult.replaced.join('、')}）`}
+            {importResult.conflicted > 0 &&
+              `。${importResult.conflicted}名は取り込みの間に志望校が直されていたので、志望校はそのままにしました`}
             {importResult.schoolFailed > 0 &&
               `。${importResult.schoolFailed}名は模試の志望校を保存できませんでした（成績は入っています）`}
           </div>
@@ -650,13 +772,80 @@ export function MockPasteImportModal({
           <Button
             variant="primary"
             onClick={handleImport}
-            disabled={matchedCount === 0 || isImporting || !!importResult}
+            disabled={
+              matchedCount === 0 ||
+              isImporting ||
+              !!importResult ||
+              // ★前後を見せる前に反映させない（いまの志望校を読み終えるまで待つ）
+              (applyTargets && !targetsError && currentTargets === null)
+            }
           >
             {isImporting ? '取り込み中...' : `${matchedCount}名分を取り込む`}
           </Button>
         </div>
       </div>
     </Modal>
+  );
+}
+
+/**
+ * 表の「志望校に反映」の1マス。チェック・種類の札・行ごとの前後。
+ * ★変わる行は「前 → 後」、変わらない行は薄く出す。何が消えて何が入るかを取り込む前に見せる。
+ */
+function PlanCell({
+  plan,
+  checked,
+  onToggle,
+}: {
+  plan: TargetPlan | undefined;
+  checked: boolean;
+  onToggle: (v: boolean) => void;
+}) {
+  if (!plan) return <span className="text-text-faint">—</span>;
+  if (plan.kind === 'none') return <span className="text-text-faint">模試に志望校なし</span>;
+  const kind = plan.kind;
+  return (
+    <div className="flex items-start gap-2">
+      <input
+        type="checkbox"
+        checked={checked}
+        disabled={kind === 'same'}
+        onChange={(e) => onToggle(e.target.checked)}
+        className="mt-0.5"
+        aria-label="この生徒の志望校に反映する"
+      />
+      <div className="flex flex-col gap-0.5">
+        <span>
+          <span className={`rounded-full px-1.5 text-[11px] ${PLAN_KIND_CLASS[kind]}`}>
+            {PLAN_KIND_LABEL[kind]}
+          </span>
+        </span>
+        {kind !== 'same' &&
+          plan.lines.map((l) => (
+            <span key={l.rank} className="whitespace-nowrap">
+              <span className="mr-1 text-text-faint">第{l.rank}</span>
+              {l.changed ? (
+                <>
+                  {l.before && <span className="text-text-faint line-through">{l.before}</span>}
+                  {l.before && ' → '}
+                  {l.after ? (
+                    <span className="font-medium text-text-heading">{l.after}</span>
+                  ) : (
+                    <span className="text-text-faint">（空欄にする）</span>
+                  )}
+                </>
+              ) : (
+                <span className="text-text-muted">{l.after}</span>
+              )}
+            </span>
+          ))}
+        {kind === 'change' && plan.manualAfterMock && (
+          <span className="text-warning">
+            模試の月より後に手で入れた志望校があるので、最初は外しています
+          </span>
+        )}
+      </div>
+    </div>
   );
 }
 
