@@ -1,6 +1,7 @@
 import { supabase } from '../supabase';
 import type { Database } from '@/types/database';
 import type { HighSchoolKeyRow, MockSchoolChoice } from '@/lib/scores/mockSchools';
+import type { CurrentTargetRow, PlannedTargetRow } from '@/lib/scores/mockTargetPlan';
 
 /**
  * 模試の志望校（assessment_target_schools）の読み書き。
@@ -61,7 +62,7 @@ export async function getHighSchoolKeysByNames(names: string[]): Promise<HighSch
   if (unique.length === 0) return [];
   const { data, error } = await supabase
     .from('high_schools')
-    .select('id, prefecture, school_name, course')
+    .select('id, prefecture, school_name, course, establishment')
     .in('school_name', unique);
   if (error) {
     throw new Error(`高校マスタの取得に失敗しました: ${error.message}`);
@@ -70,29 +71,56 @@ export async function getHighSchoolKeysByNames(names: string[]): Promise<HighSch
 }
 
 /**
- * 生徒ごとの志望校（student_target_schools）の登録件数。
- * ★取り込みのプレビューで「志望校が入る生徒の数」を出すのに使う。
- * ★id を100件ずつに分けて引く（1人最大3行なので1回300行以内。1000行の切り捨てに掛からない）。
+ * 生徒ごとのいまの志望校（student_target_schools）。取り込みのプレビューで前後を見せるのに使う。
+ * ★id を100件ずつに分けて引く（1人最大5行なので1回500行以内。1000行の切り捨てに掛からない）。
  */
-export async function countTargetSchoolsByStudents(
+export async function getTargetSchoolsByStudents(
   studentIds: string[]
-): Promise<Map<string, number>> {
-  const counts = new Map<string, number>();
+): Promise<Map<string, CurrentTargetRow[]>> {
+  const byStudent = new Map<string, CurrentTargetRow[]>();
   const ids = Array.from(new Set(studentIds));
   for (let i = 0; i < ids.length; i += 100) {
     const chunk = ids.slice(i, i + 100);
     const { data, error } = await supabase
       .from('student_target_schools')
-      .select('student_id')
+      .select(
+        'student_id, rank, school_name, high_school_id, reason, is_heigan, source_assessment_id, updated_at'
+      )
       .in('student_id', chunk);
     if (error) {
-      throw new Error(`志望校の件数の取得に失敗しました: ${error.message}`);
+      throw new Error(`志望校の取得に失敗しました: ${error.message}`);
     }
-    for (const row of (data || []) as { student_id: string }[]) {
-      counts.set(row.student_id, (counts.get(row.student_id) ?? 0) + 1);
+    for (const r of (data || []) as TargetDbRow[]) {
+      const list = byStudent.get(r.student_id) ?? [];
+      list.push(toCurrentRow(r));
+      byStudent.set(r.student_id, list);
     }
   }
-  return counts;
+  return byStudent;
+}
+
+type TargetDbRow = Pick<
+  Database['public']['Tables']['student_target_schools']['Row'],
+  | 'student_id'
+  | 'rank'
+  | 'school_name'
+  | 'high_school_id'
+  | 'reason'
+  | 'is_heigan'
+  | 'source_assessment_id'
+  | 'updated_at'
+>;
+
+function toCurrentRow(r: TargetDbRow): CurrentTargetRow {
+  return {
+    rank: r.rank,
+    schoolName: r.school_name,
+    highSchoolId: r.high_school_id,
+    reason: r.reason,
+    isHeigan: r.is_heigan ?? false,
+    sourceAssessmentId: r.source_assessment_id ?? null,
+    updatedAt: r.updated_at,
+  };
 }
 
 /** 取り込む1枠と、マスタに当てた結果 */
@@ -129,39 +157,56 @@ export async function insertAssessmentTargetSchools(
 }
 
 /**
- * 志望校が1件も無い生徒に、模試の公立の志望校を第1〜3志望として入れる。
+ * 取り込み画面で「反映する」にした生徒の志望校を、模試の志望校に置き換える。
  *
- * ★既にある志望校は決して上書きしない。直前にもう一度件数を数え、1件でもあれば何もしない
- *  （プレビューを開いてから取り込むまでの間に、面談画面で誰かが入れたかもしれない）。
- * ★順位は模試の枠の順（空き枠を詰めて 1..n）。理由（reason）は空のまま。
- *   模試の欄は「志望の理由」を持たないので、面談で聞いて入れてもらう。
- * @returns 入れた件数（何もしなければ 0）
+ * ★プレビューを開いてから取り込むまでの間に、面談画面で誰かが志望校を直したかもしれない。
+ *   直前に読み直し、プレビューで見せた行と1つでも違えば何もしない（'conflict'）。
+ *   見せていない変更を黙って消さないため。
+ * ★先に 1..n を upsert してから n より後ろを消す。先に全部消すと、途中で失敗したときに
+ *   志望校が空になる。
+ * @returns 'applied'＝置き換えた／'conflict'＝途中で直されていたので触らなかった
  */
-export async function fillTargetSchoolsFromMock(
+export async function applyMockTargetSchools(
   studentId: string,
   schoolId: string,
-  publicSchools: MockSchoolToSave[]
-): Promise<number> {
-  const picks = publicSchools
-    .filter((s) => s.isPublic)
-    .sort((a, b) => a.slot - b.slot)
-    .slice(0, 3);
-  if (picks.length === 0) return 0;
+  assessmentId: string,
+  rows: PlannedTargetRow[],
+  shownCurrent: readonly CurrentTargetRow[]
+): Promise<'applied' | 'conflict'> {
+  const latest = (await getTargetSchoolsByStudents([studentId])).get(studentId) ?? [];
+  const key = (list: readonly CurrentTargetRow[]) =>
+    [...list]
+      .sort((a, b) => a.rank - b.rank)
+      .map((r) => `${r.rank}|${r.schoolName}|${r.updatedAt}`)
+      .join('/');
+  if (key(latest) !== key(shownCurrent)) return 'conflict';
 
-  const existing = await countTargetSchoolsByStudents([studentId]);
-  if ((existing.get(studentId) ?? 0) > 0) return 0;
-
-  const rows = picks.map((s, i) => ({
-    student_id: studentId,
-    school_id: schoolId,
-    rank: i + 1,
-    school_name: s.schoolName,
-    high_school_id: s.highSchoolId,
-    reason: null,
-  }));
-  const { error } = await supabase.from('student_target_schools').insert(rows);
-  if (error) {
-    throw new Error(`志望校の登録に失敗しました: ${error.message}`);
+  if (rows.length > 0) {
+    const { error } = await supabase.from('student_target_schools').upsert(
+      rows.map((r) => ({
+        student_id: studentId,
+        // ★トリガーが生徒の所属校で上書きする。ここでは形だけ渡す
+        school_id: schoolId,
+        rank: r.rank,
+        school_name: r.schoolName,
+        high_school_id: r.highSchoolId,
+        reason: r.reason,
+        is_heigan: r.isHeigan,
+        source_assessment_id: assessmentId,
+      })),
+      { onConflict: 'student_id,rank' }
+    );
+    if (error) {
+      throw new Error(`志望校の登録に失敗しました: ${error.message}`);
+    }
   }
-  return rows.length;
+  const { error } = await supabase
+    .from('student_target_schools')
+    .delete()
+    .eq('student_id', studentId)
+    .gt('rank', rows.length);
+  if (error) {
+    throw new Error(`志望校の整理に失敗しました: ${error.message}`);
+  }
+  return 'applied';
 }

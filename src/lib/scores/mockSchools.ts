@@ -140,6 +140,20 @@ export interface HighSchoolKeyRow {
   school_name: string;
   /** ★空文字＝普通科の本体 */
   course: string;
+  /** 設置区分。省略＝公立（この列を足す前のテストデータ） */
+  establishment?: string | null;
+}
+
+/**
+ * 模試の枠に当ててよいマスタの行だけに絞る。1〜3枠は公立だけ、4〜5枠は私立・国立だけ。
+ * ★同じ名前の公立と私立がある（私立の「八王子」など）。枠で分けないと、私立の枠に書いた学校を
+ *   公立のめやすで判定してしまう。
+ */
+export function mastersForSlot(
+  masterRows: readonly HighSchoolKeyRow[],
+  isPublic: boolean
+): HighSchoolKeyRow[] {
+  return masterRows.filter((r) => ((r.establishment ?? '公立') === '公立') === isPublic);
 }
 
 export interface MockSchoolMatch {
@@ -147,7 +161,7 @@ export interface MockSchoolMatch {
   schoolName: string;
   /** 学科。普通科は空文字 */
   course: string;
-  /** 当たらなければ null（私立・他県・表記ゆれ） */
+  /** 当たらなければ null（マスタに無い学校・他県・表記ゆれ） */
   highSchoolId: string | null;
 }
 
@@ -159,7 +173,8 @@ export interface MockSchoolMatch {
  * ★学科の無い書き方（「若葉総合」）は、普通科の本体（course ''）を先に探し、
  *   無ければその学校の行が1つだけのときに限り当てる（「国際」は国際科の1行しかない）。
  * ★同じ名前が東京と神奈川の両方にある（「多摩」）。preferPrefecture（教室の都県）を先に選ぶ。
- * ★当たらなければ highSchoolId は null。私立はマスタに無いので、当たらないのが正常。
+ * ★当たらなければ highSchoolId は null（マスタに無い学校・他県・表記ゆれ）。
+ * ★公立と私立の区別はここではしない。呼び出し側が mastersForSlot で枠に合う行だけを渡す。
  */
 export function matchMockSchoolName(
   raw: string,
