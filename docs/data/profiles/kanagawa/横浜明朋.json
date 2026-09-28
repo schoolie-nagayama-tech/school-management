@@ -1,0 +1,629 @@
+{
+  "prefecture": "神奈川県",
+  "school_name": "横浜明朋",
+  "official_url": "https://www.pen-kanagawa.ed.jp/y-meiho-h/",
+  "researched_at": "2026-09-28",
+  "stats": [
+    {
+      "metric": "students",
+      "item": "",
+      "sex": "male",
+      "fiscal_year": 2026,
+      "value_num": 268,
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-meiho-h/gaiyou/documents/2026_zaiseki.pdf",
+      "source_label": "横浜明朋高等学校 在籍状況（2026年5月1日現在）",
+      "as_of": "2026-05-01",
+      "note": "午前部・午後部（1〜4年次）にA組（3名）を含めた全学年の合計"
+    },
+    {
+      "metric": "students",
+      "item": "",
+      "sex": "female",
+      "fiscal_year": 2026,
+      "value_num": 261,
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-meiho-h/gaiyou/documents/2026_zaiseki.pdf",
+      "source_label": "横浜明朋高等学校 在籍状況（2026年5月1日現在）",
+      "as_of": "2026-05-01",
+      "note": "午前部・午後部（1〜4年次）にA組（3名）を含めた全学年の合計"
+    },
+    {
+      "metric": "university_count",
+      "item": "国公立",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 0,
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-meiho-h/shinro/ketteizyoukyou/documents/2026result.pdf",
+      "source_label": "横浜明朋高等学校 2026年3月卒業生 進路決定状況",
+      "as_of": "2026-04-01",
+      "note": "四年制大学合格者（実進学者）は私立16校18名のみで国公立は0"
+    },
+    {
+      "metric": "university_count",
+      "item": "早慶上理",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 0,
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-meiho-h/shinro/ketteizyoukyou/documents/2026result.pdf",
+      "source_label": "横浜明朋高等学校 2026年3月卒業生 進路決定状況",
+      "as_of": "2026-04-01",
+      "note": "四年制大学名の一覧に該当なし"
+    },
+    {
+      "metric": "university_count",
+      "item": "GMARCH",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 0,
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-meiho-h/shinro/ketteizyoukyou/documents/2026result.pdf",
+      "source_label": "横浜明朋高等学校 2026年3月卒業生 進路決定状況",
+      "as_of": "2026-04-01",
+      "note": "四年制大学名の一覧に該当なし"
+    },
+    {
+      "metric": "university_count",
+      "item": "成成明武",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 0,
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-meiho-h/shinro/ketteizyoukyou/documents/2026result.pdf",
+      "source_label": "横浜明朋高等学校 2026年3月卒業生 進路決定状況",
+      "as_of": "2026-04-01",
+      "note": "四年制大学名の一覧に該当なし"
+    },
+    {
+      "metric": "university_count",
+      "item": "日東駒専",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 0,
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-meiho-h/shinro/ketteizyoukyou/documents/2026result.pdf",
+      "source_label": "横浜明朋高等学校 2026年3月卒業生 進路決定状況",
+      "as_of": "2026-04-01",
+      "note": "四年制大学名の一覧に該当なし"
+    },
+    {
+      "metric": "university_count",
+      "item": "合計",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 18,
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-meiho-h/shinro/ketteizyoukyou/documents/2026result.pdf",
+      "source_label": "横浜明朋高等学校 2026年3月卒業生 進路決定状況",
+      "as_of": "2026-04-01",
+      "note": "四年制大学への実進学者数（卒業生122名中18名・14.7%）。内訳は神奈川大学・鎌倉女子大学・関東学院大学・京都産業大学・湘南工科大学・大正大学・多摩大学・鶴見大学・帝京大学・田園調布学園大学・東京電機大学・フェリス女学院大学・放送大学・横浜商科大学・横浜薬科大学・和光大学（大学別の人数内訳は非公表）。他は短期大学0名・専門学校等44名（36.1%）・就職40名（32.8%）・その他20名（16.4%）"
+    },
+    {
+      "metric": "uniform",
+      "item": "",
+      "fiscal_year": 2024,
+      "value_text": "黒のブレザー（AタイプはネクタイでスラックスA、BタイプはリボンでスカートまたはスラックスB）。冬服（11〜4月）は白シャツ必須、ブレザーの下にV首の白・黒・濃紺・グレーのベスト等着用可。夏服（6〜9月）はブレザー不要で白シャツまたは白ポロシャツ、ベストのみ着用可。5月・10月は移行期間",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-meiho-h/seikatsu/documents/20240702.pdf",
+      "source_label": "横浜明朋高等学校 生活のきまり（2024年4月以降）",
+      "as_of": "2024-07-02",
+      "note": ""
+    },
+    {
+      "metric": "rules_summary",
+      "item": "",
+      "fiscal_year": 2024,
+      "value_text": "頭髪は染色・脱色・エクステンション等禁止、地毛で節度ある髪形。スマホ等は授業中の使用は原則禁止（電源を切りカバンへ）。アルバイトは保護者等の同意の上で時間を守れば可。バイク・自動車での登下校は禁止、自転車通学は許可制。下校17時・完全下校19時、土日祝日は原則登校禁止",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-meiho-h/seikatsu/documents/20240702.pdf",
+      "source_label": "横浜明朋高等学校 生活のきまり（2024年4月以降）",
+      "as_of": "2024-07-02",
+      "note": ""
+    }
+  ],
+  "clubs": [
+    {
+      "name": "硬式野球部",
+      "kind": "運動",
+      "days_note": "週5日（火・水・木・土・日）",
+      "days_per_week": 5,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2024〜2026年 連合チーム（6〜7校）で神奈川大会等に出場。2026年夏は1回戦で伊勢原に4-3で勝利（夏の公式戦初勝利）したが、2024・2025年は2回戦敗退、秋季地区予選もリーグ戦で敗戦が続き、上位進出の実績なし",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-meiho-h/seikatsu/bukatsu/yakyu.html",
+      "as_of": "2026-09",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "第108回全国高等学校野球選手権記念神奈川大会（6校連合チーム）",
+          "level": "都県",
+          "result": "1回戦で伊勢原に4-3で勝利（夏の公式戦初勝利）。以降の結果の記載なし",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-meiho-h/seikatsu/bukatsu/yakyu.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第107回全国高等学校野球選手権記念神奈川大会（7校連合チーム）",
+          "level": "都県",
+          "result": "2回戦で大和南に13-14で敗退",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-meiho-h/seikatsu/bukatsu/yakyu.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "第106回全国高等学校野球選手権記念神奈川大会（7校連合チーム）",
+          "level": "都県",
+          "result": "2回戦で光明相模原に3-13で敗退",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-meiho-h/seikatsu/bukatsu/yakyu.html"
+        }
+      ]
+    },
+    {
+      "name": "サッカー部",
+      "kind": "運動",
+      "days_note": "週4日（火・水・木・土）",
+      "days_per_week": 4,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "2026年度 高円宮杯U-18サッカーリーグ神奈川 K6所属（合同チーム「永谷・横浜緑園・横浜桜陽・横浜明朋」）。K5・K6は段階3",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-meiho-h/seikatsu/bukatsu/soccer.html",
+      "as_of": "2026-09",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "高円宮杯U-18サッカーリーグ神奈川",
+          "level": "都県",
+          "result": "K6所属（合同チーム）",
+          "source_url": "https://www.kanagawa-fa.gr.jp/cms/u18-league/2026/div6/"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "関東地区大会県予選（定通・合同チーム）",
+          "level": "都県",
+          "result": "3位入賞（関東大会には進出せず）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-meiho-h/seikatsu/bukatsu/soccer.html"
+        }
+      ]
+    },
+    {
+      "name": "バレーボール部",
+      "kind": "運動",
+      "days_note": "月・水・木・金・（土・日）",
+      "days_per_week": 4.5,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2024〜2026年度 定時制通信制全国大会神奈川県予選に毎年出場しているが、結果・上位進出の記載なし",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-meiho-h/seikatsu/bukatsu/volleyball.html",
+      "as_of": "2026-09",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "定時制通信制全国大会神奈川県予選",
+          "level": "都県",
+          "result": "出場（結果の記載なし）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-meiho-h/seikatsu/bukatsu/volleyball.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "定時制通信制全国大会神奈川県予選",
+          "level": "都県",
+          "result": "出場（結果の記載なし）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-meiho-h/seikatsu/bukatsu/volleyball.html"
+        }
+      ]
+    },
+    {
+      "name": "ダンス部",
+      "kind": "運動",
+      "days_note": "火・水・木・土（週3〜4日）",
+      "days_per_week": 3.5,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "2024・2025年度 神奈川県定時制通信制高等学校芸術祭で優秀賞を連続受賞。定通限定の小規模な県大会のため、一般の文化部コンクールの段階2基準（都県代表選出・金賞等）には届かないと判断し段階3",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-meiho-h/seikatsu/bukatsu/dance.html",
+      "as_of": "2026-09",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "神奈川県定時制通信制高等学校芸術祭",
+          "level": "都県",
+          "result": "優秀賞",
+          "happened_on": "2025-12-01",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-meiho-h/seikatsu/bukatsu/dance.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "神奈川県定時制通信制高等学校芸術祭",
+          "level": "都県",
+          "result": "優秀賞",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-meiho-h/seikatsu/bukatsu/dance.html"
+        }
+      ]
+    },
+    {
+      "name": "弓道部",
+      "kind": "運動",
+      "days_note": "週4日（火・木・金・土）",
+      "days_per_week": 4,
+      "weekend": "土",
+      "tier": 2,
+      "tier_basis": "2024年度 春季大会兼関東大会県予選会で女子個人7位入賞（個人種目の都県大会入賞は段階2まで）。2025・2026年度は結果の記載なし",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-meiho-h/seikatsu/bukatsu/kyudo.html",
+      "as_of": "2026-09",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "春季大会 兼 関東大会県予選会",
+          "level": "都県",
+          "result": "女子個人7位入賞（3名予選通過）、女子団体は予選通過",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-meiho-h/seikatsu/bukatsu/kyudo.html"
+        }
+      ]
+    },
+    {
+      "name": "陸上競技部",
+      "kind": "運動",
+      "days_note": "週3日（火・水・金）",
+      "days_per_week": 3,
+      "weekend": "なし",
+      "tier": 3,
+      "tier_basis": "2025・2026年度 神奈川県高等学校定時制通信制新人陸上競技大会に出場し男子100mで5〜7位。定通限定の大会のため一般の都県入賞とは扱わず段階3",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-meiho-h/seikatsu/bukatsu/rikujo.html",
+      "as_of": "2026-09",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "神奈川県高等学校定時制通信制新人陸上競技大会",
+          "level": "都県",
+          "result": "男子100m 5位（12.37秒）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-meiho-h/seikatsu/bukatsu/rikujo.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "神奈川県高等学校定時制通信制新人陸上競技大会",
+          "level": "都県",
+          "result": "男子100m7位・200m5位・1500m5位",
+          "happened_on": "2025-10-01",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-meiho-h/seikatsu/bukatsu/rikujo.html"
+        }
+      ]
+    },
+    {
+      "name": "バスケットボール部（男子）",
+      "kind": "運動",
+      "days_note": "週4日（月・火・木・土）",
+      "days_per_week": 4,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "2024年度 県予選優勝→全国定通大会出場・ベスト32（1回のみ）。定通大会は1段階低く読むため1回=段階3。2025・2026年度は県予選3位で全国大会には出場せず",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-meiho-h/seikatsu/bukatsu/basketball.html",
+      "as_of": "2026-08-26",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "全国高等学校定時制通信制バスケットボール大会（全国大会）",
+          "level": "全国",
+          "result": "男子ベスト32（県予選優勝で出場）",
+          "happened_on": "2024-08-01",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-meiho-h/seikatsu/bukatsu/basketball.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "全国高等学校定時制通信制バスケットボール大会神奈川県予選",
+          "level": "都県",
+          "result": "男子第3位（全国大会出場ならず）",
+          "happened_on": "2025-06-01",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-meiho-h/seikatsu/bukatsu/basketball.html"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "全国高等学校定時制通信制バスケットボール大会神奈川県予選",
+          "level": "都県",
+          "result": "男子第3位",
+          "happened_on": "2026-06-01",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-meiho-h/seikatsu/bukatsu/basketball.html"
+        }
+      ]
+    },
+    {
+      "name": "バスケットボール部（女子）",
+      "kind": "運動",
+      "days_note": "週2日（水・金）",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "tier": 3,
+      "tier_basis": "2025年度 県予選優勝→全国定通大会出場・ベスト8（1回のみ）。定通大会は1段階低く読むため1回=段階3。2024・2026年度は全国大会出場の記載なし",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-meiho-h/seikatsu/bukatsu/basketball.html",
+      "as_of": "2026-08-26",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "全国高等学校定時制通信制バスケットボール大会（全国大会）",
+          "level": "全国",
+          "result": "女子ベスト8（県予選優勝で出場）",
+          "happened_on": "2025-07-01",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-meiho-h/seikatsu/bukatsu/basketball.html"
+        }
+      ]
+    },
+    {
+      "name": "バドミントン部",
+      "kind": "運動",
+      "days_note": "週2日（火・木）",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "tier": 2,
+      "tier_basis": "2025年度（女子個人ベスト12で全国大会出場）・2026年度（女子個人ベスト4で全国大会出場決定）と2回以上、定時制通信制全国大会に出場。定通大会は2回以上で段階2が上限",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-meiho-h/seikatsu/bukatsu/badminton.html",
+      "as_of": "2026-09",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "第28回神奈川県高等学校定時制・通信制バドミントン大会",
+          "level": "都県",
+          "result": "女子個人ベスト4（全国大会出場決定）",
+          "happened_on": "2026-05-01",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-meiho-h/seikatsu/bukatsu/badminton.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第27回全国高等学校定時制通信制バドミントン大会（全国大会）",
+          "level": "全国",
+          "result": "女子個人 県予選ベスト12で出場",
+          "happened_on": "2025-08-01",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-meiho-h/seikatsu/bukatsu/badminton.html"
+        }
+      ]
+    },
+    {
+      "name": "ソフトテニス部",
+      "kind": "運動",
+      "days_note": "週3日（火・木・土）",
+      "days_per_week": 3,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "2024年度 全国定時制通信制ソフトテニス大会に女子団体が神奈川県代表として出場（1回のみ）。定通大会は1段階低く読むため1回=段階3。2025・2026年度は県大会出場にとどまる",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-meiho-h/seikatsu/bukatsu/tennis.html",
+      "as_of": "2026-09",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "全国定時制通信制ソフトテニス大会（全国大会）",
+          "level": "全国",
+          "result": "女子団体 神奈川県代表チームとして出場",
+          "happened_on": "2024-08-01",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-meiho-h/seikatsu/bukatsu/tennis.html"
+        }
+      ]
+    },
+    {
+      "name": "卓球部",
+      "kind": "運動",
+      "days_note": "週3日（火・木・土）",
+      "days_per_week": 3,
+      "weekend": "土",
+      "tier": 2,
+      "tier_basis": "2025年度（女子シングルス3回戦進出で全国大会出場）・2026年度（女子シングルス県予選4位で全国大会出場決定）と2回以上、全国定通卓球大会に出場。定通大会は2回以上で段階2が上限",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-meiho-h/seikatsu/bukatsu/takkyu.html",
+      "as_of": "2026-09",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "全国定通卓球大会（全国大会）",
+          "level": "全国",
+          "result": "女子シングルス 3回戦進出",
+          "happened_on": "2025-08-01",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-meiho-h/seikatsu/bukatsu/takkyu.html"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "神奈川県定時制通信制大会兼全国大会予選",
+          "level": "都県",
+          "result": "女子シングルス第4位（全国大会出場決定）、男子団体準優勝",
+          "happened_on": "2026-05-01",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-meiho-h/seikatsu/bukatsu/takkyu.html"
+        }
+      ]
+    },
+    {
+      "name": "剣道部",
+      "kind": "運動",
+      "days_note": "週2日（火・木）",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "tier": 2,
+      "tier_basis": "2024年度（第55回全国大会）・2025年度（第56回全国大会）と2年連続で女子個人・女子団体が全国定通体育大会剣道に出場。定通大会は2回以上で段階2が上限",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-meiho-h/seikatsu/bukatsu/kendo.html",
+      "as_of": "2026-09",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "全国高等学校定時制通信制剣道大会神奈川県予選",
+          "level": "都県",
+          "result": "女子個人優勝（全国大会出場決定）、男子個人・団体も出場",
+          "happened_on": "2026-06-01",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-meiho-h/seikatsu/bukatsu/kendo.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "全国高等学校定時制通信制体育大会第56回剣道大会（全国大会）",
+          "level": "全国",
+          "result": "女子個人・女子団体 出場",
+          "happened_on": "2025-08-01",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-meiho-h/seikatsu/bukatsu/kendo.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "全国高等学校定時制通信制体育大会第55回剣道大会（全国大会）",
+          "level": "全国",
+          "result": "女子個人・女子団体 出場",
+          "happened_on": "2024-08-01",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-meiho-h/seikatsu/bukatsu/kendo.html"
+        }
+      ]
+    },
+    {
+      "name": "吹奏楽部",
+      "kind": "文化",
+      "days_note": "週2日（月・金）",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "部員2名、週2日活動で直近の活動実績は文化祭発表のみ（コンクール等の目立った実績なし）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-meiho-h/seikatsu/bukatsu/suisougaku.html",
+      "as_of": "2026-09"
+    },
+    {
+      "name": "演劇部",
+      "kind": "文化",
+      "days_note": "火・水・木（週3日、現在休部中・部員0名）",
+      "days_per_week": 3,
+      "weekend": "なし",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-meiho-h/seikatsu/bukatsu/engeki.html",
+      "as_of": "2026-09"
+    },
+    {
+      "name": "軽音楽部",
+      "kind": "文化",
+      "days_note": "週2日〜（火・木）",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "tier": 3,
+      "tier_basis": "2024年度 神奈川県定時制通信制高等学校芸術祭で優秀賞。定通限定の小規模な県大会のため段階2基準には届かないと判断し段階3。2025年度は同大会出場のみ（賞の記載なし）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-meiho-h/seikatsu/bukatsu/keion.html",
+      "as_of": "2026-09",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "神奈川県定時制通信制高等学校芸術祭",
+          "level": "都県",
+          "result": "優秀賞",
+          "happened_on": "2025-02-01",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-meiho-h/seikatsu/bukatsu/keion.html"
+        }
+      ]
+    },
+    {
+      "name": "美術部",
+      "kind": "文化",
+      "days_note": "週2日（火・木）",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "tier": 3,
+      "tier_basis": "2025年度 定通限定の生徒作品展で入賞、2024年度は神奈川県美術展中高生特別企画展で入選。いずれも展示型の大会のため段階3",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-meiho-h/seikatsu/bukatsu/bijutsu.html",
+      "as_of": "2026-09",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "第65回神奈川県高等学校定時制通信制生徒作品展",
+          "level": "都県",
+          "result": "入賞",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-meiho-h/seikatsu/bukatsu/bijutsu.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "神奈川県美術展中高生特別企画展",
+          "level": "都県",
+          "result": "入選",
+          "happened_on": "2024-07-01",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-meiho-h/seikatsu/bukatsu/bijutsu.html"
+        }
+      ]
+    },
+    {
+      "name": "写真部",
+      "kind": "文化",
+      "days_note": "週1日（月曜日）",
+      "days_per_week": 1,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "部員3名、週1日活動で活動実績（大会・コンクール）の記載なし",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-meiho-h/seikatsu/bukatsu/syashin.html",
+      "as_of": "2026-09"
+    },
+    {
+      "name": "調理部",
+      "kind": "文化",
+      "days_note": "週1日（木曜日）",
+      "days_per_week": 1,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "週1日活動で、活動実績は文化祭出店のみ（コンクール等の実績なし）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-meiho-h/seikatsu/bukatsu/ryori.html",
+      "as_of": "2026-09"
+    },
+    {
+      "name": "書道部",
+      "kind": "文化",
+      "days_note": "週2日（火・木）",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "tier": 2,
+      "tier_basis": "2024年度（書道専門部会長賞／特選）・2025年度（高文連会長賞／特選／特選）と2年連続で神奈川県高等学校総合文化祭 高等学校書道展の最上位級の賞を受賞（都県代表選出・最上位の賞に相当し段階2）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-meiho-h/seikatsu/bukatsu/syodo.html",
+      "as_of": "2026-09",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "神奈川県高等学校総合文化祭 高等学校書道展",
+          "level": "都県",
+          "result": "高文連会長賞／特選／特選",
+          "happened_on": "2025-12-01",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-meiho-h/seikatsu/bukatsu/syodo.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "神奈川県高等学校定時制通信制生徒作品展",
+          "level": "都県",
+          "result": "神奈川新聞社賞／優秀賞",
+          "happened_on": "2026-01-01",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-meiho-h/seikatsu/bukatsu/syodo.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "神奈川県高等学校総合文化祭 高等学校書道展",
+          "level": "都県",
+          "result": "書道専門部会長賞／特選",
+          "happened_on": "2024-12-01",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-meiho-h/seikatsu/bukatsu/syodo.html"
+        }
+      ]
+    },
+    {
+      "name": "情報処理同好会",
+      "kind": "同好会",
+      "days_note": "週1日（金曜日）",
+      "days_per_week": 1,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "部員6名、週1日活動で資格取得の勉強が中心。大会実績の記載なし",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-meiho-h/seikatsu/bukatsu/joho.html",
+      "as_of": "2026-09"
+    },
+    {
+      "name": "合唱同好会",
+      "kind": "同好会",
+      "days_note": "週1日（木・昼休み）",
+      "days_per_week": 1,
+      "weekend": "なし",
+      "tier": 3,
+      "tier_basis": "2025年度 神奈川県定時制通信制高等学校芸術祭で優秀賞。定通限定の小規模な県大会のため段階2基準には届かないと判断し段階3",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-meiho-h/seikatsu/bukatsu/gassyo.html",
+      "as_of": "2026-09",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "神奈川県定時制通信制高等学校芸術祭",
+          "level": "都県",
+          "result": "優秀賞",
+          "happened_on": "2025-12-01",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-meiho-h/seikatsu/bukatsu/gassyo.html"
+        }
+      ]
+    }
+  ],
+  "designated_universities": [],
+  "events": [],
+  "unresolved": [
+    "career_decided_rate：進路決定状況PDF（2026年3月卒業生）は進路先内訳（四年制大学14.7%・短期大学0%・専門学校等36.1%・就職32.8%・その他16.4%）のみで、決定率（決定者数／卒業生数）の形では公表されていない",
+    "指定校推薦の大学一覧：学校案内（パンフレット）・進路ページに「指定校推薦」の見出しでの公表なし（学校案内にあるのは合格大学・進学先の一覧のみで、指定校推薦との区別ができない）",
+    "club_join_rate（部活動加入率）・satisfaction（満足度）：神奈川県の学校評価報告書は文章のみで数値の公表なし",
+    "フレキシブルスクールという呼称：学校公式サイト・学校案内では使用されておらず、「単位制の普通科」「昼間の定時制」と表記されている（designation としては追加していない）",
+    "東棟・メディア棟の改築時期：施設が耐震診断（2013年度）を機に改築されたとの言及はあるが、公式サイトに具体的な年度の明記が見当たらず events には入れていない"
+  ],
+  "conflicts": [
+    "書道部の活動日：紹介文は「活動日は火・木・金の週3回」だが、活動概要欄は「週２日（火・木）」で日数が一致しない（データは活動概要欄の週2日を採用）",
+    "バレーボール部の活動日：活動日欄は「週4日」と明記されているが、曜日の列挙は月・水・木・金に加え（土・日）も含まれており、日数の記載が一致しない"
+  ]
+}

@@ -1,0 +1,1002 @@
+{
+  "prefecture": "神奈川県",
+  "school_name": "城郷",
+  "official_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/",
+  "researched_at": "2026-09-28",
+  "stats": [
+    {
+      "metric": "university_count",
+      "item": "国公立",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 2,
+      "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/shinro/images/daigakugoukaku.gif",
+      "source_label": "城郷高等学校 進路状況「(5)過去3年間の大学・大学校合格状況」",
+      "as_of": "2026-03",
+      "note": "2025年度列から合算（群馬大学1・長崎県立大学1）。国立・公立以外の大学は含めていない。"
+    },
+    {
+      "metric": "university_count",
+      "item": "早慶上理",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 0,
+      "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/shinro/images/daigakugoukaku.gif",
+      "source_label": "城郷高等学校 進路状況「(5)過去3年間の大学・大学校合格状況」",
+      "as_of": "2026-03",
+      "note": "2025年度列に早稲田・慶應・上智・東京理科のいずれも記載なし（東京理科大学は2024年度のみ1）。"
+    },
+    {
+      "metric": "university_count",
+      "item": "GMARCH",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 1,
+      "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/shinro/images/daigakugoukaku.gif",
+      "source_label": "城郷高等学校 進路状況「(5)過去3年間の大学・大学校合格状況」",
+      "as_of": "2026-03",
+      "note": "2025年度列から合算（中央大学1）。学習院・明治・青山学院・立教・法政の記載なし。"
+    },
+    {
+      "metric": "university_count",
+      "item": "成成明武",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 0,
+      "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/shinro/images/daigakugoukaku.gif",
+      "source_label": "城郷高等学校 進路状況「(5)過去3年間の大学・大学校合格状況」",
+      "as_of": "2026-03",
+      "note": "2025年度列に成蹊・成城・明治学院・武蔵のいずれも記載なし（表の「武蔵野大学」は別大学）。"
+    },
+    {
+      "metric": "university_count",
+      "item": "日東駒専",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 18,
+      "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/shinro/images/daigakugoukaku.gif",
+      "source_label": "城郷高等学校 進路状況「(5)過去3年間の大学・大学校合格状況」",
+      "as_of": "2026-03",
+      "note": "2025年度列から合算（日本大学8・駒澤大学4・専修大学6）。東洋大学の2025年度記載なし。"
+    },
+    {
+      "metric": "university_count",
+      "item": "合計",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 205,
+      "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/shinro/images/daigakugoukaku.gif",
+      "source_label": "城郷高等学校 進路状況「(5)過去3年間の大学・大学校合格状況」「計」行",
+      "as_of": "2026-03",
+      "note": "大学別の合格状況一覧の2025年度「計」行の数値。"
+    },
+    {
+      "metric": "university_count",
+      "item": "合計",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 158,
+      "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/shinro/images/daigakugoukaku.gif",
+      "source_label": "城郷高等学校 進路状況「(5)過去3年間の大学・大学校合格状況」「進学者数」行",
+      "as_of": "2026-03",
+      "note": "同一資料の2025年度「進学者数」行の数値。37期生進路先一覧（大学・専門職大学147名）とは一致しない（conflicts参照）。"
+    },
+    {
+      "metric": "university_count",
+      "item": "神奈川大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 32,
+      "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/shinro/images/daigakugoukaku.gif",
+      "source_label": "城郷高等学校 進路状況「(5)過去3年間の大学・大学校合格状況」",
+      "as_of": "2026-03",
+      "note": "2025年度で最多の合格大学。"
+    },
+    {
+      "metric": "university_count",
+      "item": "関東学院大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 19,
+      "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/shinro/images/daigakugoukaku.gif",
+      "source_label": "城郷高等学校 進路状況「(5)過去3年間の大学・大学校合格状況」",
+      "as_of": "2026-03",
+      "note": ""
+    },
+    {
+      "metric": "university_count",
+      "item": "立正大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 10,
+      "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/shinro/images/daigakugoukaku.gif",
+      "source_label": "城郷高等学校 進路状況「(5)過去3年間の大学・大学校合格状況」",
+      "as_of": "2026-03",
+      "note": ""
+    },
+    {
+      "metric": "university_count",
+      "item": "東海大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 9,
+      "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/shinro/images/daigakugoukaku.gif",
+      "source_label": "城郷高等学校 進路状況「(5)過去3年間の大学・大学校合格状況」",
+      "as_of": "2026-03",
+      "note": "桜美林大学・神奈川工科大学も同数の9。"
+    },
+    {
+      "metric": "university_count",
+      "item": "桜美林大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 9,
+      "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/shinro/images/daigakugoukaku.gif",
+      "source_label": "城郷高等学校 進路状況「(5)過去3年間の大学・大学校合格状況」",
+      "as_of": "2026-03",
+      "note": "神奈川工科大学も同数の9。"
+    },
+    {
+      "metric": "admission_route_share",
+      "item": "一般",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 23.8,
+      "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/shinro/images/37houhou.jpg",
+      "source_label": "城郷高等学校 進路状況「37期生 入試方法別進学者数」大学・大学校・専門職大学の内訳",
+      "as_of": "2026-03",
+      "note": "37期生（2026年3月卒業）のうち大学・専門職大学に進学した147名の内訳。一般選抜35名/147名。"
+    },
+    {
+      "metric": "admission_route_share",
+      "item": "指定校推薦",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 46.3,
+      "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/shinro/images/37houhou.jpg",
+      "source_label": "城郷高等学校 進路状況「37期生 入試方法別進学者数」大学・大学校・専門職大学の内訳",
+      "as_of": "2026-03",
+      "note": "学校推薦型選抜・指定校制68名/147名。"
+    },
+    {
+      "metric": "admission_route_share",
+      "item": "公募推薦",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 2.0,
+      "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/shinro/images/37houhou.jpg",
+      "source_label": "城郷高等学校 進路状況「37期生 入試方法別進学者数」大学・大学校・専門職大学の内訳",
+      "as_of": "2026-03",
+      "note": "学校推薦型選抜・公募制3名/147名。"
+    },
+    {
+      "metric": "admission_route_share",
+      "item": "総合型",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 27.9,
+      "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/shinro/images/37houhou.jpg",
+      "source_label": "城郷高等学校 進路状況「37期生 入試方法別進学者数」大学・大学校・専門職大学の内訳",
+      "as_of": "2026-03",
+      "note": "総合型選抜41名/147名。"
+    },
+    {
+      "metric": "club_join_rate",
+      "item": "新入生",
+      "basis": "",
+      "fiscal_year": 2024,
+      "value_num": 68,
+      "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/mokuhyo/documents/r7_gakkouhyoukajissihoukokusyo.pdf",
+      "source_label": "城郷高等学校 令和7年度学校評価報告書（目標設定・実施結果）視点2「新入生部活動加入率」",
+      "as_of": "2025-03-31",
+      "note": "令和6年度の実績。新入生部活動加入率（目標65%以上に対し68%を達成）。"
+    },
+    {
+      "metric": "club_join_rate",
+      "item": "全体",
+      "basis": "",
+      "fiscal_year": 2024,
+      "value_num": 54,
+      "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/mokuhyo/documents/r7_gakkouhyoukajissihoukokusyo.pdf",
+      "source_label": "城郷高等学校 令和7年度学校評価報告書（目標設定・実施結果）視点2「全体加入率」",
+      "as_of": "2025-03-31",
+      "note": "令和6年度の実績。全体加入率（目標55%以上に対し54%でわずかに未達）。"
+    },
+    {
+      "metric": "satisfaction",
+      "item": "生徒:文化祭(事前・やる気あり)",
+      "basis": "",
+      "fiscal_year": 2024,
+      "value_num": 69,
+      "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/mokuhyo/documents/r7_gakkouhyoukajissihoukokusyo.pdf",
+      "source_label": "城郷高等学校 令和7年度学校評価報告書（目標設定・実施結果）視点2 アンケート結果",
+      "as_of": "2025-03-31",
+      "note": "令和6年度文化祭事前アンケートで「やる気あり」と回答した割合。学校生活全体の満足度調査は見当たらなかった。"
+    },
+    {
+      "metric": "satisfaction",
+      "item": "生徒:文化祭(事後・充実満足)",
+      "basis": "",
+      "fiscal_year": 2024,
+      "value_num": 75,
+      "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/mokuhyo/documents/r7_gakkouhyoukajissihoukokusyo.pdf",
+      "source_label": "城郷高等学校 令和7年度学校評価報告書（目標設定・実施結果）視点2 アンケート結果",
+      "as_of": "2025-03-31",
+      "note": "令和6年度文化祭事後アンケートで「充実・満足」と回答した割合。"
+    },
+    {
+      "metric": "students",
+      "item": "",
+      "basis": "",
+      "fiscal_year": 2023,
+      "grade": 1,
+      "sex": "male",
+      "value_num": 89,
+      "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/nyugaku/documents/r05annnai.pdf",
+      "source_label": "城郷高等学校 令和5年度学校案内パンフレット 沿革「令和5年度入学式挙行 入学生徒」",
+      "as_of": "2023-04-07",
+      "note": "入学者数（1年生のみ）。全校の在籍生徒数ではない。"
+    },
+    {
+      "metric": "students",
+      "item": "",
+      "basis": "",
+      "fiscal_year": 2023,
+      "grade": 1,
+      "sex": "female",
+      "value_num": 170,
+      "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/nyugaku/documents/r05annnai.pdf",
+      "source_label": "城郷高等学校 令和5年度学校案内パンフレット 沿革「令和5年度入学式挙行 入学生徒」",
+      "as_of": "2023-04-07",
+      "note": "入学者数（1年生のみ）。全校の在籍生徒数ではない。"
+    },
+    {
+      "metric": "students",
+      "item": "",
+      "basis": "",
+      "fiscal_year": 2022,
+      "grade": 1,
+      "sex": "male",
+      "value_num": 108,
+      "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/nyugaku/documents/r05annnai.pdf",
+      "source_label": "城郷高等学校 令和5年度学校案内パンフレット 沿革「令和4年度入学式挙行 入学生徒」",
+      "as_of": "2022-04-06",
+      "note": "入学者数（1年生のみ）。全校の在籍生徒数ではない。"
+    },
+    {
+      "metric": "students",
+      "item": "",
+      "basis": "",
+      "fiscal_year": 2022,
+      "grade": 1,
+      "sex": "female",
+      "value_num": 152,
+      "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/nyugaku/documents/r05annnai.pdf",
+      "source_label": "城郷高等学校 令和5年度学校案内パンフレット 沿革「令和4年度入学式挙行 入学生徒」",
+      "as_of": "2022-04-06",
+      "note": "入学者数（1年生のみ）。全校の在籍生徒数ではない。"
+    },
+    {
+      "metric": "students",
+      "item": "",
+      "basis": "",
+      "fiscal_year": 2021,
+      "grade": 1,
+      "sex": "male",
+      "value_num": 90,
+      "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/nyugaku/documents/r05annnai.pdf",
+      "source_label": "城郷高等学校 令和5年度学校案内パンフレット 沿革「令和3年度入学式挙行 入学生徒」",
+      "as_of": "2021-04-06",
+      "note": "入学者数（1年生のみ）。全校の在籍生徒数ではない。"
+    },
+    {
+      "metric": "students",
+      "item": "",
+      "basis": "",
+      "fiscal_year": 2021,
+      "grade": 1,
+      "sex": "female",
+      "value_num": 166,
+      "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/nyugaku/documents/r05annnai.pdf",
+      "source_label": "城郷高等学校 令和5年度学校案内パンフレット 沿革「令和3年度入学式挙行 入学生徒」",
+      "as_of": "2021-04-06",
+      "note": "入学者数（1年生のみ）。全校の在籍生徒数ではない。"
+    },
+    {
+      "metric": "uniform",
+      "item": "",
+      "basis": "",
+      "fiscal_year": 2025,
+      "value_text": "男子は紺色ブレザー(エンブレム付)+グレースラックス+指定ネクタイ+白無地襟付きYシャツ。女子は紺色ブレザー(エンブレム付)+指定チェック柄スカートまたはグレースラックス(選択可)+指定リボンまたはネクタイ+白無地襟付きYシャツ。夏季略装(5月1日〜10月31日)は男女ともYシャツまたは白ポロシャツ可(ただし対外的な行事ではポロシャツ不可)。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/gaiyou/documents/kokoroe.pdf",
+      "source_label": "城郷高等学校 生徒心得「5.服装等」",
+      "as_of": "2025-04-01",
+      "note": ""
+    },
+    {
+      "metric": "rules_summary",
+      "item": "",
+      "basis": "",
+      "fiscal_year": 2025,
+      "value_text": "頭髪は脱色・染色・ヘアエクステンション禁止で常に清潔を保つ。化粧・アクセサリーは華美でないもの。自転車通学は許可制。登校は7時以降始業まで、下校は17時以前(部活動の残留は原則18:30まで)。スマートフォン・アルバイトについての規定は生徒心得に記載なし。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/gaiyou/documents/kokoroe.pdf",
+      "source_label": "城郷高等学校 生徒心得",
+      "as_of": "2025-04-01",
+      "note": ""
+    },
+    {
+      "metric": "designation",
+      "item": "インクルーシブ教育実践推進校",
+      "basis": "",
+      "fiscal_year": 2020,
+      "value_text": "令和2年度（2020年度）からインクルーシブ教育実践推進校の指定を受けている。知的障害のある生徒を対象とした特別募集を実施。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/nyugaku/documents/r05annnai.pdf",
+      "source_label": "城郷高等学校 令和5年度学校案内パンフレット「地域とともに学び、ともに育つ。」",
+      "as_of": "2023-01",
+      "note": "特別募集の詳細は学校サイト「gaiyou/inclusive_1.html」（2024年10月更新）にも記載があり、継続していると見られる。"
+    },
+    {
+      "metric": "designation",
+      "item": "シチズンシップ教育実践校",
+      "basis": "",
+      "fiscal_year": 2022,
+      "value_text": "令和4年度（2022年度）からシチズンシップ教育実践校の指定を受けている。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/nyugaku/documents/r05annnai.pdf",
+      "source_label": "城郷高等学校 令和5年度学校案内パンフレット「地域とともに学び、ともに育つ。」及び「令和5年度指定事業等一覧」（教育課程研究開発(シチズンシップ教育)）",
+      "as_of": "2023-01",
+      "note": "令和5年度パンフレット以降の継続状況は確認できなかった。"
+    },
+    {
+      "metric": "designation",
+      "item": "人権教育研究推進事業担当校",
+      "basis": "",
+      "fiscal_year": 2023,
+      "value_text": "令和5年度（2023年度）から人権教育研究推進事業担当校の指定を受けている。指定者は県教育委員会。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/nyugaku/documents/r05annnai.pdf",
+      "source_label": "城郷高等学校 令和5年度学校案内パンフレット「令和5年度指定事業等一覧」",
+      "as_of": "2023-01",
+      "note": "令和5年度パンフレット以降の継続状況は確認できなかった。"
+    }
+  ],
+  "clubs": [
+    {
+      "name": "硬式野球部",
+      "kind": "運動",
+      "days_note": "火曜日〜日曜日（年末年始は長期休み）",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2023〜2026年度いずれも神奈川大会で3回戦以下での敗退が中心。もっとも勝ち進んだのは2025年夏（第107回選手権）で2回戦・逗子葉山に13-3で勝利、3回戦・鶴嶺に3-6で敗退。都県大会ベスト8以上には届いていないため段階3。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/seikatsu/club/yakyu.html",
+      "as_of": "2026-09",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "令和8年度神奈川県高等学校野球春季県大会 川崎・横浜北ブロック予選",
+          "level": "都県",
+          "result": "1回戦勝利（横浜翠嵐に12-6）、2回戦敗退（武相に0-10、5回コールド）",
+          "happened_on": "2026-03-22",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/seikatsu/club/yakyu.html"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "第108回全国高等学校野球選手権神奈川大会",
+          "level": "都県",
+          "result": "1回戦勝利（東に13-3）、2回戦敗退（横浜緑ケ丘に4-5）",
+          "happened_on": "2026-07-09",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=12188&year=2026"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "令和7年度神奈川県高等学校野球春季県大会",
+          "level": "都県",
+          "result": "1回戦敗退（柏木学園に0-13、7回コールド）",
+          "happened_on": "2025-04-05",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=12188&year=2025"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第107回全国高等学校野球選手権神奈川大会",
+          "level": "都県",
+          "result": "2回戦勝利（逗子葉山に13-3）、3回戦敗退（鶴嶺に3-6）",
+          "happened_on": "2025-07-15",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=12188&year=2025"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "令和7年度神奈川県高等学校野球秋季県大会",
+          "level": "都県",
+          "result": "1回戦敗退（多摩に4-6）",
+          "happened_on": "2025-09-06",
+          "source_url": "https://baseball.omyutech.com/CupHomePageTeamSchedule.action?teamId=12188&cupId=20250005743"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "第106回全国高等学校野球選手権神奈川大会",
+          "level": "都県",
+          "result": "2回戦敗退（日大高に0-12、5回コールド）",
+          "happened_on": "2024-07-09",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=12188&year=2024"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "第105回全国高等学校野球選手権記念神奈川大会",
+          "level": "都県",
+          "result": "2回戦敗退（舞岡に6-10）",
+          "happened_on": "2023-07-12",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=12188&year=2023"
+        }
+      ]
+    },
+    {
+      "name": "弓道部",
+      "kind": "運動",
+      "days_note": "月〜土曜日（夏休み、冬休み、テスト前は休み）",
+      "days_per_week": 6,
+      "weekend": "土",
+      "tier": 1,
+      "tier_basis": "2024〜2026年度の3年連続で関東大会本戦に出場（2024年度女子個人優勝・準決勝進出・技能優秀賞、男子個人3位／2025年度女子個人準優勝、男子個人4位／2026年度ベスト8進出）。個人種目だが関東大会に複数回出場しているため段階1（手引き§6の個人種目の例外規定）。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/seikatsu/club/kyudo.html",
+      "as_of": "2026-09",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "関東弓道大会県予選・関東大会本戦",
+          "level": "関東",
+          "result": "県予選女子団体3位を経て関東大会本戦ベスト8進出",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/seikatsu/club/kyudo.html"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "国民スポーツ大会県予選・インターハイ県予選",
+          "level": "都県",
+          "result": "国スポ県予選女子個人5位、インターハイ県予選男子個人5位・女子個人7位",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/seikatsu/club/kyudo.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "関東大会本戦",
+          "level": "関東",
+          "result": "女子個人準優勝、男子個人4位",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/seikatsu/club/kyudo.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "インターハイ県予選・関東個人選抜",
+          "level": "都県",
+          "result": "インターハイ県予選男子団体5位・男子個人6位、関東個人選抜男子個人8位で出場し準決勝進出",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/seikatsu/club/kyudo.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "関東大会本戦",
+          "level": "関東",
+          "result": "女子個人優勝・準決勝進出・技能優秀賞、男子個人3位",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/seikatsu/club/kyudo.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "関東大会県予選・横浜地区大会",
+          "level": "都県",
+          "result": "関東大会県予選女子団体8位、横浜地区大会男子団体8位",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/seikatsu/club/kyudo.html"
+        }
+      ]
+    },
+    {
+      "name": "サッカー部",
+      "kind": "運動",
+      "days_note": "火曜日〜日曜日（月曜日休み）",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "高円宮杯U-18サッカーリーグ神奈川で2023〜2026年度いずれもK6に所属（学校サイト）。手引きの判定表でK5・K6は段階3（活動日が週6日のため段階4にはならない）。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/seikatsu/club/soccer.html",
+      "as_of": "2026-09",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "高円宮杯U-18サッカーリーグ神奈川",
+          "level": "都県",
+          "result": "K6所属",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/seikatsu/club/soccer.html"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "全国高等学校サッカー選手権大会神奈川県予選・インターハイ神奈川県予選",
+          "level": "都県",
+          "result": "選手権1回戦敗退（津久井浜に0-1）、インターハイ1回戦敗退（鶴見大学附属に0-3）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/seikatsu/club/soccer.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "高円宮杯U-18サッカーリーグ神奈川",
+          "level": "都県",
+          "result": "K6・Cグループ最終3位（8チーム中）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/seikatsu/club/soccer.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "全国高等学校サッカー選手権大会神奈川県予選・インターハイ神奈川県予選",
+          "level": "都県",
+          "result": "選手権1回戦敗退（橘学苑に0-1）、インターハイ1回戦敗退（多摩に0-7）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/seikatsu/club/soccer.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "高円宮杯U-18サッカーリーグ神奈川",
+          "level": "都県",
+          "result": "K6・Kグループ最終8位（8チーム中）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/seikatsu/club/soccer.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "全国高等学校サッカー選手権大会神奈川県予選・インターハイ神奈川県予選",
+          "level": "都県",
+          "result": "選手権1回戦敗退（関東学院六浦に0-8）、インターハイ1回戦突破（横浜学園に1-0）、2回戦敗退（旭に0-11）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/seikatsu/club/soccer.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "高円宮杯U-18サッカーリーグ神奈川",
+          "level": "都県",
+          "result": "K6・Fグループ最終7位（8チーム中）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/seikatsu/club/soccer.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "全国高等学校サッカー選手権大会神奈川県予選・インターハイ神奈川県予選",
+          "level": "都県",
+          "result": "選手権2回戦敗退（多摩に0-5）、インターハイ1回戦敗退（横浜に0-6）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/seikatsu/club/soccer.html"
+        }
+      ]
+    },
+    {
+      "name": "テニス部",
+      "kind": "運動",
+      "days_note": "火〜土曜日（月曜日はオフ）",
+      "days_per_week": 5,
+      "weekend": "土",
+      "tier": 2,
+      "tier_basis": "2025年度県大会男子ダブルスベスト32、2024年度新人大会男子団体ベスト32と、都県大会でベスト16〜32相当の実績が複数回あるため段階2。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/seikatsu/club/tennis.html",
+      "as_of": "2026-09",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "神奈川県高等学校テニス大会",
+          "level": "都県",
+          "result": "男子ダブルスベスト32",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/seikatsu/club/tennis.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "横浜市テニストーナメント大会",
+          "level": "地区",
+          "result": "ベスト16",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/seikatsu/club/tennis.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "神奈川県高等学校新人大会",
+          "level": "都県",
+          "result": "男子団体ベスト32",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/seikatsu/club/tennis.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "神奈川県高等学校テニス大会",
+          "level": "都県",
+          "result": "女子ダブルス本戦出場",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/seikatsu/club/tennis.html"
+        }
+      ]
+    },
+    {
+      "name": "バドミントン部",
+      "kind": "運動",
+      "days_note": "月・火・金曜日、木曜日は隔週、水曜日オフ、土日は試合・練習試合等",
+      "days_per_week": 4.5,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2025〜2026年度とも関東大会県予選・高校総体県予選ともに1〜2回戦で敗退。都県大会でベスト16以上には届いていないため段階3。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/seikatsu/club/badminton.html",
+      "as_of": "2026-09",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "関東大会予選・高校総体予選",
+          "level": "都県",
+          "result": "男子1回戦敗退（横浜平沼戦）、男子1回戦敗退（平塚学園戦2-3）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/seikatsu/club/badminton.html"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "横浜地区夏季大会",
+          "level": "地区",
+          "result": "男子Aチームベスト8進出（3回戦敗退）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/seikatsu/club/badminton.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "関東大会予選・インターハイ予選",
+          "level": "都県",
+          "result": "男子1回戦敗退、男子1回戦勝利後2回戦敗退",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/seikatsu/club/badminton.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "新人戦地区予選",
+          "level": "地区",
+          "result": "男女とも2回戦敗退",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/seikatsu/club/badminton.html"
+        }
+      ]
+    },
+    {
+      "name": "バスケットボール部",
+      "kind": "運動",
+      "note": "部活動一覧ページ(club.html)にはリンクがあるが個別ページ(basketball.html)は404で確認できない。学校案内パンフレット(令和5年度)には「2023年度関東大会、総体、新人大会予選出場。県大会出場を目指して活動中」とあり、県大会出場は未達成の様子のため段階を付けていない。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/seikatsu/club.html",
+      "as_of": "2023-01"
+    },
+    {
+      "name": "バレーボール部（男子）",
+      "kind": "運動",
+      "days_note": "月・水・木・土・日、朝練習週2回程度",
+      "days_per_week": 5,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2024年度県選手権でベスト32。都県大会でベスト16〜32の実績は1回のみで、他は初戦敗退が中心のため段階3。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/seikatsu/club/volleyball.html",
+      "as_of": "2026-09",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "横浜市民大会・関東高校予選",
+          "level": "都県",
+          "result": "初戦敗退（2024年4月）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/seikatsu/club/volleyball.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "全国高校総体県予選",
+          "level": "都県",
+          "result": "初戦敗退（2024年6月）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/seikatsu/club/volleyball.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "横浜地区夏季大会",
+          "level": "地区",
+          "result": "2回戦進出（2024年8月）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/seikatsu/club/volleyball.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "神奈川県選手権",
+          "level": "都県",
+          "result": "ベスト32（2024年11月）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/seikatsu/club/volleyball.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "新人大会",
+          "level": "都県",
+          "result": "県大会出場に届かず",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/seikatsu/club/volleyball.html"
+        }
+      ]
+    },
+    {
+      "name": "バレーボール部（女子）",
+      "kind": "運動",
+      "days_note": "月・水・木・土・日、朝練習週2回程度",
+      "days_per_week": 5,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2023年度関東高校大会地区予選でブロック準優勝し県大会に出場したが、2024年度は全国総体県予選で初戦敗退。都県大会での上位進出が確認できないため段階3。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/seikatsu/club/volleyball.html",
+      "as_of": "2026-09",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "全国高校総体県予選",
+          "level": "都県",
+          "result": "初戦敗退（2024年6月）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/seikatsu/club/volleyball.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "関東高校大会地区予選",
+          "level": "地区",
+          "result": "ブロック準優勝（県大会出場）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/nyugaku/documents/r05annnai.pdf"
+        }
+      ]
+    },
+    {
+      "name": "剣道部",
+      "kind": "運動",
+      "days_note": "火・木・金曜日（原則）、日曜日は大会・練習試合がある場合あり",
+      "days_per_week": 3,
+      "weekend": "日",
+      "tier": 3,
+      "tier_basis": "2026年度関東高校剣道大会神奈川県予選で男子団体が1回戦を突破（数年ぶり）し2回戦で敗退。都県大会でベスト8以上には届いていないため段階3。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/seikatsu/club/kendo.html",
+      "as_of": "2026-09",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "関東高校剣道大会神奈川県予選",
+          "level": "都県",
+          "result": "男子団体1回戦勝利（厚木王子に3-2）、2回戦敗退（立花学園に0-2）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/seikatsu/club/kendo.html"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "神奈川区民剣道大会",
+          "level": "地区",
+          "result": "男子団体4位",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/seikatsu/club/kendo.html"
+        }
+      ]
+    },
+    {
+      "name": "ダンス部",
+      "kind": "運動",
+      "days_note": "火・水・金曜日（発表前はほぼ毎日）",
+      "days_per_week": 3,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "基本の活動日は週3日（発表前はほぼ毎日に増える）。新入生歓迎会ライブ・野球応援・文化祭等での発表が中心で、大会・コンクールの成績記載がないため段階4。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/seikatsu/club/dance.html",
+      "as_of": "2026-09"
+    },
+    {
+      "name": "卓球部",
+      "kind": "運動",
+      "days_note": "月・木・土曜日（日・祝は大会等不定期に活動）",
+      "days_per_week": 3,
+      "weekend": "土",
+      "tier": 4,
+      "tier_basis": "活動日は週3日で、直近3年（2023年度以降）に年度が特定できる大会結果の記載がないため段階4。学校サイトに掲載の「R4年度新人戦団体戦ベスト32」は2022年度で直近3年の範囲外のため根拠にしていない。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/seikatsu/club/takkyu.html",
+      "as_of": "2026-04"
+    },
+    {
+      "name": "美術部",
+      "kind": "文化",
+      "days_note": "月・水・金曜日",
+      "days_per_week": 3,
+      "weekend": "なし",
+      "note": "神奈川県高等学校美術展・大倉山ギャラリー展示会への出品はあるが年度の記載がなく、直近3年の実績か確認できないため段階を付けていない。学校サイト掲載の「令和3年度横浜北地区交通安全大会優秀賞」は2021年度で範囲外。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/seikatsu/club/bijutsu.html",
+      "as_of": "2026-09"
+    },
+    {
+      "name": "軽音楽部",
+      "kind": "文化",
+      "days_note": "月〜金曜日（バンドごと、練習日は週1回程度）",
+      "days_per_week": 1,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "バンドごとの活動日は週1回程度で、サマーライブ・文化祭ライブ等の校内発表が中心。大会・コンテストの成績記載がないため段階4。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/seikatsu/club/k-on.html",
+      "as_of": "2026-09"
+    },
+    {
+      "name": "演劇部",
+      "kind": "文化",
+      "days_note": "月・水・木・金曜日",
+      "days_per_week": 4,
+      "weekend": "なし",
+      "tier": 3,
+      "tier_basis": "2023年度に地区・市レベルの発表会で優秀賞等を複数受賞したが、県代表選出や最上位の賞ではないため段階3。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/seikatsu/club/engeki.html",
+      "as_of": "2026-09",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "第58回神奈川県高等学校演劇発表会横浜地区大会",
+          "level": "地区",
+          "result": "優秀賞・審査員特別賞",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/seikatsu/club/engeki.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "第35回神奈川県高等学校演劇連盟春季発表会",
+          "level": "その他",
+          "result": "優秀賞",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/seikatsu/club/engeki.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "第36回横浜市高等学校春季演劇発表会",
+          "level": "その他",
+          "result": "優秀賞",
+          "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/seikatsu/club/engeki.html"
+        }
+      ]
+    },
+    {
+      "name": "吹奏楽部",
+      "kind": "文化",
+      "days_note": "火曜日、金曜日、放課後〜17時",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "note": "野球応援・文化祭での演奏が中心で、コンクール成績の記載がないため段階を付けていない。学校案内パンフレットは活動日を「週1日」と記載しており学校サイトの「火・金」と食い違う（conflicts参照）。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/seikatsu/club/suisogaku.html",
+      "as_of": "2026-09"
+    },
+    {
+      "name": "マンガ研究部",
+      "kind": "文化",
+      "days_note": "火曜日・木曜日",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "note": "すけぶ交流会イラストコンテストでの受賞歴はいずれも2019〜2020年度で直近3年の範囲外のため段階を付けていない。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/seikatsu/club/manga.html",
+      "as_of": "2026-09"
+    },
+    {
+      "name": "茶道部",
+      "kind": "文化",
+      "days_note": "毎週水曜日",
+      "days_per_week": 1,
+      "weekend": "なし",
+      "note": "表千家の先生の指導のもと活動し、文化祭でお茶会を開催。大会・コンクールへの参加がなく段階を付けていない。学校案内パンフレットは活動日を「月に2回」と記載しており学校サイトの「毎週水曜日」と食い違う（conflicts参照）。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/seikatsu/club/sado.html",
+      "as_of": "2026-09"
+    },
+    {
+      "name": "放送部",
+      "kind": "文化",
+      "days_note": "昼休み・学校行事",
+      "weekend": "なし",
+      "note": "活動日数が特定できず、大会・コンクールへの参加記載もないため段階を付けていない。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/seikatsu/club/hoso.html",
+      "as_of": "2026-09"
+    },
+    {
+      "name": "書道部",
+      "kind": "文化",
+      "days_note": "火曜日・金曜日",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "note": "学校サイト掲載の「第56回神奈川県美術展中高生特別企画展入選」は開催年度を調べると2021年度（コロナで延期された回）で直近3年の範囲外のため段階を付けていない（conflicts参照）。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/seikatsu/club/shodo.html",
+      "as_of": "2024-10-28"
+    },
+    {
+      "name": "パソコン部",
+      "kind": "文化",
+      "days_note": "週1日（月曜日）16:00〜18:00",
+      "days_per_week": 1,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日は週1日で、プログラミング学習や文化祭発表が中心。大会・コンテストへの参加記載がないため段階4。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/seikatsu/club/pc.html",
+      "as_of": "2026-09"
+    },
+    {
+      "name": "自然科学部",
+      "kind": "文化",
+      "days_note": "火曜日・金曜日",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "note": "プランターでの野菜栽培が活動の中心で、大会・コンテストへの参加記載がないため段階を付けていない。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/seikatsu/club/natural_science.html",
+      "as_of": "2026-09"
+    },
+    {
+      "name": "競技かるた部",
+      "kind": "同好会",
+      "days_note": "週2日、月曜日と木曜日の放課後",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日は週2日。神奈川県高等学校かるた大会に参加しているが結果の記載がないため段階4。部のページ自体は「競技かるた同好会」と称している。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/seikatsu/club/karuta.html",
+      "as_of": "2026-09"
+    },
+    {
+      "name": "写真部",
+      "kind": "文化",
+      "note": "部活動一覧ページ(club.html)にはリンクがあるが個別ページ(photo.html)は404で確認できない。学校案内パンフレット(令和5年度)は「写真同好会、令和4年度に発足。週2で活動中。大会に出られるように頑張ります」と記載しており、段階を判定する根拠がない。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/seikatsu/club.html",
+      "as_of": "2023-01"
+    },
+    {
+      "name": "陸上競技部",
+      "kind": "運動",
+      "days_note": "月曜日〜金曜日、土曜日午前",
+      "days_per_week": 5.5,
+      "weekend": "土",
+      "note": "学校サイトに掲載の大会結果は2018〜2022年度分のみで、直近3年（2023年度以降）に年度が特定できる結果が見当たらないため段階を付けていない。「県大会全員出場を目指す」という記載は目標であり実績ではない。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/seikatsu/club/tf.html",
+      "as_of": "2026-09"
+    }
+  ],
+  "designated_universities": [
+    { "university": "桜美林大学", "fiscal_year": 2023, "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/nyugaku/documents/r05annnai.pdf", "note": "令和5年度学校案内パンフレット「指定校推薦依頼校 抜粋(大学・短大)」より（抜粋のため全件ではない）" },
+    { "university": "神奈川大学", "fiscal_year": 2023, "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/nyugaku/documents/r05annnai.pdf", "note": "令和5年度学校案内パンフレット「指定校推薦依頼校 抜粋(大学・短大)」より（抜粋のため全件ではない）" },
+    { "university": "鎌倉女子大学", "fiscal_year": 2023, "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/nyugaku/documents/r05annnai.pdf", "note": "令和5年度学校案内パンフレット「指定校推薦依頼校 抜粋(大学・短大)」より（抜粋のため全件ではない）" },
+    { "university": "関東学院大学", "fiscal_year": 2023, "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/nyugaku/documents/r05annnai.pdf", "note": "令和5年度学校案内パンフレット「指定校推薦依頼校 抜粋(大学・短大)」より（抜粋のため全件ではない）" },
+    { "university": "工学院大学", "fiscal_year": 2023, "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/nyugaku/documents/r05annnai.pdf", "note": "令和5年度学校案内パンフレット「指定校推薦依頼校 抜粋(大学・短大)」より（抜粋のため全件ではない）" },
+    { "university": "国士舘大学", "fiscal_year": 2023, "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/nyugaku/documents/r05annnai.pdf", "note": "令和5年度学校案内パンフレット「指定校推薦依頼校 抜粋(大学・短大)」より（抜粋のため全件ではない）" },
+    { "university": "駒沢女子大学", "fiscal_year": 2023, "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/nyugaku/documents/r05annnai.pdf", "note": "令和5年度学校案内パンフレット「指定校推薦依頼校 抜粋(大学・短大)」より（抜粋のため全件ではない）" },
+    { "university": "相模女子大学", "fiscal_year": 2023, "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/nyugaku/documents/r05annnai.pdf", "note": "令和5年度学校案内パンフレット「指定校推薦依頼校 抜粋(大学・短大)」より（抜粋のため全件ではない）" },
+    { "university": "産業能率大学", "fiscal_year": 2023, "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/nyugaku/documents/r05annnai.pdf", "note": "令和5年度学校案内パンフレット「指定校推薦依頼校 抜粋(大学・短大)」より（抜粋のため全件ではない）" },
+    { "university": "実践女子大学", "fiscal_year": 2023, "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/nyugaku/documents/r05annnai.pdf", "note": "令和5年度学校案内パンフレット「指定校推薦依頼校 抜粋(大学・短大)」より（抜粋のため全件ではない）" },
+    { "university": "城西国際大学", "fiscal_year": 2023, "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/nyugaku/documents/r05annnai.pdf", "note": "令和5年度学校案内パンフレット「指定校推薦依頼校 抜粋(大学・短大)」より（抜粋のため全件ではない）" },
+    { "university": "専修大学", "fiscal_year": 2023, "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/nyugaku/documents/r05annnai.pdf", "note": "令和5年度学校案内パンフレット「指定校推薦依頼校 抜粋(大学・短大)」より（抜粋のため全件ではない）" },
+    { "university": "洗足学園音楽大学", "fiscal_year": 2023, "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/nyugaku/documents/r05annnai.pdf", "note": "令和5年度学校案内パンフレット「指定校推薦依頼校 抜粋(大学・短大)」より（抜粋のため全件ではない）" },
+    { "university": "拓殖大学", "fiscal_year": 2023, "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/nyugaku/documents/r05annnai.pdf", "note": "令和5年度学校案内パンフレット「指定校推薦依頼校 抜粋(大学・短大)」より（抜粋のため全件ではない）" },
+    { "university": "多摩大学", "fiscal_year": 2023, "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/nyugaku/documents/r05annnai.pdf", "note": "令和5年度学校案内パンフレット「指定校推薦依頼校 抜粋(大学・短大)」より（抜粋のため全件ではない）" },
+    { "university": "玉川大学", "fiscal_year": 2023, "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/nyugaku/documents/r05annnai.pdf", "note": "令和5年度学校案内パンフレット「指定校推薦依頼校 抜粋(大学・短大)」より（抜粋のため全件ではない）" },
+    { "university": "鶴見大学", "fiscal_year": 2023, "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/nyugaku/documents/r05annnai.pdf", "note": "令和5年度学校案内パンフレット「指定校推薦依頼校 抜粋(大学・短大)」より（抜粋のため全件ではない）" },
+    { "university": "帝京大学", "fiscal_year": 2023, "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/nyugaku/documents/r05annnai.pdf", "note": "令和5年度学校案内パンフレット「指定校推薦依頼校 抜粋(大学・短大)」より（抜粋のため全件ではない）" },
+    { "university": "帝京平成大学", "fiscal_year": 2023, "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/nyugaku/documents/r05annnai.pdf", "note": "令和5年度学校案内パンフレット「指定校推薦依頼校 抜粋(大学・短大)」より（抜粋のため全件ではない）" },
+    { "university": "桐蔭横浜大学", "fiscal_year": 2023, "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/nyugaku/documents/r05annnai.pdf", "note": "令和5年度学校案内パンフレット「指定校推薦依頼校 抜粋(大学・短大)」より（抜粋のため全件ではない）" },
+    { "university": "東海大学", "fiscal_year": 2023, "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/nyugaku/documents/r05annnai.pdf", "note": "令和5年度学校案内パンフレット「指定校推薦依頼校 抜粋(大学・短大)」より（抜粋のため全件ではない）" },
+    { "university": "東京工芸大学", "fiscal_year": 2023, "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/nyugaku/documents/r05annnai.pdf", "note": "令和5年度学校案内パンフレット「指定校推薦依頼校 抜粋(大学・短大)」より（抜粋のため全件ではない）" },
+    { "university": "東京女子大学", "fiscal_year": 2023, "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/nyugaku/documents/r05annnai.pdf", "note": "令和5年度学校案内パンフレット「指定校推薦依頼校 抜粋(大学・短大)」より（抜粋のため全件ではない）" },
+    { "university": "東京女子体育大学", "fiscal_year": 2023, "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/nyugaku/documents/r05annnai.pdf", "note": "令和5年度学校案内パンフレット「指定校推薦依頼校 抜粋(大学・短大)」より（抜粋のため全件ではない）" },
+    { "university": "東京保健医療専門職大学", "fiscal_year": 2023, "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/nyugaku/documents/r05annnai.pdf", "note": "令和5年度学校案内パンフレット「指定校推薦依頼校 抜粋(大学・短大)」より（抜粋のため全件ではない）" },
+    { "university": "東洋学園大学", "fiscal_year": 2023, "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/nyugaku/documents/r05annnai.pdf", "note": "令和5年度学校案内パンフレット「指定校推薦依頼校 抜粋(大学・短大)」より（抜粋のため全件ではない）" },
+    { "university": "文教大学", "fiscal_year": 2023, "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/nyugaku/documents/r05annnai.pdf", "note": "令和5年度学校案内パンフレット「指定校推薦依頼校 抜粋(大学・短大)」より（抜粋のため全件ではない）" },
+    { "university": "文京学院大学", "fiscal_year": 2023, "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/nyugaku/documents/r05annnai.pdf", "note": "令和5年度学校案内パンフレット「指定校推薦依頼校 抜粋(大学・短大)」より（抜粋のため全件ではない）" },
+    { "university": "明星大学", "fiscal_year": 2023, "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/nyugaku/documents/r05annnai.pdf", "note": "令和5年度学校案内パンフレット「指定校推薦依頼校 抜粋(大学・短大)」より（抜粋のため全件ではない）" },
+    { "university": "目白大学", "fiscal_year": 2023, "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/nyugaku/documents/r05annnai.pdf", "note": "令和5年度学校案内パンフレット「指定校推薦依頼校 抜粋(大学・短大)」より（抜粋のため全件ではない）" },
+    { "university": "横浜美術大学", "fiscal_year": 2023, "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/nyugaku/documents/r05annnai.pdf", "note": "令和5年度学校案内パンフレット「指定校推薦依頼校 抜粋(大学・短大)」より（抜粋のため全件ではない）" },
+    { "university": "横浜薬科大学", "fiscal_year": 2023, "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/nyugaku/documents/r05annnai.pdf", "note": "令和5年度学校案内パンフレット「指定校推薦依頼校 抜粋(大学・短大)」より（抜粋のため全件ではない）" },
+    { "university": "立正大学", "fiscal_year": 2023, "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/nyugaku/documents/r05annnai.pdf", "note": "令和5年度学校案内パンフレット「指定校推薦依頼校 抜粋(大学・短大)」より（抜粋のため全件ではない）" },
+    { "university": "神奈川歯科大学短期大学部", "fiscal_year": 2023, "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/nyugaku/documents/r05annnai.pdf", "note": "令和5年度学校案内パンフレット「指定校推薦依頼校 抜粋(大学・短大)」短期大学部より（抜粋のため全件ではない）" },
+    { "university": "鎌倉女子大学短期大学部", "fiscal_year": 2023, "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/nyugaku/documents/r05annnai.pdf", "note": "令和5年度学校案内パンフレット「指定校推薦依頼校 抜粋(大学・短大)」短期大学部より（抜粋のため全件ではない）" },
+    { "university": "湘北短期大学", "fiscal_year": 2023, "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/nyugaku/documents/r05annnai.pdf", "note": "令和5年度学校案内パンフレット「指定校推薦依頼校 抜粋(大学・短大)」短期大学より（抜粋のため全件ではない）" },
+    { "university": "洗足こども短期大学", "fiscal_year": 2023, "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/nyugaku/documents/r05annnai.pdf", "note": "令和5年度学校案内パンフレット「指定校推薦依頼校 抜粋(大学・短大)」短期大学より（抜粋のため全件ではない）" },
+    { "university": "戸板女子短期大学", "fiscal_year": 2023, "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/nyugaku/documents/r05annnai.pdf", "note": "令和5年度学校案内パンフレット「指定校推薦依頼校 抜粋(大学・短大)」短期大学より（抜粋のため全件ではない）" },
+    { "university": "目白大学短期大学部", "fiscal_year": 2023, "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/nyugaku/documents/r05annnai.pdf", "note": "令和5年度学校案内パンフレット「指定校推薦依頼校 抜粋(大学・短大)」短期大学部より（抜粋のため全件ではない）" },
+    { "university": "山野美容芸術短期大学", "fiscal_year": 2023, "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/nyugaku/documents/r05annnai.pdf", "note": "令和5年度学校案内パンフレット「指定校推薦依頼校 抜粋(大学・短大)」短期大学より（抜粋のため全件ではない）" }
+  ],
+  "events": [
+    {
+      "kind": "指定",
+      "period_label": "令和2年度（2020年度）から",
+      "summary": "インクルーシブ教育実践推進校の指定を受け、知的障害のある生徒を対象とした特別募集を開始した。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/nyugaku/documents/r05annnai.pdf"
+    },
+    {
+      "kind": "指定",
+      "period_label": "令和4年度（2022年度）から",
+      "summary": "シチズンシップ教育実践校の指定を受けた。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/nyugaku/documents/r05annnai.pdf"
+    },
+    {
+      "kind": "指定",
+      "period_label": "令和5年度（2023年度）から",
+      "summary": "人権教育研究推進事業担当校の指定を受けた。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/shirosato-h/nyugaku/documents/r05annnai.pdf"
+    }
+  ],
+  "unresolved": [
+    "推薦の倍率：神奈川県公立高校入試は共通選抜のみで推薦単独の選考区分がないため対象外",
+    "部活動加入率：目標値（新入生65%以上・全体55%以上）は学校目標PDFにあるが、令和6年度以外の実績値は見当たらなかった",
+    "進路決定率：卒業生の進路先内訳（37期生進路先一覧）はあるが、学校が公式に「進路決定率」として算出・公表した数値は見当たらないため記載しなかった",
+    "満足度：学校評価報告書に文化祭アンケートの数値はあるが、学校生活全般・保護者の満足度調査の数値は見当たらなかった",
+    "バスケットボール部・写真部：部活動一覧ページ(club.html)にリンクがあるが個別ページ(basketball.html・photo.html)がいずれも404で内容を確認できない（確認日2026-09-28）",
+    "学校案内パンフレットに記載の「家庭科好会」「文芸」「コーラス」は、現在の部活動一覧ページ(club.html)の23部に見当たらず、廃部の可能性がある",
+    "指定校推薦：令和5年度（2023年）の学校案内パンフレットが確認できる最新の公式資料で、それ以降の更新版は見当たらなかった",
+    "シチズンシップ教育実践校・人権教育研究推進事業担当校の指定：令和5年度学校案内パンフレット以降、指定が継続しているかを確認できる公式資料が見当たらなかった",
+    "学級数の増減：2020年以降の学級数変更に関する公式発表（都教委発表に相当するもの）は見当たらなかった",
+    "陸上競技部・美術部・吹奏楽部・マンガ研究部・茶道部・放送部・自然科学部：直近3年（2023年度以降）に年度が特定できる大会結果の記載が見当たらず、段階を付けなかった"
+  ],
+  "conflicts": [
+    "大学進学者数：進路状況「(5)過去3年間の大学・大学校合格状況」の2025年度「進学者数」158名と、「37期生進路先一覧」の大学・専門職大学進学者147名（短大7名・専門学校61名を含めた進学計215名）が一致しない",
+    "吹奏楽部の活動日：学校サイト(club/suisogaku.html)は「火・金曜日」（週2日）と記載する一方、学校案内パンフレット(令和5年度)は「週1日活動」と記載している",
+    "茶道部の活動日：学校サイトは「毎週水曜日」と記載する一方、学校案内パンフレット(令和5年度)は「月に2回」と記載している",
+    "書道部の「第56回神奈川県美術展中高生特別企画展」入選：第56回は新型コロナウイルスの影響で延期され2021年度（令和3年度）に開催されたことが確認でき、学校サイトの更新日(2024-10-28)から直近の実績のように読めるが、実際は直近3年の範囲外である"
+  ]
+}

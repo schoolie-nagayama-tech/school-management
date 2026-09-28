@@ -1,0 +1,577 @@
+{
+  "prefecture": "神奈川県",
+  "school_name": "磯子工業",
+  "official_url": "https://www.pen-kanagawa.ed.jp/isogo-th/",
+  "researched_at": "2026-09-28",
+  "stats": [
+    {
+      "metric": "uniform",
+      "item": "",
+      "basis": "",
+      "fiscal_year": 2026,
+      "value_text": "黒の詰め襟学生服、または紺のブレザー（ベスト、スカートまたはスラックス）。両襟に校章・科章を付ける。略装期間(5/1〜10/31)は白無地Yシャツか指定ポロシャツ。標準服以外の購入・譲受は禁止。2027年4月入学の新1年生からブレザー中心の3種選択制に変わる予定。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/isogo-th/zennichi/gaiyou/documents/r8_seitotechou.pdf",
+      "source_label": "磯子工業高等学校 生徒手帳（令和8年度）第7条 服装",
+      "as_of": "2026-04-30",
+      "note": "学校案内（2026年度版）は『来春(2027年4月)、制服が新しくなる。学ラン・ブレザー(スラックス)・ブレザー(スカート)の3種類から選べる新1年生』とし、新制服1期生と呼んでいる。生徒手帳の現行規定は詰め襟とブレザーを既に並記しており、導入時期の記述に食い違いがある（conflicts参照）"
+    },
+    {
+      "metric": "rules_summary",
+      "item": "",
+      "basis": "",
+      "fiscal_year": 2026,
+      "value_text": "頭髪は染髪・パーマ・装飾品禁止。化粧は華美でないもののみ許可。自転車・バイク・車での通学は一切禁止（違反は特別指導）。下校時刻は17:30が原則。アルバイト・スマートフォンの校内利用に関する規定の記載なし。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/isogo-th/zennichi/gaiyou/documents/r8_seitotechou.pdf",
+      "source_label": "磯子工業高等学校 生徒手帳（令和8年度）生徒心得",
+      "as_of": "2026-04-30",
+      "note": ""
+    }
+  ],
+  "clubs": [
+    {
+      "name": "硬式野球部",
+      "kind": "運動",
+      "days_note": "月曜日OFF、火〜金曜日は放課後（各自朝練あり）、土・日曜日は練習試合・練習(9:00〜17:00)",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2025年度 選手権神奈川大会で2勝1敗・3回戦敗退、2026年度は3勝1敗・4回戦敗退（8回コールド）まで進出。2023・2024年度は夏・秋とも初戦〜2回戦で敗退（一球速報.com）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/isogo-th/zennichi/seikatsu/bukatu/syoukai/yakyuubu.html",
+      "as_of": "2026-09-01",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "第105回全国高等学校野球選手権記念神奈川大会",
+          "level": "都県",
+          "result": "初戦敗退（0-10、城山）",
+          "happened_on": "2023-07-08",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=12107&year=2023"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "令和5年度神奈川県高等学校野球秋季県大会",
+          "level": "都県",
+          "result": "1勝後、2回戦敗退（0-7、7回コールド、横浜隼人）",
+          "happened_on": "2023-09-09",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=12107&year=2023"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "第106回全国高等学校野球選手権神奈川大会",
+          "level": "都県",
+          "result": "初戦敗退（0-2、百合丘）",
+          "happened_on": "2024-07-07",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=12107&year=2024"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "令和6年度神奈川県高等学校野球秋季県大会",
+          "level": "都県",
+          "result": "初戦敗退（2-8、麻溝台）",
+          "happened_on": "2024-09-07",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=12107&year=2024"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第107回全国高等学校野球選手権神奈川大会",
+          "level": "都県",
+          "result": "2勝1敗、3回戦敗退（1-5、厚木北）",
+          "happened_on": "2025-07-12",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=12107&year=2025"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "第108回全国高等学校野球選手権神奈川大会",
+          "level": "都県",
+          "result": "3勝1敗、4回戦敗退（0-8、8回コールド、平塚江南）",
+          "happened_on": "2026-07-16",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=12107"
+        }
+      ]
+    },
+    {
+      "name": "レスリング部",
+      "kind": "運動",
+      "days_note": "月曜日～土曜日",
+      "days_per_week": 6,
+      "weekend": "土",
+      "tier": 1,
+      "tier_basis": "2023年度 関東高等学校レスリング大会神奈川予選（団体）優勝、個人戦で国民体育大会125kg級優勝・全国高校生グレコローマンスタイル選手権大会125kg級3位など全国・関東で複数入賞（部のページ）。2025年度も全国高等学校レスリング大会神奈川県予選でベスト16（学校案内パンフレット）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/isogo-th/zennichi/seikatsu/bukatu/syoukai/resurinngubu.html",
+      "as_of": "2026-09-01",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "関東高等学校レスリング大会 神奈川予選（団体戦）",
+          "level": "都県",
+          "result": "優勝",
+          "source_url": "https://www.pen-kanagawa.ed.jp/isogo-th/zennichi/seikatsu/bukatu/syoukai/resurinngubu.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "国民体育大会（国体）男子個人125kg級",
+          "level": "全国",
+          "result": "優勝",
+          "source_url": "https://www.pen-kanagawa.ed.jp/isogo-th/zennichi/seikatsu/bukatu/syoukai/resurinngubu.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "全国高校生グレコローマンスタイル選手権大会 男子個人125kg級",
+          "level": "全国",
+          "result": "3位",
+          "source_url": "https://www.pen-kanagawa.ed.jp/isogo-th/zennichi/seikatsu/bukatu/syoukai/resurinngubu.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "関東高等学校レスリング大会 男子個人125kg級",
+          "level": "関東",
+          "result": "準優勝",
+          "source_url": "https://www.pen-kanagawa.ed.jp/isogo-th/zennichi/seikatsu/bukatu/syoukai/resurinngubu.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "U20ジュニアオリンピックカップ 男子個人125kg級",
+          "level": "全国",
+          "result": "3位",
+          "source_url": "https://www.pen-kanagawa.ed.jp/isogo-th/zennichi/seikatsu/bukatu/syoukai/resurinngubu.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "全国高等学校レスリング大会 神奈川県予選",
+          "level": "都県",
+          "result": "ベスト16",
+          "source_url": "https://www.pen-kanagawa.ed.jp/isogo-th/zennichi/nyugaku/documents/gakkouannai.pdf"
+        }
+      ]
+    },
+    {
+      "name": "化学部",
+      "kind": "文化",
+      "days_note": "月曜日、金曜日",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "tier": 2,
+      "tier_basis": "2025年度 高校生ものづくりコンテスト化学分析部門 神奈川大会4位（学校案内パンフレット）。学科でしぼった大会のため1段低く読み段階2",
+      "source_url": "https://www.pen-kanagawa.ed.jp/isogo-th/zennichi/seikatsu/bukatu/syoukai/kagakubu.html",
+      "as_of": "2026-09-01",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "高校生ものづくりコンテスト化学分析部門 神奈川大会",
+          "level": "都県",
+          "result": "4位",
+          "source_url": "https://www.pen-kanagawa.ed.jp/isogo-th/zennichi/nyugaku/documents/gakkouannai.pdf"
+        }
+      ]
+    },
+    {
+      "name": "建築研究部",
+      "kind": "文化",
+      "days_note": "月曜日～金曜日",
+      "days_per_week": 5,
+      "weekend": "なし",
+      "tier": 3,
+      "tier_basis": "2023年度 高校生ものづくりコンテスト測量部門 県大会入賞（順位の記載なし・1回）。工業高校だけが出る大会でもあり段階3（見直しで2→3）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/isogo-th/zennichi/seikatsu/bukatu/syoukai/kenntikukennkyubu.html",
+      "as_of": "2026-09-01",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "高校生ものづくりコンテスト測量部門 神奈川県大会",
+          "level": "都県",
+          "result": "入賞",
+          "source_url": "https://www.pen-kanagawa.ed.jp/isogo-th/zennichi/seikatsu/bukatu/syoukai/kenntikukennkyubu.html"
+        }
+      ]
+    },
+    {
+      "name": "電気研究部",
+      "kind": "文化",
+      "tier": 3,
+      "tier_basis": "2025年度 オール神奈川コンテスト（アマチュア無線団体主催・誰でも参加できる無線コンテスト）県内電信電話部門で優勝。学校どうしの大会ではないため段階3（見直しで2→3）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/isogo-th/zennichi/nyugaku/documents/gakkouannai.pdf",
+      "as_of": "2026-01-01",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "オール神奈川コンテスト 県内電信電話部門マルチオペ・ジュニア・オールバンド",
+          "level": "その他",
+          "result": "優勝",
+          "source_url": "https://www.pen-kanagawa.ed.jp/isogo-th/zennichi/nyugaku/documents/gakkouannai.pdf"
+        }
+      ]
+    },
+    {
+      "name": "技術研究部",
+      "kind": "文化",
+      "days_note": "月曜日～金曜日",
+      "days_per_week": 5,
+      "weekend": "なし",
+      "tier": 3,
+      "tier_basis": "高校生ものづくりコンテスト神奈川大会旋盤作業部門・溶接コンクール神奈川大会に毎年出場（部のページ）。2025年度は旋盤作業部門に出場（学校案内パンフレット）が、順位の記載はなく、学科でしぼった大会のため段階3",
+      "source_url": "https://www.pen-kanagawa.ed.jp/isogo-th/zennichi/seikatsu/bukatu/syoukai/gityutuennkyubu.html",
+      "as_of": "2026-09-01",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "高校生ものづくりコンテスト神奈川大会 旋盤作業部門",
+          "level": "都県",
+          "result": "出場（順位の記載なし）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/isogo-th/zennichi/nyugaku/documents/gakkouannai.pdf"
+        }
+      ]
+    },
+    {
+      "name": "鉄道研究部",
+      "kind": "文化",
+      "days_note": "月曜日～金曜日",
+      "days_per_week": 5,
+      "weekend": "なし",
+      "tier": 3,
+      "tier_basis": "磯工祭や神奈川県高等学校総合文化祭の鉄道研究発表会で発表（順位のない展示型の発表のため段階3）（部のページ）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/isogo-th/zennichi/seikatsu/bukatu/syoukai/tesudoukennkyubu.html",
+      "as_of": "2026-09-01"
+    },
+    {
+      "name": "バスケットボール部",
+      "kind": "運動",
+      "days_note": "月・火・木曜日は体育館、金曜日はトレーニング室、水曜日はOFF、土・日曜日は大会・練習試合",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2026年度 KBリーグ5部A（地区リーグ）に所属し、横浜地区大会は2回戦敗退、インターハイ神奈川県予選は1回戦敗退（部のページ）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/isogo-th/zennichi/seikatsu/bukatu/syoukai/basukettobo-rubu.html",
+      "as_of": "2026-09-15",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "インターハイ神奈川県予選",
+          "level": "都県",
+          "result": "1回戦敗退（68-85、県商工）",
+          "happened_on": "2026-05-16",
+          "source_url": "https://www.pen-kanagawa.ed.jp/isogo-th/zennichi/seikatsu/bukatu/syoukai/basukettobo-rubu.html"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "横浜地区大会",
+          "level": "地区",
+          "result": "2回戦敗退（55-57、永谷・桜陽）",
+          "happened_on": "2026-07-19",
+          "source_url": "https://www.pen-kanagawa.ed.jp/isogo-th/zennichi/seikatsu/bukatu/syoukai/basukettobo-rubu.html"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "KBリーグ5部A（地区リーグ、7チーム）",
+          "level": "地区",
+          "result": "2勝2敗（9月時点）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/isogo-th/zennichi/seikatsu/bukatu/syoukai/basukettobo-rubu.html"
+        }
+      ]
+    },
+    {
+      "name": "バドミントン部",
+      "kind": "運動",
+      "days_note": "月曜日、水曜日、木曜日、金曜日、土曜日",
+      "days_per_week": 5,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "2025年度 神奈川県高等学校バドミントン大会第4地区予選 女子シングルス2位・男子シングルス2位（都県大会そのものではなく地区予選のため段階3）（学校案内パンフレット）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/isogo-th/zennichi/seikatsu/bukatu/syoukai/batominntonnbu.html",
+      "as_of": "2026-09-01",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "神奈川県高等学校バドミントン大会 第4地区予選",
+          "level": "地区",
+          "result": "女子シングルス2位、男子シングルス2位",
+          "source_url": "https://www.pen-kanagawa.ed.jp/isogo-th/zennichi/nyugaku/documents/gakkouannai.pdf"
+        }
+      ]
+    },
+    {
+      "name": "バレーボール部",
+      "kind": "運動",
+      "days_note": "月曜日、火曜日、木曜日～日曜日",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "source_url": "https://www.pen-kanagawa.ed.jp/isogo-th/zennichi/seikatsu/bukatu/syoukai/bare-bo-rubu.html",
+      "as_of": "2026-09-01"
+    },
+    {
+      "name": "サッカー部",
+      "kind": "運動",
+      "days_note": "水曜日、木曜日、金曜日、土曜日",
+      "days_per_week": 4,
+      "weekend": "土",
+      "source_url": "https://www.pen-kanagawa.ed.jp/isogo-th/zennichi/seikatsu/bukatu/syoukai/sakka-bu.html",
+      "as_of": "2026-09-01"
+    },
+    {
+      "name": "硬式テニス部",
+      "kind": "運動",
+      "days_note": "月、水、木、金曜日",
+      "days_per_week": 4,
+      "weekend": "なし",
+      "source_url": "https://www.pen-kanagawa.ed.jp/isogo-th/zennichi/seikatsu/bukatu/syoukai/tenisubu.html",
+      "as_of": "2026-09-01"
+    },
+    {
+      "name": "山岳部",
+      "kind": "運動",
+      "days_note": "不定期（毎月1～2回、主に土・日・祝日）",
+      "weekend": "土日",
+      "source_url": "https://www.pen-kanagawa.ed.jp/isogo-th/zennichi/seikatsu/bukatu/syoukai/sanngakubu.html",
+      "as_of": "2026-09-01"
+    },
+    {
+      "name": "水泳部",
+      "kind": "運動",
+      "days_note": "木曜日",
+      "days_per_week": 1,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日は週1日（木曜日）のみで、部のページに大会・記録会の成績の記載がない",
+      "source_url": "https://www.pen-kanagawa.ed.jp/isogo-th/zennichi/seikatsu/bukatu/syoukai/suieibu.html",
+      "as_of": "2026-09-01"
+    },
+    {
+      "name": "卓球部",
+      "kind": "運動",
+      "days_note": "水曜日、金曜日",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日は週2日で、部のページに大会成績の記載がない",
+      "source_url": "https://www.pen-kanagawa.ed.jp/isogo-th/zennichi/seikatsu/bukatu/syoukai/takkyuubu.html",
+      "as_of": "2026-09-01"
+    },
+    {
+      "name": "空手道部",
+      "kind": "運動",
+      "days_note": "火曜日、木曜日",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日は週2日で、部のページに大会成績の記載がない",
+      "source_url": "https://www.pen-kanagawa.ed.jp/isogo-th/zennichi/seikatsu/bukatu/syoukai/karatedoubu.html",
+      "as_of": "2026-09-01"
+    },
+    {
+      "name": "剣道部",
+      "kind": "運動",
+      "days_note": "月曜日、水曜日、金曜日、土曜日",
+      "days_per_week": 4,
+      "weekend": "土",
+      "source_url": "https://www.pen-kanagawa.ed.jp/isogo-th/zennichi/seikatsu/bukatu/syoukai/kendoubu.html",
+      "as_of": "2026-09-01"
+    },
+    {
+      "name": "陸上競技部",
+      "kind": "運動",
+      "days_note": "月曜日～土曜日",
+      "days_per_week": 6,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "2023年度 神奈川県高校陸上競技大会 男子5000mに出場（横浜地区予選15位で県大会進出、県大会本戦の順位の記載なし）。直近3年で県大会入賞の実績なし（部のページ）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/isogo-th/zennichi/seikatsu/bukatu/syoukai/rikujou.html",
+      "as_of": "2026-09-01",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "神奈川県高等学校陸上競技大会横浜地区予選会 男子5000m",
+          "level": "地区",
+          "result": "15位（県大会出場）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/isogo-th/zennichi/seikatsu/bukatu/syoukai/rikujou.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "神奈川県高等学校陸上競技大会 男子5000m",
+          "level": "都県",
+          "result": "出場（順位の記載なし）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/isogo-th/zennichi/seikatsu/bukatu/syoukai/rikujou.html"
+        }
+      ]
+    },
+    {
+      "name": "ライフル射撃部",
+      "kind": "運動",
+      "days_note": "月曜日～土曜日",
+      "days_per_week": 6,
+      "weekend": "土",
+      "source_url": "https://www.pen-kanagawa.ed.jp/isogo-th/zennichi/seikatsu/bukatu/syoukai/raihurusyagekibu.html",
+      "as_of": "2026-09-01"
+    },
+    {
+      "name": "囲碁将棋部",
+      "kind": "文化",
+      "days_note": "不定期",
+      "source_url": "https://www.pen-kanagawa.ed.jp/isogo-th/zennichi/seikatsu/bukatu/syoukai/igosyougibu.html",
+      "as_of": "2026-09-01"
+    },
+    {
+      "name": "磯工グリーンクラブ",
+      "kind": "文化",
+      "days_note": "月曜日、水曜日、金曜日",
+      "days_per_week": 3,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動は野菜作り・ガーデニング・校内緑化が中心で、大会・コンクールへの参加はない（部のページ）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/isogo-th/zennichi/seikatsu/bukatu/syoukai/igc.html",
+      "as_of": "2026-09-01"
+    },
+    {
+      "name": "軽音楽部",
+      "kind": "文化",
+      "days_note": "月曜日、水曜日、金曜日",
+      "days_per_week": 3,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動は磯工祭・磯子の音楽祭（野外イベント）・校外ライブが中心で、コンクール等の順位を伴う実績の記載がない",
+      "source_url": "https://www.pen-kanagawa.ed.jp/isogo-th/zennichi/seikatsu/bukatu/syoukai/keionnbu.html",
+      "as_of": "2026-09-01"
+    },
+    {
+      "name": "写真部",
+      "kind": "文化",
+      "days_note": "水曜日",
+      "days_per_week": 1,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日は週1日（水曜日）のみで、活動は文化祭展示やPTA広報誌の表紙撮影が中心。コンクール等の実績の記載がない",
+      "source_url": "https://www.pen-kanagawa.ed.jp/isogo-th/zennichi/seikatsu/bukatu/syoukai/syasinnbu.html",
+      "as_of": "2026-09-01"
+    },
+    {
+      "name": "設計製作部",
+      "kind": "文化",
+      "days_note": "月曜日～土曜日",
+      "days_per_week": 6,
+      "weekend": "土",
+      "source_url": "https://www.pen-kanagawa.ed.jp/isogo-th/zennichi/seikatsu/bukatu/syoukai/sekkeiseisakubu.html",
+      "as_of": "2026-09-01"
+    },
+    {
+      "name": "漫画研究部",
+      "kind": "文化",
+      "days_note": "月曜日～木曜日（放課後から17:00まで）",
+      "days_per_week": 4,
+      "weekend": "なし",
+      "source_url": "https://www.pen-kanagawa.ed.jp/isogo-th/zennichi/seikatsu/bukatu/syoukai/manngakennkyuubu.html",
+      "as_of": "2026-09-01"
+    },
+    {
+      "name": "パソコン部",
+      "kind": "文化",
+      "days_note": "月曜日、水曜日、金曜日",
+      "days_per_week": 3,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "『コンテストや資格取得、文化祭という目標に向けて』と部のページにあるが、実際の出場・受賞の記載はない",
+      "source_url": "https://www.pen-kanagawa.ed.jp/isogo-th/zennichi/seikatsu/bukatu/syoukai/pasokonnbu.html",
+      "as_of": "2026-09-01"
+    },
+    {
+      "name": "ビッグバンド部",
+      "kind": "文化",
+      "days_note": "火曜日、木曜日、金曜日",
+      "days_per_week": 3,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動は磯工祭での演奏（軽音楽部と合同でPTA会長賞）が中心で、外部コンクールへの出場・順位の記載がない",
+      "source_url": "https://www.pen-kanagawa.ed.jp/isogo-th/zennichi/seikatsu/bukatu/syoukai/bikkubanntobu.html",
+      "as_of": "2026-09-01"
+    },
+    {
+      "name": "天文部",
+      "kind": "文化",
+      "source_url": "https://www.pen-kanagawa.ed.jp/isogo-th/zennichi/seikatsu/bukatu.html",
+      "as_of": "2026-09-01"
+    },
+    {
+      "name": "広報同好会",
+      "kind": "同好会",
+      "source_url": "https://www.pen-kanagawa.ed.jp/isogo-th/zennichi/gaiyou/documents/r8_seitotechou.pdf",
+      "as_of": "2026-04-30"
+    },
+    {
+      "name": "茶道同好会",
+      "kind": "同好会",
+      "source_url": "https://www.pen-kanagawa.ed.jp/isogo-th/zennichi/gaiyou/documents/r8_seitotechou.pdf",
+      "as_of": "2026-04-30"
+    },
+    {
+      "name": "ボードゲーム同好会",
+      "kind": "同好会",
+      "source_url": "https://www.pen-kanagawa.ed.jp/isogo-th/zennichi/gaiyou/documents/r8_seitotechou.pdf",
+      "as_of": "2026-04-30"
+    }
+  ],
+  "designated_universities": [],
+  "events": [
+    {
+      "kind": "改修",
+      "period_label": "2022年1月",
+      "happened_on": "2022-01-24",
+      "summary": "B棟・増築棟の耐震工事が完了した",
+      "source_url": "https://www.pen-kanagawa.ed.jp/isogo-th/zennichi/gaiyou/rekishienkaku.html"
+    },
+    {
+      "kind": "改修",
+      "period_label": "2022年3月",
+      "happened_on": "2022-03-30",
+      "summary": "EF棟の耐震工事が完了した",
+      "source_url": "https://www.pen-kanagawa.ed.jp/isogo-th/zennichi/gaiyou/rekishienkaku.html"
+    },
+    {
+      "kind": "その他",
+      "period_label": "2022年12月",
+      "happened_on": "2022-12-23",
+      "summary": "学校創立60周年記念式典を開催した（オンライン）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/isogo-th/zennichi/gaiyou/rekishienkaku.html"
+    },
+    {
+      "kind": "改修",
+      "period_label": "2023年2月",
+      "happened_on": "2023-02-09",
+      "summary": "体育館の改修工事が完了した",
+      "source_url": "https://www.pen-kanagawa.ed.jp/isogo-th/zennichi/gaiyou/rekishienkaku.html"
+    },
+    {
+      "kind": "改修",
+      "period_label": "2024年1月",
+      "happened_on": "2024-01-26",
+      "summary": "格技場の改修工事が完了した",
+      "source_url": "https://www.pen-kanagawa.ed.jp/isogo-th/zennichi/gaiyou/rekishienkaku.html"
+    },
+    {
+      "kind": "改修",
+      "period_label": "2026年2月",
+      "happened_on": "2026-02-25",
+      "summary": "部室棟の改修工事が完了した",
+      "source_url": "https://www.pen-kanagawa.ed.jp/isogo-th/zennichi/gaiyou/rekishienkaku.html"
+    },
+    {
+      "kind": "制服",
+      "period_label": "2027年4月から",
+      "summary": "新1年生から、従来の詰め襟学生服に加えブレザー（スラックス／スカート）を含む3種類から選べる新制服に順次切り替わる（新制服1期生）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/isogo-th/zennichi/nyugaku/documents/gakkouannai.pdf"
+    }
+  ],
+  "unresolved": [
+    "大学群別の合格・進学者数（国公立・早慶上理・GMARCH・成成明武・日東駒専・合計）：学校案内（2026年度版）の『進学実績』は主な進学先の大学名一覧（神奈川大学・神奈川工科大学・関東学院大学・湘南工科大学・東京工芸大学・日本工業大学・横浜商科大学ほか）のみで、いずれも該当大学群に含まれないが、『ほか』とあり非網羅的なため0とは断定できず未収録",
+    "進路決定率・入試方式別割合：卒業生の進路は学校サイトに『就職70%・進学30%（令和7年度、就職104名・進学32名）』の記載があるが、進学32名の内訳（大学・専門学校・短大等）や『その他・未定』の人数が非公表で、決まった項目キーに対応しないため未収録",
+    "部活動加入率：公式資料に記載が見つからなかった",
+    "学校評価の満足度：神奈川県様式の学校評価報告書（学校評価目標・学校評価結果）は文章のみで数値の記載がない",
+    "推薦の倍率：神奈川県公立高校入試は共通選抜のみで推薦単独の選考区分がないため対象外",
+    "在籍生徒数（男女別）：公式資料に記載が見つからなかった",
+    "設計製作部の直近（2023年度以降）の大会成績：部のページの活動実績は令和5年1月（2022年度）のジャパンマイコンカーラリー全国大会出場が最新で、それ以降の更新が見つからなかった",
+    "ライフル射撃部の直近（2023年度以降）の大会成績：部のページの活動実績は2022年度のライフル射撃関東予選第2位が唯一で、手引き§6の『直近3年』の決まりにより根拠にできず、それ以降の成績も見つからなかった",
+    "剣道部・硬式テニス部・サッカー部・漫画研究部・囲碁将棋部・山岳部・天文部・広報同好会・茶道同好会・ボードゲーム同好会の大会・コンクール成績：部のページ（または同好会は生徒手帳の一覧のみ）に具体的な順位・年度の記載がなかった",
+    "天文部・広報同好会・茶道同好会・ボードゲーム同好会の活動日：学校サイトの部活動・同好会ページ（bukatu.html）に個別ページがなく確認できなかった（天文部の個別URLは404）"
+  ],
+  "conflicts": [
+    "制服の導入時期：学校案内（2026年度版）は『来春(2027年4月)、制服が新しくなる』とし、詰め襟に加えブレザーが選べるのは新1年生からのように書かれているが、生徒手帳（令和8年度版）の服装規定（第7条）は詰め襟の標準学生服とブレザーを既に並記し、双方を『標準学生服』として扱っている",
+    "バドミントン部の表記：生徒手帳の部・同好会一覧表は『バドミントン』（ダ濁点あり）と表記するが、学校サイトの部のページ・ナビゲーションは『バトミントン』（ダ濁点なし）で統一されている",
+    "同好会の掲載：生徒手帳（令和8年度版）の部・同好会一覧表には同好会として『広報』『茶道』『ボードゲーム』の3つが記載されているが、学校サイトの『部活動・同好会』一覧ページ（bukatu.html）には運動部14・文化部14のみが掲載され、同好会が一件も載っていない"
+  ]
+}

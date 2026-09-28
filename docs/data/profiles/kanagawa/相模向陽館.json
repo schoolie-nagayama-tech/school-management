@@ -1,0 +1,621 @@
+{
+  "prefecture": "神奈川県",
+  "school_name": "相模向陽館",
+  "official_url": "https://www.pen-kanagawa.ed.jp/sagamikoyokan-h/",
+  "researched_at": "2026-09-28",
+  "stats": [
+    {
+      "metric": "university_count",
+      "item": "合計",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 20,
+      "source_url": "https://www.pen-kanagawa.ed.jp/sagamikoyokan-h/nyugaku/documents/gakkou_navigation2026.pdf",
+      "source_label": "相模向陽館高校 学校案内2026(学校ナビゲーション) p.13 令和7年度卒業生進路状況",
+      "as_of": "2026-08",
+      "note": "大学・短大への進学者数の合計（大学10校・短大3校に進学、学校側は人数を大学別に公開せず）。同じ表に専門学校・各種学校40人、公共職業能力開発校等2人、就職38人、進学準備6人、就職準備等(就労移行支援施設・家事手伝い含む)38人、卒業生合計144人の内訳もあるが、対応するmetricがないため合計のみ記録"
+    },
+    {
+      "metric": "uniform",
+      "item": "",
+      "basis": "",
+      "fiscal_year": 2026,
+      "value_text": "制服なし。希望者のみ「標準服」購入(着用は生徒の3割程度)。濃紺ブレザー+濃グレーのスラックス/スカート(本校オリジナル)、家庭用洗濯機で洗える。女子にはネクタイ・スラックスも用意",
+      "source_url": "https://www.pen-kanagawa.ed.jp/sagamikoyokan-h/nyugaku/documents/gakkou_navigation2026.pdf",
+      "source_label": "相模向陽館高校 学校案内2026(学校ナビゲーション) p.16",
+      "as_of": "2026-08",
+      "note": "購入価格の目安は¥30,000程度(任意購入、学校説明会リーフレット2026より)"
+    },
+    {
+      "metric": "rules_summary",
+      "item": "",
+      "basis": "",
+      "fiscal_year": 2026,
+      "value_text": "頭髪・服装は細かい規定なし(TPOに応じて自分で判断)。自転車以外(バイク等)での通学禁止、自転車通学は許可制。アルバイトは保護者同意の上で「アルバイト届」提出(曜日・時間数の規定なし)",
+      "source_url": "https://www.pen-kanagawa.ed.jp/sagamikoyokan-h/seikatsu/documents/handbook2026.pdf",
+      "source_label": "相模向陽館高校 向陽館ハンドブック・学校生活編 2026年4月",
+      "as_of": "2026-04",
+      "note": "スマートフォンの使用に関する個別規定はハンドブック該当箇所に記載なし"
+    },
+    {
+      "metric": "designation",
+      "item": "フロンティアスクール",
+      "basis": "",
+      "fiscal_year": 2026,
+      "value_text": "フロンティアスクール(神奈川県立高校初の定時制単独校)。定時制・多部制(午前部・午後部)、単位制普通科",
+      "source_url": "https://www.pen-kanagawa.ed.jp/sagamikoyokan-h/nyugaku/documents/gakkou_navigation2026.pdf",
+      "source_label": "相模向陽館高校 学校案内2026(学校ナビゲーション) p.16",
+      "as_of": "2026-08",
+      "note": ""
+    }
+  ],
+  "clubs": [
+    {
+      "name": "陸上部",
+      "kind": "運動",
+      "days_note": "月・水・金",
+      "days_per_week": 3,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日は週3日(平日のみ)で、大会成績の記載なし",
+      "source_url": "https://www.pen-kanagawa.ed.jp/sagamikoyokan-h/bukatsu/track-team.html",
+      "as_of": "2026-08",
+      "results": []
+    },
+    {
+      "name": "バレーボール部",
+      "kind": "運動",
+      "days_note": "月・水・木、休日は土曜または日曜",
+      "days_per_week": 4,
+      "weekend": "土日",
+      "tier": 2,
+      "tier_basis": "2023年度に全国大会出場、2024年度に全国大会ベスト16(定時制・通信制限定の大会と推定され、2回以上出場のため手引き§6の定通割引で段階2が上限)",
+      "source_url": "https://www.pen-kanagawa.ed.jp/sagamikoyokan-h/bukatsu/volleyball.html",
+      "as_of": "2026-08",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "神奈川県大会",
+          "level": "都県",
+          "result": "優勝",
+          "source_url": "https://www.pen-kanagawa.ed.jp/sagamikoyokan-h/bukatsu/volleyball.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "全国大会",
+          "level": "全国",
+          "result": "出場",
+          "source_url": "https://www.pen-kanagawa.ed.jp/sagamikoyokan-h/bukatsu/volleyball.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "全国大会",
+          "level": "全国",
+          "result": "ベスト16",
+          "source_url": "https://www.pen-kanagawa.ed.jp/sagamikoyokan-h/bukatsu/volleyball.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "川崎市定時制通信制大会",
+          "level": "地区",
+          "result": "優勝",
+          "source_url": "https://www.pen-kanagawa.ed.jp/sagamikoyokan-h/bukatsu/volleyball.html"
+        }
+      ]
+    },
+    {
+      "name": "バスケットボール部",
+      "kind": "運動",
+      "days_note": "月・火・木・金",
+      "days_per_week": 4,
+      "weekend": "なし",
+      "tier": 3,
+      "tier_basis": "2025・2026年度とも全国高等学校定時制通信制バスケットボール大会 神奈川県予選で3位止まりで、全国大会には進めていない",
+      "source_url": "https://www.pen-kanagawa.ed.jp/sagamikoyokan-h/bukatsu/basketball.html",
+      "as_of": "2026-08",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "全国高等学校定時制通信制バスケットボール大会 神奈川県予選会",
+          "level": "都県",
+          "result": "第3位",
+          "source_url": "https://www.pen-kanagawa.ed.jp/sagamikoyokan-h/bukatsu/basketball.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "定時制通信制バスケットボール大会 神奈川県新人大会",
+          "level": "都県",
+          "result": "準優勝",
+          "source_url": "https://www.pen-kanagawa.ed.jp/sagamikoyokan-h/bukatsu/basketball.html"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "全国高等学校定時制通信制バスケットボール大会 神奈川県予選",
+          "level": "都県",
+          "result": "第3位",
+          "source_url": "https://www.pen-kanagawa.ed.jp/sagamikoyokan-h/bukatsu/basketball.html"
+        }
+      ]
+    },
+    {
+      "name": "バドミントン部(男子)",
+      "kind": "運動",
+      "days_note": "月・水・金、休日は土曜・祝日",
+      "days_per_week": 3,
+      "weekend": "土",
+      "tier": 2,
+      "tier_basis": "団体戦で2023・2024年度に県大会ベスト8。定時制の学校で、大会は定時制・通信制の県大会とみられるため1段低く読み段階2（見直しで1→2）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/sagamikoyokan-h/bukatsu/badminton.html",
+      "as_of": "2026-08",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "神奈川県大会(団体戦)",
+          "level": "都県",
+          "result": "男子ベスト8",
+          "source_url": "https://www.pen-kanagawa.ed.jp/sagamikoyokan-h/bukatsu/badminton.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "神奈川県大会(団体戦)",
+          "level": "都県",
+          "result": "男子ベスト8",
+          "source_url": "https://www.pen-kanagawa.ed.jp/sagamikoyokan-h/bukatsu/badminton.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "神奈川県大会(団体戦)",
+          "level": "都県",
+          "result": "男子出場",
+          "source_url": "https://www.pen-kanagawa.ed.jp/sagamikoyokan-h/bukatsu/badminton.html"
+        }
+      ]
+    },
+    {
+      "name": "バドミントン部(女子)",
+      "kind": "運動",
+      "days_note": "月・水・金、休日は土曜・祝日",
+      "days_per_week": 3,
+      "weekend": "土",
+      "tier": 2,
+      "tier_basis": "2023年度 県大会 個人戦シングルス優勝・団体優勝。定時制・通信制の県大会とみられるため1段低く読み段階2",
+      "source_url": "https://www.pen-kanagawa.ed.jp/sagamikoyokan-h/bukatsu/badminton.html",
+      "as_of": "2026-08",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "神奈川県大会(個人戦シングルス)",
+          "level": "都県",
+          "result": "女子優勝",
+          "source_url": "https://www.pen-kanagawa.ed.jp/sagamikoyokan-h/bukatsu/badminton.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "インターハイ予選(団体戦)",
+          "level": "都県",
+          "result": "女子団体優勝",
+          "source_url": "https://www.pen-kanagawa.ed.jp/sagamikoyokan-h/bukatsu/badminton.html"
+        }
+      ]
+    },
+    {
+      "name": "サッカー部",
+      "kind": "運動",
+      "days_note": "月・水・金・土(トライアルタイム)",
+      "days_per_week": 4,
+      "weekend": "土",
+      "tier": 2,
+      "tier_basis": "定時制・通信制限定の全国大会(全国高校定時制通信制サッカー大会)で2024年度に準優勝、2025年度にベスト8(2回以上出場のため手引き§6の定通割引で段階2が上限)",
+      "source_url": "https://www.pen-kanagawa.ed.jp/sagamikoyokan-h/bukatsu/soccer.html",
+      "as_of": "2026-08-19",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "全国高校定時制通信制サッカー大会 県予選",
+          "level": "都県",
+          "result": "優勝",
+          "source_url": "https://www.pen-kanagawa.ed.jp/sagamikoyokan-h/bukatsu/soccer.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "全国高校定時制通信制サッカー大会",
+          "level": "全国",
+          "result": "準優勝",
+          "source_url": "https://www.pen-kanagawa.ed.jp/sagamikoyokan-h/bukatsu/soccer.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "全国高校定時制通信制サッカー大会 県予選",
+          "level": "都県",
+          "result": "第3位",
+          "source_url": "https://www.pen-kanagawa.ed.jp/sagamikoyokan-h/bukatsu/soccer.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "全国高校定時制通信制サッカー大会",
+          "level": "全国",
+          "result": "ベスト8",
+          "source_url": "https://www.pen-kanagawa.ed.jp/sagamikoyokan-h/bukatsu/soccer.html"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "全国高校定時制通信制サッカー大会 県予選",
+          "level": "都県",
+          "result": "出場",
+          "source_url": "https://www.pen-kanagawa.ed.jp/sagamikoyokan-h/bukatsu/soccer.html"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "クレーンズカップ",
+          "level": "その他",
+          "result": "第2位",
+          "note": "主催団体の記載なし",
+          "source_url": "https://www.pen-kanagawa.ed.jp/sagamikoyokan-h/bukatsu/soccer.html"
+        }
+      ]
+    },
+    {
+      "name": "卓球部",
+      "kind": "運動",
+      "days_note": "月・水・金(大会前は休日も活動)",
+      "days_per_week": 3,
+      "weekend": "なし",
+      "tier": 2,
+      "tier_basis": "定通限定の全国大会(定通全国大会)女子シングルスに2025・2026年度に出場(2回以上のため手引き§6の定通割引で段階2が上限)。女子部員の実績で判定(男子部員の大会成績の記載なし)",
+      "source_url": "https://www.pen-kanagawa.ed.jp/sagamikoyokan-h/bukatsu/tabletennis.html",
+      "as_of": "2026-08",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "定通全国大会",
+          "level": "全国",
+          "result": "女子シングルス出場",
+          "source_url": "https://www.pen-kanagawa.ed.jp/sagamikoyokan-h/bukatsu/tabletennis.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "定通神奈川県大会",
+          "level": "都県",
+          "result": "女子シングルス優勝(1年生)",
+          "source_url": "https://www.pen-kanagawa.ed.jp/sagamikoyokan-h/bukatsu/tabletennis.html"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "定通全国大会",
+          "level": "全国",
+          "result": "女子シングルス出場",
+          "source_url": "https://www.pen-kanagawa.ed.jp/sagamikoyokan-h/bukatsu/tabletennis.html"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "定通神奈川県大会",
+          "level": "都県",
+          "result": "女子シングルス優勝(2年生)",
+          "source_url": "https://www.pen-kanagawa.ed.jp/sagamikoyokan-h/bukatsu/tabletennis.html"
+        }
+      ]
+    },
+    {
+      "name": "テニス部",
+      "kind": "運動",
+      "days_note": "月・水・金、休日は土曜",
+      "days_per_week": 4,
+      "weekend": "土",
+      "tier": 4,
+      "tier_basis": "大会成績の記載なし(顧問コメントに「地区大会に向けて練習中」とあるのみ)",
+      "source_url": "https://www.pen-kanagawa.ed.jp/sagamikoyokan-h/bukatsu/tennis.html",
+      "as_of": "2026-08",
+      "results": []
+    },
+    {
+      "name": "野球部",
+      "kind": "運動",
+      "days_note": "火・水・金、休日は土・日",
+      "days_per_week": 5,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2024年夏 神奈川大会2回戦で麻生に0-9(7回コールド)敗退、2025年夏 神奈川大会2回戦で磯子工業に1-7敗退(大和東との連合チーム)。部員不足のため近年は連合チームで出場",
+      "source_url": "https://www.pen-kanagawa.ed.jp/sagamikoyokan-h/bukatsu/baseball.html",
+      "as_of": "2026-08",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "第106回全国高等学校野球選手権神奈川大会",
+          "level": "都県",
+          "result": "2回戦で麻生に0-9(7回コールド)で敗退",
+          "happened_on": "2024-07-09",
+          "source_url": "https://www.kanaloco.jp/sports/baseball/hsbaseball/article-1092579.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第107回全国高等学校野球選手権神奈川大会",
+          "level": "都県",
+          "result": "2回戦で磯子工業に1-7で敗退(大和東・相模向陽館連合)",
+          "happened_on": "2025-07-12",
+          "source_url": "https://www.kanagawa-baseball.com/sokuho/matano/2025-0712-1130/"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "第108回全国高等学校野球選手権神奈川大会",
+          "level": "都県",
+          "result": "出場(連合チーム、結果の記載なし)",
+          "source_url": "https://www.pen-kanagawa.ed.jp/sagamikoyokan-h/bukatsu/baseball.html"
+        }
+      ]
+    },
+    {
+      "name": "ハンドボール部",
+      "kind": "運動",
+      "source_url": "https://www.pen-kanagawa.ed.jp/sagamikoyokan-h/nyugaku/documents/gakkou_navigation2026.pdf",
+      "as_of": "2026-08",
+      "results": []
+    },
+    {
+      "name": "剣道部",
+      "kind": "運動",
+      "source_url": "https://www.pen-kanagawa.ed.jp/sagamikoyokan-h/nyugaku/documents/gakkou_navigation2026.pdf",
+      "as_of": "2026-08",
+      "results": []
+    },
+    {
+      "name": "ダンス部",
+      "kind": "運動",
+      "days_note": "月・水・金",
+      "days_per_week": 3,
+      "weekend": "なし",
+      "tier": 3,
+      "tier_basis": "2024・2025年度 神奈川県定時制・通信制高等学校芸術祭 音楽の部パフォーマンス部門で努力賞(上位入賞ではない)",
+      "source_url": "https://www.pen-kanagawa.ed.jp/sagamikoyokan-h/bukatsu/dance.html",
+      "as_of": "2026-08",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "第55回神奈川県定時制・通信制高等学校芸術祭 音楽の部パフォーマンス部門",
+          "level": "都県",
+          "result": "努力賞",
+          "source_url": "https://www.pen-kanagawa.ed.jp/sagamikoyokan-h/bukatsu/dance.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第56回神奈川県定時制・通信制高等学校芸術祭 音楽の部パフォーマンス部門",
+          "level": "都県",
+          "result": "努力賞",
+          "source_url": "https://www.pen-kanagawa.ed.jp/sagamikoyokan-h/bukatsu/dance.html"
+        }
+      ]
+    },
+    {
+      "name": "吹奏楽部",
+      "kind": "文化",
+      "days_note": "月・水・金",
+      "days_per_week": 3,
+      "weekend": "なし",
+      "tier": 3,
+      "tier_basis": "2023・2024年度 神奈川県定時制・通信制高等学校芸術祭 合奏部門で最優秀賞(定時制・通信制限定の大会のため、手引き§6の定通割引で1段低く読み段階3)",
+      "source_url": "https://www.pen-kanagawa.ed.jp/sagamikoyokan-h/bukatsu/brassband.html",
+      "as_of": "2026-08",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "第54回神奈川県定時制・通信制高等学校芸術祭 合奏部門",
+          "level": "都県",
+          "result": "最優秀賞",
+          "source_url": "https://www.pen-kanagawa.ed.jp/sagamikoyokan-h/bukatsu/brassband.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "第55回神奈川県定時制・通信制高等学校芸術祭 合奏部門",
+          "level": "都県",
+          "result": "最優秀賞",
+          "source_url": "https://www.pen-kanagawa.ed.jp/sagamikoyokan-h/bukatsu/brassband.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第56回神奈川県定時制・通信制高等学校芸術祭 合奏部門",
+          "level": "都県",
+          "result": "出場",
+          "source_url": "https://www.pen-kanagawa.ed.jp/sagamikoyokan-h/bukatsu/brassband.html"
+        }
+      ]
+    },
+    {
+      "name": "軽音楽部",
+      "kind": "文化",
+      "days_note": "月～金、休日は不定期",
+      "days_per_week": 5,
+      "tier": 3,
+      "tier_basis": "2023年度 芸術祭軽音楽部門で優秀賞・努力賞、2024・2025年度は努力賞(最上位の賞ではない)",
+      "source_url": "https://www.pen-kanagawa.ed.jp/sagamikoyokan-h/bukatsu/band.html",
+      "as_of": "2026-08",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "第54回神奈川県定時制・通信制高等学校芸術祭 軽音楽部門",
+          "level": "都県",
+          "result": "優秀賞・努力賞",
+          "source_url": "https://www.pen-kanagawa.ed.jp/sagamikoyokan-h/bukatsu/band.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "第55回神奈川県定時制・通信制高等学校芸術祭 軽音楽部門",
+          "level": "都県",
+          "result": "努力賞",
+          "source_url": "https://www.pen-kanagawa.ed.jp/sagamikoyokan-h/bukatsu/band.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第56回神奈川県定時制・通信制高等学校芸術祭 軽音楽部門",
+          "level": "都県",
+          "result": "努力賞",
+          "source_url": "https://www.pen-kanagawa.ed.jp/sagamikoyokan-h/bukatsu/band.html"
+        }
+      ]
+    },
+    {
+      "name": "合唱部",
+      "kind": "文化",
+      "days_note": "月・水",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日は週2日で、コンクール成績の記載なし",
+      "source_url": "https://www.pen-kanagawa.ed.jp/sagamikoyokan-h/bukatsu/chorus.html",
+      "as_of": "2026-08",
+      "results": []
+    },
+    {
+      "name": "まんが部",
+      "kind": "文化",
+      "source_url": "https://www.pen-kanagawa.ed.jp/sagamikoyokan-h/nyugaku/documents/gakkou_navigation2026.pdf",
+      "as_of": "2026-08",
+      "results": []
+    },
+    {
+      "name": "ハンドメイド部",
+      "kind": "文化",
+      "days_note": "火・金",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日は週2日で、成績・発表の記載なし",
+      "source_url": "https://www.pen-kanagawa.ed.jp/sagamikoyokan-h/bukatsu/handmade.html",
+      "as_of": "2026-08",
+      "results": []
+    },
+    {
+      "name": "畑部",
+      "kind": "文化",
+      "days_note": "平日:不定期",
+      "weekend": "なし",
+      "source_url": "https://www.pen-kanagawa.ed.jp/sagamikoyokan-h/bukatsu/field.html",
+      "as_of": "2026-08",
+      "results": []
+    },
+    {
+      "name": "文芸部",
+      "kind": "文化",
+      "days_note": "平日:月2回程度",
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動は月2回程度(週3日以下相当)で、大会・コンクール成績の記載なし",
+      "source_url": "https://www.pen-kanagawa.ed.jp/sagamikoyokan-h/bukatsu/literature.html",
+      "as_of": "2026-08",
+      "results": []
+    },
+    {
+      "name": "演劇部",
+      "kind": "文化",
+      "days_note": "月・水・金",
+      "days_per_week": 3,
+      "weekend": "なし",
+      "tier": 3,
+      "tier_basis": "2024年度 神奈川県定時制・通信制高等学校芸術祭で優秀賞(定通限定の大会のため手引き§6の定通割引で段階3)。2022年度の最優秀賞・優秀演技賞は直近3年(2023年度以降)より前のため根拠にしない",
+      "source_url": "https://www.pen-kanagawa.ed.jp/sagamikoyokan-h/bukatsu/drama.html",
+      "as_of": "2026-08",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "第55回神奈川県定時制・通信制高等学校芸術祭",
+          "level": "都県",
+          "result": "優秀賞",
+          "source_url": "https://www.pen-kanagawa.ed.jp/sagamikoyokan-h/bukatsu/drama.html"
+        }
+      ]
+    },
+    {
+      "name": "写真部",
+      "kind": "文化",
+      "source_url": "https://www.pen-kanagawa.ed.jp/sagamikoyokan-h/nyugaku/documents/gakkou_navigation2026.pdf",
+      "as_of": "2026-08",
+      "results": []
+    },
+    {
+      "name": "ゲーム制作研究部",
+      "kind": "文化",
+      "days_note": "水・金",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日は週2日で、実績の記載なし",
+      "source_url": "https://www.pen-kanagawa.ed.jp/sagamikoyokan-h/bukatsu/game.html",
+      "as_of": "2026-08",
+      "results": []
+    },
+    {
+      "name": "茶道部",
+      "kind": "文化",
+      "days_note": "月",
+      "days_per_week": 1,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日は週1日で、大会・発表の成績記載なし",
+      "source_url": "https://www.pen-kanagawa.ed.jp/sagamikoyokan-h/bukatsu/tea-ceremony.html",
+      "as_of": "2026-08",
+      "results": []
+    },
+    {
+      "name": "美術部",
+      "kind": "文化",
+      "days_note": "月・水・金",
+      "days_per_week": 3,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動日は週3日(平日のみ)で、展覧会・コンクール成績の記載なし",
+      "source_url": "https://www.pen-kanagawa.ed.jp/sagamikoyokan-h/bukatsu/art.html",
+      "as_of": "2026-08",
+      "results": []
+    },
+    {
+      "name": "料理部",
+      "kind": "文化",
+      "source_url": "https://www.pen-kanagawa.ed.jp/sagamikoyokan-h/nyugaku/documents/gakkou_navigation2026.pdf",
+      "as_of": "2026-08",
+      "results": []
+    },
+    {
+      "name": "放送同好会",
+      "kind": "同好会",
+      "source_url": "https://www.pen-kanagawa.ed.jp/sagamikoyokan-h/nyugaku/documents/gakkou_navigation2026.pdf",
+      "as_of": "2026-08",
+      "results": []
+    },
+    {
+      "name": "天文同好会",
+      "kind": "同好会",
+      "source_url": "https://www.pen-kanagawa.ed.jp/sagamikoyokan-h/nyugaku/documents/gakkou_navigation2026.pdf",
+      "as_of": "2026-08",
+      "results": []
+    },
+    {
+      "name": "かるた同好会",
+      "kind": "同好会",
+      "days_note": "隔週月曜",
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "活動は隔週月曜(週3日以下相当)で、大会成績の記載なし",
+      "source_url": "https://www.pen-kanagawa.ed.jp/sagamikoyokan-h/bukatsu/karuta.html",
+      "as_of": "2026-08",
+      "results": []
+    },
+    {
+      "name": "映像研究同好会",
+      "kind": "同好会",
+      "source_url": "https://www.pen-kanagawa.ed.jp/sagamikoyokan-h/nyugaku/documents/gakkou_navigation2026.pdf",
+      "as_of": "2026-08",
+      "results": []
+    }
+  ],
+  "designated_universities": [],
+  "events": [],
+  "unresolved": [
+    "生徒数(男女別・学年別)：公式資料に記載なし。学校案内2026(学校ナビゲーション)p.2に「840名を超える生徒が在籍」とのみ記載",
+    "指定校推薦の大学：公開なし(進路ページ・学校案内2026を確認したが指定校推薦の記載なし)",
+    "進路の入試方式別割合(一般・指定校推薦・公募推薦・総合型)：公開なし",
+    "進路決定率：具体的な%の記載なし(令和7年度卒業生進路状況は人数の内訳のみ、学校案内2026 p.13)",
+    "部活動加入率：学校サイトに「のべ人数で全校生徒の約半分が活動」とあるのみで具体的な%の記載なし",
+    "満足度：神奈川県様式の学校評価報告書は文章のみで数値の記載が見当たらず(学校運営協議会の開催結果PDFのみ公開)",
+    "ハンドボール部・剣道部・まんが部・写真部・料理部・放送同好会・天文同好会・映像研究同好会：個別の部活動ページがなく、学校案内2026の部・同好会一覧(28の部・同好会)に名前があるのみで、活動日・実績とも不明",
+    "バドミントン部の「神奈川県大会」「インターハイ予選」が定時制・通信制の大会か全日制を含む大会か、部のページに明記がない（定通の大会とみなして段階を付けた）"
+  ],
+  "conflicts": []
+}

@@ -1,0 +1,803 @@
+{
+  "prefecture": "神奈川県",
+  "school_name": "横浜平沼",
+  "official_url": "https://www.pen-kanagawa.ed.jp/yokohamahiranuma-h/",
+  "researched_at": "2026-09-28",
+  "stats": [
+    {
+      "metric": "designation",
+      "item": "学力向上進学重点校エントリー校",
+      "value_text": "指定",
+      "fiscal_year": 2026,
+      "source_url": "https://www.pen-kanagawa.ed.jp/gakuryokukoujou/",
+      "source_label": "神奈川県教育委員会 学力向上進学重点校・エントリー校",
+      "as_of": "2026-09",
+      "note": "横浜北東・川崎地域のエントリー校。学力向上進学重点校（上位区分）ではない"
+    },
+    {
+      "metric": "uniform",
+      "item": "",
+      "fiscal_year": 2026,
+      "value_text": "男子は黒の詰襟学生服。女子は紺のジャンパースカート、または紺ブレザー+スカート（スカートはブレザーとの組み合わせ）。略装は白シャツ+紺スカート等の簡略な着こなしも可",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamahiranuma-h/nyugaku/documents/r8gakkounannnai.pdf",
+      "source_label": "横浜平沼高校 令和8年度学校案内",
+      "as_of": "2026-04",
+      "note": ""
+    },
+    {
+      "metric": "rules_summary",
+      "item": "",
+      "fiscal_year": 2026,
+      "value_text": "頭髪・スマートフォンについての規定の記載なし。アルバイトは原則禁止（やむを得ない場合は保護者承諾のうえ「アルバイト届」を提出）。自転車通学・登下校時間帯なども規定",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamahiranuma-h/seikatsu/documents/2020student-rules.pdf",
+      "source_label": "横浜平沼高校 生徒心得",
+      "as_of": "2026-09",
+      "note": ""
+    },
+    {
+      "metric": "university_count",
+      "item": "国公立",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 46,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamahiranuma-h/shinro/documents/shinro123.pdf",
+      "source_label": "横浜平沼高校 進路状況一覧表（令和8年4月3日現在）",
+      "as_of": "2026-04-03",
+      "note": "大学別の表から合算（令和7年度・123期生の列）"
+    },
+    {
+      "metric": "university_count",
+      "item": "国公立",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 44,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamahiranuma-h/shinro/documents/shinro123.pdf",
+      "source_label": "横浜平沼高校 進路状況一覧表（令和8年4月3日現在）",
+      "as_of": "2026-04-03",
+      "note": "大学別の表から合算し、表の「過年度生の内数」（東京芸術大1・横浜市立大1）を除いた延べ数"
+    },
+    {
+      "metric": "university_count",
+      "item": "早慶上理",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 58,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamahiranuma-h/shinro/documents/shinro123.pdf",
+      "source_label": "横浜平沼高校 進路状況一覧表（令和8年4月3日現在）",
+      "as_of": "2026-04-03",
+      "note": "大学別の表から合算（早稲田24・慶應義塾14・上智7・東京理科13）"
+    },
+    {
+      "metric": "university_count",
+      "item": "早慶上理",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 53,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamahiranuma-h/shinro/documents/shinro123.pdf",
+      "source_label": "横浜平沼高校 進路状況一覧表（令和8年4月3日現在）",
+      "as_of": "2026-04-03",
+      "note": "大学別の表から合算し、過年度生の内数（計5）を除いた延べ数"
+    },
+    {
+      "metric": "university_count",
+      "item": "GMARCH",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 216,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamahiranuma-h/shinro/documents/shinro123.pdf",
+      "source_label": "横浜平沼高校 進路状況一覧表（令和8年4月3日現在）",
+      "as_of": "2026-04-03",
+      "note": "大学別の表から合算（学習院15・明治47・青山学院43・立教35・中央34・法政42）"
+    },
+    {
+      "metric": "university_count",
+      "item": "GMARCH",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 208,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamahiranuma-h/shinro/documents/shinro123.pdf",
+      "source_label": "横浜平沼高校 進路状況一覧表（令和8年4月3日現在）",
+      "as_of": "2026-04-03",
+      "note": "大学別の表から合算し、過年度生の内数（計8）を除いた延べ数"
+    },
+    {
+      "metric": "university_count",
+      "item": "成成明武",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 73,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamahiranuma-h/shinro/documents/shinro123.pdf",
+      "source_label": "横浜平沼高校 進路状況一覧表（令和8年4月3日現在）",
+      "as_of": "2026-04-03",
+      "note": "大学別の表から合算（成蹊6・成城16・明治学院51・武蔵0）"
+    },
+    {
+      "metric": "university_count",
+      "item": "成成明武",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 69,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamahiranuma-h/shinro/documents/shinro123.pdf",
+      "source_label": "横浜平沼高校 進路状況一覧表（令和8年4月3日現在）",
+      "as_of": "2026-04-03",
+      "note": "大学別の表から合算し、過年度生の内数（計4）を除いた延べ数"
+    },
+    {
+      "metric": "university_count",
+      "item": "日東駒専",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 132,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamahiranuma-h/shinro/documents/shinro123.pdf",
+      "source_label": "横浜平沼高校 進路状況一覧表（令和8年4月3日現在）",
+      "as_of": "2026-04-03",
+      "note": "大学別の表から合算（日本35・東洋38・駒澤28・専修31）"
+    },
+    {
+      "metric": "university_count",
+      "item": "日東駒専",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 130,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamahiranuma-h/shinro/documents/shinro123.pdf",
+      "source_label": "横浜平沼高校 進路状況一覧表（令和8年4月3日現在）",
+      "as_of": "2026-04-03",
+      "note": "大学別の表から合算し、過年度生の内数（計2、日本大のみ）を除いた延べ数"
+    },
+    {
+      "metric": "university_count",
+      "item": "神奈川大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 39,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamahiranuma-h/shinro/documents/shinro123.pdf",
+      "source_label": "横浜平沼高校 進路状況一覧表（令和8年4月3日現在）",
+      "as_of": "2026-04-03",
+      "note": "大学群以外で合格が多い大学（上位5つ）"
+    },
+    {
+      "metric": "university_count",
+      "item": "東海大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 30,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamahiranuma-h/shinro/documents/shinro123.pdf",
+      "source_label": "横浜平沼高校 進路状況一覧表（令和8年4月3日現在）",
+      "as_of": "2026-04-03",
+      "note": "大学群以外で合格が多い大学（上位5つ）"
+    },
+    {
+      "metric": "university_count",
+      "item": "國學院大學",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 19,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamahiranuma-h/shinro/documents/shinro123.pdf",
+      "source_label": "横浜平沼高校 進路状況一覧表（令和8年4月3日現在）",
+      "as_of": "2026-04-03",
+      "note": "大学群以外で合格が多い大学（上位5つ）"
+    },
+    {
+      "metric": "university_count",
+      "item": "関東学院大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 18,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamahiranuma-h/shinro/documents/shinro123.pdf",
+      "source_label": "横浜平沼高校 進路状況一覧表（令和8年4月3日現在）",
+      "as_of": "2026-04-03",
+      "note": "大学群以外で合格が多い大学（上位5つ）"
+    },
+    {
+      "metric": "university_count",
+      "item": "日本女子大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 17,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamahiranuma-h/shinro/documents/shinro123.pdf",
+      "source_label": "横浜平沼高校 進路状況一覧表（令和8年4月3日現在）",
+      "as_of": "2026-04-03",
+      "note": "大学群以外で合格が多い大学（上位5つ）"
+    }
+  ],
+  "clubs": [
+    {
+      "name": "硬式野球部",
+      "kind": "運動",
+      "days_note": "月・水・木・金・土・日（火曜日は休養日）",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2023〜2026年度の全国高校野球選手権神奈川大会はいずれも初戦〜3回戦で敗退（一球速報。2023年度は2勝の後3回戦、2024・2025年度は初戦、2026年度は1勝の後2回戦で敗退）。直近3年でベスト16未到達",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamahiranuma-h/seikatsu/bukatsur30303/undo/basaball.html",
+      "as_of": "2026-09-04",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "第105回全国高等学校野球選手権記念神奈川大会",
+          "level": "都県",
+          "result": "2勝の後3回戦敗退（対鶴嶺 7-10）",
+          "happened_on": "2023-07-14",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=12295&year=2023"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "第106回全国高等学校野球選手権神奈川大会",
+          "level": "都県",
+          "result": "初戦敗退（対横浜隼人 0-9、7回コールド）",
+          "happened_on": "2024-07-07",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=12295&year=2024"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第107回全国高等学校野球選手権神奈川大会",
+          "level": "都県",
+          "result": "初戦敗退（対弥栄 0-8、7回コールド）",
+          "happened_on": "2025-07-10",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=12295&year=2025"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "第108回全国高等学校野球選手権神奈川大会",
+          "level": "都県",
+          "result": "1勝の後2回戦敗退（対相模原弥栄 5-12）",
+          "happened_on": "2026-07-11",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=12295&year=2025"
+        }
+      ]
+    },
+    {
+      "name": "サッカー部",
+      "kind": "運動",
+      "days_note": "週5～6（毎週月曜＋土日で適度にオフ）",
+      "days_per_week": 5.5,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2026年度 高円宮杯U-18サッカーリーグ神奈川 K6 Group C所属（3位）。男子はK5・K6が段階3の基準（サッカー部はリーグ所属で判定）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamahiranuma-h/seikatsu/bukatsur30303/undo/soccer.html",
+      "as_of": "2026-08-06",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "第105回全国高校サッカー選手権大会 神奈川県1次予選",
+          "level": "都県",
+          "result": "3回戦を突破し平沼高校史上初の2次予選進出（3回戦 対鶴見大付属 3-1勝利）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamahiranuma-h/seikatsu/bukatsur30303/undo/soccer.html"
+        }
+      ]
+    },
+    {
+      "name": "男子バスケットボール部",
+      "kind": "運動",
+      "days_note": "体育館練習：火(隔週)・木・金・土・日(隔週)、外練：水",
+      "days_per_week": 5,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "都県予選（春の選抜予選・総体予選・新人戦等）に出場しているが結果の記載がなく、目標も「県大会出場」との記載にとどまる",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamahiranuma-h/seikatsu/bukatsur30303/undo/basketmen.html",
+      "as_of": "2024-03-06"
+    },
+    {
+      "name": "女子バスケットボール部",
+      "kind": "運動",
+      "days_note": "月・火・木・金・土・日（土日は半日練習or練習ゲームor試合）",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "関東予選・総体予選・新人戦等に出場しているが結果の記載がなく、目標も「県大会出場」との記載にとどまる",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamahiranuma-h/seikatsu/bukatsur30303/undo/basketwomen.html",
+      "as_of": "2024-03-06"
+    },
+    {
+      "name": "ダンス部 (yhdc)",
+      "kind": "運動",
+      "days_note": "平日4日、休日1日の週5日間",
+      "days_per_week": 5,
+      "tier": 2,
+      "tier_basis": "2025年度 第17回日本高校ダンス部選手権（DANCE STADIUM）夏の全国大会に出場し、予選4位入賞を経て全国準決勝進出（301校中24位）。直近3年で全国大会出場が確認できたのは1回",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamahiranuma-h/seikatsu/bukatsur30303/undo/dance.html",
+      "as_of": "2024-10-25",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "第17回日本高校ダンス部選手権 夏の公式全国大会（DANCE STADIUM）",
+          "level": "全国",
+          "result": "全国準決勝進出（301校中24位）、予選（東日本大会）4位入賞で全国出場",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamahiranuma-h/seikatsu/bukatsur30303/undo/dance.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第17回日本高校ダンス部選手権 春の公式大会新人戦 東日本大会",
+          "level": "関東",
+          "result": "優秀賞",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamahiranuma-h/seikatsu/bukatsur30303/undo/dance.html"
+        }
+      ]
+    },
+    {
+      "name": "剣道部",
+      "kind": "運動",
+      "days_note": "月・火・木・金 16:15～、土 9:00～",
+      "days_per_week": 5,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "2024年度 横浜地区大会（女子団体）5位、西区剣道大会（男子団体）3位にとどまり、地区大会レベルの成績のみ。関東予選・インターハイ予選・選抜予選は「出場」の記載のみで結果の記載がない",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamahiranuma-h/seikatsu/bukatsur30303/undo/kendo.html",
+      "as_of": "2025-04-15"
+    },
+    {
+      "name": "弓道部",
+      "kind": "運動",
+      "days_note": "週5日（木曜日は自主練習、日曜日は休み）",
+      "days_per_week": 5,
+      "weekend": "土",
+      "tier": 1,
+      "tier_basis": "団体で都県ベスト8以上が複数回（2023年度新人戦 男子団体優勝、2023年度県総合体育大会 男子団体3位、2025年度総体県予選 女子団体6位）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamahiranuma-h/seikatsu/bukatsur30303/undo/kyudo.html",
+      "as_of": "2025-07-25",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "神奈川県高等学校弓道新人戦大会",
+          "level": "都県",
+          "result": "男子団体優勝、男子個人優勝、女子個人7位",
+          "happened_on": "2023-10-08",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamahiranuma-h/seikatsu/bukatsur30303/undo/kyudo.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "第60回神奈川県総合体育大会 弓道競技",
+          "level": "都県",
+          "result": "男子団体3位、男子個人3位",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamahiranuma-h/seikatsu/bukatsur30303/undo/kyudo.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "関東individual選抜大会県予選",
+          "level": "都県",
+          "result": "女子個人4位・敢闘賞（13位）、男子個人5位。上位3名が関東個人選手権大会（明治神宮）に出場、男子は決勝進出（上位16名）",
+          "happened_on": "2023-08-27",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamahiranuma-h/seikatsu/bukatsur30303/undo/kyudo.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "全国高校総体県予選",
+          "level": "都県",
+          "result": "男子個人2位（全国高校総体弓道大会に神奈川県代表として出場）、女子団体6位",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamahiranuma-h/seikatsu/bukatsur30303/undo/kyudo.html"
+        }
+      ]
+    },
+    {
+      "name": "バレーボール部（女子）",
+      "kind": "運動",
+      "days_note": "月・火・水・金・土・（日）",
+      "days_per_week": 5.5,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "2025年度 横浜市夏季大会Cブロック優勝（地区大会）にとどまり、都県大会（関東大会県予選・新人大会）は「出場」の記載のみで結果の記載がない",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamahiranuma-h/seikatsu/bukatsur30303/undo/volley.html",
+      "as_of": "2026-02-06"
+    },
+    {
+      "name": "バドミントン部",
+      "kind": "運動",
+      "days_note": "毎週月・水・木(朝)・金・土 or 日",
+      "days_per_week": 5,
+      "tier": 3,
+      "tier_basis": "都県予選（総体予選）で個人戦最高6位（女子シングルス・ダブルス）、男子団体は県ベスト32入り（1回）にとどまり、上位進出の継続的な実績はない",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamahiranuma-h/seikatsu/bukatsur30303/undo/badminton.html",
+      "as_of": "2026-04-30"
+    },
+    {
+      "name": "ハンドボール部（女子）",
+      "kind": "運動",
+      "days_note": "平日：火曜定休／土・日・祝日：不定休（公式戦の有無により変動）",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "tier": 1,
+      "tier_basis": "2023年度全国高校総体出場、2024年度全国高校総体ベスト16（平沼高校初）・全国選抜大会出場、2025年度全国高校総体県予選3位・関東大会出場、2026年度も関東大会出場決定。直近3年で全国・関東大会出場が毎年（複数回）続いている",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamahiranuma-h/seikatsu/bukatsur30303/undo/hand.html",
+      "as_of": "2026-05-13",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "全国高等学校総合体育大会 ハンドボール競技",
+          "level": "全国",
+          "result": "1回戦勝利、2回戦敗退（対高岡向陵 21-31）",
+          "happened_on": "2023-07-25",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamahiranuma-h/seikatsu/bukatsur30303/undo/hand.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "全国高等学校総合体育大会 ハンドボール競技",
+          "level": "全国",
+          "result": "3回戦進出、ベスト16（平沼高校初の全国大会ベスト16）",
+          "happened_on": "2024-08-07",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamahiranuma-h/seikatsu/bukatsur30303/undo/hand.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "関東高等学校ハンドボール大会",
+          "level": "関東",
+          "result": "3位入賞（5年ぶり2度目）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamahiranuma-h/seikatsu/bukatsur30303/undo/hand.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "全国高等学校総合体育大会神奈川県予選会",
+          "level": "都県",
+          "result": "3位",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamahiranuma-h/seikatsu/bukatsur30303/undo/hand.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "関東高等学校ハンドボール大会",
+          "level": "関東",
+          "result": "準々決勝進出（14年連続出場）",
+          "happened_on": "2025-05-30",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamahiranuma-h/seikatsu/bukatsur30303/undo/hand.html"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "関東高等学校ハンドボール大会 神奈川県予選会",
+          "level": "都県",
+          "result": "第5代表決定戦を制し出場権獲得（14年連続）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamahiranuma-h/seikatsu/bukatsur30303/undo/hand.html"
+        }
+      ]
+    },
+    {
+      "name": "陸上競技部",
+      "kind": "運動",
+      "days_note": "月・火・水・金曜の放課後と土曜の午前（シーズン中は変動あり）",
+      "days_per_week": 5,
+      "weekend": "土",
+      "tier": 2,
+      "tier_basis": "個人種目のため上限は段階2。2024年度新人大会で男子走高跳（北村）が県2位となり関東高等学校選抜新人陸上競技大会に出場（約10年ぶり）。関東出場は直近3年で1回にとどまる",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamahiranuma-h/seikatsu/bukatsur30303/undo/rikujyo.html",
+      "as_of": "2026-09-07",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "第66回神奈川県高等学校新人陸上競技大会",
+          "level": "都県",
+          "result": "男子走高跳2位（関東大会進出）、男子走幅跳5位入賞",
+          "happened_on": "2024-09-14",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamahiranuma-h/seikatsu/bukatsur30303/undo/rikujyo.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "第28回関東高等学校選抜新人陸上競技選手権大会",
+          "level": "関東",
+          "result": "男子走高跳1m85でトップ8に届かず（約10年ぶりの関東大会出場）",
+          "happened_on": "2024-10-19",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamahiranuma-h/seikatsu/bukatsur30303/undo/rikujyo.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第63回神奈川県高等学校総合体育大会",
+          "level": "都県",
+          "result": "決勝進出種目なし（リレー種目が予選11〜15番目にとどまる）",
+          "happened_on": "2025-05-18",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamahiranuma-h/seikatsu/bukatsur30303/undo/rikujyo.html"
+        }
+      ]
+    },
+    {
+      "name": "テニス部（男子）",
+      "kind": "運動",
+      "days_note": "月・火・木・金の放課後、土日のどちらか",
+      "days_per_week": 5,
+      "tier": 3,
+      "tier_basis": "都県大会（新人戦・総体）に出場しているが、確認できた結果は横浜地区リーグ5部優勝（地区）の1件のみで、都県大会での上位進出を示す記録がない",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamahiranuma-h/seikatsu/bukatsur30303/undo/tennismen.html",
+      "as_of": "2024-08-20"
+    },
+    {
+      "name": "テニス部（女子）",
+      "kind": "運動",
+      "days_note": "平日:火曜―金曜の放課後　土日:半日もしくは練習試合の場合は全日",
+      "days_per_week": 4.5,
+      "tier": 2,
+      "tier_basis": "都県大会（総体県予選・新人大会）団体の部で、2023年度ベスト8、2024年度ベスト16、2025年度ベスト16（ベスト8が1回・ベスト16〜32が複数回）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamahiranuma-h/seikatsu/bukatsur30303/undo/tenniswomen.html",
+      "as_of": "2026-09-14",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "神奈川県高等学校新人テニス大会",
+          "level": "都県",
+          "result": "団体の部 ベスト8",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamahiranuma-h/seikatsu/bukatsur30303/undo/tenniswomen.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "神奈川県高等学校新人テニス大会（兼全国選抜大会県予選）",
+          "level": "都県",
+          "result": "団体の部 ベスト16",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamahiranuma-h/seikatsu/bukatsur30303/undo/tenniswomen.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "神奈川県高等学校テニス大会（兼全国高校総体県予選）",
+          "level": "都県",
+          "result": "団体の部 ベスト16、個人の部シングルス1ペアがベスト32",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamahiranuma-h/seikatsu/bukatsur30303/undo/tenniswomen.html"
+        }
+      ]
+    },
+    {
+      "name": "美術部",
+      "kind": "文化",
+      "days_note": "放課後の週3日",
+      "days_per_week": 3,
+      "tier": 3,
+      "tier_basis": "2023年度 全国高等学校総合文化祭（かごしま総文祭）に神奈川県代表として作品を出品したが、展示型のため段階3にとどまる（入選・出品であり上位の賞ではない）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamahiranuma-h/seikatsu/bukatsur30303/bunka/art.html",
+      "as_of": "2023-07"
+    },
+    {
+      "name": "文芸部",
+      "kind": "文化",
+      "days_note": "随時",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamahiranuma-h/seikatsu/bukatsur30303/bunka/bungei.html",
+      "as_of": "2026-09",
+      "note": "活動は文化祭での部誌発行が中心。活動日・大会実績とも段階を付けられる情報がない"
+    },
+    {
+      "name": "演劇部",
+      "kind": "文化",
+      "days_note": "通常活動日：月・火・木・金曜の放課後および土曜（水・日曜日がオフ）",
+      "days_per_week": 5,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "2023年度 横浜市高等学校春季演劇発表会で審査員特別賞（脚本・演出賞、市大会）にとどまり、神奈川県大会進出の記載がない（全国高等学校演劇大会には上演校としてではなく「生徒講評委員会」委員として参加）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamahiranuma-h/seikatsu/bukatsur30303/bunka/engeki.html",
+      "as_of": "2023-08"
+    },
+    {
+      "name": "英語ディベート同好会",
+      "kind": "同好会",
+      "days_note": "毎週月曜日・土曜日",
+      "days_per_week": 2,
+      "tier": 3,
+      "tier_basis": "2023年度 学力向上進学重点校・エントリー校18校による即興型英語ディベート交流大会（参加校限定の大会）でPOI賞等を受賞したが、公式大会での順位の記載がない",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamahiranuma-h/seikatsu/bukatsur30303/bunka/englishdebate.html",
+      "as_of": "2023-11"
+    },
+    {
+      "name": "合唱部",
+      "kind": "文化",
+      "days_note": "毎週月・木曜日",
+      "days_per_week": 2,
+      "tier": 4,
+      "tier_basis": "活動日は週2日で、平沼祭・神奈川県高等学校合唱祭とも発表の場であり、順位や賞などの大会成績の記載がない",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamahiranuma-h/seikatsu/bukatsur30303/bunka/gassho.html",
+      "as_of": "2026-09"
+    },
+    {
+      "name": "ハンドメイド部",
+      "kind": "文化",
+      "days_note": "毎週月・金の放課後",
+      "days_per_week": 2,
+      "tier": 4,
+      "tier_basis": "活動日は週2日で、活動は文化祭での作品展示のみにとどまり、大会成績の記載がない",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamahiranuma-h/seikatsu/bukatsur30303/bunka/handmade.html",
+      "as_of": "2026-09"
+    },
+    {
+      "name": "オーケストラ部（HOC）",
+      "kind": "文化",
+      "days_note": "平日16:00～18:30（火曜を除く）、土曜9:00～12:30",
+      "days_per_week": 5,
+      "weekend": "土",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamahiranuma-h/seikatsu/bukatsur30303/bunka/hoc.html",
+      "as_of": "2026-03",
+      "note": "神奈川県内の公立高校で唯一「オーケストラ」を名乗る部。活動は定期演奏会中心でコンクール等への出場記録がないため段階を付けていない"
+    },
+    {
+      "name": "放送部",
+      "kind": "文化",
+      "days_note": "水曜日の放課後（定例打合せ）＆平日の昼休み（放送担当日）",
+      "days_per_week": 5,
+      "tier": 3,
+      "tier_basis": "NHK杯全国高校放送コンテスト県大会や県高校総合文化祭に希望者が出場しているが、2023年度以降の結果の記載がない",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamahiranuma-h/seikatsu/bukatsur30303/bunka/houso.html",
+      "as_of": "2026-09"
+    },
+    {
+      "name": "華道部",
+      "kind": "文化",
+      "days_note": "毎週火曜日放課後",
+      "days_per_week": 1,
+      "tier": 4,
+      "tier_basis": "活動日は週1日で、活動は校内展示や文化祭・地域イベントでの作品展示が中心であり、大会成績の記載がない",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamahiranuma-h/seikatsu/bukatsur30303/bunka/kado.html",
+      "as_of": "2024-07-01"
+    },
+    {
+      "name": "かるた部",
+      "kind": "文化",
+      "tier": 1,
+      "tier_basis": "2025年度 全国高等学校かるた選手権大会（近江大会）全国4位、関東大会4位。2026年度 同大会で全国優勝（創部以来初）。直近3年で全国・関東大会出場が複数回（毎年）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamahiranuma-h/seikatsu/bukatsur30303/bunka/karuta.html",
+      "as_of": "2026-07-20",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "全国高等学校かるた選手権大会（近江大会）",
+          "level": "全国",
+          "result": "全国4位（準決勝敗退、3位決定戦敗退）",
+          "happened_on": "2025-07-19",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamahiranuma-h/seikatsu/bukatsur30303/bunka/karuta.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "全国高等学校かるた選手権大会 関東大会",
+          "level": "関東",
+          "result": "Aチーム4位",
+          "happened_on": "2025-11-02",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamahiranuma-h/seikatsu/bukatsur30303/bunka/karuta.html"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "全国高等学校かるた選手権大会（近江大会）",
+          "level": "全国",
+          "result": "全国優勝（創部以来初、2年連続9度目の出場）",
+          "happened_on": "2026-07-18",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamahiranuma-h/seikatsu/bukatsur30303/bunka/karuta.html"
+        }
+      ]
+    },
+    {
+      "name": "国際交流部",
+      "kind": "文化",
+      "tier": null,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamahiranuma-h/seikatsu/bukatsur30303/bunka/koukusai.html",
+      "as_of": "2024-12-11",
+      "note": "ALT講師との昼休みディスカッションや留学生への日本語レッスンが中心。本文中では「国際交流同好会」とも表記される。活動日・大会実績の記載がなく段階を付けていない"
+    },
+    {
+      "name": "漫画研究部",
+      "kind": "文化",
+      "days_note": "毎週火曜日の放課後",
+      "days_per_week": 1,
+      "tier": 4,
+      "tier_basis": "活動日は週1日で、活動は部誌配布・展示や任意のイラストコンクール参加が中心であり、大会成績の記載がない",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamahiranuma-h/seikatsu/bukatsur30303/bunka/manga.html",
+      "as_of": "2026-09"
+    },
+    {
+      "name": "写真部",
+      "kind": "文化",
+      "days_note": "毎週木曜日の放課後（月1回、休日に外部撮影会）",
+      "days_per_week": 1,
+      "tier": 4,
+      "tier_basis": "活動日は週1日で、活動は学校行事の撮影と文化祭での展示発表にとどまり、大会成績の記載がない",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamahiranuma-h/seikatsu/bukatsur30303/bunka/picture.html",
+      "as_of": "2026-09"
+    },
+    {
+      "name": "クイズ研究部",
+      "kind": "文化",
+      "days_note": "月・水・金の放課後を中心に活動",
+      "days_per_week": 3,
+      "tier": 4,
+      "tier_basis": "活動日は週3日で、対外的なクイズ大会での順位等の記載はない（令和5年3月の神奈川県高等学校文化連盟連盟賞は活動そのものへの表彰であり大会の成績ではない）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamahiranuma-h/seikatsu/bukatsur30303/bunka/quiz.html",
+      "as_of": "2023-12"
+    },
+    {
+      "name": "生物研究部",
+      "kind": "文化",
+      "days_note": "月・木曜日（文化祭、発表大会前は不定期に増える）",
+      "days_per_week": 2,
+      "tier": 3,
+      "tier_basis": "神奈川県高等学校理科部研究発表大会で2023年度 奨励賞・2024年度 青少年センター長賞。研究発表会の賞で上位の賞ではないため段階3（見直しで2→3）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamahiranuma-h/seikatsu/bukatsur30303/bunka/seibutsu.html",
+      "as_of": "2025-11-11",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "第34回神奈川県高等学校理科部研究発表大会",
+          "level": "都県",
+          "result": "奨励賞（「帷子川・生態系と水質の実態調査」）",
+          "happened_on": "2023-11-05",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamahiranuma-h/seikatsu/bukatsur30303/bunka/seibutsu.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "第35回神奈川県高等学校理科部研究発表大会",
+          "level": "都県",
+          "result": "青少年センター長賞（「三戸浜におけるタカラガイの漂着個体についての調査」）",
+          "happened_on": "2024-11-10",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamahiranuma-h/seikatsu/bukatsur30303/bunka/seibutsu.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第36回神奈川県高等学校理科部研究発表大会",
+          "level": "都県",
+          "result": "発表（「帷子川と潮のつながり」、受賞の記載なし）",
+          "happened_on": "2025-11-03",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamahiranuma-h/seikatsu/bukatsur30303/bunka/seibutsu.html"
+        }
+      ]
+    },
+    {
+      "name": "吹奏楽部",
+      "kind": "文化",
+      "tier": 2,
+      "tier_basis": "2024年度 横浜地区大会金賞→県大会進出（13年ぶり）で銀賞、2025年度 県大会金賞→東関東大会に初出場（銅賞）。関東大会出場は直近3年で1回にとどまる",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamahiranuma-h/seikatsu/bukatsur30303/bunka/suisougaku.html",
+      "as_of": "2026-04-17",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "吹奏楽コンクール横浜地区大会・神奈川県大会",
+          "level": "都県",
+          "result": "地区大会金賞（13年ぶり県大会推薦）、県大会銀賞",
+          "happened_on": "2024-08-08",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamahiranuma-h/seikatsu/bukatsur30303/bunka/suisougaku.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "吹奏楽コンクール横浜地区大会・神奈川県大会・東関東大会",
+          "level": "関東",
+          "result": "地区大会金賞、県大会A部門金賞（東関東大会推薦、史上初）、東関東大会A部門銅賞",
+          "happened_on": "2025-09-06",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamahiranuma-h/seikatsu/bukatsur30303/bunka/suisougaku.html"
+        }
+      ]
+    },
+    {
+      "name": "茶道部",
+      "kind": "文化",
+      "days_note": "毎週水曜日 16:00～18:00（片付け含む）",
+      "days_per_week": 1,
+      "tier": 4,
+      "tier_basis": "活動日は週1日で、活動はお稽古・お茶会への参加が中心であり、大会成績の記載がない",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamahiranuma-h/seikatsu/bukatsur30303/bunka/sado.html",
+      "as_of": "2025-09-10"
+    },
+    {
+      "name": "軽音楽部",
+      "kind": "文化",
+      "days_note": "火・水・金の放課後、土・日（バンドごとに割り振られた時間のみ）",
+      "days_per_week": 5,
+      "weekend": "土日",
+      "tier": null,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamahiranuma-h/vand.html",
+      "as_of": "2026-09",
+      "note": "活動は文化祭・校内ライブや他校との合同ライブなど発表中心で、コンクール等への出場記録がなく段階を付けていない"
+    },
+    {
+      "name": "ボードゲーム同好会",
+      "kind": "同好会",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamahiranuma-h/nyugaku/documents/r8gakkounannnai.pdf",
+      "as_of": "2026-04",
+      "note": "令和8年度学校案内パンフレットの部活動一覧に名称のみ記載。学校サイトに独立した部活動ページが見つからず、活動日・実績とも確認できなかった"
+    }
+  ],
+  "designated_universities": [],
+  "events": [
+    {
+      "kind": "その他",
+      "period_label": "2025年度",
+      "summary": "創立125周年記念式典を実施",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamahiranuma-h/gaiyou/125syuunenn.html"
+    }
+  ],
+  "unresolved": [
+    "指定校推薦の大学一覧：公式の学校案内パンフレット（令和8年度版）・進路ページには合格実績のみで指定校推薦の記載がなく、他に公開資料が見つからなかった",
+    "満足度（satisfaction）：学校評価実施報告書（令和7年度）は文章のみで、生徒・保護者アンケートの数値（%）の記載がない",
+    "進路決定率（career_decided_rate）：進路状況一覧表に大学・短大・専門学校・就職・未定の内訳はあるが、学校自身が算出した決定率（%）の記載がない",
+    "入試方式別割合（admission_route_share）：一般・指定校推薦・公募推薦・総合型の実進学割合を示す資料が見つからなかった",
+    "推薦の倍率（exam_ratio）：神奈川県は共通選抜のため東京都のような推薦入試の区分がなく、該当する倍率データが見つからなかった",
+    "部活加入率（club_join_rate）：公式資料に加入率（%）の記載がなかった",
+    "生徒数（students、男女別在籍数）：公式資料に男女別在籍生徒数の記載がなかった（沿革ページも平成22年までで更新が止まっている）"
+  ],
+  "conflicts": [
+    "華道部：学校サイトには部活動ページ（2024年7月更新、活動継続を示す記載あり）が存在するが、令和8年度学校案内パンフレットの部活動一覧には名称の記載がなかった"
+  ]
+}
