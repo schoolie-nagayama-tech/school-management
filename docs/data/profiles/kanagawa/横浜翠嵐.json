@@ -1,0 +1,920 @@
+{
+  "prefecture": "神奈川県",
+  "school_name": "横浜翠嵐",
+  "official_url": "https://www.pen-kanagawa.ed.jp/yokohamasuiran-h/zennichi/",
+  "researched_at": "2026-09-28",
+  "stats": [
+    {
+      "metric": "designation",
+      "item": "学力向上進学重点校（アドバンス校）",
+      "basis": "",
+      "fiscal_year": 2026,
+      "value_text": "神奈川県教育委員会指定「学力向上進学重点校（アドバンス校）」（平成25年度指定）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasuiran-h/zennichi/gaiyou/kihonjjouhou.html",
+      "source_label": "横浜翠嵐高校 学校概要（基本情報）",
+      "as_of": "2026-09"
+    },
+    {
+      "metric": "designation",
+      "item": "DXハイスクール",
+      "basis": "",
+      "fiscal_year": 2025,
+      "value_text": "文部科学省DXハイスクール事業の指定（令和6年度から。学校評価報告書時点で2年目）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasuiran-h/zennichi/gaiyou/documents/r7_zen_kekka.pdf",
+      "source_label": "横浜翠嵐高校 令和7年度学校評価報告書（目標設定・実施結果）",
+      "as_of": "2026-04-01"
+    },
+    {
+      "metric": "university_count",
+      "item": "国公立",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 204,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasuiran-h/zennichi/shinro/documents/2025shinrokekka-2.pdf",
+      "source_label": "横浜翠嵐高校 2025年度卒業生 大学合格者数",
+      "as_of": "2026-04-01",
+      "note": "現役176・既卒28（合格者数総数）。学校集計の「国公立大学」総計欄。医学部医学科の現役合格者を複数含む（東京科学1・北海道1・横浜市立5等）。"
+    },
+    {
+      "metric": "university_count",
+      "item": "早慶上理",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 524,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasuiran-h/zennichi/shinro/documents/2025shinrokekka-2.pdf",
+      "source_label": "横浜翠嵐高校 2025年度卒業生 大学合格者数",
+      "as_of": "2026-04-01",
+      "note": "現役476・既卒48（早稲田200+慶應義塾135+上智35+東京理科154、いずれも合格者数総数）。学校集計の塊なし、大学別の表から合算。"
+    },
+    {
+      "metric": "university_count",
+      "item": "GMARCH",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 319,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasuiran-h/zennichi/shinro/documents/2025shinrokekka-2.pdf",
+      "source_label": "横浜翠嵐高校 2025年度卒業生 大学合格者数",
+      "as_of": "2026-04-01",
+      "note": "現役297・既卒22（明治176+青山学院25+立教24+中央49+法政43+学習院2、いずれも合格者数総数）。学校集計の塊なし、大学別の表から合算。"
+    },
+    {
+      "metric": "university_count",
+      "item": "成成明武",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 10,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasuiran-h/zennichi/shinro/documents/2025shinrokekka-2.pdf",
+      "source_label": "横浜翠嵐高校 2025年度卒業生 大学合格者数",
+      "as_of": "2026-04-01",
+      "note": "現役10・既卒0（成城1+明治学院8+武蔵1、いずれも合格者数総数）。成蹊は合格者一覧に記載なし（0）。学校集計の塊なし、大学別の表から合算。"
+    },
+    {
+      "metric": "university_count",
+      "item": "日東駒専",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 13,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasuiran-h/zennichi/shinro/documents/2025shinrokekka-2.pdf",
+      "source_label": "横浜翠嵐高校 2025年度卒業生 大学合格者数",
+      "as_of": "2026-04-01",
+      "note": "現役11・既卒2（日本6+東洋4+専修3、いずれも合格者数総数）。駒澤は合格者一覧に記載なし（0）。学校集計の塊なし、大学別の表から合算。"
+    },
+    {
+      "metric": "university_count",
+      "item": "合計",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 1160,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasuiran-h/zennichi/shinro/documents/2025shinrokekka-2.pdf",
+      "source_label": "横浜翠嵐高校 2025年度卒業生 大学合格者数",
+      "as_of": "2026-04-01",
+      "note": "国公立204+私立953+大学校2+海外大学1（いずれも合格者数総数、学校資料の総計欄）。現役1052・既卒108。4年制大学以外（大学校・海外大学）を含む。"
+    },
+    {
+      "metric": "university_count",
+      "item": "難関国立10大学＋国公立医学部医学科",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 115,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasuiran-h/zennichi/shinro/documents/2025shinrokekka-2.pdf",
+      "source_label": "横浜翠嵐高校 2025年度卒業生 大学合格者数（難関国立10大学＋国公立医学部医学科 現役合格者数推移）",
+      "as_of": "2026-04-01",
+      "note": "学校独自の集計区分（東京36・京都9・東京科学21・一橋7・北海道9・東北8・名古屋3・大阪4・九州2・神戸1・医学部医学科15の合計、2025(78期)行）。学力向上進学重点校の県指標対象大学群とみられる。"
+    },
+    {
+      "metric": "university_count",
+      "item": "難関国立大学等（県指標）",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 84,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasuiran-h/zennichi/gaiyou/documents/r7_zen_kekka.pdf",
+      "source_label": "横浜翠嵐高校 令和7年度学校評価報告書（目標設定・実施結果）",
+      "as_of": "2026-03-13",
+      "note": "「学力向上進学重点校として求められる進路実績の指標としての難関国立大学等の現役合格者数は84名（R8.3.13現在）で、県教委の定める指標（10名以上）を大きく上回り達成」との記載。進路状況PDF（4/1確定値）の「難関国立10大学＋国公立医学部医学科」現役115名とは集計時点・対象範囲が異なる可能性があり、conflictsに記載。"
+    },
+    {
+      "metric": "university_count",
+      "item": "早稲田",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 200,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasuiran-h/zennichi/shinro/documents/2025shinrokekka-2.pdf",
+      "source_label": "横浜翠嵐高校 2025年度卒業生 大学合格者数",
+      "as_of": "2026-04-01",
+      "note": "現役181・既卒19（合格者数総数）。単独大学で合格者数最多。"
+    },
+    {
+      "metric": "university_count",
+      "item": "明治",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 176,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasuiran-h/zennichi/shinro/documents/2025shinrokekka-2.pdf",
+      "source_label": "横浜翠嵐高校 2025年度卒業生 大学合格者数",
+      "as_of": "2026-04-01",
+      "note": "現役162・既卒14（合格者数総数）。"
+    },
+    {
+      "metric": "university_count",
+      "item": "東京理科",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 154,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasuiran-h/zennichi/shinro/documents/2025shinrokekka-2.pdf",
+      "source_label": "横浜翠嵐高校 2025年度卒業生 大学合格者数",
+      "as_of": "2026-04-01",
+      "note": "現役142・既卒12（合格者数総数）。"
+    },
+    {
+      "metric": "university_count",
+      "item": "慶應義塾",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 135,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasuiran-h/zennichi/shinro/documents/2025shinrokekka-2.pdf",
+      "source_label": "横浜翠嵐高校 2025年度卒業生 大学合格者数",
+      "as_of": "2026-04-01",
+      "note": "現役118・既卒17（合格者数総数）。"
+    },
+    {
+      "metric": "university_count",
+      "item": "中央",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 49,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasuiran-h/zennichi/shinro/documents/2025shinrokekka-2.pdf",
+      "source_label": "横浜翠嵐高校 2025年度卒業生 大学合格者数",
+      "as_of": "2026-04-01",
+      "note": "現役45・既卒4（合格者数総数）。"
+    },
+    {
+      "metric": "club_join_rate",
+      "item": "",
+      "basis": "",
+      "fiscal_year": 2024,
+      "value_num": 90,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasuiran-h/zennichi/seikatsu/bukatu/bukatu.html",
+      "source_label": "横浜翠嵐高校 部活動ページ",
+      "as_of": "2025-01-23",
+      "note": "「90％以上の生徒が部活動に参加」との記載（本文は令和5年4月更新、ページ更新日は2025年1月23日）。90%以上のため下限値を記録。"
+    },
+    {
+      "metric": "uniform",
+      "item": "",
+      "basis": "",
+      "fiscal_year": 2026,
+      "value_text": "標準服はI型（黒詰め襟・白ワイシャツ・黒ズボン）、II型（紺ジャケット・白ワイシャツ・紺スラックス）、III型（紺ジャケット・白ワイシャツ・紺スカート）から任意選択（II型のスラックスとIII型のスカートの併用も可）。夏季略装期間（6〜9月）は上着なしで校章アイロンプリント付きの白無地ワイシャツ・ブラウス・ポロシャツ可。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasuiran-h/zennichi/seikatsu/documents/hp-seitokokoroe.pdf",
+      "source_label": "横浜翠嵐高校 生徒心得",
+      "as_of": "2026-09"
+    },
+    {
+      "metric": "rules_summary",
+      "item": "",
+      "basis": "",
+      "fiscal_year": 2026,
+      "value_text": "頭髪・アクセサリー：染髪・アクセサリー着用は不可。スマートフォン：欠席・遅刻等は保護者がスマホ等から所定フォームで連絡（校内使用の可否は生徒心得に明記なし）。アルバイト：原則不可、やむを得ない場合のみ保護者承認の上で届出。登下校：自動二輪車等は不可、自転車は自宅〜最寄り駅間のみ届出制。最終完全下校19:00（部活動等は20分前まで）。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasuiran-h/zennichi/seikatsu/documents/hp-seitokokoroe.pdf",
+      "source_label": "横浜翠嵐高校 生徒心得",
+      "as_of": "2026-09"
+    }
+  ],
+  "clubs": [
+    {
+      "name": "陸上競技部",
+      "kind": "運動",
+      "days_note": "月・火・木・金・土曜日",
+      "days_per_week": 5,
+      "weekend": "土",
+      "tier": 1,
+      "tier_basis": "2024年度に関東大会レベルの個人種目入賞が同一年度内に2回（南関東男子5000mW第8位、関東男子800m第2位）。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasuiran-h/zennichi/seikatsu/bukatu/rikujou.html",
+      "as_of": "2026-08-06",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "関東高等学校陸上競技大会",
+          "level": "関東",
+          "result": "南関東男子5000mW第8位",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasuiran-h/zennichi/seikatsu/bukatu/rikujou.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "関東高等学校選抜新人陸上競技選手権大会",
+          "level": "関東",
+          "result": "関東男子800m第2位",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasuiran-h/zennichi/seikatsu/bukatu/rikujou.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "神奈川県高校総体",
+          "level": "都県",
+          "result": "出場（男子走幅跳・110mH・800m・3000mSC・4×400mR、女子3000m）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasuiran-h/zennichi/seikatsu/bukatu/rikujou.html"
+        }
+      ]
+    },
+    {
+      "name": "水泳部",
+      "kind": "運動",
+      "days_note": "月・火・木・金・土",
+      "days_per_week": 5,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "2026年度、横浜市民水泳大会～高校の部～で決勝進出（男子50m自由形・平泳ぎ）にとどまり、県大会レベルでの上位入賞の記載はない。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasuiran-h/zennichi/seikatsu/bukatu/suiei.html",
+      "as_of": "2026-08-20",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "横浜市民水泳大会～高校の部～",
+          "level": "地区",
+          "result": "決勝進出（男子50m自由形、男子50m平泳ぎ）",
+          "happened_on": "2026-08-03",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasuiran-h/zennichi/seikatsu/bukatu/suiei.html"
+        }
+      ]
+    },
+    {
+      "name": "バレーボール部",
+      "kind": "運動",
+      "days_note": "火・水・月木のいずれか・土日のいずれか",
+      "days_per_week": 4.5,
+      "weekend": "土日",
+      "tier": 2,
+      "tier_basis": "県予選ベスト32が複数回（2023年度男女、2025年度男子）。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasuiran-h/zennichi/seikatsu/bukatu/vally.html",
+      "as_of": "2026-08-10",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "高校総体神奈川県予選",
+          "level": "都県",
+          "result": "男子ベスト32、女子ベスト32",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasuiran-h/zennichi/seikatsu/bukatu/vally.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "高校総体神奈川県予選",
+          "level": "都県",
+          "result": "男子ベスト32",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasuiran-h/zennichi/seikatsu/bukatu/vally.html"
+        }
+      ]
+    },
+    {
+      "name": "バスケットボール部",
+      "kind": "運動",
+      "days_note": "平日4日・休日1日（大会期間は休日両日活動する場合もあり）",
+      "days_per_week": 4.5,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2024年度 新人大会 東支部予選ベスト4。支部（地区）の順位で県大会の上位ではないため段階3（見直しで2→3）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasuiran-h/zennichi/seikatsu/bukatu/basuke.html",
+      "as_of": "2026-08-20",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "神奈川県バスケットボール新人大会",
+          "level": "地区",
+          "result": "東支部予選ベスト4（県大会出場）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasuiran-h/zennichi/seikatsu/bukatu/basuke.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "神奈川県バスケットボール新人大会",
+          "level": "地区",
+          "result": "東支部予選ベスト8（県大会出場）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasuiran-h/zennichi/seikatsu/bukatu/basuke.html"
+        }
+      ]
+    },
+    {
+      "name": "体操競技部",
+      "kind": "運動",
+      "days_note": "定休日は水曜日と土日のいずれか",
+      "weekend": "土日",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasuiran-h/zennichi/seikatsu/bukatu/taisou.html",
+      "as_of": "2020-03-03"
+    },
+    {
+      "name": "バドミントン部",
+      "kind": "運動",
+      "days_note": "月・火・木・金、および土日いずれか1日",
+      "days_per_week": 4.5,
+      "weekend": "土日",
+      "tier": 2,
+      "tier_basis": "県予選ベスト16〜32が複数回（2025年度女子シングルスベスト16、2026年度女子シングルスベスト16・男子学校対抗ベスト32・女子学校対抗ベスト32）。地区予選の順位は根拠にしていない。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasuiran-h/zennichi/seikatsu/bukatu/badminton.html",
+      "as_of": "2026-08-24",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "県新人大会",
+          "level": "都県",
+          "result": "女子シングルス県予選ベスト16",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasuiran-h/zennichi/seikatsu/bukatu/badminton.html"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "県高校総体",
+          "level": "都県",
+          "result": "女子シングルス県予選ベスト16、男子学校対抗県予選ベスト32、女子学校対抗県予選ベスト32",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasuiran-h/zennichi/seikatsu/bukatu/badminton.html"
+        }
+      ]
+    },
+    {
+      "name": "サッカー部",
+      "kind": "運動",
+      "days_note": "火・水・木・金・土日いずれか（日曜公式戦の場合は土日両日）",
+      "days_per_week": 4.5,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2025年度 高円宮杯U-18サッカーリーグ神奈川 K5H所属（合同チームではない）。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasuiran-h/zennichi/seikatsu/bukatu/soccer.html",
+      "as_of": "2025-06-24",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "全国高校サッカー選手権神奈川県予選",
+          "level": "都県",
+          "result": "2回戦敗退（PK戦）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasuiran-h/zennichi/seikatsu/bukatu/soccer.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "高円宮杯U-18サッカーリーグ神奈川",
+          "level": "都県",
+          "result": "K5Dグループ3位",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasuiran-h/zennichi/seikatsu/bukatu/soccer.html"
+        }
+      ]
+    },
+    {
+      "name": "ハンドボール部",
+      "kind": "運動",
+      "days_note": "火・水・木・金と土日のいずれか",
+      "days_per_week": 4.5,
+      "weekend": "土日",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasuiran-h/zennichi/seikatsu/bukatu/handboll.html",
+      "as_of": "2023-08-24"
+    },
+    {
+      "name": "卓球部",
+      "kind": "運動",
+      "days_note": "月～金曜のうち4日と土日のうち1日",
+      "days_per_week": 4.5,
+      "weekend": "土日",
+      "tier": 2,
+      "tier_basis": "2023年度、関東大会県予選で男子団体第7位（ベスト8相当）。2024年度も男子団体・男子ダブルスで県予選ベスト16。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasuiran-h/zennichi/seikatsu/bukatu/takkyuu.html",
+      "as_of": "2025-10-02",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "関東大会県予選",
+          "level": "都県",
+          "result": "男子団体第7位",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasuiran-h/zennichi/seikatsu/bukatu/takkyuu.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "関東大会県予選",
+          "level": "都県",
+          "result": "男子団体ベスト16、男子ダブルスベスト16",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasuiran-h/zennichi/seikatsu/bukatu/takkyuu.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "関東大会県予選",
+          "level": "都県",
+          "result": "男子シングルスベスト32、女子シングルスベスト32",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasuiran-h/zennichi/seikatsu/bukatu/takkyuu.html"
+        }
+      ]
+    },
+    {
+      "name": "剣道部",
+      "kind": "運動",
+      "days_note": "月・火・木・金・土曜日",
+      "days_per_week": 5,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "直近3年で確認できる結果は2023年度のみ（関東県大会男子団体ベスト32）。ベスト16〜32が複数回の条件に届かない。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasuiran-h/zennichi/seikatsu/bukatu/kendou.html",
+      "as_of": "2023-08-28",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "関東県大会",
+          "level": "都県",
+          "result": "男子団体ベスト32（3回戦進出）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasuiran-h/zennichi/seikatsu/bukatu/kendou.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "総体県大会",
+          "level": "都県",
+          "result": "男子個人ベスト64（4回戦進出）、男子団体ベスト64（2回戦進出）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasuiran-h/zennichi/seikatsu/bukatu/kendou.html"
+        }
+      ]
+    },
+    {
+      "name": "山岳部",
+      "kind": "運動",
+      "days_note": "毎週木曜日、登山は土日祝いずれかで月に1度",
+      "days_per_week": 1,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "週1回の活動（登山は月1回）で、競技としての大会実績はない。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasuiran-h/zennichi/seikatsu/bukatu/sangaku.html",
+      "as_of": "2026-07-29"
+    },
+    {
+      "name": "テニス部",
+      "kind": "運動",
+      "days_note": "男子：月・水・木・金・土日どちらか／女子：火・水・木・金・土日どちらか",
+      "days_per_week": 4.5,
+      "weekend": "土日",
+      "tier": 2,
+      "tier_basis": "神奈川県高等学校テニス大会（関東・全国予選）で男子団体ベスト32が複数回（2025・2026年度）。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasuiran-h/zennichi/seikatsu/bukatu/tennnis.html",
+      "as_of": "2026-08-20",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "神奈川県高等学校テニス大会（兼 関東・全国予選）",
+          "level": "都県",
+          "result": "男子ダブルス本戦出場、男子団体ベスト32",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasuiran-h/zennichi/seikatsu/bukatu/tennnis.html"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "神奈川県高等学校テニス大会（兼 関東・全国予選）",
+          "level": "都県",
+          "result": "男子団体ベスト32、女子団体ベスト32（男子S・男子D・女子Sは本戦出場）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasuiran-h/zennichi/seikatsu/bukatu/tennnis.html"
+        }
+      ]
+    },
+    {
+      "name": "ソフトテニス部",
+      "kind": "運動",
+      "days_note": "月(女子のみ)、火(男子のみ)、水、木、金、土または日",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasuiran-h/zennichi/seikatsu/bukatu/softtennis1.html",
+      "as_of": "2021-07-12"
+    },
+    {
+      "name": "野球部",
+      "kind": "運動",
+      "tier": 3,
+      "tier_basis": "一球速報で2023〜2026年度の夏・春・秋を確認。最高でも2025年夏の3回戦敗退（2回戦で松陽に5-3で勝利）にとどまり、都県大会ベスト8以上の実績はない。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasuiran-h/zennichi/seikatsu/bukatu/yakyuu/yakyuu.html",
+      "as_of": "2026-09-28",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "第105回全国高等学校野球選手権記念神奈川大会",
+          "level": "都県",
+          "result": "1勝（1回戦13-5対県川崎・幸）して2回戦敗退（0-8対横浜隼人）",
+          "happened_on": "2023-07-12",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=12298&year=2023"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "第106回全国高等学校野球選手権神奈川大会",
+          "level": "都県",
+          "result": "2回戦敗退（2-7対金井）",
+          "happened_on": "2024-07-10",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=12298&year=2024"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "令和7年度神奈川県高等学校野球春季県大会",
+          "level": "都県",
+          "result": "2回戦敗退（2-9対藤沢翔陵）",
+          "happened_on": "2025-04-06",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=12298&year=2025"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第107回全国高等学校野球選手権神奈川大会",
+          "level": "都県",
+          "result": "1勝（2回戦5-3対松陽）して3回戦敗退（1-11対立花学園）",
+          "happened_on": "2025-07-15",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=12298&year=2025"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "令和7年度神奈川県高等学校野球秋季県大会",
+          "level": "都県",
+          "result": "1回戦敗退（0-10対横浜商大、6回コールド）",
+          "happened_on": "2025-09-06",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=12298&year=2025"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "第108回全国高等学校野球選手権神奈川大会",
+          "level": "都県",
+          "result": "2回戦敗退（1-5対小田原北）",
+          "happened_on": "2026-07-10",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=12298&year=2026"
+        }
+      ]
+    },
+    {
+      "name": "ダンス部（YSDC）",
+      "kind": "運動",
+      "days_note": "月・水・木・（金）・土",
+      "days_per_week": 4.5,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "2023年度 県高校ダンス新人大会フリー部門第11位（69校中）で、ベスト8には届かない。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasuiran-h/zennichi/seikatsu/bukatu/dansu.html",
+      "as_of": "2026-08-25",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "神奈川県高等学校ダンス新人大会",
+          "level": "都県",
+          "result": "フリー部門第11位（69校中）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasuiran-h/zennichi/seikatsu/bukatu/dansu.html"
+        }
+      ]
+    },
+    {
+      "name": "音楽部",
+      "kind": "文化",
+      "days_note": "月・水・木（大会・イベント前は土曜日も）",
+      "days_per_week": 3,
+      "tier": 4,
+      "tier_basis": "週3日の活動で、年度が特定できる大会実績の記載がない（NHK全国学校音楽コンクール奨励賞は年度不明のため根拠にしない）。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasuiran-h/zennichi/seikatsu/bukatu/ongaku.html",
+      "as_of": "2023-03-24"
+    },
+    {
+      "name": "演劇部",
+      "kind": "文化",
+      "days_note": "月・火・木・日(午前)",
+      "days_per_week": 3.5,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasuiran-h/zennichi/seikatsu/bukatu/engeki.html",
+      "as_of": "2020-03-03"
+    },
+    {
+      "name": "生物部",
+      "kind": "文化",
+      "days_note": "月・木の放課後",
+      "days_per_week": 2,
+      "tier": 4,
+      "tier_basis": "週2日の活動で、文化祭展示のみ。大会実績の記載なし。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasuiran-h/zennichi/seikatsu/bukatu/seibutu.html",
+      "as_of": "2024-08-27"
+    },
+    {
+      "name": "茶道部",
+      "kind": "文化",
+      "days_note": "毎週月曜日",
+      "days_per_week": 1,
+      "tier": 4,
+      "tier_basis": "週1日の活動で、活動はお茶会等のみ。大会実績なし。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasuiran-h/zennichi/seikatsu/bukatu/sadou.html",
+      "as_of": "2026-08-06"
+    },
+    {
+      "name": "美術部",
+      "kind": "文化",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasuiran-h/zennichi/seikatsu/bukatu/bukatu.html",
+      "as_of": "2025-01-23"
+    },
+    {
+      "name": "吹奏楽部",
+      "kind": "文化",
+      "days_note": "平日4日間（主に月～木）、土日どちらか1日",
+      "days_per_week": 4.5,
+      "weekend": "土日",
+      "tier": 2,
+      "tier_basis": "2026年度、神奈川県吹奏楽コンクールB部門で金賞・代表を受賞し、14年ぶりに東関東大会へ出場（関東大会到達は今年度の1回のみのため段階1の「2回以上」には届かない）。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasuiran-h/zennichi/seikatsu/bukatu/suisougaku.html",
+      "as_of": "2026-08-28",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "神奈川県吹奏楽コンクール",
+          "level": "都県",
+          "result": "B部門銅賞（12年ぶりの県大会出場）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasuiran-h/zennichi/seikatsu/bukatu/suisougaku.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "神奈川県吹奏楽コンクール",
+          "level": "都県",
+          "result": "B部門銅賞",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasuiran-h/zennichi/seikatsu/bukatu/suisougaku.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "神奈川県吹奏楽コンクール",
+          "level": "都県",
+          "result": "B部門金賞・代表（東関東大会推薦）",
+          "happened_on": "2026-08-13",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasuiran-h/zennichi/seikatsu/bukatu/suisougaku.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "東関東吹奏楽コンクール",
+          "level": "関東",
+          "result": "出場（14年ぶり）",
+          "happened_on": "2026-09-12",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasuiran-h/zennichi/seikatsu/bukatu/suisougaku.html"
+        }
+      ]
+    },
+    {
+      "name": "棋道部",
+      "kind": "文化",
+      "days_note": "火・水・金",
+      "days_per_week": 3,
+      "tier": 2,
+      "tier_basis": "全国高等学校総合文化祭将棋部門の神奈川県予選で、2025年度団体ベスト8・個人3位、2026年度団体準優勝。都県代表選出レベルの好成績だが全国大会出場（2回以上）は確認できず段階2にとどめる。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasuiran-h/zennichi/seikatsu/bukatu/kidou.html",
+      "as_of": "2026-08-10",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "第49回全国高等学校総合文化祭 将棋部門 神奈川県予選",
+          "level": "都県",
+          "result": "団体戦ベスト8、個人戦第3位",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasuiran-h/zennichi/seikatsu/bukatu/kidou.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第50回全国高等学校総合文化祭 将棋部門 神奈川県予選",
+          "level": "都県",
+          "result": "団体戦準優勝",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasuiran-h/zennichi/seikatsu/bukatu/kidou.html"
+        }
+      ]
+    },
+    {
+      "name": "弦楽部",
+      "kind": "文化",
+      "days_note": "月・火・水・金と土日のいずれか",
+      "days_per_week": 4.5,
+      "weekend": "土日",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasuiran-h/zennichi/seikatsu/bukatu/genngaku.html",
+      "as_of": "2026-02-20"
+    },
+    {
+      "name": "漫画研究部",
+      "kind": "文化",
+      "days_note": "週4日以上（ほぼ自由参加・不定期）",
+      "days_per_week": 4,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasuiran-h/zennichi/seikatsu/bukatu/manga.html",
+      "as_of": "2020-03-03"
+    },
+    {
+      "name": "ポピュラーソング部",
+      "kind": "文化",
+      "days_note": "月曜日～日曜日（バンドごとに週1回ずつ活動）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasuiran-h/zennichi/seikatsu/bukatu/popuson.html",
+      "as_of": "2026-07-29"
+    },
+    {
+      "name": "科学部",
+      "kind": "文化",
+      "days_note": "火、木、土、（日）",
+      "days_per_week": 3.5,
+      "weekend": "土",
+      "tier": 2,
+      "tier_basis": "2024年度 科学の甲子園神奈川県大会で総合1位（神奈川県代表として全国大会出場）。全国大会出場は直近3年で1回のため段階1には届かない。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasuiran-h/zennichi/seikatsu/bukatu/kagaku1.html",
+      "as_of": "2026-07-29",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "科学の甲子園神奈川県大会",
+          "level": "都県",
+          "result": "総合6位（筆記競技2位、実技競技11位）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasuiran-h/zennichi/seikatsu/bukatu/kagaku1.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "科学の甲子園神奈川県大会",
+          "level": "都県",
+          "result": "総合1位（筆記競技4位、実技競技1位）、全国大会出場",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasuiran-h/zennichi/seikatsu/bukatu/kagaku1.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "科学の甲子園神奈川県大会",
+          "level": "都県",
+          "result": "総合3位（筆記競技3位、実技競技1位）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasuiran-h/zennichi/seikatsu/bukatu/kagaku1.html"
+        }
+      ]
+    },
+    {
+      "name": "書道部",
+      "kind": "文化",
+      "days_note": "木・金曜日",
+      "days_per_week": 2,
+      "tier": 4,
+      "tier_basis": "週2日の活動で、2025・2023年度は活動実績欄に記載なし（無記載）。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasuiran-h/zennichi/seikatsu/bukatu/syodou.html",
+      "as_of": "2026-01-22"
+    },
+    {
+      "name": "クイズ研究部",
+      "kind": "文化",
+      "days_note": "月・火・水・金",
+      "days_per_week": 4,
+      "tier": 3,
+      "tier_basis": "2023年度 フジテレビ「新しいカギ」高校生クイズ何問目選手権チャンピオン大会に出場（順位等の記載なし）。それ以前の優勝・番組出演は年度が2022年度以前のため根拠にしていない。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasuiran-h/zennichi/seikatsu/bukatu/quiz.html",
+      "as_of": "2023-08-28",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "フジテレビ「新しいカギ」高校生クイズ何問目選手権チャンピオン大会",
+          "level": "その他",
+          "result": "出場",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasuiran-h/zennichi/seikatsu/bukatu/quiz.html"
+        }
+      ]
+    },
+    {
+      "name": "文芸部",
+      "kind": "文化",
+      "days_note": "週1回程度",
+      "days_per_week": 1,
+      "tier": 1,
+      "tier_basis": "俳句甲子園（全国高等学校俳句選手権大会）全国大会に直近3年で2回出場（2023年度団体3位、2025年度団体優勝）。全国大会出場2回以上に該当。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasuiran-h/zennichi/seikatsu/bukatu/bungei.html",
+      "as_of": "2025-10-08",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "第26回俳句甲子園 全国高等学校俳句選手権大会",
+          "level": "全国",
+          "result": "団体3位入賞",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasuiran-h/zennichi/seikatsu/bukatu/bungei.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第28回俳句甲子園 全国高等学校俳句選手権大会",
+          "level": "全国",
+          "result": "団体優勝",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasuiran-h/zennichi/seikatsu/bukatu/bungei.html"
+        }
+      ]
+    },
+    {
+      "name": "数学研究部",
+      "kind": "文化",
+      "days_note": "平日2日",
+      "days_per_week": 2,
+      "tier": 4,
+      "tier_basis": "週2日の活動で、翠翔祭での部誌配布のみ。大会実績なし。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasuiran-h/zennichi/seikatsu/bukatu/suugaku.html",
+      "as_of": "2026-08-07"
+    },
+    {
+      "name": "写真部",
+      "kind": "文化",
+      "days_note": "不定期（コンテスト、行事前後に集中）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasuiran-h/zennichi/seikatsu/bukatu/syasin.html",
+      "as_of": "2026-08-06"
+    },
+    {
+      "name": "IT研究部",
+      "kind": "文化",
+      "days_note": "月・水・金曜日",
+      "days_per_week": 3,
+      "tier": 4,
+      "tier_basis": "週3日の活動で、活動実績の記載なし。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasuiran-h/zennichi/seikatsu/bukatu/itkenkyu.html",
+      "as_of": "2025-08-26"
+    },
+    {
+      "name": "競技かるた部",
+      "kind": "文化",
+      "days_note": "月・木・金",
+      "days_per_week": 3,
+      "tier": 2,
+      "tier_basis": "2026年度 小倉百人一首競技かるた全国高等学校選手権大会B級準優勝。全国大会出場は直近3年で1回のため段階2。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasuiran-h/zennichi/seikatsu/bukatu/kyougikaruta.html",
+      "as_of": "2026-08-19",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "第36回神奈川県高等学校小倉百人一首かるた選手権大会",
+          "level": "都県",
+          "result": "第7位入賞",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasuiran-h/zennichi/seikatsu/bukatu/kyougikaruta.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "小倉百人一首競技かるた第48回全国高等学校選手権大会",
+          "level": "全国",
+          "result": "B級準優勝",
+          "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasuiran-h/zennichi/seikatsu/bukatu/kyougikaruta.html"
+        }
+      ]
+    },
+    {
+      "name": "天文部",
+      "kind": "文化",
+      "days_note": "毎週水曜",
+      "days_per_week": 1,
+      "tier": 4,
+      "tier_basis": "週1日の活動で、直近3年の活動実績の記載なし（記載は平成28年度のみ）。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasuiran-h/zennichi/seikatsu/bukatu/tennmonn.html",
+      "as_of": "2023-08-29"
+    },
+    {
+      "name": "フィールドワーク同好会",
+      "kind": "同好会",
+      "days_note": "年に数回、街歩き巡検を実施",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasuiran-h/zennichi/seikatsu/bukatu/bukatu.html",
+      "as_of": "2025-01-23"
+    },
+    {
+      "name": "鉄道研究同好会",
+      "kind": "同好会",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasuiran-h/zennichi/seikatsu/bukatu/bukatu.html",
+      "as_of": "2025-01-23"
+    },
+    {
+      "name": "柔道部",
+      "kind": "同好会",
+      "days_note": "月曜日・火曜日・金曜日",
+      "days_per_week": 3,
+      "tier": 4,
+      "tier_basis": "2023年度より同好会として再スタート。週3日の活動で大会実績の記載なし。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasuiran-h/zennichi/seikatsu/bukatu/judo.html",
+      "as_of": "2026-08-06"
+    },
+    {
+      "name": "放送委員会",
+      "kind": "文化",
+      "days_note": "月、火、木、土",
+      "days_per_week": 4,
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasuiran-h/zennichi/seikatsu/bukatu/shbc.html",
+      "as_of": "2026-07-21"
+    },
+    {
+      "name": "新聞部（翠嵐時報）",
+      "kind": "文化",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasuiran-h/zennichi/seikatsu/bukatu/bukatu.html",
+      "as_of": "2025-01-23"
+    }
+  ],
+  "designated_universities": [],
+  "events": [
+    {
+      "kind": "指定",
+      "period_label": "2024年度から",
+      "summary": "文部科学省DXハイスクール事業の指定を受け、1人1台端末・ICT機器の整備や数理・データサイエンス教育を推進（学校評価報告書時点で2年目）。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasuiran-h/zennichi/gaiyou/documents/r7_zen_kekka.pdf"
+    },
+    {
+      "kind": "その他",
+      "period_label": "2024年11月",
+      "summary": "創立110周年記念式典を挙行。吹奏楽部・弦楽部が合同でオーケストラ演奏を行った。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/yokohamasuiran-h/zennichi/seikatsu/bukatu/suisougaku.html"
+    }
+  ],
+  "unresolved": [
+    "指定校推薦の大学一覧：学校案内パンフレット（r7gakkouannai_zennichi.pdf）に該当ページがあるとみられるが、PDFの文字レイヤーが破損しており（InDesign書き出しに起因するAdobe-Japan1 CIDフォントの未埋め込み。ファイル内部タイトルは「貼り付け.indd」）、pdftotext・画像レンダリング（Readツール・Chromeいずれも）で文字を全く読み取れず確認不能。同じ理由でよくある質問PDF（yokuarusitumon2026.pdf）・学校案内内の制服写真キャプション等も読み取れなかった。",
+    "admission_route_share（入試方式別割合）：学校評価報告書・進路状況PDF・学校案内のいずれにも記載なし。",
+    "career_decided_rate（進路決定率）：学校評価報告書は文章のみで数値の記載なし（神奈川県様式の特徴）。",
+    "satisfaction（満足度）：神奈川県の学校評価報告書は文章のみで数値の記載がないため空欄。学校関係者評価・総合評価も定性コメントのみ。",
+    "exam_ratio（推薦倍率）：神奈川県公立高校の入試には推薦制度がないため対象外。"
+  ],
+  "conflicts": [
+    "難関国立大学等の現役合格者数：学校評価報告書（令和7年度）は「84名（R8.3.13現在）」と記載。進路状況PDF（2026年4月1日確定）の「難関国立10大学＋国公立医学部医学科」現役合格者数推移表では2025(78期)行が115名。集計時点（3月13日と4月1日）と対象大学の範囲が同一かどうか資料からは判別できないため、両方を別項目として記録した。",
+    "部活動ページの見出しは「文化系部活動」に部数の表記があるが、実際に一覧表に掲載されている部は19（美術部を含む、リンクなしの美術部・鉄道研究同好会を含む）。掲載一覧を数え直した19を採用した。"
+  ]
+}
