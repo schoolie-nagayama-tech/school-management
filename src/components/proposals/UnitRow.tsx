@@ -1,5 +1,6 @@
 'use client';
 
+import type { ReactNode } from 'react';
 import { Check, Minus, Plus, Unlink, X } from 'lucide-react';
 import type { CurriculumItem } from '@/types/database';
 import {
@@ -36,6 +37,7 @@ export function UnitRow({
   onUngroupAllApplied,
   showApplied = true,
   showIntent = true,
+  extra,
 }: {
   index: number;
   item: CurriculumItem;
@@ -52,6 +54,11 @@ export function UnitRow({
    * テンプレートは意図を持たない（生徒ごとに決めるもの）ので false で使う。
    */
   showIntent?: boolean;
+  /**
+   * 有効な行の下に足す中身。成績表から作った下書きで「なぜこの単元か」（根拠の札）を出すのに使う。
+   * ★提案書・テンプレの編集画面は渡さない（見た目は今のまま）
+   */
+  extra?: ReactNode;
   groupMembers?: UnitDraft[];
   appliedGroupMembers?: UnitDraft[];
   onToggle: (shiftKey: boolean) => void;
@@ -290,6 +297,8 @@ export function UnitRow({
           </div>
         </div>
       )}
+
+      {isActive && extra && <div className="px-3 pb-2 pt-0">{extra}</div>}
     </div>
   );
 }

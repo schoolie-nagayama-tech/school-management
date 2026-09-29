@@ -29,6 +29,7 @@ export const AI_FEATURE_KEYS = [
   'student_digest',
   'today_plan',
   'parent_message',
+  'score_sheet',
 ] as const;
 export type AiFeatureKey = (typeof AI_FEATURE_KEYS)[number];
 
@@ -77,6 +78,15 @@ export const TODAY_PLAN_FEATURE_KEY: AiFeatureKey = 'today_plan';
  */
 export const PARENT_MESSAGE_FEATURE_KEY: AiFeatureKey = 'parent_message';
 
+/**
+ * 成績表の読み取り（模試の個人帳票を読んで、講習提案書の下書きを組む）。
+ * ★AIは帳票を書き写すだけ（と、設問を渡した単元一覧のどれに当てるか選ぶだけ）。コマ数は規則が決める。
+ * ★送るのは帳票の画像（氏名・学校名・成績・志望校を含む）。テーマふくらませより広いので別の栓にする。
+ *   PCS はブラウザの中で読むので、この栓が閉じていても使える。
+ * 正典: docs/score-sheet-plan-draft.md
+ */
+export const SCORE_SHEET_FEATURE_KEY: AiFeatureKey = 'score_sheet';
+
 /** 画面に出す名前。★ここを直せば全部の画面が変わる */
 export const AI_FEATURE_LABELS: Record<AiFeatureKey, string> = {
   ai_compose: 'おまかせ下書き',
@@ -85,6 +95,7 @@ export const AI_FEATURE_LABELS: Record<AiFeatureKey, string> = {
   student_digest: '生徒のまとめ',
   today_plan: '今日の段取り',
   parent_message: '保護者との連絡',
+  score_sheet: '成績表の読み取り',
 };
 
 /** 何をする機能か。設定画面でスイッチの横に出す */
@@ -100,6 +111,8 @@ export const AI_FEATURE_DESCRIPTIONS: Record<AiFeatureKey, string> = {
     'ダッシュボードの「今日やること」を、授業前・各コマ・片付けの時間帯に割り付けます。Googleカレンダーの予定がある時間帯は空けます。朝に1回組み、日中に増えた用事は入れ場所だけ決めます。',
   parent_message:
     '保護者チャットで、教室長が書いた箇条書きを、これまでのやりとりの流れに合わせた文章にします。',
+  score_sheet:
+    '講習提案書の「成績表から作る」で、進研テスト・Vもぎの個人帳票を読み取ります。読み取った×から、単元とコマの下書きを決まった規則で組みます。',
 };
 
 /** 何を外に出すのか。スイッチの近くに必ず出す（入れる判断の材料） */
@@ -112,6 +125,8 @@ export const AI_FEATURE_SENDS: Record<AiFeatureKey, string> = {
   //   ここは教室長自身のカレンダーで、生徒・講師は姓だけに落としている。
   today_plan: '今日の用事・授業のコマ・生徒と講師の姓・カレンダーの予定（件名を含む）',
   parent_message: '保護者とのやりとり（氏名を含む）',
+  // ★1・2ページ目だけ送る（答案の画像は送らない）。PCS の帳票は送らない
+  score_sheet: '模試の個人帳票の1・2ページ目の画像（氏名・学校名・成績・志望校を含む）',
 };
 
 export function isAiFeatureKey(value: unknown): value is AiFeatureKey {
@@ -140,6 +155,7 @@ export const AI_FEATURE_MIN_ROLE: Record<AiFeatureKey, 'teacher' | 'manager'> = 
   student_digest: 'teacher',
   today_plan: 'manager',
   parent_message: 'manager',
+  score_sheet: 'manager',
 };
 
 /** このロールでその機能のAIを呼べるか。★新しい入口を作るときは必ずここを通す */
