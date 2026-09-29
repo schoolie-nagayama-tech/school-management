@@ -1601,6 +1601,9 @@ export default function ProposalEditor() {
               setNewStartMode('template');
               void loadTemplates();
             }}
+            scoresHref={
+              isManagerOrAbove ? `/students/${studentId}/proposals/from-scores` : undefined
+            }
           />
         ) : (
           <TemplatePickerScreen

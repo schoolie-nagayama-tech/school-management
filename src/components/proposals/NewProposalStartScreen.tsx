@@ -13,7 +13,7 @@
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, BookOpen, LayoutTemplate, Loader2, Search } from 'lucide-react';
+import { ArrowLeft, BookOpen, FileSearch, LayoutTemplate, Loader2, Search } from 'lucide-react';
 import { GRADE_LABELS, SEASON_LABELS, type SeasonType } from '@/types/database';
 import type { SeasonalCourseListItem } from '@/types/database';
 
@@ -23,11 +23,17 @@ export function CreateMethodScreen({
   backHref,
   onPickTextbook,
   onPickTemplate,
+  scoresHref,
 }: {
   studentName: string;
   backHref: string;
   onPickTextbook: () => void;
   onPickTemplate: () => void;
+  /**
+   * 「成績表から作る」の行き先。★教室長以上のときだけ渡す（講師には出さない＝動かないものは出さない）。
+   * 正典: docs/score-sheet-plan-draft.md
+   */
+  scoresHref?: string;
 }) {
   return (
     <div className="pb-20">
@@ -43,7 +49,7 @@ export function CreateMethodScreen({
         <h1 className="text-lg font-bold text-text-heading">どうやって作りますか</h1>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className={`grid gap-3 ${scoresHref ? 'sm:grid-cols-3' : 'sm:grid-cols-2'}`}>
         <button
           type="button"
           onClick={onPickTextbook}
@@ -71,6 +77,21 @@ export function CreateMethodScreen({
             講習のひな形を選ぶと、テキストと単元・結合が入った状態から始まります
           </p>
         </button>
+
+        {scoresHref && (
+          <Link
+            href={scoresHref}
+            className="rounded-xl border border-border bg-surface-raised p-4 text-left transition-[background-color,border-color,transform] duration-150 ease-out hover:border-border-strong hover:bg-surface-hover active:scale-[0.99]"
+          >
+            <p className="flex items-center gap-2 text-sm font-bold text-text-heading">
+              <FileSearch className="h-4 w-4" aria-hidden="true" />
+              成績表から作る
+            </p>
+            <p className="mt-1.5 text-xs leading-relaxed text-text-muted">
+              PCS・進研テスト・VもぎのPDFから、単元とコマの下書きを作ります
+            </p>
+          </Link>
+        )}
       </div>
     </div>
   );

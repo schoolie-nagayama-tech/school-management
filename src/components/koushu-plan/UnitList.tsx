@@ -1,6 +1,6 @@
 'use client';
 
-import type { RefObject } from 'react';
+import type { ReactNode, RefObject } from 'react';
 import type { CurriculumItem } from '@/types/database';
 import { UnitRow } from '@/components/proposals/UnitRow';
 import type { UnitDraft } from '@/components/proposals/proposalEditor.shared';
@@ -24,6 +24,7 @@ export function UnitList({
   showColumnHeader,
   showApplied = true,
   showIntent = true,
+  renderExtra,
   onToggle,
   onSelectStart,
   onSelectEnter,
@@ -48,6 +49,8 @@ export function UnitList({
   showApplied?: boolean;
   /** 指導意図のタグを出すか。テンプレートは意図を持たないので false で使う */
   showIntent?: boolean;
+  /** 有効な行の下に足す中身（成績表から作った下書きの根拠）。渡さなければ今の見た目のまま */
+  renderExtra?: (curriculumItemId: number) => ReactNode;
   onToggle: (curriculumItemId: number, shiftKey: boolean) => void;
   onSelectStart: (index: number, shiftKey: boolean) => void;
   onSelectEnter: (index: number) => void;
@@ -87,6 +90,7 @@ export function UnitList({
               appliedGroupMembers={appliedGroupMembers}
               showApplied={showApplied}
               showIntent={showIntent}
+              extra={renderExtra?.(item.id)}
               onToggle={(shiftKey) => onToggle(item.id, shiftKey)}
               onSelectStart={(shiftKey) => onSelectStart(idx, shiftKey)}
               onSelectEnter={() => onSelectEnter(idx)}

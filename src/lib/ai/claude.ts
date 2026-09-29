@@ -172,10 +172,25 @@ export interface ClaudeCallOptions {
    */
   effort?: 'low' | 'medium' | 'high' | 'xhigh' | 'max';
   signal?: AbortSignal;
+  /**
+   * userText の前に置く画像（成績表の帳票を読むときだけ使う）。
+   * ★PDF をそのまま渡さないのは、ページ全体が小さく縮められて帳票の細かい字が潰れるため。
+   *   画面側で読みやすい大きさに切ってから渡す。
+   */
+  images?: { mediaType: 'image/jpeg' | 'image/png'; base64: string }[];
 }
 
 /** 1回だけ叩く。useCache=false のときは cache_control を一切付けない */
 async function send(options: ClaudeCallOptions, useCache: boolean): Promise<string> {
+  const content: Anthropic.MessageParam['content'] = options.images?.length
+    ? [
+        ...options.images.map((img) => ({
+          type: 'image' as const,
+          source: { type: 'base64' as const, media_type: img.mediaType, data: img.base64 },
+        })),
+        { type: 'text' as const, text: options.userText },
+      ]
+    : options.userText;
   const response = await getClient().messages.create(
     {
       model: options.model ?? CLAUDE_MODELS.fast,
@@ -185,7 +200,7 @@ async function send(options: ClaudeCallOptions, useCache: boolean): Promise<stri
           ? { type: 'text' as const, text: b.text, cache_control: { type: 'ephemeral' as const } }
           : { type: 'text' as const, text: b.text }
       ),
-      messages: [{ role: 'user', content: options.userText }],
+      messages: [{ role: 'user', content }],
       ...(options.effort ? { output_config: { effort: options.effort } } : {}),
     },
     { signal: options.signal }

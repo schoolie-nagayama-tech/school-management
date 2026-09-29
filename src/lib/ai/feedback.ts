@@ -87,6 +87,7 @@ export const FEEDBACK_VERDICTS_BY_FEATURE: Record<AiFeatureKey, readonly Feedbac
   student_digest: ['ok', 'off'],
   today_plan: [],
   parent_message: [],
+  score_sheet: [],
 };
 
 /** その機能で受け付ける答えかどうか。★一覧に無いものは記録しない */
