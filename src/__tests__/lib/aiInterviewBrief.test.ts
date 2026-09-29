@@ -333,6 +333,7 @@ describe('isSelectableModelKey', () => {
   it('★生のモデルIDは受け付けない（キー名だけを許す）', () => {
     expect(isSelectableModelKey('claude-opus-5')).toBe(false);
     expect(isSelectableModelKey('claude-sonnet-5')).toBe(false);
+    expect(isSelectableModelKey('claude-sonnet-5-5')).toBe(false);
   });
 
   it('文字列以外・知らない値は弾く', () => {
@@ -342,7 +343,7 @@ describe('isSelectableModelKey', () => {
   });
 });
 
-describe('resolveInterviewBriefModelKey（Sonnet 5 / Opus 5.5 の見比べ用モデル選択）', () => {
+describe('resolveInterviewBriefModelKey（Sonnet 5.5 / Opus 5.5 の見比べ用モデル選択）', () => {
   it('admin が smart を指定すれば smart になる', () => {
     expect(resolveInterviewBriefModelKey('smart', 'admin')).toBe('smart');
   });
