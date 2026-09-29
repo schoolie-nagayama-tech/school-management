@@ -286,6 +286,8 @@ function TaskRow({
   onPeriodChange: (period: string) => void;
   onItemChange: (itemId: string) => void;
 }) {
+  /** 「申込状況と連動」を押して、列の選択欄を開いているか */
+  const [linking, setLinking] = useState(false);
   const label =
     showSchool && row.schoolName ? `${row.kindLabel}（${row.schoolName}）` : row.kindLabel;
   // ★通学校で絞っている依頼だけ、種別ラベルの横に対象校のチップを出す
@@ -343,7 +345,12 @@ function TaskRow({
     : Math.max(0, row.notYet - row.notYetStudents.length);
   // ★決めることが残っているときだけ選択欄を出す。決まったら消える（常設の操作を増やさない）
   const askPeriod = row.needsPeriod && !row.targetPeriod;
-  const askItem = !row.unsupported && !row.applicationItemId;
+  // ★申込状況の列は任意なので、選ばない教室では「決まったら消える」が永遠に来ない。
+  //   実際に全カードへ点線の枠が居座って邪魔だと言われた。開くのは押したときだけにする。
+  // ★講師自身の種別は出さない。申込状況は生徒の表で、講師の種別は済んだ生徒が
+  //   0人なので（progress.ts で students が空）、列を選んでも何も付かない。
+  const canLinkItem = !row.unsupported && !row.applicationItemId && !isTeacherKind;
+  const askItem = canLinkItem && linking;
 
   return (
     <div
@@ -427,7 +434,8 @@ function TaskRow({
             </div>
           )}
 
-      {/* ★決めることが残っているときだけ出る。決まったら消えるので、常設の操作にはならない */}
+      {/* ★決めることが残っているときだけ出る。「どの回か」は決まったら消え、
+          申込状況の列は「申込状況と連動」を押したときだけ開く */}
       {(askPeriod || askItem) && (
         <div className="flex flex-col gap-1.5 rounded-md border border-dashed border-border bg-surface px-2.5 py-2">
           {askPeriod && (
@@ -448,6 +456,13 @@ function TaskRow({
                   </option>
                 ))}
               </select>
+              <button
+                type="button"
+                onClick={() => setLinking(false)}
+                className="px-1.5 py-0.5 text-[11px] text-text-faint underline-offset-2 hover:underline"
+              >
+                やめる
+              </button>
             </label>
           )}
         </div>
@@ -465,7 +480,19 @@ function TaskRow({
         <span className={`text-xs ${zero ? 'text-success' : 'text-text-muted'}`}>
           {footNote(row)}
         </span>
-        <RemoveControl onRemove={onRemove} />
+        <div className="flex shrink-0 flex-wrap items-center gap-1.5">
+          {canLinkItem && !linking && (
+            <button
+              type="button"
+              onClick={() => setLinking(true)}
+              title="済んだ生徒の申込状況に、自動でチェックを付けます（任意）"
+              className="whitespace-nowrap px-1.5 py-1 text-[11px] text-text-faint underline-offset-2 hover:underline"
+            >
+              申込状況と連動
+            </button>
+          )}
+          <RemoveControl onRemove={onRemove} />
+        </div>
       </div>
     </div>
   );
