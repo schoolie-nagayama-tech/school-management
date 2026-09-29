@@ -21,6 +21,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { ChevronDown, ChevronRight } from 'lucide-react';
 import { fetchWithAuth } from '@/lib/api/auth';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/useToast';
@@ -46,6 +47,15 @@ interface Row extends BulletinTaskView {
 
 /** 「いま追加」を出す期間。投稿した教室長がその場で結果を見られればよい */
 const FRESH_HOURS = 24;
+
+/**
+ * 閉じた状態を覚えておくキー（端末ごと・ユーザーごと）。
+ * ★値は「閉じたときに見えていた依頼のうち、いちばん新しい作成時刻」。
+ *   これより新しい依頼が来たら自動で開く。閉じたままだと、投稿した直後に
+ *   読み取り結果に気づけないため。時刻はサーバーの created_at 同士で比べる
+ *   （端末の時計と比べると、時計のずれで開かない・開きっぱなしになる）。
+ */
+const COLLAPSE_KEY_PREFIX = 'bulletinTaskBoard:collapsedAt:';
 
 /**
  * 「× 消す」を押したときに聞く理由。
@@ -90,6 +100,34 @@ export function BulletinTaskBoard({
   const canSee = isManagerOrAbove(profile?.role);
   const schoolIds = getSelectedSchoolIds();
   const schoolKey = schoolIds.join(',');
+
+  /**
+   * 閉じたときの基準時刻（COLLAPSE_KEY_PREFIX の説明を参照）。null＝開いている。
+   * ★「× 消す」は追跡をやめる操作で、戻ってこない。追跡は続けたまま
+   *   一時的に畳みたい、という要望に応えるのがこれ。
+   */
+  const [collapsedAt, setCollapsedAt] = useState<string | null>(null);
+  const collapseKey = profile?.id ? `${COLLAPSE_KEY_PREFIX}${profile.id}` : null;
+
+  useEffect(() => {
+    if (!collapseKey) return;
+    try {
+      setCollapsedAt(window.localStorage.getItem(collapseKey));
+    } catch {
+      // 保存領域が使えない端末では、毎回開いた状態から始まるだけ
+    }
+  }, [collapseKey]);
+
+  const saveCollapsedAt = (value: string | null) => {
+    setCollapsedAt(value);
+    if (!collapseKey) return;
+    try {
+      if (value === null) window.localStorage.removeItem(collapseKey);
+      else window.localStorage.setItem(collapseKey, value);
+    } catch {
+      // 覚えられなくても、この画面の開閉はできる
+    }
+  };
 
   const load = useCallback(async () => {
     const ids = schoolKey ? schoolKey.split(',') : [];
@@ -231,10 +269,48 @@ export function BulletinTaskBoard({
 
   const multiSchool = schoolIds.length > 1;
 
+  // ★消した行は開閉の判定にも要約にも入れない（もう追っていないので）
+  const visibleRows = rows.filter((r) => !removed.has(r.taskId));
+  const newestCreatedAt = visibleRows.reduce<string | null>(
+    (max, r) => (max === null || toTime(r.createdAt) > toTime(max) ? r.createdAt : max),
+    null
+  );
+  // 閉じたあとに新しい依頼が来ていれば開く
+  const collapsed =
+    collapsedAt !== null && !visibleRows.some((r) => toTime(r.createdAt) > toTime(collapsedAt));
+
+  const toggle = () => {
+    if (collapsed) saveCollapsedAt(null);
+    // ★依頼がまだ無いとき（読み取り中）に閉じたら、次に来る依頼で必ず開くよう最古の時刻にする
+    else saveCollapsedAt(newestCreatedAt ?? new Date(0).toISOString());
+  };
+
+  // 閉じたときの1行。★数えられない種別には人数を付けない（数字だけが独り歩きしないように）
+  const summary = visibleRows
+    .map((r) => {
+      const label = multiSchool && r.schoolName ? `${r.kindLabel}（${r.schoolName}）` : r.kindLabel;
+      return r.unsupported ? label : `${label} ${r.notYet}人`;
+    })
+    .join('・');
+
+  const Chevron = collapsed ? ChevronRight : ChevronDown;
+
   return (
     <section className={`mt-4 ${className}`} aria-label="残っている人">
       <div className="mb-2 flex items-baseline justify-between gap-2">
-        <h3 className="text-sm font-bold text-text-heading">残っている人</h3>
+        <button
+          type="button"
+          onClick={toggle}
+          aria-expanded={!collapsed}
+          title={collapsed ? '開く' : '閉じる（追跡は続きます）'}
+          className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0.5 text-left"
+        >
+          <span className="flex items-center gap-1 text-sm font-bold text-text-heading">
+            <Chevron className="h-3.5 w-3.5 shrink-0 text-text-muted" aria-hidden />
+            残っている人
+          </span>
+          {collapsed && summary && <span className="text-xs text-text-muted">{summary}</span>}
+        </button>
         {isExtracting ? (
           <span className="text-[11px] text-text-muted">投稿から依頼を読み取っています…</span>
         ) : (
@@ -246,7 +322,8 @@ export function BulletinTaskBoard({
         )}
       </div>
 
-      <div className="flex flex-col gap-2">
+      {/* ★閉じても描画は残す（開きかけの「申込状況と連動」などの状態を、開閉で失わないため） */}
+      <div className={collapsed ? 'hidden' : 'flex flex-col gap-2'}>
         {rows.map((row) => (
           <TaskRow
             key={`${row.schoolId}:${row.taskId}`}
@@ -667,6 +744,12 @@ function isFresh(createdAt: string): boolean {
   const t = new Date(createdAt).getTime();
   if (Number.isNaN(t)) return false;
   return Date.now() - t < FRESH_HOURS * 3600_000;
+}
+
+/** 作成時刻の比較用。★文字列のまま比べない（タイムゾーン表記が違うと順序が狂う） */
+function toTime(iso: string): number {
+  const t = new Date(iso).getTime();
+  return Number.isNaN(t) ? 0 : t;
 }
 
 function formatClock(iso: string): string {
