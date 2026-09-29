@@ -389,7 +389,7 @@ export function dedupeConsecutiveLessonLines(lines: readonly string[]): string[]
 }
 
 /**
- * Sonnet 5 / Opus 5.5 の見比べで、クライアントから選ばせてよいモデルのキー名。
+ * Sonnet 5.5 / Opus 5.5 の見比べで、クライアントから選ばせてよいモデルのキー名。
  * ★fast（Haiku）は面談の下書きの比較対象にしない（難所向けの smart / best 同士を
  *   見比べたいだけで、量産向けの fast は別の用途）。
  *
@@ -414,7 +414,7 @@ export function isSelectableModelKey(value: unknown): value is SelectableModelKe
  * 両方から参照する。表示名を1か所にまとめないと、片方だけ直したときに名前がずれる。
  */
 export const SELECTABLE_MODEL_KEY_LABELS: Record<SelectableModelKey, string> = {
-  smart: 'Sonnet 5',
+  smart: 'Sonnet 5.5',
   best: 'Opus 5.5',
 };
 

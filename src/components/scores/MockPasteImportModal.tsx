@@ -5,7 +5,7 @@ import { Modal, Button } from '@/components/ui';
 import { createAssessmentRow, updateScore } from '@/lib/api/assessments';
 import {
   applyMockTargetSchools,
-  getHighSchoolKeysByNames,
+  getAllHighSchoolKeys,
   getTargetSchoolsByStudents,
   insertAssessmentTargetSchools,
   type MockSchoolToSave,
@@ -23,7 +23,6 @@ import {
   mastersForSlot,
   matchMockSchoolName,
   mockSchoolShortName,
-  splitMockSchoolName,
   type HighSchoolKeyRow,
 } from '@/lib/scores/mockSchools';
 import { regionOfSchool, REGION_LABEL } from '@/lib/interview/region';
@@ -116,31 +115,30 @@ export function MockPasteImportModal({
 
   const matchedCount = parsed.filter((r) => r.matchedStudent).length;
 
-  // 当てに使う高校マスタを、模試に出てきた学校名だけ引く（全件は読まない）。私立の枠も引く
-  const schoolNamesKey = useMemo(
-    () =>
-      Array.from(
-        new Set(parsed.flatMap((r) => r.schools.map((c) => splitMockSchoolName(c.nameRaw).school)))
-      )
-        .sort()
-        .join('|'),
-    [parsed]
-  );
-  // ★名前の集合が変わったときだけ引き直す（貼り付けの1文字ごとに引かない）
+  /**
+   * 当てに使う高校マスタ。模試に志望校が1つでも出たら、全件を1度だけ引く（getAllHighSchoolKeys の注記）。
+   * ★引き終わるまでは当たらない（名前だけで入る）ので、取り込みボタンは読み終わるまで押せなくする。
+   */
+  const hasMockSchools = parsed.some((r) => r.schools.length > 0);
+  const [masterReady, setMasterReady] = useState(false);
   useEffect(() => {
-    const names = schoolNamesKey ? schoolNamesKey.split('|') : [];
+    if (!hasMockSchools || masterReady) return;
     let alive = true;
-    getHighSchoolKeysByNames(names)
+    getAllHighSchoolKeys()
       .then((rows) => {
         if (alive) setMasterRows(rows);
       })
+      // 読めなければ当てずに名前だけで入れる（取り込みそのものは止めない）
       .catch(() => {
         if (alive) setMasterRows([]);
+      })
+      .finally(() => {
+        if (alive) setMasterReady(true);
       });
     return () => {
       alive = false;
     };
-  }, [schoolNamesKey]);
+  }, [hasMockSchools, masterReady]);
 
   const matchedStudentIdsKey = useMemo(
     () =>
@@ -777,7 +775,9 @@ export function MockPasteImportModal({
               isImporting ||
               !!importResult ||
               // ★前後を見せる前に反映させない（いまの志望校を読み終えるまで待つ）
-              (applyTargets && !targetsError && currentTargets === null)
+              (applyTargets && !targetsError && currentTargets === null) ||
+              // ★マスタを読み終える前に取り込むと、当たるはずの学校が名前だけで入る
+              (hasMockSchools && !masterReady)
             }
           >
             {isImporting ? '取り込み中...' : `${matchedCount}名分を取り込む`}

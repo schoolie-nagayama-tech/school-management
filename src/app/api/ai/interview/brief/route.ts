@@ -99,7 +99,7 @@ interface BriefResponse {
   degraded: boolean;
   /** この教室ではAIに送らない設定。故障ではなく意図した停止 */
   disabled: boolean;
-  /** 実際に使ったモデルのID。Sonnet 5 / Opus 5.5 の見比べで取り違えないように必ず返す */
+  /** 実際に使ったモデルのID。Sonnet 5.5 / Opus 5.5 の見比べで取り違えないように必ず返す */
   model: ClaudeModel;
   /** 実際に使ったモデルのキー名 */
   modelKey: SelectableModelKey;
@@ -277,7 +277,7 @@ export async function POST(request: NextRequest) {
   }
 
   /**
-   * Sonnet 5 / Opus 5.5 の見比べ用モデル選択。
+   * Sonnet 5.5 / Opus 5.5 の見比べ用モデル選択。
    * ★判定そのものは interviewBrief.ts の resolveInterviewBriefModelKey に集約してある
    *   （権限外は黙って既定に倒す・キー名以外は弾く、の2点をSupabase無しで単体テストするため）。
    */
