@@ -30,10 +30,16 @@ import Anthropic from '@anthropic-ai/sdk';
  *           ★2026-09-23 Opus 5 → Opus 5.5。単価は Opus 5 より安い（入力/出力0）。
  *           Opus 5.5 は思考を切れず、effort の既定が medium（Opus 5 は high）なので、
  *           面談の下書きは呼び出し側で effort: 'high' を明示している。
+ *
+ * ★2026-09-29 smart を Sonnet 5 → Sonnet 5.5。単価は同じ（入力$2/出力$10）。
+ *   Sonnet 5.5 は thinking: {type: 'disabled'} と tool_choice の any/tool 強制が400になる。
+ *   ここではどちらも使っていないが、足すときは注意（思考を切るなら between_tools）。
+ *   effort の既定は high のままだが段階の中身が振り直されているので、
+ *   質が要る呼び出しで effort を下げるときは実データで確かめてから。
  */
 export const CLAUDE_MODELS = {
   fast: 'claude-haiku-4-5',
-  smart: 'claude-sonnet-5',
+  smart: 'claude-sonnet-5-5',
   best: 'claude-opus-5-5',
 } as const;
 
