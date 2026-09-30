@@ -172,14 +172,22 @@ export async function POST(request: NextRequest) {
       console.warn('[portal/form-responses] 自動紐付けに失敗しました（無視します）:', e);
     }
 
-    // フォーム回答を請求データに自動反映（失敗しても回答は成功扱い）
-    try {
-      await autoSyncFormToBilling(supabaseAdmin, created.id, school_id, form_type);
-    } catch (e) {
-      captureApiError(e, {
-        route: 'POST /api/portal/form-responses',
-      });
-      console.warn('[portal/form-responses] 請求への自動反映に失敗しました（無視します）:', e);
+    // フォーム回答を請求データに自動反映するのは、教室長の代理申込のときだけ（失敗しても回答は成功扱い）。
+    // ★保護者からの申込（ログイン不要の公開フォーム）は請求に自動で書き込まない。
+    //   氏名と学年は誰でも名乗れるので、第三者が他人の名前で「増コマ20コマ」と送るだけで、
+    //   その生徒の請求数が書き換わっていた（2026-09-30 セキュリティ総点検）。
+    //   生徒への自動紐付けと申込状況の更新は今までどおり行い、請求への反映は教室長が
+    //   請求画面の「フォームから同期」を押したとき（または回答を手で紐付けたとき）に行う。
+    //   2027年2月以降の保護者アカウント（ログインして申し込む）運用で、本人確認ができれば見直す。
+    if (proxyLinkedStudentId) {
+      try {
+        await autoSyncFormToBilling(supabaseAdmin, created.id, school_id, form_type);
+      } catch (e) {
+        captureApiError(e, {
+          route: 'POST /api/portal/form-responses',
+        });
+        console.warn('[portal/form-responses] 請求への自動反映に失敗しました（無視します）:', e);
+      }
     }
 
     // 模試の振替受験 → Google Calendarにイベント作成（失敗しても回答は成功扱い）
