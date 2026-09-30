@@ -4,8 +4,20 @@ import { verifyPassword } from '@/lib/mypage/password';
 import { signPortalJwt } from '@/lib/mypage/jwt';
 import { setPortalSession } from '@/lib/mypage/session';
 import { captureApiError } from '@/lib/api-error';
+import { checkDurableRateLimit } from '@/lib/utils/durableRateLimit';
 
 export const dynamic = 'force-dynamic';
+
+/**
+ * ID が存在しないときにも bcrypt の照合を1回走らせるためのダミーハッシュ（中身に意味は無い）。
+ * ★以前は ID が無いと bcrypt を飛ばしていたため、応答の速さの差（約50〜100ms）で
+ *   「そのログインIDが存在するか」を調べられた（2026-09-30 セキュリティ総点検）。
+ */
+const DUMMY_PASSWORD_HASH = '$2b$10$wGJ1oIFJg5oKjiRdqw5iCuG0Z41FyAmccYY5/AGzefUHJQvS5D2fi';
+
+/** 1つのログインIDに対する試行の上限（15分で10回）。IP を変えながらの総当たりを止める */
+const ACCOUNT_ATTEMPT_LIMIT = 10;
+const ACCOUNT_ATTEMPT_WINDOW_SECONDS = 15 * 60;
 
 /**
  * 保護者ポータル ログイン（案3: 自前ログイン → 自前署名JWT → cookie）。
@@ -14,8 +26,10 @@ export const dynamic = 'force-dynamic';
  * 成功: portal_session cookie をセットし { ok: true, account } を返す。
  * 失敗: 401（ID/PW のどちらが違うかは区別しない = 列挙攻撃を防ぐ）。
  *
- * TODO(Stage2以降): 本格的なレート制限（IP/アカウント単位の試行回数制御）。
- *   現状は失敗時の一律ディレイのみ（総当たりの速度をわずかに落とす簡易対策）。
+ * 総当たり対策（2026-09-30 セキュリティ総点検）:
+ *   - IP 単位: middleware の回数制限（10回/分。DB で全インスタンス共通に数える）
+ *   - ログインID 単位: このルートで 15分10回まで（IP を変えながら1つのIDを狙う攻撃向け）
+ *   - 失敗時の一律ディレイと、ID が無いときのダミー照合（応答時間でIDの有無を悟らせない）
  */
 export async function POST(request: NextRequest) {
   let body: unknown;
@@ -34,6 +48,20 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'IDとパスワードを入力してください' }, { status: 400 });
   }
 
+  // ログインID単位の回数制限。ID の有無に関係なく数える（有無で挙動を変えると列挙に使われる）。
+  const accountAllowed = await checkDurableRateLimit({
+    bucket: 'mypage-login-account',
+    key: login_id.trim().toLowerCase(),
+    limit: ACCOUNT_ATTEMPT_LIMIT,
+    windowSeconds: ACCOUNT_ATTEMPT_WINDOW_SECONDS,
+  });
+  if (!accountAllowed) {
+    return NextResponse.json(
+      { error: 'ログインの試行回数が多すぎます。15分ほど待ってから、もう一度お試しください' },
+      { status: 429 }
+    );
+  }
+
   const supabase = getPortalServiceClient();
 
   // login_id でアカウントを検索（RLSバイパスの service role）。
@@ -49,10 +77,12 @@ export async function POST(request: NextRequest) {
   }
 
   // 認証失敗は「ID不明」も「PW不一致」も同じ 401・同じメッセージにする。
-  const ok =
-    account?.password_hash != null && (await verifyPassword(password, account.password_hash));
+  // ID が無い・パスワード未設定のときもダミーで照合し、かかる時間をそろえる。
+  const hashToCheck = account?.password_hash ?? DUMMY_PASSWORD_HASH;
+  const matched = await verifyPassword(password, hashToCheck);
+  const ok = account?.password_hash != null && matched;
   if (!account || !ok) {
-    // 総当たり速度を落とす簡易ディレイ（本格対策は上記 TODO）。
+    // 総当たり速度を落とす簡易ディレイ。
     await new Promise((r) => setTimeout(r, 500));
     return NextResponse.json({ error: 'IDまたはパスワードが違います' }, { status: 401 });
   }
