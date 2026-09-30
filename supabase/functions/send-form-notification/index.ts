@@ -1,13 +1,28 @@
 // @ts-nocheck
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { authorizeRequest } from '../_shared/auth.ts'
+import { escapeHtml } from '../_shared/sanitize.ts'
 
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')
 const SITE_URL = Deno.env.get('SITE_URL') || 'https://school-management-eight-cyan.vercel.app/'
 
 const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!)
+
+// ブラウザからの invoke（ログイン中スタッフ）に備えた CORS ヘッダー。
+// 401/403 を含む全レスポンスに付け、ブラウザ側でエラー内容を読めるようにする。
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+}
+const jsonHeaders = { ...corsHeaders, 'Content-Type': 'application/json' }
+
+// form_responses.id は uuid。形式を先に確かめ、不正な値で DB を叩かせない。
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 // フォーム種別の日本語名
 const FORM_TYPE_LABELS: Record<string, string> = {
@@ -88,26 +103,26 @@ function formatResponseDetails(formType: string, responseData: any, periodSettin
         details += '<p><strong>科目別コマ数:</strong></p><ul>'
         for (const [subject, count] of Object.entries(responseData.subjects)) {
           if (count && Number(count) > 0) {
-            details += `<li>${subject}: ${count}コマ</li>`
+            details += `<li>${escapeHtml(subject)}: ${escapeHtml(count)}コマ</li>`
           }
         }
         details += '</ul>'
       }
       if (responseData.total_koma) {
-        details += `<p><strong>合計:</strong> ${responseData.total_koma}コマ</p>`
+        details += `<p><strong>合計:</strong> ${escapeHtml(responseData.total_koma)}コマ</p>`
       }
       if (responseData.total_fee) {
-        details += `<p><strong>金額:</strong> ${responseData.total_fee.toLocaleString()}円</p>`
+        details += `<p><strong>金額:</strong> ${escapeHtml(responseData.total_fee.toLocaleString())}円</p>`
       }
       if (responseData.selected_slots?.length > 0) {
         details += '<p><strong>希望日程:</strong></p><ul>'
         for (const slot of responseData.selected_slots) {
-          details += `<li>${slot.label}</li>`
+          details += `<li>${escapeHtml(slot.label)}</li>`
         }
         details += '</ul>'
       }
       if (responseData.note) {
-        details += `<p><strong>備考:</strong> ${responseData.note}</p>`
+        details += `<p><strong>備考:</strong> ${escapeHtml(responseData.note)}</p>`
       }
       break
 
@@ -124,17 +139,17 @@ function formatResponseDetails(formType: string, responseData: any, periodSettin
           }
         }
         for (const sel of responseData.selections) {
-          const typeLabel = sel.exam_type_label ? `[${sel.exam_type_label}] ` : ''
+          const typeLabel = sel.exam_type_label ? `[${escapeHtml(sel.exam_type_label)}] ` : ''
           const venue = venueById[sel.venue_id]
           const uwabaki = venue?.requires_uwabaki
             ? `<br><span style="font-size:12px;color:#9a3412;font-weight:600;">※この会場は上履きが必要です。</span>`
             : ''
-          details += `<li>${typeLabel}${sel.date_label} - ${sel.venue_label}${uwabaki}</li>`
+          details += `<li>${typeLabel}${escapeHtml(sel.date_label)} - ${escapeHtml(sel.venue_label)}${uwabaki}</li>`
         }
         details += '</ul>'
       }
       if (responseData.note) {
-        details += `<p><strong>備考:</strong> ${responseData.note}</p>`
+        details += `<p><strong>備考:</strong> ${escapeHtml(responseData.note)}</p>`
       }
       break
 
@@ -148,72 +163,72 @@ function formatResponseDetails(formType: string, responseData: any, periodSettin
           ? responseData.selected_exam_time
           : periodSettings?.exam_time
         if (examDateLabel) {
-          details += `<p><strong>本試験日:</strong> ${examDateLabel}</p>`
+          details += `<p><strong>本試験日:</strong> ${escapeHtml(examDateLabel)}</p>`
         }
         if (examTime) {
-          details += `<p><strong>時間:</strong> ${examTime}</p>`
+          details += `<p><strong>時間:</strong> ${escapeHtml(examTime)}</p>`
         }
       } else if (responseData.exam_type === 'furikae') {
         details += `<p><strong>受験方法:</strong> 振替受験</p>`
         if (responseData.furikae_date_label) {
-          details += `<p><strong>振替希望日:</strong> ${responseData.furikae_date_label}</p>`
+          details += `<p><strong>振替希望日:</strong> ${escapeHtml(responseData.furikae_date_label)}</p>`
         }
         if (responseData.furikae_time) {
-          details += `<p><strong>希望時間:</strong> ${responseData.furikae_time}</p>`
+          details += `<p><strong>希望時間:</strong> ${escapeHtml(responseData.furikae_time)}</p>`
         }
       }
       if (responseData.note) {
-        details += `<p><strong>備考:</strong> ${responseData.note}</p>`
+        details += `<p><strong>備考:</strong> ${escapeHtml(responseData.note)}</p>`
       }
       break
 
     case 'shukaisu':
       if (responseData.change_from_label) {
-        details += `<p><strong>変更開始時期:</strong> ${responseData.change_from_label}</p>`
+        details += `<p><strong>変更開始時期:</strong> ${escapeHtml(responseData.change_from_label)}</p>`
       }
       if (responseData.current?.weekly_count !== undefined) {
-        details += `<p><strong>現在の週回数:</strong> ${responseData.current.weekly_count}回</p>`
+        details += `<p><strong>現在の週回数:</strong> ${escapeHtml(responseData.current.weekly_count)}回</p>`
       }
       if (responseData.current?.slots?.length > 0) {
         details += '<p><strong>現在のコマ:</strong></p><ul>'
         for (const slot of responseData.current.slots) {
-          details += `<li>${slot.day} ${slot.period_label} ${slot.subject}</li>`
+          details += `<li>${escapeHtml(slot.day)} ${escapeHtml(slot.period_label)} ${escapeHtml(slot.subject)}</li>`
         }
         details += '</ul>'
       }
       if (responseData.requested?.weekly_count !== undefined) {
-        details += `<p><strong>変更後の週回数:</strong> ${responseData.requested.weekly_count}回</p>`
+        details += `<p><strong>変更後の週回数:</strong> ${escapeHtml(responseData.requested.weekly_count)}回</p>`
       }
       if (responseData.requested?.slots?.length > 0) {
         details += '<p><strong>希望コマ:</strong></p><ul>'
         for (const slot of responseData.requested.slots) {
-          details += `<li>${slot.day} ${slot.period_label} ${slot.subject}</li>`
+          details += `<li>${escapeHtml(slot.day)} ${escapeHtml(slot.period_label)} ${escapeHtml(slot.subject)}</li>`
         }
         details += '</ul>'
       }
       if (responseData.note) {
-        details += `<p><strong>備考:</strong> ${responseData.note}</p>`
+        details += `<p><strong>備考:</strong> ${escapeHtml(responseData.note)}</p>`
       }
       break
 
     case 'youbi':
       if (responseData.change_from_label) {
-        details += `<p><strong>変更開始時期:</strong> ${responseData.change_from_label}</p>`
+        details += `<p><strong>変更開始時期:</strong> ${escapeHtml(responseData.change_from_label)}</p>`
       }
       if (responseData.current) {
         const cur = responseData.current
-        details += `<p><strong>現在の曜日・時間:</strong> ${cur.day} ${cur.period_label} ${cur.subject}</p>`
+        details += `<p><strong>現在の曜日・時間:</strong> ${escapeHtml(cur.day)} ${escapeHtml(cur.period_label)} ${escapeHtml(cur.subject)}</p>`
       }
       if (responseData.request1) {
         const r1 = responseData.request1
-        details += `<p><strong>第1希望:</strong> ${r1.day} ${r1.period_label} ${r1.subject}</p>`
+        details += `<p><strong>第1希望:</strong> ${escapeHtml(r1.day)} ${escapeHtml(r1.period_label)} ${escapeHtml(r1.subject)}</p>`
       }
       if (responseData.request2) {
         const r2 = responseData.request2
-        details += `<p><strong>第2希望:</strong> ${r2.day} ${r2.period_label} ${r2.subject}</p>`
+        details += `<p><strong>第2希望:</strong> ${escapeHtml(r2.day)} ${escapeHtml(r2.period_label)} ${escapeHtml(r2.subject)}</p>`
       }
       if (responseData.note) {
-        details += `<p><strong>備考:</strong> ${responseData.note}</p>`
+        details += `<p><strong>備考:</strong> ${escapeHtml(responseData.note)}</p>`
       }
       break
 
@@ -221,32 +236,32 @@ function formatResponseDetails(formType: string, responseData: any, periodSettin
       if (responseData.items?.length > 0) {
         details += '<p><strong>選択した教材:</strong></p><ul>'
         for (const item of responseData.items) {
-          details += `<li>${item.name} - ${item.price?.toLocaleString()}円</li>`
+          details += `<li>${escapeHtml(item.name)} - ${escapeHtml(item.price?.toLocaleString())}円</li>`
         }
         details += '</ul>'
       }
       if (responseData.total_price) {
-        details += `<p><strong>合計金額:</strong> ${responseData.total_price.toLocaleString()}円</p>`
+        details += `<p><strong>合計金額:</strong> ${escapeHtml(responseData.total_price.toLocaleString())}円</p>`
       }
       if (responseData.note) {
-        details += `<p><strong>備考:</strong> ${responseData.note}</p>`
+        details += `<p><strong>備考:</strong> ${escapeHtml(responseData.note)}</p>`
       }
       break
 
     case 'soudan':
       if (responseData.categories?.length > 0) {
-        details += `<p><strong>相談区分:</strong> ${responseData.categories.join('、')}</p>`
+        details += `<p><strong>相談区分:</strong> ${escapeHtml(responseData.categories.join('、'))}</p>`
       }
       if (responseData.content) {
-        details += `<p><strong>相談内容:</strong></p><p style="white-space: pre-wrap;">${responseData.content}</p>`
+        details += `<p><strong>相談内容:</strong></p><p style="white-space: pre-wrap;">${escapeHtml(responseData.content)}</p>`
       }
       if (responseData.phone) {
-        details += `<p><strong>電話番号:</strong> ${responseData.phone}</p>`
+        details += `<p><strong>電話番号:</strong> ${escapeHtml(responseData.phone)}</p>`
       }
       break
 
     default:
-      details += `<pre>${JSON.stringify(responseData, null, 2)}</pre>`
+      details += `<pre>${escapeHtml(JSON.stringify(responseData, null, 2))}</pre>`
   }
 
   return details
@@ -257,19 +272,19 @@ function formatMoshiContextBlock(periodTitle: string, periodSettings: any): stri
   if (!periodTitle && !periodSettings) return ''
   const parts: string[] = []
   if (periodTitle) {
-    parts.push(`<p><strong>対象の模試:</strong> ${periodTitle}</p>`)
+    parts.push(`<p><strong>対象の模試:</strong> ${escapeHtml(periodTitle)}</p>`)
   }
   // 複数日程が設定されていれば全日程を列挙。旧データは単一の exam_date_label にフォールバック
   const examDates = (periodSettings?.exam_dates ?? []).filter((d: any) => d?.label)
   if (examDates.length > 0) {
     const items = examDates
-      .map((d: any) => `<li>${d.label}${d.time ? ` ${d.time}` : ''}</li>`)
+      .map((d: any) => `<li>${escapeHtml(d.label)}${d.time ? ` ${escapeHtml(d.time)}` : ''}</li>`)
       .join('')
     parts.push(`<p><strong>試験日:</strong></p><ul>${items}</ul>`)
   } else if (periodSettings?.exam_date_label) {
-    parts.push(`<p><strong>試験日:</strong> ${periodSettings.exam_date_label}</p>`)
+    parts.push(`<p><strong>試験日:</strong> ${escapeHtml(periodSettings.exam_date_label)}</p>`)
     if (periodSettings?.exam_time) {
-      parts.push(`<p><strong>時間:</strong> ${periodSettings.exam_time}</p>`)
+      parts.push(`<p><strong>時間:</strong> ${escapeHtml(periodSettings.exam_time)}</p>`)
     }
   }
   if (periodSettings?.description) {
@@ -279,15 +294,6 @@ function formatMoshiContextBlock(periodTitle: string, periodSettings: any): stri
     )
   }
   return parts.length ? parts.join('') : ''
-}
-
-function escapeHtml(text: string): string {
-  return text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;')
 }
 
 // 申込者向けメール作成
@@ -306,6 +312,14 @@ function createApplicantEmail(
   const dateStr = new Date(createdAt).toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' })
 
   const subject = `【${schoolName}】${formTypeLabel}のお申し込みを受け付けました`
+
+  // HTML に差し込む値はすべてエスケープ済みの変数を使う（件名はテキストなので素のまま）。
+  // 生徒名などは保護者フォーム（未ログイン）から入る値で、タグを仕込まれうるため。
+  const hStudentName = escapeHtml(studentName)
+  const hFormTypeLabel = escapeHtml(formTypeLabel)
+  const hGradeLabel = escapeHtml(gradeLabel)
+  const hDateStr = escapeHtml(dateStr)
+  const hSchoolName = escapeHtml(schoolName)
 
   // 曜日変更・週回数変更・テスト対策のみ「日程が決まりましたらGrowから確認」を表示
   const showGrowLine = ['shukaisu', 'youbi'].includes(formType)
@@ -367,15 +381,15 @@ ${stepsHtml}
   const html = `
     <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
       <h2 style="color: #ff8e3c;">お申し込み受付完了</h2>
-      <p>${studentName} 様</p>
+      <p>${hStudentName} 様</p>
       <p>以下の内容でお申し込みを受け付けました。</p>
       ${moshiContextBlock}
       <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
         <h3 style="margin-top: 0;">申込内容</h3>
-        <p><strong>種別:</strong> ${formTypeLabel}</p>
-        <p><strong>申込日時:</strong> ${dateStr}</p>
-        <p><strong>生徒名:</strong> ${studentName}</p>
-        <p><strong>学年:</strong> ${gradeLabel}</p>
+        <p><strong>種別:</strong> ${hFormTypeLabel}</p>
+        <p><strong>申込日時:</strong> ${hDateStr}</p>
+        <p><strong>生徒名:</strong> ${hStudentName}</p>
+        <p><strong>学年:</strong> ${hGradeLabel}</p>
         <hr style="border: none; border-top: 1px solid #ddd; margin: 15px 0;">
         <h3>フォームのご記入内容</h3>
         <p style="color: #555; margin-bottom: 12px;">お申し込み時にご記入いただいた内容は以下のとおりです。</p>
@@ -384,7 +398,7 @@ ${stepsHtml}
       ${mogiNextStepsBlock}
       ${formType !== 'mogi' ? '<p>ご不明点がございましたら、教室までお問い合わせください。</p>' : ''}
       ${showGrowLine ? '<p>日程が決まりましたらGrowから確認してください。</p>' : ''}
-      <p style="margin-top: 30px; color: #666;">${schoolName}</p>
+      <p style="margin-top: 30px; color: #666;">${hSchoolName}</p>
       ${EMAIL_FOOTER}
     </div>
   `
@@ -410,6 +424,17 @@ function createManagerEmail(
 
   const subject = `【新規申込】${formTypeLabel}がありました`
 
+  // HTML に差し込む値はエスケープ済みの変数を使う（createApplicantEmail と同じ理由）
+  const hStudentName = escapeHtml(studentName)
+  const hFormTypeLabel = escapeHtml(formTypeLabel)
+  const hGradeLabel = escapeHtml(gradeLabel)
+  const hDateStr = escapeHtml(dateStr)
+  const hEmail = escapeHtml(email || '未設定')
+  // 管理画面リンクはパス部分を URL エンコードしてから属性値としてエスケープする
+  const hManageUrl = escapeHtml(
+    `${SITE_URL}/forms/responses/${encodeURIComponent(String(formType ?? ''))}/${encodeURIComponent(String(formPeriod ?? ''))}`
+  )
+
   const moshiContextBlock =
     formType === 'moshi' && (periodTitle || periodSettings)
       ? `<div style="background: #eff6ff; padding: 16px; border-radius: 8px; margin-bottom: 16px; border: 1px solid #bfdbfe;">
@@ -424,17 +449,17 @@ function createManagerEmail(
       ${moshiContextBlock}
       <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
         <h3 style="margin-top: 0;">申込情報</h3>
-        <p><strong>種別:</strong> ${formTypeLabel}</p>
-        <p><strong>申込日時:</strong> ${dateStr}</p>
-        <p><strong>生徒名:</strong> ${studentName}</p>
-        <p><strong>学年:</strong> ${gradeLabel}</p>
-        <p><strong>メールアドレス:</strong> ${email || '未設定'}</p>
+        <p><strong>種別:</strong> ${hFormTypeLabel}</p>
+        <p><strong>申込日時:</strong> ${hDateStr}</p>
+        <p><strong>生徒名:</strong> ${hStudentName}</p>
+        <p><strong>学年:</strong> ${hGradeLabel}</p>
+        <p><strong>メールアドレス:</strong> ${hEmail}</p>
         <hr style="border: none; border-top: 1px solid #ddd; margin: 15px 0;">
         <h3>フォームの記入内容</h3>
         ${formatResponseDetails(formType, responseData, (formType === 'moshi' || formType === 'mogi') ? periodSettings : undefined)}
       </div>
       <p>
-        <a href="${SITE_URL}/forms/responses/${formType}/${formPeriod}"
+        <a href="${hManageUrl}"
            style="display: inline-block; background: #ff8e3c; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">
           管理画面で確認
         </a>
@@ -503,7 +528,7 @@ async function handleSeasonalShiftNotification(type: string, submissionId: strin
     .map((dateStr) => {
       const d = new Date(dateStr + 'T12:00:00')
       const dateLabel = `${d.getMonth() + 1}/${d.getDate()}(${dayNames[d.getDay()]})`
-      const times = slotsByDate[dateStr].join('、')
+      const times = escapeHtml(slotsByDate[dateStr].join('、'))
       return `<tr><td style="padding: 4px 8px; border-bottom: 1px solid #eee;">${dateLabel}</td><td style="padding: 4px 8px; border-bottom: 1px solid #eee;">${times}</td></tr>`
     })
     .join('')
@@ -520,6 +545,15 @@ async function handleSeasonalShiftNotification(type: string, submissionId: strin
   const teacherName = submission.teacher_name
   const teacherEmail = submission.teacher_email ?? ''
   const submittedAt = new Date(submission.submitted_at).toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' })
+  // HTML 用のエスケープ済み値。講師名・備考は未ログインの提出フォームから入るため、
+  // タグを仕込まれても教室ドメインのメールに HTML として載らないようにする。
+  // 件名（テキスト）と宛先には素の値を使う。
+  const hSchoolName = escapeHtml(schoolName)
+  const hSettingName = escapeHtml(settingName)
+  const hTeacherName = escapeHtml(teacherName)
+  const hTeacherEmail = escapeHtml(teacherEmail)
+  const hSubmittedAt = escapeHtml(submittedAt)
+  const hNotes = escapeHtml(submission.notes)
 
   if (type === 'submitted') {
     if (teacherEmail) {
@@ -527,17 +561,17 @@ async function handleSeasonalShiftNotification(type: string, submissionId: strin
       const teacherHtml = `
         <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
           <h2 style="color: #d32f2f;">シフト提出を受け付けました</h2>
-          <p>${teacherName} 様</p>
+          <p>${hTeacherName} 様</p>
           <p>シフトのご提出ありがとうございます。<br>以下の内容で受け付けました。</p>
           <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <p><strong>■ 講習期間：</strong>${settingName}</p>
-            <p><strong>■ 提出日時：</strong>${submittedAt}</p>
+            <p><strong>■ 講習期間：</strong>${hSettingName}</p>
+            <p><strong>■ 提出日時：</strong>${hSubmittedAt}</p>
             <p><strong>■ 出勤可能コマ数：</strong>${availableSlots}コマ</p>
             ${slotsTableHtml || ''}
-            ${submission.notes ? `<p style="margin-top: 12px;"><strong>■ 備考</strong></p><p style="white-space: pre-wrap;">${submission.notes}</p>` : ''}
+            ${submission.notes ? `<p style="margin-top: 12px;"><strong>■ 備考</strong></p><p style="white-space: pre-wrap;">${hNotes}</p>` : ''}
           </div>
           <p>内容に修正が必要な場合は、教室までご連絡ください。</p>
-          <p style="margin-top: 30px; color: #666;">${schoolName}</p>
+          <p style="margin-top: 30px; color: #666;">${hSchoolName}</p>
           ${EMAIL_FOOTER}
         </div>
       `
@@ -564,14 +598,14 @@ async function handleSeasonalShiftNotification(type: string, submissionId: strin
         <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
           <h2 style="color: #d32f2f;">新しいシフト提出がありました</h2>
           <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <p><strong>■ 講習期間：</strong>${settingName}</p>
-            <p><strong>■ 講師名：</strong>${teacherName}</p>
-            <p><strong>■ メールアドレス：</strong>${teacherEmail}</p>
-            <p><strong>■ 提出日時：</strong>${submittedAt}</p>
+            <p><strong>■ 講習期間：</strong>${hSettingName}</p>
+            <p><strong>■ 講師名：</strong>${hTeacherName}</p>
+            <p><strong>■ メールアドレス：</strong>${hTeacherEmail}</p>
+            <p><strong>■ 提出日時：</strong>${hSubmittedAt}</p>
             <p><strong>■ 出勤可能コマ数：</strong>${availableSlots}コマ</p>
           </div>
-          <p><a href="${submissionsUrl}" style="display: inline-block; background: #1e3a5f; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">提出一覧を確認</a></p>
-          <p style="margin-top: 30px; color: #666;">${schoolName}</p>
+          <p><a href="${escapeHtml(submissionsUrl)}" style="display: inline-block; background: #1e3a5f; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">提出一覧を確認</a></p>
+          <p style="margin-top: 30px; color: #666;">${hSchoolName}</p>
           ${EMAIL_FOOTER}
         </div>
       `
@@ -593,12 +627,12 @@ async function handleSeasonalShiftNotification(type: string, submissionId: strin
       const html = `
         <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
           <h2 style="color: #d32f2f;">シフトの修正について</h2>
-          <p>${teacherName} 様</p>
-          <p>${settingName} のシフト内容を修正する必要があるため、下記URLより修正をお願いします。</p>
-          <p><a href="${editUrl}" style="display: inline-block; background: #1e3a5f; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">シフト修正フォームを開く</a></p>
-          <p style="word-break: break-all; font-size: 12px; color: #666;">${editUrl}</p>
+          <p>${hTeacherName} 様</p>
+          <p>${hSettingName} のシフト内容を修正する必要があるため、下記URLより修正をお願いします。</p>
+          <p><a href="${escapeHtml(editUrl)}" style="display: inline-block; background: #1e3a5f; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">シフト修正フォームを開く</a></p>
+          <p style="word-break: break-all; font-size: 12px; color: #666;">${escapeHtml(editUrl)}</p>
           <p>※このURLは修正完了後、無効になります。</p>
-          <p style="margin-top: 30px; color: #666;">${schoolName}</p>
+          <p style="margin-top: 30px; color: #666;">${hSchoolName}</p>
           ${EMAIL_FOOTER}
         </div>
       `
@@ -668,7 +702,7 @@ async function handleRegularShiftNotification(type: string, submissionId: string
     .sort((a, b) => a - b)
     .map((dow) => {
       const dayLabel = `${dayNames[dow]}曜日`
-      const times = slotsByDay[dow].join('、')
+      const times = escapeHtml(slotsByDay[dow].join('、'))
       return `<tr><td style="padding: 4px 8px; border-bottom: 1px solid #eee;">${dayLabel}</td><td style="padding: 4px 8px; border-bottom: 1px solid #eee;">${times}</td></tr>`
     })
     .join('')
@@ -685,6 +719,15 @@ async function handleRegularShiftNotification(type: string, submissionId: string
   const teacherName = submission.teacher_name
   const teacherEmail = submission.teacher_email ?? ''
   const submittedAt = new Date(submission.submitted_at).toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' })
+  // HTML 用のエスケープ済み値。講師名・備考は未ログインの提出フォームから入るため、
+  // タグを仕込まれても教室ドメインのメールに HTML として載らないようにする。
+  // 件名（テキスト）と宛先には素の値を使う。
+  const hSchoolName = escapeHtml(schoolName)
+  const hSettingName = escapeHtml(settingName)
+  const hTeacherName = escapeHtml(teacherName)
+  const hTeacherEmail = escapeHtml(teacherEmail)
+  const hSubmittedAt = escapeHtml(submittedAt)
+  const hNotes = escapeHtml(submission.notes)
 
   if (type === 'submitted') {
     // 講師への確認メール
@@ -693,17 +736,17 @@ async function handleRegularShiftNotification(type: string, submissionId: string
       const teacherHtml = `
         <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
           <h2 style="color: #1e3a5f;">通常シフトの提出を受け付けました</h2>
-          <p>${teacherName} 様</p>
+          <p>${hTeacherName} 様</p>
           <p>通常シフトのご提出ありがとうございます。<br>以下の内容で受け付けました。</p>
           <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <p><strong>■ シフト名：</strong>${settingName}</p>
-            <p><strong>■ 提出日時：</strong>${submittedAt}</p>
+            <p><strong>■ シフト名：</strong>${hSettingName}</p>
+            <p><strong>■ 提出日時：</strong>${hSubmittedAt}</p>
             <p><strong>■ 出勤可能コマ数：</strong>${availableSlots}コマ</p>
             ${slotsTableHtml || ''}
-            ${submission.notes ? `<p style="margin-top: 12px;"><strong>■ 備考</strong></p><p style="white-space: pre-wrap;">${submission.notes}</p>` : ''}
+            ${submission.notes ? `<p style="margin-top: 12px;"><strong>■ 備考</strong></p><p style="white-space: pre-wrap;">${hNotes}</p>` : ''}
           </div>
           <p>内容に修正が必要な場合は、教室までご連絡ください。</p>
-          <p style="margin-top: 30px; color: #666;">${schoolName}</p>
+          <p style="margin-top: 30px; color: #666;">${hSchoolName}</p>
           ${EMAIL_FOOTER}
         </div>
       `
@@ -730,15 +773,15 @@ async function handleRegularShiftNotification(type: string, submissionId: string
         <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
           <h2 style="color: #1e3a5f;">新しい通常シフト提出がありました</h2>
           <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <p><strong>■ シフト名：</strong>${settingName}</p>
-            <p><strong>■ 講師名：</strong>${teacherName}</p>
-            <p><strong>■ メールアドレス：</strong>${teacherEmail}</p>
-            <p><strong>■ 提出日時：</strong>${submittedAt}</p>
+            <p><strong>■ シフト名：</strong>${hSettingName}</p>
+            <p><strong>■ 講師名：</strong>${hTeacherName}</p>
+            <p><strong>■ メールアドレス：</strong>${hTeacherEmail}</p>
+            <p><strong>■ 提出日時：</strong>${hSubmittedAt}</p>
             <p><strong>■ 出勤可能コマ数：</strong>${availableSlots}コマ</p>
             ${slotsTableHtml || ''}
           </div>
-          <p><a href="${submissionsUrl}" style="display: inline-block; background: #1e3a5f; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">提出一覧を確認</a></p>
-          <p style="margin-top: 30px; color: #666;">${schoolName}</p>
+          <p><a href="${escapeHtml(submissionsUrl)}" style="display: inline-block; background: #1e3a5f; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">提出一覧を確認</a></p>
+          <p style="margin-top: 30px; color: #666;">${hSchoolName}</p>
           ${EMAIL_FOOTER}
         </div>
       `
@@ -759,12 +802,12 @@ async function handleRegularShiftNotification(type: string, submissionId: string
     const html = `
       <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
         <h2 style="color: #1e3a5f;">通常シフトの修正について</h2>
-        <p>${teacherName} 様</p>
-        <p>${settingName} の通常シフト内容を修正する必要があるため、下記URLより修正をお願いします。</p>
-        <p><a href="${editUrl}" style="display: inline-block; background: #1e3a5f; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">シフト修正フォームを開く</a></p>
-        <p style="word-break: break-all; font-size: 12px; color: #666;">${editUrl}</p>
+        <p>${hTeacherName} 様</p>
+        <p>${hSettingName} の通常シフト内容を修正する必要があるため、下記URLより修正をお願いします。</p>
+        <p><a href="${escapeHtml(editUrl)}" style="display: inline-block; background: #1e3a5f; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">シフト修正フォームを開く</a></p>
+        <p style="word-break: break-all; font-size: 12px; color: #666;">${escapeHtml(editUrl)}</p>
         <p>※このURLは修正完了後、無効になります。</p>
-        <p style="margin-top: 30px; color: #666;">${schoolName}</p>
+        <p style="margin-top: 30px; color: #666;">${hSchoolName}</p>
         ${EMAIL_FOOTER}
       </div>
     `
@@ -776,47 +819,117 @@ async function handleRegularShiftNotification(type: string, submissionId: string
 }
 
 serve(async (req) => {
+  // CORS プリフライト。ブラウザ（ZoukomaEnrollmentFormModal → createFormResponse）からも
+  // invoke されるため応答する。以前は OPTIONS を処理しておらずブラウザからの呼び出しは
+  // プリフライトで落ちていた（申込メール自体は DB トリガー経由で届いていた）。
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { status: 200, headers: corsHeaders })
+  }
+
+  const json = (payload: unknown, status = 200) =>
+    new Response(JSON.stringify(payload), { status, headers: jsonHeaders })
+
   try {
-    const body = await req.json()
+    // ★呼び出し元の認証（_shared/auth.ts）。以前は誰の呼び出しでも、本文の record を
+    // 信じてその内容（宛先 email・生徒名・備考…）でメールを組み立てていたため、公開の
+    // anon key だけで任意の宛先へ任意の HTML を教室ドメインから送れた。
+    // 通すのは service role（DB トリガー / Next.js サーバールート）と、ログイン中の
+    // スタッフ（講師以上。増コマ申込の代理入力画面から呼ばれる）だけ。
+    const auth = await authorizeRequest(req, 'teacher', corsHeaders)
+    if (!auth.ok) return auth.response
+    const isService = auth.kind === 'service'
+
+    const body = (await req.json()) ?? {}
+
+    // シフト提出通知はサーバールート（service role）からしか呼ばれない。
+    // ユーザー JWT で任意の submissionId を指定されると、修正依頼メール（allow_edit）などを
+    // 他教室の講師へ勝手に送れてしまうため、service role 以外は拒否する。
+    if (
+      (body.notificationType === 'regular-shift' || body.notificationType === 'seasonal-shift') &&
+      !isService
+    ) {
+      return json({ error: 'この通知はサーバーからのみ送信できます' }, 403)
+    }
 
     // 通常シフト提出通知の場合
     if (body.notificationType === 'regular-shift') {
       const { type, submissionId } = body
       if (!type || !submissionId) {
-        return new Response(
-          JSON.stringify({ error: 'type と submissionId が必要です' }),
-          { status: 400, headers: { 'Content-Type': 'application/json' } }
-        )
+        return json({ error: 'type と submissionId が必要です' }, 400)
       }
       await handleRegularShiftNotification(type, submissionId)
-      return new Response(JSON.stringify({ success: true }), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' },
-      })
+      return json({ success: true })
     }
 
     // シフト提出通知の場合
     if (body.notificationType === 'seasonal-shift') {
       const { type, submissionId } = body
       if (!type || !submissionId) {
-        return new Response(
-          JSON.stringify({ error: 'type と submissionId が必要です' }),
-          { status: 400, headers: { 'Content-Type': 'application/json' } }
-        )
+        return json({ error: 'type と submissionId が必要です' }, 400)
       }
       await handleSeasonalShiftNotification(type, submissionId)
-      return new Response(JSON.stringify({ success: true }), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' },
-      })
+      return json({ success: true })
     }
 
     // 既存のフォーム通知処理（増コマ申込、模試申込など）
-    const { record } = body
-    const responseId = record?.id
+    // DB トリガー: { type, table, schema, record, old_record }（Database Webhook と同形）
+    // サーバールート / ブラウザ: { record }
+    const bodyRecord = body.record
+    const responseId = bodyRecord?.id ?? body.recordId
+    // id が無いと二重送信防止（notification_sent_at）が効かず、同じ内容を何度でも
+    // 送れてしまうため、id 無しの呼び出しは受け付けない（正規の呼び出し元は必ず id を持つ）。
+    if (!responseId || typeof responseId !== 'string' || !UUID_RE.test(responseId)) {
+      return json({ error: 'record.id が必要です' }, 400)
+    }
 
-    // 二重送信防止：同じ form_response で既に送信済みならメールを送らない
-    if (responseId) {
+    let record = bodyRecord
+    if (!isService) {
+      // ユーザー JWT の呼び出しでは本文の record を一切信用しない。
+      // まず本人の権限（RLS: 教室スコープ）でその行が見えるかを確かめ、見えれば
+      // service role で DB から取り直した内容だけを使う。
+      if (!SUPABASE_ANON_KEY) {
+        console.error('SUPABASE_ANON_KEY が未設定のため、ユーザー権限での確認ができません')
+        return json({ error: '認証設定が不正です' }, 500)
+      }
+      const userClient = createClient(SUPABASE_URL!, SUPABASE_ANON_KEY, {
+        auth: { persistSession: false, autoRefreshToken: false },
+        global: { headers: { Authorization: `Bearer ${auth.token}` } },
+      })
+      const { data: visible, error: visibleError } = await userClient
+        .from('form_responses')
+        .select('id')
+        .eq('id', responseId)
+        .maybeSingle()
+      if (visibleError) {
+        console.error('form_responses 参照権限の確認エラー:', visibleError)
+        return json({ error: '申込データの確認に失敗しました' }, 500)
+      }
+      if (!visible) {
+        return json({ error: '申込データが見つかりません' }, 404)
+      }
+    }
+
+    // ユーザー JWT の呼び出し、または id だけ渡された呼び出しでは DB の内容を正とする。
+    // service role からの record 付き呼び出し（DB トリガー・サーバールート）は従来どおり
+    // 本文の record を使う（トリガーの NEW をそのまま送っており、信頼できる経路のため）。
+    if (!isService || !bodyRecord) {
+      const { data: fresh, error: freshError } = await supabase
+        .from('form_responses')
+        .select('*')
+        .eq('id', responseId)
+        .single()
+      if (freshError || !fresh) {
+        console.error('form_responses 再取得エラー:', freshError)
+        return json({ error: '申込データが見つかりません' }, 404)
+      }
+      record = fresh
+    }
+
+    // 二重送信防止：同じ form_response で既に送信済みならメールを送らない。
+    // 「未送信なら送信済みにする」を1本の UPDATE で行うので、DB トリガーとブラウザ・
+    // サーバーからの呼び出しが同時に来ても送るのは1回だけになる。
+    // 存在しない id もここで「更新0件」になり、送信されない。
+    {
       const { data: updated, error: updateError } = await supabase
         .from('form_responses')
         .update({ notification_sent_at: new Date().toISOString() })
@@ -831,9 +944,7 @@ serve(async (req) => {
       }
       if (!updated) {
         console.log('申込通知は既に送信済みのためスキップ:', responseId)
-        return new Response(JSON.stringify({ success: true, skipped: true }), {
-          headers: { 'Content-Type': 'application/json' },
-        })
+        return json({ success: true, skipped: true })
       }
     }
 
@@ -920,14 +1031,9 @@ serve(async (req) => {
       await delay(1000)
     }
 
-    return new Response(JSON.stringify({ success: true }), {
-      headers: { 'Content-Type': 'application/json' },
-    })
+    return json({ success: true })
   } catch (error) {
     console.error('メール送信エラー:', error)
-    return new Response(JSON.stringify({ error: (error as Error).message }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    })
+    return json({ error: (error as Error).message }, 500)
   }
 })
