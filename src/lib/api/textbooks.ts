@@ -11,6 +11,7 @@ import type {
   ExamTypeUpdate,
 } from '@/types/database';
 import { getDefaultSchoolId } from './schools';
+import { fetchAllPaged } from '@/lib/utils/supabasePaging';
 
 // ============================================
 // テスト名マスタ（exam_types）
@@ -89,30 +90,36 @@ export async function getTextbooks(
   gradeCategory?: 'elementary' | 'middle' | 'high',
   opts?: { includeInactive?: boolean }
 ): Promise<Textbook[]> {
-  let query = supabase.from('textbooks').select('*');
+  // 教材マスタは運用とともに増え続ける（2026-09-30 時点で有効654件）。未ページングの .select() は
+  // 1000行で静かに切り捨てられ、ピッカーから教材が警告なく欠けるため、全件ページングで読む。
+  // school_type / name / grade だけでは一意にならない（同名・同学年の出版社違いがある）ので、
+  // 最後に id を足して並びを一意にし、ページ境界での重複・取りこぼしを防ぐ。
+  try {
+    return await fetchAllPaged<Textbook>((from, to) => {
+      let query = supabase.from('textbooks').select('*');
 
-  if (gradeCategory) {
-    query = query.eq('grade_category', gradeCategory);
+      if (gradeCategory) {
+        query = query.eq('grade_category', gradeCategory);
+      }
+
+      // 無効化された教材は既定で一覧・ピッカーから除外する（データは消さず非表示にするだけ）。
+      if (!opts?.includeInactive) {
+        query = query.eq('is_active', true);
+      }
+
+      // 学校種別（小学→中学→高校）→ テキスト名 → 学年 の順でソート
+      return query
+        .order('school_type', { ascending: true })
+        .order('name', { ascending: true })
+        .order('grade', { ascending: true })
+        .order('id', { ascending: true })
+        .range(from, to);
+    });
+  } catch (error) {
+    throw new Error(
+      `テキストマスタの取得に失敗しました: ${error instanceof Error ? error.message : String(error)}`
+    );
   }
-
-  // 無効化された教材は既定で一覧・ピッカーから除外する（データは消さず非表示にするだけ）。
-  if (!opts?.includeInactive) {
-    query = query.eq('is_active', true);
-  }
-
-  // 学校種別（小学→中学→高校）→ テキスト名 → 学年 の順でソート
-  query = query
-    .order('school_type', { ascending: true })
-    .order('name', { ascending: true })
-    .order('grade', { ascending: true });
-
-  const { data, error } = await query;
-
-  if (error) {
-    throw new Error(`テキストマスタの取得に失敗しました: ${error.message}`);
-  }
-
-  return (data || []) as Textbook[];
 }
 
 /**
