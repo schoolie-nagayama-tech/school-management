@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import { requireAdmin, requireManager, getApiAuth, isUserInScope } from '@/lib/api-auth';
 import { writeAuditLog } from '@/lib/audit-log';
 import { USER_ROLE_LEVELS } from '@/types/database';
+import { canAssignRole, canManageUserWithRole } from '@/lib/utils/roles';
 import { captureApiError } from '@/lib/api-error';
 
 function getSupabaseAdmin() {
@@ -252,7 +253,18 @@ export async function PATCH(request: NextRequest, props: { params: Promise<{ use
       }
       // 自分自身の編集では権限・教室は変更不可。デフォルト教室のみ変更可。
       if (!isEditingSelf) {
-        if (role !== undefined) profileUpdates.role = role;
+        if (role !== undefined) {
+          // ★「新しく付けるロール」も自分より下であることを確かめる。
+          //   上の検査は「相手のいまのロール」しか見ていないため、これが無いと教室長が
+          //   講師を admin に昇格させ、そのアカウントで全教室に入れた（2026-09-30 総点検）。
+          if (!canAssignRole(auth.role, role)) {
+            return NextResponse.json(
+              { error: '自分と同等以上の権限は付与できません' },
+              { status: 403 }
+            );
+          }
+          profileUpdates.role = role;
+        }
         if (default_school_id !== undefined) {
           let v = sanitizedDefaultSchoolId || null;
           // manager はスコープ外の教室をデフォルトに設定できない（最終的な所属に含まれるもののみ）
@@ -443,6 +455,24 @@ export async function DELETE(request: NextRequest, props: { params: Promise<{ us
         })
       );
       return NextResponse.json({ error: 'ユーザーが見つかりません' }, { status: 404 });
+    }
+
+    // ★削除は編集と同じく「自分より下のロールの相手」だけ。自分自身も消させない。
+    //   以前は requireAdmin（admin と owner を通す）だけで、エリアマネージャーが管理者や
+    //   自分自身を削除できた（2026-09-30 総点検）。
+    if (userId === auth.userId) {
+      return NextResponse.json({ error: '自分自身は削除できません' }, { status: 403 });
+    }
+    const { data: deleteTarget } = await supabaseAdmin
+      .from('user_profiles')
+      .select('role')
+      .eq('id', userId)
+      .maybeSingle();
+    if (deleteTarget && !canManageUserWithRole(auth.role, deleteTarget.role as string)) {
+      return NextResponse.json(
+        { error: '自分と同等以上の権限のユーザーは削除できません' },
+        { status: 403 }
+      );
     }
 
     // 外部キー参照を解除（ON DELETE RESTRICT のため事前に削除・更新が必要）
