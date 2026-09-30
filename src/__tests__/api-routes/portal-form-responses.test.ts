@@ -96,7 +96,9 @@ describe('POST /api/portal/form-responses', () => {
     };
     const createdResponse = { id: 'resp-1', ...validBody };
     let formResponsesCall = 0;
-    mockAdmin.from.mockImplementation((table: string) => {
+    // helpers の from は引数なしの型で宣言されているので、テーブル名は残余引数で受け取る
+    mockAdmin.from.mockImplementation((...args: unknown[]) => {
+      const table = args[0] as string;
       if (table === 'form_periods') return createMockChain(period) as never;
       if (table === 'students') {
         // 同じ教室・同じ学年で名前が1人だけ一致 → 自動紐付けされる
