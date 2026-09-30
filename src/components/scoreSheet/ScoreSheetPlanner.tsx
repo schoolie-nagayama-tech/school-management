@@ -924,8 +924,9 @@ function OriginBand({
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <span className="text-sm font-bold text-text-heading">
           成績表から作った下書き　
-          {SUBJECTS.map((s) => `${SCORE_SUBJECT_LABEL[s]} ${subjectKoma(s)}コマ`).join('・')}（合計{' '}
-          {total}コマ）
+          {SUBJECTS.map((s) => `${SCORE_SUBJECT_LABEL[s]} ${subjectKoma(s)}コマ`).join(
+            '・'
+          )}（合計 {total}コマ）
         </span>
         <button
           type="button"
