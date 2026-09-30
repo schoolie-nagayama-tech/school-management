@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { getInvitationByToken, signUpWithEmail } from '@/lib/api/auth';
+import { getInvitationByToken, signInWithEmail } from '@/lib/api/auth';
 import { Loading } from '@/components/ui';
 import { X } from 'lucide-react';
 import type { UserInvitation } from '@/types/database';
@@ -62,36 +62,42 @@ export default function InvitePage() {
     setIsSubmitting(true);
 
     try {
-      // アカウント作成
-      const { user } = await signUpWithEmail(invitation.email, password);
+      // アカウント作成はサーバー側（service role）で行う。
+      // ★ブラウザから supabase.auth.signUp を呼ぶ方式は、Supabase の「新規登録を許可」を
+      //   ON にしておく必要があり、招待なしで誰でもアカウントを作れてしまうため廃止した。
+      //   トークン・期限・招待者の権限の検証もサーバーで行う。
+      const res = await fetch('/api/invite/complete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          token,
+          password,
+          displayName: displayName || undefined,
+        }),
+      });
 
-      if (user) {
-        // プロファイル・教室紐付け・招待承諾をサーバー側で実行（RLSを避けユーザー管理に表示されるようにする）
-        const res = await fetch('/api/invite/complete', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            token,
-            displayName: displayName || undefined,
-            userId: user.id,
-          }),
-        });
-
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok) {
-          throw new Error(data.error || '招待の完了に失敗しました');
-        }
-
-        router.push('/students');
+      const data = (await res.json().catch(() => ({}))) as { error?: string; email?: string };
+      if (!res.ok) {
+        // サーバーの文言は利用者向けに書いてある（登録済み・使用済み・期限切れなど）のでそのまま出す
+        setError(data.error || 'アカウントの作成に失敗しました');
+        return;
       }
+
+      // 作ったアカウントでそのままログインする。サーバーが返した email を優先するのは、
+      // サーバー側でログインIDの正規化（内部ドメインの付加）をしているため。
+      try {
+        await signInWithEmail(data.email || invitation.email, password);
+      } catch (signInErr) {
+        // アカウントは作れているので、ログイン画面から入り直してもらう（招待は使用済みになっている）
+        console.error('Error signing in after invitation:', signInErr);
+        router.push('/login');
+        return;
+      }
+
+      router.push('/students');
     } catch (err: unknown) {
       console.error('Error accepting invitation:', err);
-      const message = err instanceof Error ? err.message : '';
-      if (message.includes('already registered') || message.includes('User already registered')) {
-        setError('このメールアドレスは既に登録されています');
-      } else {
-        setError('アカウントの作成に失敗しました');
-      }
+      setError('アカウントの作成に失敗しました');
     } finally {
       setIsSubmitting(false);
     }

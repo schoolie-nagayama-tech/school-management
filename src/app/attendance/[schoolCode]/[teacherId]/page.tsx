@@ -30,7 +30,7 @@ import {
 } from 'lucide-react';
 import { useToast } from '@/hooks/useToast';
 import { getSchoolByCode } from '@/lib/api/schools';
-import { getSupabaseBrowserClient } from '@/lib/supabase';
+import { fetchWithAuth } from '@/lib/api/auth';
 import { useAuth } from '@/contexts/AuthContext';
 import { toSurnameOnly } from '@/lib/utils/teacherName';
 import { useTeacherBadgeCount } from '@/hooks/useTeacherBadgeCount';
@@ -154,15 +154,13 @@ export default function TeacherAttendancePage() {
 
     try {
       // 教室 + 講師は互いに独立 → 並列
-      const supabase = getSupabaseBrowserClient();
+      // ★講師名はブラウザから user_profiles を直読みせず、サーバーAPIで必要な列だけ受け取る。
+      //   直読みのために anon にも講師名簿（メール・入社日など）を見せる RLS ポリシーが要っていたため。
+      //   認可（本人 or 担当教室）とその教室の講師かどうかの確認はAPI側で行う。
+      const teacherQuery = new URLSearchParams({ schoolCode, teacherId });
       const [schoolData, teacherRes] = await Promise.all([
         getSchoolByCode(schoolCode),
-        supabase
-          .from('user_profiles')
-          .select('id, display_name, email, role, is_active')
-          .eq('id', teacherId)
-          .eq('role', 'teacher')
-          .maybeSingle(),
+        fetchWithAuth(`/api/attendance/teacher-profile?${teacherQuery.toString()}`),
       ]);
 
       if (!schoolData) {
@@ -171,14 +169,13 @@ export default function TeacherAttendancePage() {
       }
       setSchool(schoolData);
 
-      if (teacherRes.error) {
-        console.error('Error fetching teacher:', teacherRes.error);
+      if (!teacherRes.ok) {
+        console.error('Error fetching teacher:', teacherRes.status);
         throw new Error('講師情報の取得に失敗しました');
       }
-      const teacherData = teacherRes.data;
-      if (!teacherData || teacherData.is_active === false) {
-        throw new Error('講師情報の取得に失敗しました');
-      }
+      const { teacher: teacherData } = (await teacherRes.json()) as {
+        teacher: { id: string; display_name: string | null; email: string | null };
+      };
       setTeacher({
         id: teacherData.id,
         name:
