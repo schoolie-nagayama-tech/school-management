@@ -9,6 +9,43 @@ import { getDefaultSchoolId } from './schools';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 import { createBillingItem } from '@/lib/api/billing';
 import { createStockTransaction, createMaterial } from '@/lib/api/inventory';
+import { fetchAllInChunks } from '@/lib/utils/supabasePaging';
+
+/**
+ * 生徒×テキストの所持集合（is_owned=true）を `${student_id}:${textbook_id}` の形で返す。
+ * 発注候補の抽出（getProposalOrderCandidates）と二重発注チェック（checkOrderDuplicates）で共用。
+ *
+ * ★ 行数は「生徒数×教材数」で増えるため、未ページングだと1000行で静かに切り捨てられ、
+ *   所持済みの教材が「未所持」に見えて発注候補・二重発注警告が狂う。生徒IDを分割し
+ *   （URL長対策）、各分割内もページングで最後まで読む。id で並びを固定して境界の重複・欠落を防ぐ。
+ * ★ 取得に失敗しても例外にはせず、ログを残して読めた分で続ける（従来どおり）。
+ *   発注ダイアログや一括公開の流れ全体を止めないため。
+ */
+export async function fetchOwnedSet(
+  studentIds: string[],
+  textbookIds: number[]
+): Promise<Set<string>> {
+  const ownedSet = new Set<string>();
+  if (studentIds.length === 0 || textbookIds.length === 0) return ownedSet;
+  try {
+    const rows = await fetchAllInChunks<{ student_id: string; textbook_id: number }>(
+      studentIds,
+      (chunk, from, to) =>
+        supabase
+          .from('student_textbooks')
+          .select('student_id, textbook_id')
+          .in('student_id', chunk)
+          .in('textbook_id', textbookIds)
+          .eq('is_owned', true)
+          .order('id', { ascending: true })
+          .range(from, to)
+    );
+    for (const r of rows) ownedSet.add(`${r.student_id}:${r.textbook_id}`);
+  } catch (err) {
+    console.error('所持教材の取得に失敗しました:', err);
+  }
+  return ownedSet;
+}
 
 interface OrderFilters {
   status?: string;
@@ -438,18 +475,7 @@ export async function getProposalOrderCandidates(
 
   // 「所持している(is_owned=true)」教材は発注しない。track_progress(進行表管理)とは独立。
   // 公開しただけ(所持してないけど管理する=is_owned=false)のテキストは発注候補に含める。
-  const ownedSet = new Set<string>();
-  if (studentIds.length > 0 && textbookIds.length > 0) {
-    const { data } = await supabase
-      .from('student_textbooks')
-      .select('student_id, textbook_id')
-      .in('student_id', studentIds)
-      .in('textbook_id', textbookIds)
-      .eq('is_owned', true);
-    for (const r of (data ?? []) as { student_id: string; textbook_id: number }[]) {
-      ownedSet.add(`${r.student_id}:${r.textbook_id}`);
-    }
-  }
+  const ownedSet = await fetchOwnedSet(studentIds, textbookIds);
 
   // 既存の未キャンセル発注（生徒×教材）→ 重複発注防止
   const orderedSet = new Set<string>();
@@ -695,18 +721,7 @@ export async function checkOrderDuplicates(
   };
 
   // 所持集合（is_owned=true）。生徒×テキストで持つ。
-  const ownedSet = new Set<string>();
-  {
-    const { data } = await supabase
-      .from('student_textbooks')
-      .select('student_id, textbook_id')
-      .in('student_id', studentIds)
-      .in('textbook_id', textbookIds)
-      .eq('is_owned', true);
-    for (const r of (data ?? []) as { student_id: string; textbook_id: number }[]) {
-      ownedSet.add(`${r.student_id}:${r.textbook_id}`);
-    }
-  }
+  const ownedSet = await fetchOwnedSet(studentIds, textbookIds);
 
   // 未キャンセル発注（生徒×教材名 → 最も進んだステータス）。
   // 対象の生徒の発注だけを引き、教材名で突き合わせる。
