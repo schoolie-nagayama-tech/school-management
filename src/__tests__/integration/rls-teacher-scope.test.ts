@@ -8,12 +8,12 @@
  * 検証するポリシー:
  *   1. student_interviews: check_school_access(school_id) で教室スコープ化
  *      - teacher は自教室のみ見える
- *      - manager は全教室が見える
+ *      - manager は担当教室（user_schools）だけ見える（2026-09-30 総点検で全教室から変更）
  *      - anon(未ログイン) は0件(または SELECT エラー)
  *
  *   2. attendance_sheets: RESTRICTIVE(教室スコープ) + PERMISSIVE(teacher_id=auth.uid())
  *      - teacher は自分の sheet のみ見える（他の teacher の sheet は見えない）
- *      - manager は全教室・全 teacher の sheet が見える
+ *      - manager は担当教室の全 teacher の sheet が見える
  *
  * 実行前提:
  *   supabase start 済み、.env.test に接続情報が設定されていること
@@ -52,7 +52,7 @@ let sheetTeacherBId: string; // teacherB の出勤簿 (教室A 同一教室・�
 // テストユーザー
 let teacherAUser: TestUser; // 教室A のみに所属する teacher
 let teacherBUser: TestUser; // 教室A のみに所属する別の teacher
-let managerUser: TestUser; // manager（教室紐づけなし → check_school_access で全教室TRUE）
+let managerUser: TestUser; // manager（教室Aの担当。教室Bは見えない）
 
 // ── beforeAll: service_role でシードデータを作成 ──
 beforeAll(async () => {
@@ -144,7 +144,10 @@ beforeAll(async () => {
   });
   managerUser = await createTestUser(adminClient, {
     role: 'manager',
-    // manager は check_school_access が常にTRUE → schoolIds 不要
+    // ★2026-09-30 総点検: 教室長も担当教室（user_schools）だけに絞った。
+    //   以前は check_school_access が manager に常に TRUE を返し、教室長1人の乗っ取りで
+    //   全教室の生徒・問合せ・面談記録が漏れる状態だった。
+    schoolIds: [schoolAId],
   });
 
   // ── 出勤簿の作成（attendance_sheets） ──
@@ -242,10 +245,9 @@ describe('student_interviews RLS: 教室スコープ検証', () => {
 
   /**
    * 保証:
-   *   manager は check_school_access が常にTRUE を返すため、
-   *   教室A・教室B 両方の面談を SELECT できること
+   *   manager は担当教室（教室A）の面談だけを SELECT でき、担当外（教室B）は見えないこと
    */
-  it('manager は全教室の面談を取得できる（教室A・B 両方）', async () => {
+  it('manager は担当教室の面談だけ取得できる（教室Bは見えない）', async () => {
     const client = await signInAsUser(managerUser.email, managerUser.password);
     const { data, error } = await client
       .from('student_interviews')
@@ -257,7 +259,7 @@ describe('student_interviews RLS: 教室スコープ検証', () => {
 
     const ids = data!.map((r) => r.id);
     expect(ids).toContain(interviewAId);
-    expect(ids).toContain(interviewBId);
+    expect(ids).not.toContain(interviewBId);
   });
 
   /**
