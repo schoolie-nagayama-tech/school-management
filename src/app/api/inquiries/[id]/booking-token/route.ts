@@ -4,13 +4,13 @@
  * POST   /api/inquiries/[id]/booking-token — トークン発行（なければ新規、あれば既存を返す）
  * DELETE /api/inquiries/[id]/booking-token — トークン取消＋カレンダーイベント取消
  *
- * 認証: 教室長以上（requireManager）
+ * 認証: 教室長以上（requireManager）＋ 問合せの教室が自分の担当であること
  * 権限: service role で操作
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { requireManager } from '@/lib/api-auth';
+import { requireManager, getApiAuth } from '@/lib/api-auth';
 import {
   generateBookingToken,
   resolveBookingCalendarUserId,
@@ -27,6 +27,22 @@ function getServiceClient() {
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !key) throw new Error('Supabase env not set');
   return createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } });
+}
+
+/**
+ * 問合せの教室が、呼び出した人の担当教室に含まれるか。
+ * ★service role は RLS を通らないので、教室の境界はここで見るしかない。以前はこの確認が無く、
+ *   A校の教室長が B校の問合せIDで予約リンクを発行して保護者名・生徒名を見たり、
+ *   B校の面談予約（とカレンダーの予定）を取り消したりできた（2026-09-30 総点検）。
+ *   見つからない場合と同じ 404 を返し、他教室の問合せIDが実在するかも分からないようにする。
+ */
+async function isInquiryInCallerScope(
+  request: NextRequest,
+  inquirySchoolId: string | null
+): Promise<boolean> {
+  const { auth } = await getApiAuth(request);
+  if (!auth || !inquirySchoolId) return false;
+  return auth.schoolIds.includes(inquirySchoolId);
 }
 
 // ============================================================
@@ -49,6 +65,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     .maybeSingle();
 
   if (inquiryError || !inquiry) {
+    return NextResponse.json({ error: '問合せが見つかりません' }, { status: 404 });
+  }
+  if (!(await isInquiryInCallerScope(request, inquiry.school_id))) {
     return NextResponse.json({ error: '問合せが見つかりません' }, { status: 404 });
   }
 
@@ -126,6 +145,9 @@ export async function DELETE(
     .maybeSingle();
 
   if (inquiryError || !inquiry) {
+    return NextResponse.json({ error: '問合せが見つかりません' }, { status: 404 });
+  }
+  if (!(await isInquiryInCallerScope(request, inquiry.school_id))) {
     return NextResponse.json({ error: '問合せが見つかりません' }, { status: 404 });
   }
 

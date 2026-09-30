@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { captureApiError } from '@/lib/api-error';
+import { getApiAuth } from '@/lib/api-auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -35,6 +36,14 @@ export async function POST(request: NextRequest) {
     } = await supabase.auth.getUser();
     if (authError || !user) {
       return NextResponse.json({ error: '認証が必要です' }, { status: 401 });
+    }
+
+    // ★通知を受け取る教室は、自分の担当教室に限る。push_subscriptions の RLS は user_id しか
+    //   見ないため、以前は任意の教室IDで登録でき、他教室の「○○さんから申込」通知（生徒名入り）が
+    //   届いた（2026-09-30 総点検）。
+    const { auth } = await getApiAuth(request);
+    if (!auth || auth.userId !== user.id || !auth.schoolIds.includes(schoolId)) {
+      return NextResponse.json({ error: 'この教室の通知は登録できません' }, { status: 403 });
     }
 
     const { error } = await supabase.from('push_subscriptions').upsert(
