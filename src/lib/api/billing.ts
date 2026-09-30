@@ -354,6 +354,62 @@ export async function getStudentBillings(
 }
 
 /**
+ * 生徒1人の、ある請求期間の請求状況を取得（生徒ハブの「請求項目の計上」用）。
+ *
+ * getStudentBillings と同じ意味（その期間の項目に紐づく行・教室で絞る）で、生徒だけに絞る。
+ * 1人分は項目数ぶんの行しかないので 1000 行上限には届かず、ページングは要らない。
+ * テーブルが無い・権限が無いときに空で返すのも getStudentBillings に揃える。
+ */
+export async function getStudentBillingsOfStudent(
+  periodId: string,
+  studentId: string,
+  schoolId: string
+): Promise<StudentBilling[]> {
+  const { data: billingItems, error: itemsError } = await supabase
+    .from('billing_items')
+    .select('id')
+    .eq('billing_period_id', periodId)
+    .eq('school_id', schoolId);
+
+  if (itemsError) {
+    if (
+      itemsError.code === 'PGRST116' ||
+      itemsError.code === '42501' ||
+      itemsError.message.includes('schema cache')
+    ) {
+      console.warn('billing_itemsテーブルの取得に失敗しました（無視します）:', itemsError);
+      return [];
+    }
+    throw new Error(`請求項目の取得に失敗しました: ${itemsError.message}`);
+  }
+  if (!billingItems || billingItems.length === 0) return [];
+
+  const { data, error } = await supabase
+    .from('student_billings')
+    .select('*')
+    .eq('student_id', studentId)
+    .eq('school_id', schoolId)
+    .in(
+      'billing_item_id',
+      billingItems.map((i) => i.id)
+    );
+
+  if (error) {
+    if (
+      error.code === 'PGRST116' ||
+      error.code === '42501' ||
+      error.message.includes('schema cache')
+    ) {
+      console.warn('student_billingsテーブルの取得に失敗しました（無視します）:', error);
+      return [];
+    }
+    throw new Error(`請求状況の取得に失敗しました: ${error.message}`);
+  }
+
+  return (data || []) as StudentBilling[];
+}
+
+/**
  * 生徒の請求状況をトグル（upsert）
  */
 export async function toggleStudentBilling(

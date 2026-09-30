@@ -41,6 +41,12 @@ import {
 import { V2Tag } from '@/components/students/hub/V2Tag';
 import { HubDataProvider } from '@/components/students/hub/HubDataContext';
 import { TargetSchoolsSection } from '@/components/students/hub/TargetSchoolsSection';
+import { ScheduleSetupNotice } from '@/components/students/hub/ScheduleSetupNotice';
+import { SchoolPaceTable } from '@/components/students/hub/SchoolPaceTable';
+import { ParentMessagesCard } from '@/components/students/hub/ParentMessagesCard';
+import { TextbooksSection } from '@/components/students/hub/TextbooksSection';
+import { BillingSection } from '@/components/students/hub/BillingSection';
+import { LogsSection } from '@/components/students/hub/LogsSection';
 
 const HEADER_TITLE = '生徒管理';
 
@@ -148,6 +154,9 @@ export default function StudentHubPage() {
           {/* 通塾日程は最初から読む（上から3つ目。開いてすぐ目に入る位置にあるため） */}
           <HubSection id="sec-schedule" title="通塾日程" detailHref={`${base}/schedule`}>
             <div className="flex flex-col gap-5">
+              {/* 通塾日程が0件の生徒にだけ「通塾セットアップ」への導線を出す（モーダルと同じ判定）。
+                  教室長は生徒一覧からハブへ直行するので、ここに無いと入会直後の生徒で手が止まる */}
+              <ScheduleSetupNotice studentId={student.id} />
               <div>
                 <h3 className="mb-2 flex items-center gap-2 text-sm font-bold text-text-heading">
                   予定表
@@ -216,6 +225,11 @@ export default function StudentHubPage() {
             placeholderHeight={280}
             flush
           >
+            {/* 学校進度との比較（通常のテキストだけ）。記録が無い生徒では部品が何も描かないので、
+                余白ごと消えるよう empty:hidden にしている */}
+            <div className="px-4 pt-3.5 empty:hidden">
+              <SchoolPaceTable />
+            </div>
             <HubProgressPanel />
           </HubSection>
 
@@ -254,19 +268,46 @@ export default function StudentHubPage() {
             <InterviewList studentId={student.id} schoolId={student.school_id} />
           </HubSection>
 
-          <HubSection
-            id="sec-koushu"
-            title="講習"
-            detailHref={`${base}/proposals`}
-            detailLabel="提案書を開く"
-            lazy
-            placeholderHeight={200}
-          >
-            <StudentKoushuTab studentId={student.id} />
-          </HubSection>
+          {/* 講習と教材は左右に並べる（モックの決定。どちらも中身が少なく、全幅だと横が空く）。
+              1100px 未満は縦に積む */}
+          <div className="grid grid-cols-1 items-start gap-3 min-[1100px]:grid-cols-2">
+            <HubSection
+              id="sec-koushu"
+              title="講習"
+              detailHref={`${base}/proposals`}
+              detailLabel="提案書を開く"
+              lazy
+              placeholderHeight={200}
+            >
+              <StudentKoushuTab studentId={student.id} />
+            </HubSection>
+
+            {/* 所持・進行表で管理・配布の操作はモーダルと同じ部品。教室長は生徒一覧からハブへ
+                直行するので、ここに無いと教材を触れなくなる */}
+            <HubSection
+              id="sec-textbooks"
+              title="教材"
+              detailHref={`${base}/progress`}
+              detailLabel="進行表"
+              lazy
+              placeholderHeight={240}
+            >
+              <TextbooksSection studentId={student.id} schoolId={student.school_id} />
+            </HubSection>
+          </div>
 
           <HubSection id="sec-parent" title="保護者" extra={<V2Tag />} lazy placeholderHeight={200}>
-            <PortalInviteSection studentId={student.id} studentName={fullName} />
+            <div className="flex flex-col gap-5">
+              {/* 保護者との連絡。保護者アカウントが前提なので2月から。
+                  ★上の「気にすること」には置かない: 2月までほぼ全員が空で、一番目立つ場所に
+                  空の欄が並ぶため（左上を空けない、というユーザーの指摘） */}
+              <div>
+                <h3 className="mb-2 text-sm font-bold text-text-heading">保護者との連絡</h3>
+                <ParentMessagesCard studentId={student.id} />
+              </div>
+              {/* 部品が自前で「保護者ポータル」の見出しを持つので、ここでは付けない（二重になる） */}
+              <PortalInviteSection studentId={student.id} studentName={fullName} />
+            </div>
           </HubSection>
 
           {/* 提案書は各一覧ページへのリンクだけ（第1段） */}
@@ -284,6 +325,10 @@ export default function StudentHubPage() {
               </li>
             </ul>
           </HubSection>
+
+          {/* 請求の計上と変更履歴は、見出し（期間名など）ごと部品が持っている */}
+          <BillingSection studentId={student.id} schoolId={student.school_id} />
+          <LogsSection studentId={student.id} />
         </div>
       </HubDataProvider>
     </AdminLayout>

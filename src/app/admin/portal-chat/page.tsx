@@ -66,6 +66,25 @@ export default function PortalChatInboxPage() {
     if (isManager) loadThreads();
   }, [isManager, loadThreads]);
 
+  // ?student_id= で来たら（生徒ハブの「保護者との連絡」から）、その生徒のスレッドを開いた状態で始める。
+  // ★useSearchParams を使わず window.location から読むのは、Suspense 境界が無いページで
+  //   useSearchParams を使うと Next のビルド（静的生成）で落ちるため。最初の1回だけ当てる
+  //   （あとで利用者が別のスレッドを選んだり教室を切り替えたりしても、引き戻さない）。
+  const pendingStudentIdRef = useRef<string | null | undefined>(undefined);
+  useEffect(() => {
+    if (pendingStudentIdRef.current === undefined) {
+      pendingStudentIdRef.current =
+        typeof window !== 'undefined'
+          ? new URLSearchParams(window.location.search).get('student_id')
+          : null;
+    }
+    const pending = pendingStudentIdRef.current;
+    if (!pending || loading || threads.length === 0) return;
+    const hit = threads.find((t) => t.student_id === pending);
+    if (hit) setSelected(hit);
+    pendingStudentIdRef.current = null;
+  }, [threads, loading]);
+
   if (authLoading) {
     return (
       <AdminLayout>

@@ -131,8 +131,10 @@ function getMeaningfulChanges(
 
 /**
  * アクションと diff から「登録」「姓: 旧→新, ...」などの変更サマリを生成する。
+ * 生徒ハブの変更履歴（src/components/students/hub/LogsSection.tsx）も同じ文言で出すため export する。
+ * 空文字は「表示する変更が無い」（科目だけ変えた更新など）。
  */
-function buildChangeSummary(
+export function buildChangeSummary(
   action: string,
   diff: Record<string, { old: unknown; new: unknown }> | null
 ): string {
