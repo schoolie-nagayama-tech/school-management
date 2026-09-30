@@ -21,7 +21,12 @@ import { supabase } from '@/lib/supabase';
 import { fetchWithAuth } from '@/lib/api/auth';
 import { ToastContainer } from '@/components/ui';
 import { useToast } from '@/hooks/useToast';
-import { SEASON_LABELS, type CurriculumItem, type SeasonType } from '@/types/database';
+import {
+  GRADE_LABELS,
+  SEASON_LABELS,
+  type CurriculumItem,
+  type SeasonType,
+} from '@/types/database';
 import {
   getTermProposals,
   mergeUnitsIntoProposal,
@@ -80,6 +85,7 @@ import type { DraftUnit, MockResult, ScoreSubject } from '@/lib/scoreSheet/types
 import { SCORE_SUBJECT_LABEL } from '@/lib/scoreSheet/types';
 import { HARD_RATE, HARD_SS } from '@/lib/scoreSheet/mockSheet';
 import { ScoreFilesPanel, type ScoreFileEntry } from './ScoreFilesPanel';
+import { ScoreThemePanel, type ThemeSubjectRow } from './ScoreThemePanel';
 
 const SUBJECTS: ScoreSubject[] = ['math', 'eng'];
 
@@ -165,7 +171,8 @@ export function ScoreSheetPlanner() {
   } | null>(null);
   const [season, setSeason] = useState<SeasonType>(getPreparingSeason());
   const [year, setYear] = useState<number>(new Date().getFullYear());
-  const [theme, setTheme] = useState('');
+  // ★テーマは教科ごと（同じ教科の冊は同じテーマ）。成績表の根拠から AI が教科ごとに書くため
+  const [themes, setThemes] = useState<Record<ScoreSubject, string>>({ math: '', eng: '' });
   const [files, setFiles] = useState<ScoreFileEntry[]>([]);
   const [confirmedAreas, setConfirmedAreas] = useState<Record<ScoreSubject, Set<string>>>({
     math: new Set(),
@@ -560,9 +567,14 @@ export function ScoreSheetPlanner() {
     order: i + 1,
     textbookId: b.textbookId,
   }));
+  const themeMissing = SUBJECTS.filter(
+    (s) => books.some((b) => b.subject === s) && !themes[s].trim()
+  );
   const saveBlockers = [
+    ...themeMissing.map((s) => `${SCORE_SUBJECT_LABEL[s]}のテーマを入力してください`),
+    // テーマは教科ごとに上で見たので、ここには空でない値を渡して冊の検査だけを使う
     ...buildProposalSaveBlockers({
-      theme,
+      theme: '-',
       books: perBook.map((b) => ({ name: b.name, koma: b.koma })),
     }),
     ...(readingCount > 0 ? ['成績表を読み取っています'] : []),
@@ -604,7 +616,7 @@ export function ScoreSheetPlanner() {
                   schoolId: student.schoolId,
                   season,
                   year,
-                  theme,
+                  theme: themes[b.subject],
                   notes: null,
                   units,
                 })
@@ -641,6 +653,36 @@ export function ScoreSheetPlanner() {
     books.filter((b) => b.subject === s).reduce((a, b) => a + bookKoma(b), 0);
   const plan = plans[subject];
   const hasAny = files.some((f) => f.status === 'ok');
+
+  // テーマを書く材料（教科ごと）。★単元名・コマ・目的タグ・根拠だけ。氏名・偏差値は入れない
+  const themeRows: ThemeSubjectRow[] = SUBJECTS.flatMap((s) => {
+    const mine = books.filter((b) => b.subject === s);
+    const units = mine.flatMap((b) =>
+      activeOf(b).map((d) => ({
+        title: b.items.find((i) => i.id === d.curriculum_item_id)?.title ?? '',
+        koma: d.koma_count,
+        intent: d.intent_tag,
+        reason: d.reason,
+      }))
+    );
+    if (units.length === 0) return [];
+    // ★束ねた単元の後ろは合計に入らない（先頭だけで数える）ので、合計は冊のコマから取る
+    const koma = mine.reduce((a, b) => a + bookKoma(b), 0);
+    return [
+      {
+        subject: s,
+        booksLabel: mine.map((b) => b.label).join('・'),
+        koma,
+        input: {
+          key: s,
+          gradeLabel: student?.grade != null ? (GRADE_LABELS[student.grade] ?? '') : '',
+          subject: SCORE_SUBJECT_LABEL[s],
+          books: mine.map((b) => b.label),
+          units,
+        },
+      },
+    ];
+  });
 
   return (
     <div className="pb-24 space-y-5">
@@ -808,21 +850,12 @@ export function ScoreSheetPlanner() {
             />
           </section>
 
-          <section className="p-4 bg-surface-raised rounded-xl border border-border space-y-2">
-            <label htmlFor="score-theme" className="text-sm font-bold text-text-heading block">
-              講習テーマ<span className="ml-1.5 text-[10px] font-bold text-red-600">必須</span>
-            </label>
-            <input
-              id="score-theme"
-              value={theme}
-              onChange={(e) => setTheme(e.target.value)}
-              className={`w-full px-3 py-2 text-sm border rounded-lg bg-surface-raised ${theme.trim() ? 'border-border' : 'border-red-300'}`}
-              placeholder="例: 1年生の総復習 / 都立入試対策"
-            />
-            <p className="text-[11px] text-text-faint">
-              テーマは全冊に共通で入ります。保存後は、いつもの編集画面の「書き足す」で根拠をもとにふくらませられます
-            </p>
-          </section>
+          <ScoreThemePanel
+            schoolId={student?.schoolId ?? null}
+            rows={themeRows}
+            themes={themes}
+            onChange={(s, t) => setThemes((prev) => ({ ...prev, [s]: t }))}
+          />
 
           {activeBook && (
             <section className="p-4 bg-surface-raised rounded-xl border border-border">
@@ -924,8 +957,9 @@ function OriginBand({
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <span className="text-sm font-bold text-text-heading">
           成績表から作った下書き　
-          {SUBJECTS.map((s) => `${SCORE_SUBJECT_LABEL[s]} ${subjectKoma(s)}コマ`).join('・')}（合計{' '}
-          {total}コマ）
+          {SUBJECTS.map((s) => `${SCORE_SUBJECT_LABEL[s]} ${subjectKoma(s)}コマ`).join(
+            '・'
+          )}（合計 {total}コマ）
         </span>
         <button
           type="button"
