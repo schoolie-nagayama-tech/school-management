@@ -2,6 +2,7 @@ import { supabase } from '../supabase';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/types/database';
 import { listAssessmentsBySchool } from './assessments';
+import { compareAssessmentsChronological } from '@/lib/utils/scoreListTransform';
 import { getInterviewsBySchool, getPendingTasksBySchools } from './interviews';
 import { getApplicationItems, getStudentApplications } from './applications';
 import { getStudents } from './students';
@@ -445,13 +446,11 @@ function buildScoreDropCandidates(sources: AlertSources): Alert[] {
     for (const category of categories) {
       const assessments = allAssessments
         .filter((a) => a.category === category)
-        .sort((a, b) => {
-          // null exam_month を末尾に送る
-          if (!a.exam_month && !b.exam_month) return 0;
-          if (!a.exam_month) return 1;
-          if (!b.exam_month) return -1;
-          return b.exam_month.localeCompare(a.exam_month);
-        });
+        // 定期テスト・通知表は exam_month が NULL のまま登録される。旧実装は NULL 同士を
+        // 「等しい」として DB の取得順（name_code 昇順＝term1_final が term2_mid より先）を
+        // そのまま使い、古い方を「最新」と取り違えて上昇を「低下」と誤警告していた。
+        // 学年→月→学期内の順の共有コンパレータで時系列に並べ、新しい順にする。
+        .sort((a, b) => compareAssessmentsChronological(b, a));
       if (assessments.length < 2) continue;
 
       const latest = assessments[0];
@@ -537,13 +536,8 @@ function buildScoreMissingCandidates(sources: AlertSources): Alert[] {
     for (const category of categories) {
       const assessments = allAssessments
         .filter((a) => a.category === category)
-        .sort((a, b) => {
-          // null exam_month を末尾に送る
-          if (!a.exam_month && !b.exam_month) return 0;
-          if (!a.exam_month) return 1;
-          if (!b.exam_month) return -1;
-          return b.exam_month.localeCompare(a.exam_month);
-        });
+        // 最新の判定なので score_drop と同じく時系列（新しい順）で並べる。
+        .sort((a, b) => compareAssessmentsChronological(b, a));
       if (assessments.length === 0) continue;
 
       const latest = assessments[0];
