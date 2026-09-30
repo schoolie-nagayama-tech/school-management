@@ -18,8 +18,11 @@ export const HUB_SECTIONS = [
   { id: 'sec-discipline', label: '宿題・遅刻・出欠' },
   { id: 'sec-interview', label: '面談' },
   { id: 'sec-koushu', label: '講習' },
+  { id: 'sec-textbooks', label: '教材' },
   { id: 'sec-parent', label: '保護者' },
   { id: 'sec-proposals', label: '提案書' },
+  { id: 'sec-billing', label: '請求' },
+  { id: 'sec-logs', label: '履歴' },
 ] as const;
 
 export type HubSectionId = (typeof HUB_SECTIONS)[number]['id'];

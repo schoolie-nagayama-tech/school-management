@@ -1,12 +1,26 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { FileText, ListChecks, MessageSquare, MessageSquarePlus, Pencil } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import {
+  FileText,
+  ListChecks,
+  MessageSquare,
+  MessageSquarePlus,
+  MoreHorizontal,
+  Pencil,
+  Trash2,
+} from 'lucide-react';
 import type { Student } from '@/types/database';
 import { STATUS_LABELS } from '@/types/database';
 import { formatGradeLabelOrEmpty } from '@/lib/utils/gradeLabel';
+import { getUserErrorMessage } from '@/lib/utils/errorMessages';
+import { isTeacher } from '@/lib/utils/roles';
+import { useAuth } from '@/contexts/AuthContext';
 import { getRegularPatterns, getStudentScheduleEntries } from '@/lib/api/schedule';
+import { deleteStudent } from '@/lib/api/students';
+import { DeleteConfirmDialog } from '@/components/students/DeleteConfirmDialog';
 import { V2Tag } from './V2Tag';
 import { HUB_HEADER_OFFSET, HUB_SECTIONS } from './sections';
 import { summarizeAttendance, summarizeRecentTeachers, toDateStr } from './hubSummary';
@@ -169,6 +183,7 @@ export function HubHeader({ student, schoolName }: HubHeaderProps) {
             <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
             <span className="max-[1099px]:hidden">編集</span>
           </Link>
+          <MoreMenu student={student} />
         </div>
       </div>
 
@@ -229,5 +244,115 @@ export function HubHeader({ student, schoolName }: HubHeaderProps) {
         </ul>
       </nav>
     </header>
+  );
+}
+
+/**
+ * 操作ボタン右端の「その他」メニュー。中身は削除だけ。
+ *
+ * ★なぜあるか: 教室長は生徒一覧からハブへ直行するので、詳細モーダルにあった「削除」に辿り着けず、
+ *   生徒を削除できなくなっていた。まれにしか使わず押し間違えると困る操作なので、ボタンを並べずメニューにしまう。
+ * ★削除の流れは生徒一覧（StudentsPageClient の handleDelete）と同じにする:
+ *   同じ確認ダイアログ（DeleteConfirmDialog）→ 同じ deleteStudent（論理削除。deleted_at を入れ、
+ *   student_logs に soft_deleted を残す）→ 失敗は getUserErrorMessage で出す。
+ *   削除した生徒のハブには居られないので、成功したら生徒一覧へ戻す。
+ * ★出す条件も一覧と同じ（講師以外）。ハブ自体が教室長以上だけのページだが、判定は一覧に揃えておく。
+ */
+function MoreMenu({ student }: { student: Student }) {
+  const router = useRouter();
+  const { profile } = useAuth();
+  const [open, setOpen] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [error, setError] = useState('');
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // 外側クリックと Esc で閉じる（生徒一覧の行メニュー StudentRowActions と同じ振る舞い）
+  useEffect(() => {
+    if (!open) return;
+    const handleClick = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setOpen(false);
+    };
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false);
+    };
+    document.addEventListener('mousedown', handleClick);
+    document.addEventListener('keydown', handleEscape);
+    return () => {
+      document.removeEventListener('mousedown', handleClick);
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [open]);
+
+  if (isTeacher(profile?.role)) return null;
+
+  const handleDelete = async () => {
+    setDeleting(true);
+    setError('');
+    try {
+      await deleteStudent(student.id);
+      setConfirmOpen(false);
+      router.push('/students');
+    } catch (e) {
+      console.error('Error deleting student:', e);
+      setError(getUserErrorMessage(e, '生徒の削除に失敗しました'));
+      setConfirmOpen(false);
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  return (
+    <div ref={menuRef} className="relative">
+      <button
+        type="button"
+        onClick={() => {
+          setError('');
+          setOpen((v) => !v);
+        }}
+        className={`${btnClass} px-[7px]`}
+        aria-label="その他の操作"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        title="その他の操作"
+      >
+        <MoreHorizontal className="h-3.5 w-3.5" aria-hidden="true" />
+      </button>
+      {open && (
+        <div
+          role="menu"
+          className="absolute right-0 top-full z-40 mt-1 min-w-[140px] rounded-lg border border-border bg-surface-raised py-1 shadow-lg"
+        >
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => {
+              setOpen(false);
+              setConfirmOpen(true);
+            }}
+            className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm text-danger hover:bg-danger/10"
+          >
+            <Trash2 className="h-4 w-4 shrink-0" aria-hidden="true" />
+            削除
+          </button>
+        </div>
+      )}
+      {/* 失敗はヘッダーの高さを変えないよう、ボタンの下に浮かせて出す */}
+      {error && (
+        <p
+          role="alert"
+          className="absolute right-0 top-full z-40 mt-1 whitespace-nowrap rounded-md border border-danger bg-danger-subtle px-2 py-1 text-xs text-danger"
+        >
+          {error}
+        </p>
+      )}
+      <DeleteConfirmDialog
+        isOpen={confirmOpen}
+        student={student}
+        onConfirm={handleDelete}
+        onCancel={() => setConfirmOpen(false)}
+        isLoading={deleting}
+      />
+    </div>
   );
 }

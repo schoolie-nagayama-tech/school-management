@@ -166,6 +166,30 @@ export async function listMessages(
   return (data ?? []) as ChatMessage[];
 }
 
+/**
+ * 直近 limit 件のメッセージ（新しい順）。生徒ハブの「保護者との連絡」の要旨用。
+ * ★listMessages（全件・昇順）と分けたのは、要旨に全件は要らず、長いスレッドで
+ *   PostgREST の1000行切り捨てに当たる読み方を増やさないため。
+ */
+export async function listRecentMessages(
+  threadId: string,
+  limit: number,
+  client?: SupabaseClient
+): Promise<ChatMessage[] | null> {
+  const { data, error } = await db(client)
+    .from('chat_messages')
+    .select('id, thread_id, sender_kind, sender_id, body, template_kind, payload, created_at')
+    .eq('thread_id', threadId)
+    .order('created_at', { ascending: false })
+    .limit(limit);
+  if (error) {
+    console.error('[chatService] 直近メッセージの取得に失敗:', error.message);
+    // 失敗を空配列にしない（呼び出し側が「連絡はまだありません」と言い切ってしまうため）
+    return null;
+  }
+  return (data ?? []) as ChatMessage[];
+}
+
 /** 既読ポインタを更新（now で upsert）。reader_kind: staff|portal。 */
 export async function markRead(
   params: { threadId: string; readerKind: 'staff' | 'portal'; readerId: string },
