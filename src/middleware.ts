@@ -1,6 +1,7 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 import { checkRateLimit } from '@/lib/utils/rateLimit';
+import { buildGeoBlockedPage, isGeoBlocked, parseAllowedCountries } from '@/lib/utils/geoBlock';
 
 /**
  * 公開APIエンドポイントのレート制限設定
@@ -141,6 +142,24 @@ p{font-size:14px;color:#6b7280;line-height:1.8}
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  // ── 国単位のアクセス制限（日本のみ。2026-09-30 セキュリティ総点検） ──
+  // 何より先に判定する: ログイン画面・保護者ポータル・公開フォームを含め、海外からは中身を一切返さない。
+  // 例外（Webhook・Cron）と、効かない範囲（VPN・Supabase への直接アクセス）は lib/utils/geoBlock.ts 参照。
+  // 非常口: Vercel の環境変数 GEO_BLOCK_DISABLED=true で即座に外せる。許可国は GEO_ALLOWED_COUNTRIES。
+  if (
+    isGeoBlocked({
+      country: request.headers.get('x-vercel-ip-country'),
+      pathname,
+      allowedCountries: parseAllowedCountries(process.env.GEO_ALLOWED_COUNTRIES),
+      disabled: process.env.GEO_BLOCK_DISABLED === 'true',
+    })
+  ) {
+    return new NextResponse(buildGeoBlockedPage(), {
+      status: 403,
+      headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' },
+    });
+  }
 
   // セッション更新が不要な静的メタファイルはスキップ（Edge の無駄な getSession を削減）
   if (
