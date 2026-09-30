@@ -10,7 +10,14 @@
  *   静かに開く。ここで固定して気付けるようにする。
  */
 import { describe, it, expect } from 'vitest';
-import { isSystemAdmin, isOwnerOrAbove, isManagerOrAbove, isTeacher } from '@/lib/utils/roles';
+import {
+  isSystemAdmin,
+  isOwnerOrAbove,
+  isManagerOrAbove,
+  isTeacher,
+  canAssignRole,
+  canManageUserWithRole,
+} from '@/lib/utils/roles';
 
 describe('isSystemAdmin', () => {
   it('admin だけが true', () => {
@@ -65,5 +72,36 @@ describe('isTeacher', () => {
     expect(isTeacher('teacher')).toBe(true);
     expect(isTeacher('manager')).toBe(false);
     expect(isTeacher('admin')).toBe(false);
+  });
+});
+
+// ★権限昇格の穴（2026-09-30 総点検）を塞いだ判定。「自分より下だけ」を固定する。
+describe('canAssignRole', () => {
+  it.each([
+    ['admin', 'owner', true],
+    ['admin', 'admin', false],
+    ['owner', 'manager', true],
+    ['owner', 'admin', false],
+    ['manager', 'teacher', true],
+    ['manager', 'manager', false],
+    ['manager', 'admin', false],
+    ['teacher', 'teacher', false],
+    ['teacher', 'parent', true],
+  ])('%s が %s を付ける → %s', (actor, role, expected) => {
+    expect(canAssignRole(actor, role)).toBe(expected);
+  });
+
+  it('未知のロール名・未設定は付けられない', () => {
+    expect(canAssignRole('admin', 'superuser')).toBe(false);
+    expect(canAssignRole('admin', undefined)).toBe(false);
+    expect(canAssignRole(null, 'teacher')).toBe(false);
+  });
+});
+
+describe('canManageUserWithRole', () => {
+  it('相手が自分より下のときだけ true', () => {
+    expect(canManageUserWithRole('owner', 'manager')).toBe(true);
+    expect(canManageUserWithRole('owner', 'admin')).toBe(false);
+    expect(canManageUserWithRole('owner', 'owner')).toBe(false);
   });
 });

@@ -122,7 +122,7 @@ export async function POST(request: NextRequest) {
     const emailPattern = teacherEmail.replace(/[\\%_]/g, (m) => `\\${m}`);
     const { data: existingByEmail, error: existingError } = await supabaseAdmin
       .from('seasonal_shift_submissions')
-      .select('id, user_id')
+      .select('id, user_id, allow_edit')
       .eq('setting_id', settingId)
       .ilike('teacher_email', emailPattern)
       .order('submitted_at', { ascending: false })
@@ -137,7 +137,7 @@ export async function POST(request: NextRequest) {
       // メール変更などで一致しない場合でも、紐づけ済みアカウントが同じなら同一講師とみなす
       const { data: existingByUser, error: existingUserError } = await supabaseAdmin
         .from('seasonal_shift_submissions')
-        .select('id, user_id')
+        .select('id, user_id, allow_edit')
         .eq('setting_id', settingId)
         .eq('user_id', linkedUserId)
         .maybeSingle();
@@ -147,9 +147,24 @@ export async function POST(request: NextRequest) {
       existing = existingByUser ?? null;
     }
 
+    // ★公開フォームで既存の提出を上書きできるのは、教室が「修正許可」を出している間だけ。
+    //   このフォームはURLを知っていれば誰でも送れ、メールアドレスは自己申告なので、以前は
+    //   同僚のメールや氏名を入れるだけで他人の提出を上書きでき、勤務可能時間まで書き換わった
+    //   （2026-09-30 セキュリティ総点検）。修正許可中の再送信（修正用URLではなくこのフォームから
+    //   出し直すケース）だけは、2行に分裂させないために従来どおり上書きする。
+    if (existing && !existing.allow_edit) {
+      return NextResponse.json(
+        {
+          error:
+            'このメールアドレスでは既に提出されています。内容を直すときは、教室から届く「修正用URL」から直してください（心当たりがなければ教室に連絡してください）',
+        },
+        { status: 409 }
+      );
+    }
+
     let submission;
     if (existing) {
-      // 再提出: 既存行を上書き
+      // 再提出（修正許可中）: 既存行を上書き
       const { data: updated, error: updateError } = await supabaseAdmin
         .from('seasonal_shift_submissions')
         .update({
@@ -197,7 +212,10 @@ export async function POST(request: NextRequest) {
       if (submissionError) {
         if (submissionError.code === '23505') {
           return NextResponse.json(
-            { error: 'This teacher has already submitted' },
+            {
+              error:
+                'このメールアドレスでは既に提出されています。内容を直すときは、教室から届く「修正用URL」から直してください（心当たりがなければ教室に連絡してください）',
+            },
             { status: 409 }
           );
         }
@@ -232,7 +250,9 @@ export async function POST(request: NextRequest) {
       console.warn('[seasonal-shift/public] notify failed:', error);
     }
 
-    return NextResponse.json({ submission });
+    // ★応答は提出IDだけ。以前は行ごと（修正用トークン edit_token や紐づけた user_id まで）返していて、
+    //   他人のメールで送れば相手の修正用トークンが手に入った。画面は応答の中身を使っていない。
+    return NextResponse.json({ submission: { id: submission.id } });
   } catch (error) {
     captureApiError(error, {
       route: 'POST /api/seasonal-shift/public',

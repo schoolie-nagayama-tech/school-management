@@ -84,6 +84,48 @@ describe('POST /api/portal/form-responses', () => {
     expect(body.data.id).toBe('resp-1');
   });
 
+  // ★2026-09-30 総点検: 氏名と学年は誰でも名乗れるので、保護者からの申込は
+  //   自動紐付けしても請求データには書き込まない（請求画面の同期で教室長が反映する）。
+  it('保護者からの申込は、自動紐付けしても請求データに書き込まない', async () => {
+    const period = {
+      id: 'p1',
+      is_active: true,
+      is_archived: false,
+      publish_start: '2020-01-01',
+      publish_end: '2099-12-31',
+    };
+    const createdResponse = { id: 'resp-1', ...validBody };
+    let formResponsesCall = 0;
+    // helpers の from は引数なしの型で宣言されているので、テーブル名は残余引数で受け取る
+    mockAdmin.from.mockImplementation((...args: unknown[]) => {
+      const table = args[0] as string;
+      if (table === 'form_periods') return createMockChain(period) as never;
+      if (table === 'students') {
+        // 同じ教室・同じ学年で名前が1人だけ一致 → 自動紐付けされる
+        return createMockChain([
+          { id: 'stu-1', last_name: '山田', first_name: '太郎', grade: 3 },
+        ]) as never;
+      }
+      if (table === 'form_responses') {
+        formResponsesCall++;
+        if (formResponsesCall === 1) return createMockChain([]) as never; // 二重送信ガード
+        if (formResponsesCall === 2) return createMockChain(createdResponse) as never; // insert
+        return createMockChain({ linked_student_id: 'stu-1' }) as never;
+      }
+      return createMockChain(null) as never;
+    });
+
+    const { POST } = await import('@/app/api/portal/form-responses/route');
+    const res = await POST(makeRequest());
+    expect(res.status).toBe(200);
+
+    const tables = mockAdmin.from.mock.calls.map((c: unknown[]) => c[0]);
+    expect(tables).toContain('students'); // 自動紐付けは今までどおり走る
+    expect(tables).not.toContain('billing_periods');
+    expect(tables).not.toContain('billing_items');
+    expect(tables).not.toContain('student_billings');
+  });
+
   it('直近の同一内容の再送信は新規作成せず既存レコードを返す', async () => {
     const period = {
       id: 'p1',

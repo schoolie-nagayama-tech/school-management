@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { captureApiError } from '@/lib/api-error';
+import { verifyInviterAuthority } from '@/lib/invite/inviterAuthority';
 
 export const dynamic = 'force-dynamic';
 
@@ -38,7 +39,7 @@ export async function GET(_request: NextRequest, props: { params: Promise<{ toke
     const supabaseAdmin = getSupabaseAdmin();
     const { data: invitation, error } = await supabaseAdmin
       .from('user_invitations')
-      .select('id, email, role, school_ids, token, expires_at, accepted_at, created_at')
+      .select('id, email, role, school_ids, token, invited_by, expires_at, accepted_at, created_at')
       .eq('token', token)
       .is('accepted_at', null)
       .maybeSingle();
@@ -52,7 +53,17 @@ export async function GET(_request: NextRequest, props: { params: Promise<{ toke
       return NextResponse.json({ error: '招待の有効期限が切れています' }, { status: 404 });
     }
 
-    return NextResponse.json(invitation);
+    // 受諾APIと同じ「招待者にその権限を配る資格があるか」の検査。受諾で必ず 403 になる招待
+    // （教室長が作った管理者招待など）を、パスワードを入力させる前に「無効」と見せるため。
+    // 理由は区別せず 404 にそろえる（招待者の状態を外部に漏らさない）。
+    const authority = await verifyInviterAuthority(supabaseAdmin, invitation);
+    if (!authority.ok) {
+      return NextResponse.json({ error: '招待が見つかりません' }, { status: 404 });
+    }
+
+    // invited_by は検査のためだけに読んだ。招待者のユーザーIDを未ログインの相手に返す理由は無い。
+    const { invited_by: _invitedBy, ...publicInvitation } = invitation;
+    return NextResponse.json(publicInvitation);
   } catch (e) {
     captureApiError(e, {
       route: 'GET /api/invite/[token]',

@@ -131,7 +131,7 @@ export interface KoushuApplyToken {
   revokedAt: string | null;
 }
 
-/** 乱数トークン（32バイト＝64桁hex）。招待トークン generateToken と同方式 */
+/** 乱数トークン（32バイト＝64桁hex）。スタッフ招待トークンと同じ方式 */
 function generateApplyToken(): string {
   return Array.from(crypto.getRandomValues(new Uint8Array(32)))
     .map((b) => b.toString(16).padStart(2, '0'))

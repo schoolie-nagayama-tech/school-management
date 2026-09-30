@@ -1,6 +1,8 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 import { checkRateLimit } from '@/lib/utils/rateLimit';
+import { checkDurableRateLimit } from '@/lib/utils/durableRateLimit';
+import { buildGeoBlockedPage, isGeoBlocked, parseAllowedCountries } from '@/lib/utils/geoBlock';
 
 /**
  * 公開APIエンドポイントのレート制限設定
@@ -43,6 +45,14 @@ const PUBLIC_RATE_LIMITS: Array<{
   { path: '/api/mypage/invite/accept', limit: 10, windowSeconds: 60 },
   // LINEログインの開始/コールバック — 1IPあたり 30リクエスト/分（state cookie 乱発などの資源消費対策）
   { path: '/api/mypage/line/', limit: 30, windowSeconds: 60 },
+  // ── 2026-09-30 セキュリティ総点検で追加（それまで制限の対象外だった） ──
+  // 生徒の可能表: 生徒コード（S0001 形式の短い番号）で生徒の氏名・学年が返るため、
+  // 番号を順に試すと在籍児童の氏名一覧が取れた。1IPあたり 20リクエスト/分。
+  { path: '/api/seasonal-shift-student/', limit: 20, windowSeconds: 60 },
+  // 講習申込（教室コード＋生徒コードで開く）— 同じ理由で 1IPあたり 20リクエスト/分
+  { path: '/api/koushu-apply', limit: 20, windowSeconds: 60 },
+  // 面談のセルフ予約（トークン付きURL）— 1IPあたり 30リクエスト/分
+  { path: '/api/booking/', limit: 30, windowSeconds: 60 },
 ];
 
 function getClientIp(request: NextRequest): string {
@@ -142,6 +152,24 @@ p{font-size:14px;color:#6b7280;line-height:1.8}
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  // ── 国単位のアクセス制限（日本のみ。2026-09-30 セキュリティ総点検） ──
+  // 何より先に判定する: ログイン画面・保護者ポータル・公開フォームを含め、海外からは中身を一切返さない。
+  // 例外（Webhook・Cron）と、効かない範囲（VPN・Supabase への直接アクセス）は lib/utils/geoBlock.ts 参照。
+  // 非常口: Vercel の環境変数 GEO_BLOCK_DISABLED=true で即座に外せる。許可国は GEO_ALLOWED_COUNTRIES。
+  if (
+    isGeoBlocked({
+      country: request.headers.get('x-vercel-ip-country'),
+      pathname,
+      allowedCountries: parseAllowedCountries(process.env.GEO_ALLOWED_COUNTRIES),
+      disabled: process.env.GEO_BLOCK_DISABLED === 'true',
+    })
+  ) {
+    return new NextResponse(buildGeoBlockedPage(), {
+      status: 403,
+      headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' },
+    });
+  }
+
   // セッション更新が不要な静的メタファイルはスキップ（Edge の無駄な getSession を削減）
   if (
     pathname === '/robots.txt' ||
@@ -213,7 +241,19 @@ export async function middleware(request: NextRequest) {
         windowSeconds: rule.windowSeconds,
       });
 
-      if (!result.allowed) {
+      // メモリ内の制限（同じインスタンスへの連打）を通ったら、DB で全インスタンス共通の回数を数える。
+      // ★メモリ内だけでは Vercel のインスタンスが分かれるたびに数え直しになり、実質効かなかった
+      //   （2026-09-30 総点検）。DB に届かないときは通す（durableRateLimit.ts 参照）。
+      const allowed =
+        result.allowed &&
+        (await checkDurableRateLimit({
+          bucket: rule.path,
+          key: ip,
+          limit: rule.limit,
+          windowSeconds: rule.windowSeconds,
+        }));
+
+      if (!allowed) {
         return NextResponse.json(
           { error: 'リクエストが多すぎます。しばらく待ってから再度お試しください。' },
           {

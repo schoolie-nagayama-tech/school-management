@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { normalizePersonName } from '@/lib/utils/personName';
 import { syncRegularShiftToAvailability } from '@/lib/api/teacher-availability';
 import { captureApiError } from '@/lib/api-error';
 
@@ -117,7 +116,11 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // 講師アカウント紐づけ: (1) メール一致 (2) 同一教室の氏名一致（候補1名のみ）
+    // 講師アカウント紐づけ: メール一致のときだけ。
+    // ★以前は「同一教室の氏名一致（候補1名）」でも紐づけていたが、氏名は誰でも名乗れるため、
+    //   他人の名前で送るだけでその講師の勤務可能時間（teacher_availability_periods）に自動反映された
+    //   （2026-09-30 セキュリティ総点検で廃止）。メールが違って紐づかない提出は、教室長が
+    //   シフト提出の画面で手動で紐づける。
     const { data: matchedProfile } = await supabaseAdmin
       .from('user_profiles')
       .select('id')
@@ -125,30 +128,7 @@ export async function POST(request: NextRequest) {
       .eq('role', 'teacher')
       .eq('is_active', true)
       .maybeSingle();
-    let linkedUserId = matchedProfile?.id ?? null;
-
-    if (!linkedUserId) {
-      const nameKey = normalizePersonName(teacherName);
-      if (nameKey) {
-        const { data: schoolLinks } = await supabaseAdmin
-          .from('user_schools')
-          .select('user_id')
-          .eq('school_id', schoolId);
-        const schoolUserIds = (schoolLinks ?? []).map((r) => r.user_id);
-        if (schoolUserIds.length > 0) {
-          const { data: schoolTeachers } = await supabaseAdmin
-            .from('user_profiles')
-            .select('id, display_name')
-            .in('id', schoolUserIds)
-            .eq('role', 'teacher')
-            .eq('is_active', true);
-          const nameMatches = (schoolTeachers ?? []).filter(
-            (t) => normalizePersonName(t.display_name) === nameKey
-          );
-          if (nameMatches.length === 1) linkedUserId = nameMatches[0].id;
-        }
-      }
-    }
+    const linkedUserId = matchedProfile?.id ?? null;
 
     // 同一設定・同一メール（または同一アカウント）の既存提出を探す。
     // 修正許可（差し戻し）後に講師が修正用URLではなく提出フォームから
@@ -158,7 +138,7 @@ export async function POST(request: NextRequest) {
     const emailPattern = teacherEmail.replace(/[\\%_]/g, (m) => `\\${m}`);
     const { data: existingByEmail, error: existingError } = await supabaseAdmin
       .from('regular_shift_submissions')
-      .select('id, user_id')
+      .select('id, user_id, allow_edit')
       .eq('setting_id', settingId)
       .ilike('teacher_email', emailPattern)
       .order('submitted_at', { ascending: false })
@@ -173,7 +153,7 @@ export async function POST(request: NextRequest) {
       // メール変更などで一致しない場合でも、紐づけ済みアカウントが同じなら同一講師とみなす
       const { data: existingByUser, error: existingUserError } = await supabaseAdmin
         .from('regular_shift_submissions')
-        .select('id, user_id')
+        .select('id, user_id, allow_edit')
         .eq('setting_id', settingId)
         .eq('user_id', linkedUserId)
         .maybeSingle();
@@ -183,9 +163,24 @@ export async function POST(request: NextRequest) {
       existing = existingByUser ?? null;
     }
 
+    // ★公開フォームで既存の提出を上書きできるのは、教室が「修正許可」を出している間だけ。
+    //   このフォームはURLを知っていれば誰でも送れ、メールアドレスは自己申告なので、以前は
+    //   同僚のメールや氏名を入れるだけで他人の提出を上書きでき、勤務可能時間まで書き換わった
+    //   （2026-09-30 セキュリティ総点検）。修正許可中の再送信（修正用URLではなくこのフォームから
+    //   出し直すケース）だけは、2行に分裂させないために従来どおり上書きする。
+    if (existing && !existing.allow_edit) {
+      return NextResponse.json(
+        {
+          error:
+            'このメールアドレスでは既に提出されています。内容を直すときは、教室から届く「修正用URL」から直してください（心当たりがなければ教室に連絡してください）',
+        },
+        { status: 409 }
+      );
+    }
+
     let submission;
     if (existing) {
-      // 再提出: 既存行を上書き
+      // 再提出（修正許可中）: 既存行を上書き
       const { data: updated, error: updateError } = await supabaseAdmin
         .from('regular_shift_submissions')
         .update({
@@ -234,7 +229,10 @@ export async function POST(request: NextRequest) {
       if (submissionError) {
         if (submissionError.code === '23505') {
           return NextResponse.json(
-            { error: 'This teacher has already submitted' },
+            {
+              error:
+                'このメールアドレスでは既に提出されています。内容を直すときは、教室から届く「修正用URL」から直してください（心当たりがなければ教室に連絡してください）',
+            },
             { status: 409 }
           );
         }
@@ -287,7 +285,9 @@ export async function POST(request: NextRequest) {
       console.warn('[regular-shift/public] availability sync failed:', syncError);
     }
 
-    return NextResponse.json({ submission });
+    // ★応答は提出IDだけ。以前は行ごと（修正用トークン edit_token や紐づけた user_id まで）返していて、
+    //   他人のメールで送れば相手の修正用トークンが手に入った。画面は応答の中身を使っていない。
+    return NextResponse.json({ submission: { id: submission.id } });
   } catch (error) {
     captureApiError(error, {
       route: 'POST /api/regular-shift/public',

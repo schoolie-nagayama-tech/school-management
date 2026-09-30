@@ -13,16 +13,10 @@ import { normalizeLoginEmail, normalizePassword } from '@/lib/utils/loginId';
 // 認証
 // =====================================================
 
-// メール+パスワードでサインアップ
-export async function signUpWithEmail(email: string, password: string) {
-  const supabase = createSupabaseBrowserClient();
-  const { data, error } = await supabase.auth.signUp({
-    email: normalizeLoginEmail(email),
-    password: normalizePassword(password),
-  });
-  if (error) throw error;
-  return data;
-}
+// ★メール+パスワードの新規登録（ブラウザからの supabase.auth.signUp）は置かない。
+//   本番の Supabase は「新規登録を許可」を OFF にしてあり、アカウントは必ずサーバー側
+//   （ユーザー管理API・招待完了API）で service role を使って作る。ブラウザから signUp できる状態だと
+//   公開キーだけで誰でもアカウントを作れてしまうため。
 
 // ログインがハングしたと判断するまでの待ち時間（ミリ秒）
 // Supabase/ネットワークが無応答のとき、ボタンが「ログイン中...」のまま固まるのを防ぐ
@@ -385,41 +379,12 @@ export async function removeUserFromSchool(userId: string, schoolId: string): Pr
 // 招待
 // =====================================================
 
-// 招待トークンを生成
-function generateToken(): string {
-  return Array.from(crypto.getRandomValues(new Uint8Array(32)))
-    .map((b) => b.toString(16).padStart(2, '0'))
-    .join('');
-}
-
-// 招待を作成
-export async function createInvitation(
-  email: string,
-  role: UserRole,
-  schoolIds: string[],
-  invitedBy: string
-): Promise<UserInvitation> {
-  const supabase = createSupabaseBrowserClient();
-  const token = generateToken();
-  const expiresAt = new Date();
-  expiresAt.setDate(expiresAt.getDate() + 7); // 7日間有効
-
-  const { data, error } = await supabase
-    .from('user_invitations')
-    .insert({
-      email,
-      role,
-      school_ids: schoolIds,
-      token,
-      invited_by: invitedBy,
-      expires_at: expiresAt.toISOString(),
-    })
-    .select()
-    .single();
-
-  if (error) throw error;
-  return data as UserInvitation;
-}
+// ★招待の作成・承諾はブラウザから直接 user_invitations に書かない。
+//   以前ここにあった createInvitation / acceptInvitation は画面から使われておらず、
+//   RLS 任せの直書きだと教室長が role='admin' の招待を作れてしまう（権限昇格）。
+//   承諾は /api/invite/complete が招待者の権限を検証したうえで行う。
+//   招待の発行画面を作るときは、ユーザー作成API と同じ上下関係の検査をするサーバーAPIを経由すること
+//   （判定は src/lib/invite/inviterAuthority.ts）。
 
 // 招待をトークンで取得
 // anon が user_invitations を直読みすると「フィルタ無しの SELECT」で全招待を列挙
@@ -432,17 +397,6 @@ export async function getInvitationByToken(token: string): Promise<UserInvitatio
     throw new Error('招待情報の取得に失敗しました');
   }
   return (await res.json()) as UserInvitation;
-}
-
-// 招待を承諾
-export async function acceptInvitation(token: string): Promise<void> {
-  const supabase = createSupabaseBrowserClient();
-  const { error } = await supabase
-    .from('user_invitations')
-    .update({ accepted_at: new Date().toISOString() })
-    .eq('token', token);
-
-  if (error) throw error;
 }
 
 // 招待一覧を取得

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { captureApiError } from '@/lib/api-error';
+import { toSurnameOnly } from '@/lib/utils/teacherName';
 
 export const dynamic = 'force-dynamic';
 
@@ -70,14 +71,17 @@ export async function GET(req: NextRequest) {
     }));
 
     // 講師情報
-    let teacher: { display_name: string | null; email: string | null } | null = null;
+    // ★このAPIはトークンさえあれば未ログインで読める（保護者に渡すリンク）。以前は講師の
+    //   フルネームとメールアドレスをそのまま返していた（2026-09-30 総点検）。画面が出すのは
+    //   名字だけ（page.tsx の toSurnameOnly）なので、サーバー側で名字に絞り、メールは返さない。
+    let teacher: { display_name: string | null } | null = null;
     if (proposal.teacher_user_id) {
       const { data: profile } = await admin
         .from('user_profiles')
-        .select('display_name, email')
+        .select('display_name')
         .eq('id', proposal.teacher_user_id)
         .single();
-      if (profile) teacher = profile;
+      if (profile) teacher = { display_name: toSurnameOnly(profile.display_name) || null };
     }
 
     // 増コマ期間情報

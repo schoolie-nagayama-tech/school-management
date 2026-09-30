@@ -54,3 +54,32 @@ export function canEditScores(role: string | null | undefined): boolean {
   const key = role.toLowerCase() as UserRole;
   return ROLE_PERMISSIONS[key]?.canEditScores === true;
 }
+
+/**
+ * actorRole の人が、誰かに newRole を付けてよいか（ユーザー作成・編集・招待で共通）。
+ *
+ * ★ 規則は「自分より下のロールだけ付けられる」。同じレベルも不可（管理者が管理者を増やすのは
+ *   DB で直接行う運用）。src/app/api/admin/users/create/route.ts の既存の判定と同じ。
+ * ★ 未知のロール名は false。以前は未知の値がレベル0扱いで検査を素通りし、
+ *   DB の CHECK 制約だけが頼りになっていた。
+ *
+ * 2026-09-30 のセキュリティ総点検で、編集APIが「相手のいまのロール」しか見ておらず
+ * 「新しく付けるロール」を見ていなかった（教室長が講師を admin に昇格できた）ため共通化した。
+ */
+export function canAssignRole(
+  actorRole: string | null | undefined,
+  newRole: string | null | undefined
+): boolean {
+  if (typeof newRole !== 'string') return false;
+  const key = newRole.toLowerCase();
+  if (!Object.prototype.hasOwnProperty.call(USER_ROLE_LEVELS, key)) return false;
+  return roleLevel(key) < roleLevel(actorRole);
+}
+
+/** actorRole の人が、targetRole の人を編集・削除してよいか（相手が自分より下のときだけ）。 */
+export function canManageUserWithRole(
+  actorRole: string | null | undefined,
+  targetRole: string | null | undefined
+): boolean {
+  return roleLevel(targetRole) < roleLevel(actorRole);
+}

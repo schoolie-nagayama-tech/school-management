@@ -216,6 +216,47 @@ describe('PATCH /api/admin/users/[userId]', () => {
   });
 });
 
+// ★2026-09-30 総点検: 「相手のいまのロール」だけでなく「新しく付けるロール」も検査する
+describe('PATCH /api/admin/users/[userId] ロールの付与', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    Object.assign(defaultAuthMocks, authSuccessMocks({ role: 'manager' }));
+    // 対象は講師（教室長より下なので編集自体はできる）。1回目の問い合わせ＝対象のロール、以降は空
+    let callCount = 0;
+    mockAdmin.from.mockImplementation(() => {
+      callCount++;
+      if (callCount === 1) return createMockChain({ role: 'teacher' }) as never;
+      return createMockChain(null) as never;
+    });
+  });
+
+  it.each(['admin', 'owner', 'manager'])(
+    '教室長は講師を %s に昇格できない（403）',
+    async (newRole) => {
+      const { PATCH } = await import('@/app/api/admin/users/[userId]/route');
+      const res = await PATCH(makePatchRequest({ role: newRole, school_ids: ['s1'] }), routeParams);
+      expect(res.status).toBe(403);
+      const body = await res.json();
+      expect(body.error).toContain('付与できません');
+    }
+  );
+
+  it('未知のロール名は付けられない（403）', async () => {
+    const { PATCH } = await import('@/app/api/admin/users/[userId]/route');
+    const res = await PATCH(
+      makePatchRequest({ role: 'superuser', school_ids: ['s1'] }),
+      routeParams
+    );
+    expect(res.status).toBe(403);
+  });
+
+  it('自分より下のロール（teacher）はそのまま付けられる', async () => {
+    const { PATCH } = await import('@/app/api/admin/users/[userId]/route');
+    const res = await PATCH(makePatchRequest({ role: 'teacher', school_ids: ['s1'] }), routeParams);
+    expect(res.status).toBe(200);
+  });
+});
+
 // ── DELETE テスト ──
 
 describe('DELETE /api/admin/users/[userId]', () => {
@@ -308,5 +349,33 @@ describe('DELETE /api/admin/users/[userId]', () => {
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.success).toBe(true);
+  });
+});
+
+describe('DELETE /api/admin/users/[userId] ロールの上下関係', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    defaultAuthMocks.requireAdmin.mockResolvedValue(null);
+    mockAdmin.auth.admin.deleteUser.mockResolvedValue({ error: null });
+  });
+
+  it('エリアマネージャーは管理者を削除できない（403）', async () => {
+    Object.assign(defaultAuthMocks, authSuccessMocks({ role: 'owner' }));
+    defaultAuthMocks.requireAdmin.mockResolvedValue(null);
+    mockAdmin.from.mockImplementation(() => createMockChain({ role: 'admin' }) as never);
+
+    const { DELETE } = await import('@/app/api/admin/users/[userId]/route');
+    const res = await DELETE(makeDeleteRequest(), routeParams);
+    expect(res.status).toBe(403);
+  });
+
+  it('自分自身は削除できない（403）', async () => {
+    Object.assign(defaultAuthMocks, authSuccessMocks({ role: 'admin', userId: 'target-user-id' }));
+    defaultAuthMocks.requireAdmin.mockResolvedValue(null);
+    mockAdmin.from.mockImplementation(() => createMockChain({ role: 'teacher' }) as never);
+
+    const { DELETE } = await import('@/app/api/admin/users/[userId]/route');
+    const res = await DELETE(makeDeleteRequest(), routeParams);
+    expect(res.status).toBe(403);
   });
 });
