@@ -7,6 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/useToast';
 import { ToastContainer, Spinner } from '@/components/ui';
 import { supabase } from '@/lib/supabase';
+import { fetchAllPaged } from '@/lib/utils/supabasePaging';
 import {
   createTestPrepProposal,
   getTestPrepProposalWithDetails,
@@ -267,33 +268,48 @@ export default function TestPrepEditor() {
           ? `${studentData.grade}年`
           : null;
 
-    let query = supabase
-      .from('textbooks')
-      .select('id, name, subject, publisher, grade, grade_category')
-      // 無効化された教材はピッカーから除外（教材マスタで非表示にしたもの）
-      .eq('is_active', true)
-      .order('subject')
-      .order('name');
-
-    if (isHighSchool) {
-      query = query.eq('grade_category', 'high');
-    } else {
-      query = query.eq('grade_category', cat).not('publisher', 'is', null);
-      if (textbookGrade) {
-        query = query.eq('grade', textbookGrade);
-      }
-    }
-
-    const { data: textbooks } = await query;
-
-    const tbOptions: TextbookOption[] = [];
-    for (const tb of (textbooks || []) as Array<{
+    // 教材マスタは増え続けるため（高校は学年で絞らない）、未ページングだと1000行で静かに
+    // 切り捨てられ、ピッカーから教材が警告なく欠ける。全件ページングで読み、
+    // subject / name だけでは並びが一意にならないので id を最後の決め手にする。
+    type TextbookRow = {
       id: number;
       name: string;
       subject: string | null;
       publisher: string | null;
       grade: string | null;
-    }>) {
+    };
+    let textbooks: TextbookRow[] = [];
+    try {
+      textbooks = await fetchAllPaged<TextbookRow>((from, to) => {
+        let query = supabase
+          .from('textbooks')
+          .select('id, name, subject, publisher, grade, grade_category')
+          // 無効化された教材はピッカーから除外（教材マスタで非表示にしたもの）
+          .eq('is_active', true);
+
+        if (isHighSchool) {
+          query = query.eq('grade_category', 'high');
+        } else {
+          query = query.eq('grade_category', cat).not('publisher', 'is', null);
+          if (textbookGrade) {
+            query = query.eq('grade', textbookGrade);
+          }
+        }
+
+        return query
+          .order('subject')
+          .order('name')
+          .order('id', { ascending: true })
+          .range(from, to);
+      });
+    } catch {
+      // 以前は失敗しても黙って空のピッカーになっていた。教材が無いのか読めなかったのかを
+      // 区別できるよう知らせる。科目や講師名など他の読み込みは止めない。
+      showError('教材の一覧を読み込めませんでした');
+    }
+
+    const tbOptions: TextbookOption[] = [];
+    for (const tb of textbooks) {
       tbOptions.push({
         textbook_id: tb.id,
         textbook_name: tb.name,
