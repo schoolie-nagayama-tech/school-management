@@ -5,7 +5,6 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import {
   ArrowLeft,
-  ArrowUp,
   BookPlus,
   Check,
   Download,
@@ -27,6 +26,7 @@ import {
   AlertDialogCancel,
   ToastContainer,
   Loading,
+  ScrollToTopButton,
 } from '@/components/ui';
 import { useToast } from '@/hooks/useToast';
 import { useConfirm } from '@/hooks/useConfirm';
@@ -291,15 +291,6 @@ export default function ProposalEditor() {
   const [showPromoteConfirm, setShowPromoteConfirm] = useState(false);
   const [promoting, setPromoting] = useState(false);
   const [studentGrade, setStudentGrade] = useState<number | null>(null);
-
-  const topRef = useRef<HTMLDivElement>(null);
-  const [showScrollTop, setShowScrollTop] = useState(false);
-
-  useEffect(() => {
-    const onScroll = () => setShowScrollTop(window.scrollY > 400);
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
-  }, []);
 
   /**
    * このテキストを取り込めるひな形（講習）を読み直す。
@@ -1671,7 +1662,7 @@ export default function ProposalEditor() {
   // 編集モード
   // ════════════════════════════════════════
   return (
-    <div className="pb-20" ref={topRef}>
+    <div className="pb-20">
       {/* ヘッダー */}
       <div className="mb-6">
         <div className="flex items-center gap-3 mb-2">
@@ -2049,16 +2040,9 @@ export default function ProposalEditor() {
         }
       />
 
-      {/* トップに戻るボタン */}
-      {showScrollTop && (
-        <button
-          onClick={() => topRef.current?.scrollIntoView({ behavior: 'smooth' })}
-          className="fixed bottom-16 right-4 z-30 w-10 h-10 bg-ink text-text-on-primary rounded-full shadow-lg flex items-center justify-center hover:brightness-[0.85] active:scale-90 transition-[filter,transform] duration-150 print:hidden"
-          aria-label="トップに戻る"
-        >
-          <ArrowUp className="w-5 h-5" />
-        </button>
-      )}
+      {/* 先頭へ戻るボタン。以前はこの画面だけ独自の濃い丸ボタン（右下・常時表示）だったが、
+          生徒管理などと同じ共通部品にそろえた。下の EditorBottomBar（約53px）と重ならないよう持ち上げる */}
+      <ScrollToTopButton bottomOffset={56} />
 
       {/* 削除確認 */}
       <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>

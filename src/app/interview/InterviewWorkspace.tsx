@@ -15,7 +15,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { AdminLayout } from '@/components/layouts';
-import { Card, CardContent, Button, Select, Loading, ToastContainer } from '@/components/ui';
+import {
+  Card,
+  CardContent,
+  Button,
+  Select,
+  Loading,
+  ToastContainer,
+  ScrollToTopButton,
+} from '@/components/ui';
 import AccessDenied from '@/components/AccessDenied';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/useToast';
@@ -668,6 +676,9 @@ export function InterviewWorkspace() {
           />
         </>
       )}
+
+      {/* 上＝話すこと・下＝材料と縦に積むページなので、材料を見たあと先頭へ戻れるようにする */}
+      <ScrollToTopButton />
 
       <ToastContainer toasts={toasts} onRemove={removeToast} />
     </AdminLayout>
