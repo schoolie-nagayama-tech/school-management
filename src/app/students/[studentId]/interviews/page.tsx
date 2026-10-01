@@ -6,7 +6,7 @@ import { AdminLayout } from '@/components/layouts';
 import { InterviewList } from '@/components/students/InterviewList';
 import { getStudent } from '@/lib/api/students';
 import { getDefaultSchoolId } from '@/lib/api/schools';
-import { Button, Loading } from '@/components/ui';
+import { Button, Loading, ScrollToTopButton } from '@/components/ui';
 import { ArrowLeft } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRequirePermission } from '@/hooks/usePermissions';
@@ -97,6 +97,9 @@ export default function StudentInterviewsPage() {
         {/* 面談記録リスト */}
         <InterviewList studentId={studentId} schoolId={schoolId} />
       </div>
+
+      {/* 面談記録は回を重ねるほど縦に伸びるので、先頭へ戻れるようにする */}
+      <ScrollToTopButton />
     </AdminLayout>
   );
 }

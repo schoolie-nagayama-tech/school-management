@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { Printer, Copy, Check, ChevronDown } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/useToast';
-import { ToastContainer, Spinner } from '@/components/ui';
+import { ToastContainer, Spinner, ScrollToTopButton } from '@/components/ui';
 import { supabase } from '@/lib/supabase';
 import { fetchAllPaged } from '@/lib/utils/supabasePaging';
 import {
@@ -868,6 +868,10 @@ export default function TestPrepEditor() {
           </div>
         </div>
       )}
+
+      {/* 5科目を縦に積む長いページなので先頭へ戻れるようにする。
+          下部スティッキーの操作ボタン（約60px）と重ならないよう持ち上げる */}
+      <ScrollToTopButton bottomOffset={64} />
 
       {/* 印刷はA4縦1枚が前提。5科目を縦に積むと確実に2枚目へこぼれるため、
           印刷時だけ科目カードを2段組にし、余白・文字を一段詰めている。 */}
