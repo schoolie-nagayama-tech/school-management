@@ -100,6 +100,12 @@ const nextConfig = {
           { key: 'X-Content-Type-Options', value: 'nosniff' },
           { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
           { key: 'Content-Security-Policy', value: csp },
+          // 検索エンジンに載せない（2026-09-30）。NEST は教室・保護者が URL を知っていて使う
+          // 業務システムで、検索から来る正当な利用者はいない。ログイン画面が検索に出ると
+          // 総当たりや脆弱性探しの的になるだけなので、全ページを索引・キャッシュ対象から外す。
+          // 画面の <meta name="robots">（app/layout.tsx）と robots.txt（app/robots.ts）も
+          // 同じ意図。ヘッダーは HTML 以外（PDF・JSON）にも効くので、ここが本線。
+          { key: 'X-Robots-Tag', value: 'noindex, nofollow, noarchive' },
         ],
       },
     ];
