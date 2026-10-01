@@ -2,7 +2,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { authorizeRequest } from '../_shared/auth.ts'
-import { escapeHtml } from '../_shared/sanitize.ts'
+import { escapeHtml, isValidEmail } from '../_shared/sanitize.ts'
 
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
@@ -53,8 +53,36 @@ const GRADE_LABELS: Record<number, string> = {
 
 // 送信者（スクールIE）
 const EMAIL_FROM = 'スクールIE <noreply@school-ie.com>'
-// 全メールの末尾に付ける共通フッター
+// 返信先が無いメールの末尾に付けるフッター。
+// ★school-ie.com は受信サーバー（MX）を持たないため、noreply@ への返信は届かないうえ、
+// 相手のメールサーバーが約2日再試行してから不達になる。返信先を付けられないメールだけに使う。
 const EMAIL_FOOTER = '<p style="margin-top: 24px; font-size: 12px; color: #888;">送信専用です。このメールに返信いただいてもお答えできません。</p>'
+
+// 返信先（教室メール）を付けたメールのフッター。返信が教室に届くことを伝える。
+function replyableFooter(schoolName: string): string {
+  return `<p style="margin-top: 24px; font-size: 12px; color: #888;">このメールにご返信いただくと、${escapeHtml(schoolName)}に届きます。</p>`
+}
+
+/**
+ * 保護者・講師向けメールの返信先（教室メール）。
+ * 問合せ管理の教室別設定（資料発送 → 教室別発送設定の「返信先メールアドレス」）を共用する。
+ * 追客メールと同じ窓口に返信を集めるため、フォーム用に別の設定は設けない。
+ * 未設定・形式不正なら undefined（返信先なし＝送信専用のまま送る）。
+ */
+async function getSchoolReplyTo(schoolId: string): Promise<string | undefined> {
+  const { data, error } = await supabase
+    .from('inquiry_school_settings')
+    .select('mail_reply_to')
+    .eq('school_id', schoolId)
+    .maybeSingle()
+  if (error) {
+    // 返信先が取れなくても申込の受付メール自体は止めない
+    console.error('返信先（mail_reply_to）の取得エラー:', error)
+    return undefined
+  }
+  const replyTo = typeof data?.mail_reply_to === 'string' ? data.mail_reply_to.trim() : ''
+  return isValidEmail(replyTo) ? replyTo : undefined
+}
 
 /** Resend のレート制限（2 req/秒）を超えないよう、送信間に待機する */
 function delay(ms: number): Promise<void> {
@@ -62,7 +90,7 @@ function delay(ms: number): Promise<void> {
 }
 
 // メール送信（429 のときは1回だけリトライ）
-async function sendEmail(to: string, subject: string, html: string) {
+async function sendEmail(to: string, subject: string, html: string, replyTo?: string) {
   const doSend = async (): Promise<Response> => {
     return await fetch('https://api.resend.com/emails', {
       method: 'POST',
@@ -75,6 +103,7 @@ async function sendEmail(to: string, subject: string, html: string) {
         to: [to],
         subject,
         html,
+        ...(replyTo ? { reply_to: replyTo } : {}),
       }),
     })
   }
@@ -305,7 +334,8 @@ function createApplicantEmail(
   responseData: any,
   createdAt: string,
   periodTitle?: string,
-  periodSettings?: any
+  periodSettings?: any,
+  footer: string = EMAIL_FOOTER
 ): { subject: string; html: string } {
   const formTypeLabel = resolveFormTypeLabel(formType, periodSettings)
   const gradeLabel = GRADE_LABELS[grade] || `${grade}年`
@@ -399,7 +429,7 @@ ${stepsHtml}
       ${formType !== 'mogi' ? '<p>ご不明点がございましたら、教室までお問い合わせください。</p>' : ''}
       ${showGrowLine ? '<p>日程が決まりましたらGrowから確認してください。</p>' : ''}
       <p style="margin-top: 30px; color: #666;">${hSchoolName}</p>
-      ${EMAIL_FOOTER}
+      ${footer}
     </div>
   `
 
@@ -554,6 +584,10 @@ async function handleSeasonalShiftNotification(type: string, submissionId: strin
   const hTeacherEmail = escapeHtml(teacherEmail)
   const hSubmittedAt = escapeHtml(submittedAt)
   const hNotes = escapeHtml(submission.notes)
+  // 講師向けメール（提出完了・修正のお願い）は返信が教室に届くようにする。
+  // 教室向けの提出通知は教室内の連絡なので返信先を付けない（送信専用のまま）。
+  const replyTo = await getSchoolReplyTo(submission.school_id)
+  const teacherFooter = replyTo ? replyableFooter(schoolName) : EMAIL_FOOTER
 
   if (type === 'submitted') {
     if (teacherEmail) {
@@ -572,10 +606,10 @@ async function handleSeasonalShiftNotification(type: string, submissionId: strin
           </div>
           <p>内容に修正が必要な場合は、教室までご連絡ください。</p>
           <p style="margin-top: 30px; color: #666;">${hSchoolName}</p>
-          ${EMAIL_FOOTER}
+          ${teacherFooter}
         </div>
       `
-      await sendEmail(teacherEmail, teacherSubject, teacherHtml)
+      await sendEmail(teacherEmail, teacherSubject, teacherHtml, replyTo)
       console.log('講師への提出完了メール送信完了:', teacherEmail)
       await delay(1000)
     }
@@ -633,10 +667,10 @@ async function handleSeasonalShiftNotification(type: string, submissionId: strin
           <p style="word-break: break-all; font-size: 12px; color: #666;">${escapeHtml(editUrl)}</p>
           <p>※このURLは修正完了後、無効になります。</p>
           <p style="margin-top: 30px; color: #666;">${hSchoolName}</p>
-          ${EMAIL_FOOTER}
+          ${teacherFooter}
         </div>
       `
-      await sendEmail(teacherEmail, subject, html)
+      await sendEmail(teacherEmail, subject, html, replyTo)
       console.log('修正許可メール送信完了:', teacherEmail)
     }
   } else {
@@ -728,6 +762,10 @@ async function handleRegularShiftNotification(type: string, submissionId: string
   const hTeacherEmail = escapeHtml(teacherEmail)
   const hSubmittedAt = escapeHtml(submittedAt)
   const hNotes = escapeHtml(submission.notes)
+  // 講師向けメール（提出完了・修正のお願い）は返信が教室に届くようにする。
+  // 教室向けの提出通知は教室内の連絡なので返信先を付けない（送信専用のまま）。
+  const replyTo = await getSchoolReplyTo(submission.school_id)
+  const teacherFooter = replyTo ? replyableFooter(schoolName) : EMAIL_FOOTER
 
   if (type === 'submitted') {
     // 講師への確認メール
@@ -747,10 +785,10 @@ async function handleRegularShiftNotification(type: string, submissionId: string
           </div>
           <p>内容に修正が必要な場合は、教室までご連絡ください。</p>
           <p style="margin-top: 30px; color: #666;">${hSchoolName}</p>
-          ${EMAIL_FOOTER}
+          ${teacherFooter}
         </div>
       `
-      await sendEmail(teacherEmail, teacherSubject, teacherHtml)
+      await sendEmail(teacherEmail, teacherSubject, teacherHtml, replyTo)
       console.log('通常シフト：講師への提出完了メール送信完了:', teacherEmail)
       await delay(1000)
     }
@@ -808,10 +846,10 @@ async function handleRegularShiftNotification(type: string, submissionId: string
         <p style="word-break: break-all; font-size: 12px; color: #666;">${escapeHtml(editUrl)}</p>
         <p>※このURLは修正完了後、無効になります。</p>
         <p style="margin-top: 30px; color: #666;">${hSchoolName}</p>
-        ${EMAIL_FOOTER}
+        ${teacherFooter}
       </div>
     `
-    await sendEmail(teacherEmail, subject, html)
+    await sendEmail(teacherEmail, subject, html, replyTo)
     console.log('通常シフト：修正許可メール送信完了:', teacherEmail)
   } else {
     throw new Error(`不明な type: ${type}`)
@@ -985,6 +1023,10 @@ serve(async (req) => {
       periodSettings = periodRow.settings ?? undefined
     }
 
+    // 申込者（保護者）向けメールは、返信が教室メールに届くようにする。
+    // 教室向けの申込通知は教室内の連絡なので返信先を付けない（送信専用のまま）。
+    const replyTo = await getSchoolReplyTo(school_id)
+
     // 申込者にメール送信
     if (email) {
       const applicantMail = createApplicantEmail(
@@ -995,9 +1037,10 @@ serve(async (req) => {
         response_data,
         created_at,
         periodTitle,
-        periodSettings
+        periodSettings,
+        replyTo ? replyableFooter(school.name) : EMAIL_FOOTER
       )
-      await sendEmail(email, applicantMail.subject, applicantMail.html)
+      await sendEmail(email, applicantMail.subject, applicantMail.html, replyTo)
       console.log(`申込者メール送信完了: ${email}`)
       await delay(1000)
     }
