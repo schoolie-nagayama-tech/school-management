@@ -45,6 +45,8 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   title: 'NEST',
   description: '学習塾向け生徒管理システム',
+  // 検索エンジンに載せない。理由は next.config.ts の X-Robots-Tag のコメント参照。
+  robots: { index: false, follow: false, nocache: true },
   // ★ PWA一時閉鎖中（2026-08-20）。manifest を外してインストールできないようにする。
   //   再開時は '/manifest.json' を戻す（ファイル自体は public に残してある）。
   // manifest: '/manifest.json',

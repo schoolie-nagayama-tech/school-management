@@ -1,5 +1,6 @@
 {
   "installCommand": "npm ci",
+  "regions": ["hnd1"],
   "crons": [
     {
       "path": "/api/cron/daily-material-report",
