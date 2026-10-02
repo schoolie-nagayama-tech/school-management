@@ -223,7 +223,9 @@ export function AddStudentToSlotModal({
             status: 'scheduled',
           });
         }
-        await regenerateWeekForDate(schoolId, date, profile?.id);
+        await regenerateWeekForDate(schoolId, date, profile?.id, {
+          studentIds: [selectedStudent.id],
+        });
       } else {
         const conflict = await checkStudentTimeConflict(
           selectedStudent.id,

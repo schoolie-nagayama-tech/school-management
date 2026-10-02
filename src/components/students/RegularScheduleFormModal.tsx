@@ -333,7 +333,7 @@ export function RegularScheduleFormModal({
             capacityDefaults,
           })
         );
-        await regenerateCurrentWeekIfNeeded(schoolId, profile?.id);
+        await regenerateCurrentWeekIfNeeded(schoolId, profile?.id, { studentIds: [studentId] });
         onSuccess();
         onClose();
         return;
@@ -400,7 +400,7 @@ export function RegularScheduleFormModal({
             ...(lessonEntryV2 && !isCourseMode ? { effective_from: applyDate } : {}),
           });
         }
-        await regenerateCurrentWeekIfNeeded(schoolId, profile?.id);
+        await regenerateCurrentWeekIfNeeded(schoolId, profile?.id, { studentIds: [studentId] });
         onSuccess();
         onClose();
       } else {
@@ -414,7 +414,7 @@ export function RegularScheduleFormModal({
               : undefined,
         };
         await createRegularPattern(schoolId, createForm);
-        await regenerateCurrentWeekIfNeeded(schoolId, profile?.id);
+        await regenerateCurrentWeekIfNeeded(schoolId, profile?.id, { studentIds: [studentId] });
         onSuccess();
         onClose();
       }

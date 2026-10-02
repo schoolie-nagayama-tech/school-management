@@ -13,6 +13,7 @@
  *   4. 凍結した行はズレ検知の「古い行」に数えない（自動再生成の空回り防止）。
  *   5. 報告書付きの行を直接消そうとすると DB が 23503 で止める。
  *   6. 生徒の削除はこれまでどおり報告書ごと消える（NO ACTION は文末検査）。
+ *   7. 生徒を絞った反映（通塾日程の保存時）は、他の生徒の行を書き換えない（2026-10-02）。
  */
 import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
 import { SupabaseClient } from '@supabase/supabase-js';
@@ -34,6 +35,7 @@ const LESSON_DATE = '2026-10-06';
 let admin: SupabaseClient;
 let schoolId: string;
 let teacherUserId: string;
+let otherTeacherUserId: string;
 let slotId: string;
 let subjectMathId: string;
 let subjectEngId: string;
@@ -137,6 +139,7 @@ afterAll(async () => {
   await admin.from('schedule_time_slots').delete().eq('school_id', schoolId);
   await admin.from('subjects').delete().in('id', [subjectMathId, subjectEngId]);
   if (teacherUserId) await cleanupTestUser(admin, teacherUserId);
+  if (otherTeacherUserId) await cleanupTestUser(admin, otherTeacherUserId);
   await cleanupTestSchool(admin, schoolId);
 });
 
@@ -217,5 +220,101 @@ describe('座席表の週の再生成（差分反映）', () => {
       .select('id', { count: 'exact', head: true })
       .eq('schedule_entry_id', reportedEntryId);
     expect(count).toBe(0);
+  });
+});
+
+describe('生徒を絞った反映（通塾日程の保存時）', () => {
+  let studentOtherId: string;
+  let otherEntryId: string;
+
+  async function generationLogCount() {
+    const { count } = await admin
+      .from('schedule_generation_logs')
+      .select('id', { count: 'exact', head: true })
+      .eq('school_id', schoolId);
+    return count ?? 0;
+  }
+
+  async function teacherOf(entryId: string) {
+    const { data } = await admin
+      .from('schedule_entries')
+      .select('teacher_id')
+      .eq('id', entryId)
+      .single();
+    return data?.teacher_id as string | null | undefined;
+  }
+
+  beforeAll(async () => {
+    otherTeacherUserId = (await createTestUser(admin, { role: 'teacher', schoolIds: [schoolId] }))
+      .userId;
+
+    const u = uniq();
+    const { data: st, error: stErr } = await admin
+      .from('students')
+      .insert({
+        school_id: schoolId,
+        student_code: `SYNC_${u}`,
+        last_name: `姓${u}`,
+        first_name: `名${u}`,
+        last_name_kana: 'セイ',
+        first_name_kana: 'メイ',
+        grade: 8,
+        status: 'active',
+      })
+      .select('id')
+      .single();
+    if (stErr || !st) throw new Error(`生徒作成失敗: ${stErr?.message}`);
+    studentOtherId = st.id as string;
+
+    const { error: patErr } = await admin.from('schedule_regular_patterns').insert({
+      school_id: schoolId,
+      student_id: studentOtherId,
+      teacher_id: teacherUserId,
+      day_of_week: 2,
+      time_slot_id: slotId,
+      subject_ids: [subjectMathId],
+      is_active: true,
+    });
+    if (patErr) throw new Error(`通塾日程作成失敗: ${patErr.message}`);
+
+    await generateWeeklySchedule(schoolId, WEEK);
+    otherEntryId = (await entriesOf(studentOtherId))[0].id;
+
+    // 他の生徒のコマに「このコマだけ」講師を付け替える（通塾日程の講師とは別の講師）
+    const { error: updErr } = await admin
+      .from('schedule_entries')
+      .update({ teacher_id: otherTeacherUserId })
+      .eq('id', otherEntryId);
+    if (updErr) throw new Error(`講師付け替え失敗: ${updErr.message}`);
+  });
+
+  it('対象の生徒だけ反映し、他の生徒の手動の付け替えは残す', async () => {
+    await admin
+      .from('schedule_regular_patterns')
+      .update({ subject_ids: [subjectMathId] })
+      .eq('id', patternPlainId);
+    const logsBefore = await generationLogCount();
+
+    const result = await generateWeeklySchedule(schoolId, WEEK, undefined, {
+      studentIds: [studentPlainId],
+    });
+    expect(result).toMatchObject({ entries_created: 1, inserted: 0, updated: 1, deleted: 0 });
+
+    expect((await entriesOf(studentPlainId))[0].subject_ids).toEqual([subjectMathId]);
+    expect(await teacherOf(otherEntryId)).toBe(otherTeacherUserId);
+
+    // 生成ログは教室×週の記録なので、絞った反映では増やさない
+    expect(await generationLogCount()).toBe(logsBefore);
+  });
+
+  it('空の生徒リストでは何もしない', async () => {
+    const result = await generateWeeklySchedule(schoolId, WEEK, undefined, { studentIds: [] });
+    expect(result.entries_created).toBe(0);
+    expect(await teacherOf(otherEntryId)).toBe(otherTeacherUserId);
+  });
+
+  it('教室全体の反映では、通塾日程に講師があれば手動の付け替えは戻る（従来どおり）', async () => {
+    await generateWeeklySchedule(schoolId, WEEK);
+    expect(await teacherOf(otherEntryId)).toBe(teacherUserId);
   });
 });

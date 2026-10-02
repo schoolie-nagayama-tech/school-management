@@ -1052,12 +1052,23 @@ export async function loadSpecialCourseOverrideInput(
  * 全削除→再INSERTではなく、あるべきコマと既存行を突き合わせて
  * 追加・更新・削除だけを行う。報告書付き・出欠済みのコマは触らない。
  * 理由と突き合わせの規則は src/lib/schedule/weeklySync.ts の冒頭を参照。
+ *
+ * options.studentIds を渡すと、その生徒のコマだけを反映する（他の生徒の行は読みも書きもしない）。
+ * 1人の通塾日程を保存しただけで教室全員の4週分を書き換えると、他の生徒のコマに入れた
+ * 手動の変更（講師の付け替えなど）まで通塾日程どおりに戻ってしまうため（2026-10-02）。
+ * 未指定は教室全体（座席表を開いたときの同期・ズレ検知バナー・手動の生成ボタン）。
  */
 export async function generateWeeklySchedule(
   schoolId: string,
   weekStartDate: string,
-  userId?: string
+  userId?: string,
+  options?: { studentIds?: string[] }
 ): Promise<ScheduleGenerationResult> {
+  const scope = options?.studentIds ? new Set(options.studentIds) : null;
+  if (scope && scope.size === 0) {
+    return { entries_created: 0, week_start_date: weekStartDate };
+  }
+
   const weekStart = new Date(weekStartDate);
   const weekEnd = new Date(weekStart);
   weekEnd.setDate(weekEnd.getDate() + 6);
@@ -1077,27 +1088,33 @@ export async function generateWeeklySchedule(
   const overrideInput = await loadSpecialCourseOverrideInput(schoolId, patterns, fromStr, toStr);
 
   // 「その週に作られるべきコマ」の列挙は純関数に一本化してある（同期チェックと共通）。
-  const planned = planWeeklyEntries({
+  // ★ 生徒を絞るときも、計画は教室全体の通塾日程から立ててから絞る。先に通塾日程を
+  //   絞ると講習期上書きの名簿の決め方などが変わり得て、全体生成と結果がずれるため。
+  //   突き合わせのキーは 日付-コマ-生徒 なので、計画と既存行を同じ生徒で絞れば
+  //   全体生成をその生徒の分だけ切り出したものと一致する。
+  const plannedAll = planWeeklyEntries({
     weekStartDate,
     patterns,
     withdrawalDates: withdrawalMap,
     override: overrideInput,
   });
+  const planned = scope ? plannedAll.filter((pe) => scope.has(pe.studentId)) : plannedAll;
 
   // 対象週の既存行すべて（kind・status を問わない）。大きい教室では1週で1000行を
   // 超え得るので、PostgREST の1000行切り捨てを避けてページングする。
-  const existing = await fetchAllPaged<ExistingWeekEntry>((from, to) =>
-    db
+  // 生徒を絞るときは呼び出し元が1人〜1クラス分なので、.in() の URL 長は問題にならない。
+  const existing = await fetchAllPaged<ExistingWeekEntry>((from, to) => {
+    let query = db
       .from('schedule_entries')
       .select(
         'id, entry_date, time_slot_id, student_id, teacher_id, kind, status, subject_ids, seat_label, regular_pattern_id, formation, ratio, duration_minutes, half_position'
       )
       .eq('school_id', schoolId)
       .gte('entry_date', fromStr)
-      .lte('entry_date', toStr)
-      .order('id')
-      .range(from, to)
-  );
+      .lte('entry_date', toStr);
+    if (scope) query = query.in('student_id', Array.from(scope));
+    return query.order('id').range(from, to);
+  });
 
   const reportedEntryIds = await loadReportedEntryIds(
     existing.filter(isReplaceableEntry).map((e) => e.id)
@@ -1157,13 +1174,17 @@ export async function generateWeeklySchedule(
   // 全削除方式のときの「INSERT した件数」と同じ集合を指すので、画面の件数表示の意味は変わらない。
   const entriesCreated = plan.inserts.length + plan.matchedCount;
 
-  const { error: logError } = await db.from('schedule_generation_logs').insert({
-    school_id: schoolId,
-    week_start_date: weekStartDate,
-    entries_created: entriesCreated,
-    created_by: userId || null,
-  });
-  if (logError) console.warn('Generation log insert failed:', logError);
+  // 生成ログは「教室×週」の記録なので、生徒を絞った反映では残さない
+  // （entries_created が一部の生徒の件数になり、週の件数と読み違えるため）。
+  if (!scope) {
+    const { error: logError } = await db.from('schedule_generation_logs').insert({
+      school_id: schoolId,
+      week_start_date: weekStartDate,
+      entries_created: entriesCreated,
+      created_by: userId || null,
+    });
+    if (logError) console.warn('Generation log insert failed:', logError);
+  }
 
   return {
     entries_created: entriesCreated,
@@ -1273,11 +1294,14 @@ export function getWeekStartForDate(dateStr: string): string {
  *
  * 未来時点からの変更（effective_from が翌月など）にも反映させるため、
  * 単週ではなく複数週まとめて再生成する。失敗時は無視（手動再生成可能）。
+ *
+ * options.studentIds: 通塾日程を変えた生徒。渡すとその生徒のコマだけを反映する
+ * （generateWeeklySchedule の options.studentIds を参照）。
  */
 export async function regenerateCurrentWeekIfNeeded(
   schoolId: string,
   userId?: string,
-  options?: { weeksAhead?: number }
+  options?: { weeksAhead?: number; studentIds?: string[] }
 ): Promise<void> {
   const weeks = options?.weeksAhead ?? 4;
   try {
@@ -1288,22 +1312,25 @@ export async function regenerateCurrentWeekIfNeeded(
       const y = d.getFullYear();
       const m = String(d.getMonth() + 1).padStart(2, '0');
       const dd = String(d.getDate()).padStart(2, '0');
-      await generateWeeklySchedule(schoolId, `${y}-${m}-${dd}`, userId);
+      await generateWeeklySchedule(schoolId, `${y}-${m}-${dd}`, userId, {
+        studentIds: options?.studentIds,
+      });
     }
   } catch (e) {
     console.warn('通塾日程の自動反映に失敗しました:', e);
   }
 }
 
-/** 指定日を含む週の座席表を通塾日程から再生成。失敗時は無視 */
+/** 指定日を含む週の座席表を通塾日程から再生成。失敗時は無視。studentIds は上と同じ */
 export async function regenerateWeekForDate(
   schoolId: string,
   dateStr: string,
-  userId?: string
+  userId?: string,
+  options?: { studentIds?: string[] }
 ): Promise<void> {
   try {
     const weekStart = getWeekStartForDate(dateStr);
-    await generateWeeklySchedule(schoolId, weekStart, userId);
+    await generateWeeklySchedule(schoolId, weekStart, userId, options);
   } catch (e) {
     console.warn('通塾日程の自動反映に失敗しました:', e);
   }
