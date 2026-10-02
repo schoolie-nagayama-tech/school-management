@@ -1,6 +1,6 @@
 -- 過去問教材を増やす（2026-10-02）
--- ★志望校過去問（高校受験）749 は指示により従来のまま（5年・①②③なし）。
---  1. 古い年度も使うので、750〜753 を 2026〜2017 の10年分にそろえる
+-- ★志望校過去問（高校受験）749 は指示により従来のまま（5年・①②③なし）。都立(750)・県立(751)も従来のまま。
+--  1. 古い年度も使うので、752・753 を 2026〜2017 の10年分にそろえる
 --  2. 別の学校の過去問も扱うので、志望校過去問（高校・中学・大学受験）に ②③ を足す
 --  3. 753（大学受験）は年度のみの5件だったので、英数国理社 × 10年に作り直す
 --
@@ -9,11 +9,11 @@
 -- ★753 の旧単元（31344〜31348）は提案書・進行表のどこからも参照されていないことを
 --   適用前に確認済み。念のため参照があれば消さない条件も付けてある。
 
--- 1) 750〜752：科目ごとに足りない年度（2017〜2026）を補う
+-- 1) 752：科目ごとに足りない年度（2017〜2026）を補う
 insert into curriculum_items (textbook_id, sort_order, title, item_type, subject)
 select s.textbook_id, 0, s.subject || ' ' || y || '年度', 'lesson', s.subject
 from (select distinct textbook_id, subject from curriculum_items
-      where textbook_id in (750, 751, 752) and subject is not null) s
+      where textbook_id in (752) and subject is not null) s
 cross join generate_series(2017, 2026) as y
 where not exists (
   select 1 from curriculum_items c
@@ -67,7 +67,7 @@ with ranked as (
          ) as rn
   from curriculum_items c
   join textbooks t on t.id = c.textbook_id
-  where t.name like '志望校過去問%' or t.id in (750, 751)
+  where t.name like '志望校過去問%' 
 )
 update curriculum_items c set sort_order = r.rn
 from ranked r where r.id = c.id and c.sort_order is distinct from r.rn;
