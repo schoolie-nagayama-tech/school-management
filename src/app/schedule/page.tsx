@@ -1838,7 +1838,8 @@ export default function SchedulePage() {
       });
       success('講座の枠を登録しました');
       // 通塾日程→座席表の反映（今週から4週）＋表示中の週を同期。
-      await regenerateCurrentWeekIfNeeded(schoolId, profile?.id);
+      // 反映は今回枠に入れた生徒だけ（同じクラスの既存の生徒のコマは触らない）。
+      await regenerateCurrentWeekIfNeeded(schoolId, profile?.id, { studentIds: data.studentIds });
       await refreshEntries();
     },
     [
