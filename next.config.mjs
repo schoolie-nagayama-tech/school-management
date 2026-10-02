@@ -1,5 +1,10 @@
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import bundleAnalyzer from '@next/bundle-analyzer';
 import { withSentryConfig } from '@sentry/nextjs';
+
+// ESM の設定ファイルには __dirname が無いので作る（CI 用のフォント差し替えで使う）
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // ★ PWA一時閉鎖中（2026-08-20・ユーザー判断）。
 //   serwist によるサービスワーカー生成を止めている。/public/sw.js は生成物ではなく
@@ -111,8 +116,22 @@ const nextConfig = {
     ];
   },
 
-  webpack: (config, { isServer }) => {
+  webpack: (config, { isServer, webpack }) => {
     config.ignoreWarnings = [{ module: /node_modules/ }, { message: /Failed to parse source map/ }];
+
+    // ★CI のビルドでは Google Fonts を取りに行かない（.github/workflows/ci.yml が 1 を渡す）。
+    //   next/font/google はビルドのたびに Google からフォントを取得し、GitHub Actions では
+    //   その取得がときどき失敗して Build が落ちていた（2026-10-02 に2回）。
+    //   フォントの定義（src/app/fonts/notoSansJP.ts）を、取りに行かない同じ形の値に差し替える。
+    //   本番（Vercel）では渡さないので、ここは何もしない。
+    if (process.env.NEST_SKIP_GOOGLE_FONTS === '1') {
+      config.plugins.push(
+        new webpack.NormalModuleReplacementPlugin(
+          /[\\/]fonts[\\/]notoSansJP$/,
+          path.join(__dirname, 'src/app/fonts/notoSansJP.ci.ts')
+        )
+      );
+    }
 
     if (isServer) {
       config.externals.push('web-push');

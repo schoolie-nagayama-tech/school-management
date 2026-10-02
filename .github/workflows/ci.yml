@@ -55,5 +55,10 @@ jobs:
       - name: Run tests
         run: npm test
 
+      # ★Google Fonts を取りに行かずにビルドする（next.config.mjs の NEST_SKIP_GOOGLE_FONTS）。
+      #   取得がときどき失敗して Build が落ちていたため。確かめたいのはコードが組めることで、
+      #   フォントの中身ではない。本番（Vercel）は従来どおり取りに行く。
       - name: Build
         run: npm run build
+        env:
+          NEST_SKIP_GOOGLE_FONTS: '1'
