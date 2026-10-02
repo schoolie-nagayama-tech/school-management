@@ -421,8 +421,15 @@ export interface ScheduleEntryFormData {
 
 // スケジュール生成結果
 export interface ScheduleGenerationResult {
+  /** 通塾日程から見てその週にあるコマ数（新規＋既存で対応がついたもの） */
   entries_created: number;
   week_start_date: string;
+  /** 差分反映の内訳（任意。画面の件数表示は entries_created だけを使う） */
+  inserted?: number;
+  updated?: number;
+  deleted?: number;
+  /** 報告書付き・出欠済みのため残した、通塾日程からはもう期待されていない行 */
+  kept_frozen?: number;
 }
 
 // 時間重複チェック結果
