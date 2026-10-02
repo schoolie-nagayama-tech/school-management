@@ -76,7 +76,8 @@ function tpl(
     name?: string;
     season?: string;
     grades?: number[];
-    books?: { name: string; subject: string | null }[];
+    /** id を省くと並び順の番号になる（複数選択で同じテキストかを見るテストでは明示する） */
+    books?: { id?: number; name: string; subject: string | null }[];
   } = {}
 ): SeasonalCourseListItem {
   return {
@@ -88,10 +89,10 @@ function tpl(
     textbooks: (opts.books ?? [{ name: '中2 数学', subject: '数学' }]).map((b, i) => ({
       id: `${id}-${i}`,
       course_id: id,
-      textbook_id: i,
+      textbook_id: b.id ?? i,
       sort_order: i,
       created_at: '2026-09-01T00:00:00Z',
-      textbook: { id: i, name: b.name, subject: b.subject },
+      textbook: { id: b.id ?? i, name: b.name, subject: b.subject },
     })),
   } as unknown as SeasonalCourseListItem;
 }
@@ -103,20 +104,97 @@ describe('TemplatePickerScreen', () => {
     season: 'winter' as const,
     grade: 8,
     applying: false,
-    onSelect: vi.fn(),
+    onConfirm: vi.fn(),
     onBack: vi.fn(),
   };
 
-  it('テンプレートの中身（テキスト・単元数）を出し、選んだIDを返す', async () => {
-    const onSelect = vi.fn();
-    render(<TemplatePickerScreen {...base} templates={[TEMPLATE]} onSelect={onSelect} />);
+  it('テンプレートの中身（テキスト・単元数）を出し、選んで「作る」を押すとIDを返す', async () => {
+    const onConfirm = vi.fn();
+    render(<TemplatePickerScreen {...base} templates={[TEMPLATE]} onConfirm={onConfirm} />);
 
     expect(screen.getByText('中2数学 図形の証明 総仕上げ')).toBeInTheDocument();
     expect(screen.getByText(/中2 数学 ステップバイステップ/)).toBeInTheDocument();
     expect(screen.getByText(/10単元/)).toBeInTheDocument();
 
+    // 行を押しただけでは作らない（複数選べるようにしたため、選ぶ操作と作る操作を分けた）
     await userEvent.click(screen.getByText('中2数学 図形の証明 総仕上げ'));
-    expect(onSelect).toHaveBeenCalledWith('course-1');
+    expect(onConfirm).not.toHaveBeenCalled();
+    expect(screen.getByRole('checkbox', { name: /中2数学 図形の証明/ })).toHaveAttribute(
+      'aria-checked',
+      'true'
+    );
+
+    await userEvent.click(screen.getByRole('button', { name: /選んだテンプレートで作る/ }));
+    expect(onConfirm).toHaveBeenCalledWith(['course-1']);
+  });
+
+  it('複数選べて、選んだ順に返す。絞り込みを変えても選んだものは残る', async () => {
+    const onConfirm = vi.fn();
+    const list = [
+      tpl('en', {
+        name: '英語入試対策',
+        books: [{ id: 10, name: '入試完成 英語', subject: '英語' }],
+      }),
+      tpl('ma', {
+        name: '数学入試対策',
+        books: [{ id: 20, name: '入試完成 数学', subject: '数学' }],
+      }),
+    ];
+    render(<TemplatePickerScreen {...base} templates={list} onConfirm={onConfirm} />);
+
+    await userEvent.click(screen.getByRole('button', { name: '数学' }));
+    await userEvent.click(screen.getByText('数学入試対策'));
+    // 英語に切り替えると数学のテンプレは一覧から消えるが、選んだことは残る（下のバーに名前が出る）
+    await userEvent.click(screen.getByRole('button', { name: '英語' }));
+    expect(screen.queryByRole('checkbox', { name: /数学入試対策/ })).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('checkbox', { name: /英語入試対策/ }));
+
+    expect(screen.getByText(/2件を選択中/)).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: /選んだテンプレートで作る/ }));
+    expect(onConfirm).toHaveBeenCalledWith(['ma', 'en']);
+  });
+
+  it('同じテキストが入ったテンプレは1冊に数え、まとめることを知らせる', async () => {
+    const list = [
+      tpl('en', {
+        name: '英語入試対策',
+        books: [
+          { id: 10, name: '入試完成 英語', subject: '英語' },
+          { id: 99, name: '都立入試過去問', subject: null },
+        ],
+      }),
+      tpl('ma', {
+        name: '数学入試対策',
+        books: [
+          { id: 20, name: '入試完成 数学', subject: '数学' },
+          { id: 99, name: '都立入試過去問', subject: null },
+        ],
+      }),
+    ];
+    render(<TemplatePickerScreen {...base} templates={list} />);
+    await userEvent.click(screen.getByText('英語入試対策'));
+    await userEvent.click(screen.getByText('数学入試対策'));
+
+    expect(screen.getByText(/2件を選択中 ・ テキスト3冊/)).toBeInTheDocument();
+    expect(screen.getByText(/1冊にまとめます/)).toBeInTheDocument();
+  });
+
+  it('1科目3冊を超える選び方は「作る」を押せず、理由を出す', async () => {
+    const list = [1, 2].map((n) =>
+      tpl(`en${n}`, {
+        name: `英語テンプレ${n}`,
+        books: [
+          { id: n * 10 + 1, name: `英語A${n}`, subject: '英語' },
+          { id: n * 10 + 2, name: `英語B${n}`, subject: '英語' },
+        ],
+      })
+    );
+    render(<TemplatePickerScreen {...base} templates={list} />);
+    await userEvent.click(screen.getByText('英語テンプレ1'));
+    await userEvent.click(screen.getByText('英語テンプレ2'));
+
+    expect(screen.getByRole('alert')).toHaveTextContent('「英語」のテキストは1科目3冊までです');
+    expect(screen.getByRole('button', { name: /選んだテンプレートで作る/ })).toBeDisabled();
   });
 
   it('既定は準備中の季節＋生徒の学年。季節は件数があってもいつでも切り替えられる', async () => {
