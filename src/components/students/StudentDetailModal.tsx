@@ -17,6 +17,7 @@ import {
 } from '@/types/database';
 import { InterviewList } from './InterviewList';
 import { AttendanceMatrix } from './AttendanceMatrix';
+import { StudentCourseSection } from './StudentCourseSection';
 import { StudentScheduleCalendar } from './StudentScheduleCalendar';
 import { StudentKoushuTab } from './StudentKoushuTab';
 import { PortalInviteSection } from './PortalInviteSection';
@@ -349,6 +350,15 @@ export function StudentDetailModal({
               </div>
             </div>
           </>
+        )}
+
+        {activeTab === 'schedule' && !isTeacher && student && (
+          <StudentCourseSection
+            studentId={student.id}
+            studentName={`${student.last_name} ${student.first_name}`}
+            schoolId={student.school_id ?? schoolId}
+            grade={student.grade}
+          />
         )}
 
         {activeTab === 'schedule' && !isTeacher && student && (

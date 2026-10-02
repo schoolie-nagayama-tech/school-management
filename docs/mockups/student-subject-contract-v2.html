@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>科目ごとのコース（PS1／PS2／キッズ）— モック v2</title>
+<style>
+  :root{
+    --headline:#1f2937; --paragraph:#4b5563; --muted:#6b7280; --stroke:#e5e7eb;
+    --ink:#1e3a5f; --ink-subtle:#eef2f7; --surface:#f9fafb; --primary:#2563eb;
+    --info:#2563eb; --info-subtle:#eff6ff; --warning:#b45309; --warning-subtle:#fffbeb;
+    --success:#15803d; --success-subtle:#f0fdf4; --danger:#b91c1c; --danger-subtle:#fef2f2;
+  }
+  *{box-sizing:border-box}
+  body{font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;margin:0;background:#f3f4f6;color:var(--headline);padding:32px;line-height:1.6}
+  h1{font-size:20px;margin:0 0 4px}
+  .sub{color:var(--muted);font-size:13px;margin-bottom:8px}
+  h2{font-size:14px;color:var(--ink);margin:34px 0 12px;display:flex;align-items:center;gap:8px}
+  h2::before{content:"";width:4px;height:16px;background:var(--ink);border-radius:2px}
+  h3{font-size:12px;color:var(--muted);margin:16px 0 6px;font-weight:600;letter-spacing:.02em}
+  .panel{background:#fff;border:1px solid var(--stroke);border-radius:12px;padding:16px;margin-bottom:10px;box-shadow:0 1px 2px rgba(0,0,0,.03)}
+  .panel.tight{padding:14px}
+  .tag{display:inline-block;font-size:11px;padding:1px 8px;border-radius:999px;font-weight:600}
+  .tag.before{background:var(--danger-subtle);color:var(--danger)}
+  .tag.after{background:var(--success-subtle);color:var(--success)}
+  .tag.role{background:var(--ink-subtle);color:var(--ink)}
+  .note{font-size:12px;color:var(--muted);margin:6px 2px 0}
+  .cols{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  @media(max-width:900px){.cols{grid-template-columns:1fr}}
+  .label{font-size:12px;font-weight:600;color:var(--paragraph);margin-bottom:5px;display:flex;align-items:center;gap:6px}
+  .seg{display:flex;gap:8px;flex-wrap:wrap}
+  .seg .b{flex:1;min-width:120px;text-align:center;font-size:13px;padding:9px 10px;border:1px solid var(--stroke);border-radius:6px;background:#fff;color:var(--paragraph)}
+  .seg .b .s{display:block;font-size:10px;color:var(--muted);margin-top:1px}
+  .seg .b.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .seg .b.on .s{color:#c7d5e6}
+  .seg .b.need{border-color:var(--warning);border-style:dashed;color:var(--warning)}
+  .seg .b.need .s{color:var(--warning);opacity:.8}
+  .field{width:100%;font-size:13px;padding:8px 10px;border:1px solid var(--stroke);border-radius:6px;background:#fff;color:var(--headline)}
+  .locked{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--surface);
+          border:1px solid var(--stroke);border-radius:6px;padding:9px 12px}
+  .locked .v{font-size:14px;font-weight:600;color:var(--headline);display:flex;align-items:center;gap:8px}
+  .lock{font-size:11px;color:var(--muted)}
+  .link{font-size:12px;color:var(--primary);text-decoration:underline;white-space:nowrap}
+  .callout{border-radius:8px;padding:10px 12px;font-size:12px;line-height:1.7;margin-top:10px}
+  .callout.warn{background:var(--warning-subtle);color:var(--warning);border:1px solid #fde68a}
+  .callout.info{background:var(--info-subtle);color:#1d4ed8;border:1px solid #bfdbfe}
+  .callout.bad{background:var(--danger-subtle);color:var(--danger);border:1px solid #fecaca}
+  .callout.ok{background:var(--success-subtle);color:var(--success);border:1px solid #bbf7d0}
+  .btnrow{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}
+  .btn{font-size:13px;padding:7px 14px;border:1px solid var(--stroke);border-radius:6px;background:#fff;color:var(--paragraph)}
+  .btn.pri{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .btn.dis{opacity:.45}
+  .modal{border:1px solid var(--stroke);border-radius:12px;background:#fff;box-shadow:0 10px 30px rgba(0,0,0,.10);overflow:hidden}
+  .modal .head{padding:12px 16px;border-bottom:1px solid var(--stroke);font-size:14px;font-weight:600;display:flex;justify-content:space-between;align-items:center}
+  .modal .head .who{font-size:12px;color:var(--muted);font-weight:400}
+  .modal .body{padding:16px}
+  .modal .foot{padding:12px 16px;border-top:1px solid var(--stroke);display:flex;justify-content:flex-end;gap:8px;background:var(--surface)}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th{text-align:left;font-size:11px;color:var(--muted);font-weight:600;padding:6px 8px;border-bottom:1px solid var(--stroke)}
+  td{padding:8px;border-bottom:1px solid #f3f4f6;color:var(--paragraph);vertical-align:middle}
+  td b{color:var(--headline)}
+  .pill{display:inline-block;font-size:11px;font-weight:600;padding:1px 8px;border-radius:999px;background:var(--ink-subtle);color:var(--ink)}
+  .pill.none{background:var(--warning-subtle);color:var(--warning)}
+  .pill.sub{background:var(--surface);color:var(--muted);font-weight:400}
+  .alertcard .row{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-bottom:1px solid #f3f4f6}
+  .alertcard .row:last-child{border-bottom:0}
+  .alertcard .sev{width:6px;border-radius:3px;flex:none;align-self:stretch}
+  .sev.d{background:#dc2626} .sev.w{background:#f59e0b}
+  .alertcard .m{flex:1;font-size:13px}
+  .alertcard .m .sm{font-size:11px;color:var(--muted);margin-top:2px}
+  .mismatch{font-family:ui-monospace,monospace;font-size:12px;background:var(--surface);border-radius:4px;padding:1px 6px}
+  ul.kv{margin:8px 0 0;padding-left:18px;font-size:13px;color:var(--paragraph)}
+  ul.kv li{margin:4px 0}
+  code{font-family:ui-monospace,monospace;font-size:12px;background:var(--surface);padding:1px 5px;border-radius:4px;color:var(--ink)}
+  .small{font-size:12px;color:var(--muted)}
+  .flow{display:flex;align-items:stretch;gap:0;flex-wrap:wrap}
+  .flow .step{flex:1;min-width:180px;border:1px solid var(--stroke);background:#fff;border-radius:10px;padding:12px;margin-right:26px;position:relative}
+  .flow .step:last-child{margin-right:0}
+  .flow .step::after{content:"→";position:absolute;right:-20px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:16px}
+  .flow .step:last-child::after{content:""}
+  .flow .step .t{font-size:12px;font-weight:600;color:var(--ink);margin-bottom:4px}
+  .flow .step .d{font-size:11px;color:var(--muted);line-height:1.6}
+</style>
+</head>
+<body>
+
+<h1>科目ごとのコース（PS1／PS2／キッズ）を、登録のついでに動かさない — モック v2</h1>
+<p class="sub">
+  v1からの変更: 呼び名を「コース」に統一／今の通塾日程からの一括投入は撤回（座席表が未稼働で、
+  比率欄が誰にも触られていないため根拠にならない）／棚卸し画面と要確認フラグを削除。
+</p>
+
+<!-- ============================================================ -->
+<h2>1. 何を直すのか — 「何度も選ばされる」を1回に畳む</h2>
+
+<div class="cols">
+  <div>
+    <h3><span class="tag before">現状</span> 同じ事実を何度も入力させ、そのたびに上書きする</h3>
+    <div class="panel">
+      <div class="flow">
+        <div class="step"><div class="t">月曜の英語を登録</div><div class="d">比率を選ぶ<br>→ コースが1対2に</div></div>
+        <div class="step"><div class="t">木曜の英語も追加</div><div class="d">また比率を選ぶ<br>→ コースが上書き</div></div>
+        <div class="step"><div class="t">講師を変えて登録し直す</div><div class="d">また比率を選ぶ<br>→ コースが上書き</div></div>
+      </div>
+      <div class="callout bad">
+        1対1の生徒でも、どこか1回で1対2を選べばコースごと1対2になる。
+        <b>矛盾が残らないので誰も気づけない。</b>Growの事故はここで起きた。
+      </div>
+    </div>
+  </div>
+  <div>
+    <h3><span class="tag after">改</span> 最初の1回だけ決め、以降はそれに従う</h3>
+    <div class="panel">
+      <div class="flow">
+        <div class="step"><div class="t">月曜の英語を登録</div><div class="d"><b>コースを選ぶ</b><br>（ここが唯一の入力）</div></div>
+        <div class="step"><div class="t">木曜の英語も追加</div><div class="d">聞かれない<br>PS1と表示されるだけ</div></div>
+        <div class="step"><div class="t">講師を変えて登録し直す</div><div class="d">聞かれない<br>PS1と表示されるだけ</div></div>
+      </div>
+      <div class="callout ok">
+        入力は<b>増えるどころか減る</b>。コースを変えるのは別操作（§3）にして、
+        授業を登録する動作のついでに動かないようにする。
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<h2>2. 通塾日程フォーム — 初回だけ聞く</h2>
+
+<div class="cols">
+  <div>
+    <h3><span class="tag after">改</span> その科目が初めて（教室長以上）</h3>
+    <div class="panel">
+      <div class="label">コース <span class="pill none">未設定</span></div>
+      <p class="note" style="margin:0 0 8px">山田 太郎さんの<b>英語</b>のコースを決めてください。以降の登録はこれに従います。</p>
+      <div class="seg">
+        <div class="b need">PS1<span class="s">1対1・90分</span></div>
+        <div class="b need">PS2<span class="s">1対2・90分</span></div>
+        <div class="b need">キッズ<span class="s">1対2・45分</span></div>
+      </div>
+      <div class="btnrow"><span class="btn">キャンセル</span><span class="btn pri dis">登録</span></div>
+      <p class="note">
+        <b>既定を置かない。</b>未選択のあいだは保存できない
+        （いまは既定 1対2 で黙って通るので、契約未登録の生徒が全員1対2になる）。<br>
+        キッズ（45分）は小1〜小4のときだけ出す（単価表の設定範囲に合わせる）。
+      </p>
+    </div>
+  </div>
+
+  <div>
+    <h3><span class="tag after">改</span> 2回目以降（曜日追加・講師変更・版を切る）</h3>
+    <div class="panel">
+      <div class="label">コース</div>
+      <div class="locked">
+        <span class="v">PS1 <span class="pill sub">1対1・90分</span></span>
+        <span class="lock">この科目のコース</span>
+      </div>
+      <p class="note">
+        変更は <a class="link">コースを変更</a> から <span class="tag role">教室長以上</span><br>
+        <span class="small">講師にはリンクを出さず「変更は教室長に依頼してください」とだけ書く。</span>
+      </p>
+      <div class="callout info">
+        <b>ここが対策の本体。</b>講師変更のたびに比率を選び直せたことが事故の原因なので、
+        選択肢そのものを消す。編集画面でも同じ（保存済みの比率がコースと違っても勝手に直さない ＝ 矛盾を消さない）。
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="panel tight">
+  <h3 style="margin-top:0">講師が座席表の空席「＋」から、コース未設定の科目を入れたとき</h3>
+  <div class="cols" style="gap:12px">
+    <div>
+      <div class="label">コース <span class="pill none">未設定</span></div>
+      <p class="note" style="margin:0 0 8px"><b>この授業の</b>形態を選んでください。</p>
+      <div class="seg">
+        <div class="b need">1対1・90分</div><div class="b need">1対2・90分</div><div class="b need">1対2・45分</div>
+      </div>
+      <div class="callout warn">
+        コースの設定は教室長が行います。この登録は「コース未設定」として教室長に通知されます。
+      </div>
+    </div>
+    <div>
+      <ul class="kv" style="margin-top:0">
+        <li>講師にはコースを<b>作らせない</b>（間違ったコースが静かに増えると、以降の登録が全部それに従ってしまう）。</li>
+        <li>ただし授業運営は止めない。その日の授業として登録はでき、コースの確定だけ後追いにする。</li>
+        <li>講師向けの選択肢は「PS1／PS2」ではなく生の形態で出す。講師はコース名で考えていないため。</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<h2>3. コースの変更（教室長以上・理由必須・履歴が残る）</h2>
+
+<div class="cols">
+  <div>
+    <div class="modal">
+      <div class="head">コースの変更 <span class="who">山田 太郎 ／ 英語</span></div>
+      <div class="body">
+        <div style="margin-bottom:12px">
+          <div class="label">現在</div>
+          <div class="locked"><span class="v">PS2 <span class="pill sub">1対2・90分</span></span>
+            <span class="lock">2026-04-01 から</span></div>
+        </div>
+        <div style="margin-bottom:12px">
+          <div class="label">変更後</div>
+          <div class="seg">
+            <div class="b on">PS1<span class="s">1対1・90分</span></div>
+            <div class="b">PS2<span class="s">1対2・90分</span></div>
+            <div class="b">キッズ<span class="s">1対2・45分</span></div>
+          </div>
+        </div>
+        <div style="margin-bottom:12px">
+          <div class="label">変更理由 <span style="color:var(--danger)">必須</span></div>
+          <select class="field">
+            <option>登録の誤りを訂正する（元からPS1だった）</option>
+            <option>保護者の申し出でコースを変更する</option>
+            <option>学年の切り替え（キッズ→PS2 など）</option>
+            <option>その他（補足に書く）</option>
+          </select>
+        </div>
+        <div>
+          <div class="label">補足</div>
+          <input class="field" placeholder="例：入会時からPS1。1対2で登録されていたのを訂正">
+        </div>
+        <div class="callout warn">
+          すでに入っている授業は変わりません。直すべき授業は
+          教室長ダッシュボードの「コースと登録の食い違い」に出ます。
+        </div>
+      </div>
+      <div class="foot"><span class="btn">キャンセル</span><span class="btn pri">変更する</span></div>
+    </div>
+  </div>
+
+  <div>
+    <h3>なぜ既存の授業を書き換えないか</h3>
+    <div class="panel">
+      <div class="callout bad" style="margin-top:0">
+        <b>保護者に見せているのはコースではなく実登録（<code>schedule_entries.ratio</code>）です。</b>
+        コースを直したついでに過去の登録まで書き換えると、実際には1対2で受けた授業が
+        画面上だけ1対1に見える。<b>表示が誤りを覆い隠す装置になる。</b>
+      </div>
+      <ul class="kv">
+        <li>ポータル・座席表のバッジは<b>実登録のまま</b>（今回の変更対象外）。</li>
+        <li>過去分の食い違いは消さずに<b>見えるようにする</b>のが§5。</li>
+        <li>これから作る授業はコースに従うので、放っておいても新しい登録は正しくなる。</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<h2>4. 生徒詳細「受講コース」— 見る場所と、変える入口</h2>
+
+<div class="panel">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+    <b style="font-size:13px">受講コース（科目ごと）</b>
+    <span class="small">変更できるのは教室長以上。講師は閲覧のみ</span>
+  </div>
+  <table>
+    <tr><th>科目</th><th>コース</th><th>内容</th><th>最終変更</th><th style="width:70px"></th></tr>
+    <tr><td><b>英語</b></td><td><span class="pill">PS1</span></td><td class="small">1対1・90分</td>
+        <td class="small">2026-09-05 佐藤（登録の誤りを訂正）</td><td><a class="link">変更</a></td></tr>
+    <tr><td><b>数学</b></td><td><span class="pill">PS2</span></td><td class="small">1対2・90分</td>
+        <td class="small">2026-04-01 佐藤（初回登録）</td><td><a class="link">変更</a></td></tr>
+    <tr><td><b>国語</b></td><td><span class="pill none">未設定</span></td><td class="small">—</td>
+        <td class="small">—</td><td><a class="link">設定</a></td></tr>
+  </table>
+  <h3>変更履歴</h3>
+  <table>
+    <tr><th>日時</th><th>科目</th><th>変更</th><th>理由</th><th>実施者</th></tr>
+    <tr><td class="small">2026-09-05 14:02</td><td>英語</td>
+        <td><span class="mismatch">PS2 → PS1</span></td>
+        <td class="small">登録の誤りを訂正（入会時からPS1）</td><td class="small">佐藤（教室長）</td></tr>
+    <tr><td class="small">2026-04-01 10:15</td><td>数学</td>
+        <td><span class="mismatch">（未設定） → PS2</span></td>
+        <td class="small">初回登録</td><td class="small">佐藤（教室長）</td></tr>
+  </table>
+  <p class="note">
+    <b>この画面は入力ステップではありません。</b>通常はここを開かなくても、
+    通塾日程の初回登録で埋まります。開くのは「見たいとき」と「変えたいとき」だけ。
+  </p>
+</div>
+
+<!-- ============================================================ -->
+<h2>5. 教室長ダッシュボード「コースと登録の食い違い」</h2>
+
+<div class="cols">
+  <div>
+    <div class="panel alertcard">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+        <b style="font-size:13px">コースと登録の食い違い</b><span class="pill none">4件</span>
+      </div>
+      <div class="row"><div class="sev d"></div><div class="m">
+        <b>山田 太郎 ／ 英語</b> <span class="mismatch">PS1 ↔ 登録 1対2</span>
+        <div class="sm">9/10(火)3限 ほか4件（毎週火曜の通塾日程）</div>
+      </div><a class="link">座席表で見る</a></div>
+      <div class="row"><div class="sev d"></div><div class="m">
+        <b>佐藤 次郎 ／ 英語</b> <span class="mismatch">1対1の隣に別の生徒</span>
+        <div class="sm">9/9(月)4限・鈴木先生（振替で1名入った）</div>
+      </div><a class="link">座席表で見る</a></div>
+      <div class="row"><div class="sev w"></div><div class="m">
+        <b>鈴木 花子 ／ 数学</b> <span class="mismatch">コース未設定 ↔ 登録あり</span>
+        <div class="sm">9/11(水)2限 ほか3件（講師が座席表から登録）</div>
+      </div><a class="link">コースを設定</a></div>
+      <div class="row"><div class="sev w"></div><div class="m">
+        <b>田中 一郎 ／ 算数</b> <span class="mismatch">キッズ(45分) ↔ 登録 90分</span>
+        <div class="sm">9/12(木)1限 ほか3件</div>
+      </div><a class="link">座席表で見る</a></div>
+      <p class="note"><b>直すのは登録のほうです。</b>保護者に見えているのは実際の登録です。</p>
+    </div>
+  </div>
+  <div>
+    <h3>拾う条件</h3>
+    <div class="panel">
+      <ul class="kv">
+        <li><b>比率の食い違い</b> — <code>schedule_entries.ratio ≠ コースの比率</code></li>
+        <li><b>時間の食い違い</b> — 45分コースが90分で入っている等</li>
+        <li><b>コース未設定なのに授業がある</b> — 講師が座席表から入れた分</li>
+        <li><b>1対1の隣に人がいる</b> — 同じ講師×日付×コマに <code>ratio=1</code> と他の生徒。
+            登録時は <code>canPlaceEntry</code> が弾くが、<b>振替・臨時・コース変更の後追いでは弾けない</b></li>
+      </ul>
+      <p class="note">
+        対象は<b>今日以降</b>の登録（過去は直せないので出さない）。
+        研修生徒 <code>is_test</code>・デモ教室 <code>is_demo</code> は除外。
+      </p>
+      <div class="callout info">
+        欠席で相方が消えるのは食い違いではない（登録は1対2のまま）。出さない。
+      </div>
+      <div class="callout warn">
+        座席表の稼働直後は「コース未設定」が大量に出る可能性がある。
+        <b>未設定は種別を分けて件数だけ畳んで出す</b>（食い違いの重い2種が埋もれないように）。
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<h2>6. 45分専用の科目レコードを廃止する</h2>
+
+<div class="panel tight">
+  <p class="small" style="margin:0 0 8px">
+    いま45分の持ち方が2通りある。小学の「国語」「算数」「英語」は
+    <b>45分版と90分版が別の科目レコード</b>として登録されている一方、永山校では10/1から
+    「普通の科目＋パターン側で45分指定」へ切り替える版が既に入っている。
+    コースが時間を持つなら45分専用の科目は要らないので、廃止して一本化する。
+  </p>
+  <table style="max-width:600px">
+    <tr><th>45分科目の参照先</th><th>件数</th><th>付け替え</th></tr>
+    <tr><td>通塾日程パターン</td><td>16</td><td class="small">科目IDを90分版へ＋<code>duration_minutes=45</code></td></tr>
+    <tr><td>授業コマ</td><td>130</td><td class="small">同上</td></tr>
+    <tr><td>マッチング提案</td><td>7</td><td class="small">科目IDを差し替え</td></tr>
+    <tr><td>指導可能科目（講師）</td><td>22〜23名</td><td class="small">45分IDを外す（90分IDは既に入っている）</td></tr>
+    <tr><td>受講科目・コース・教材・講座・保留授業・テスト対策</td><td><b>0</b></td><td class="small">影響なし</td></tr>
+  </table>
+  <div class="callout warn">
+    <code>half_position</code> は触らない（NULL＝全コマ扱いのまま）。
+    いまも45分の授業はコマを丸ごと使っているので、ここを同時に変えると席の詰まり方が変わる。
+    前後半の割り当ては後から座席表で設定する。
+  </div>
+  <p class="note">本丸とは<b>別のマイグレーションに分ける</b>（同じPRだが、単独で適用・巻き戻しできる形にする）。</p>
+</div>
+
+<!-- ============================================================ -->
+<h2>7. データの持ち方</h2>
+
+<div class="cols">
+  <div>
+    <div class="panel">
+      <h3 style="margin-top:0"><code>student_subject_contracts</code>（列を足す）</h3>
+      <ul class="kv">
+        <li><code>duration_minutes smallint NULL</code>（45 / 90。NULL＝科目マスタに従う＝いまと同じ意味）
+          <div class="small">45分専用科目を廃止するので、45分の表現はここだけになる。</div></li>
+        <li><code>updated_by uuid</code>（最終変更者）</li>
+      </ul>
+      <p class="note">
+        既存11行は <code>duration_minutes = NULL</code> のまま残す（＝科目マスタどおり）。<br>
+        <b>テーブル名は変えない。</b>画面での呼び名が「コース」、テーブルは既存名のまま。
+        コード側のコメントに対応を明記する（本番にあるテーブルを改名すると移行が要るため）。
+      </p>
+      <div class="callout bad">
+        <b>一括投入はしない。</b>座席表が未稼働で比率欄が誰にも触られていないので、
+        いまの登録を写しても「全員1対2」という無意味な450件ができるだけ。
+        コースは座席表の稼働に合わせて、初回登録のときに1回だけ聞いて埋める。
+      </div>
+    </div>
+  </div>
+  <div>
+    <div class="panel">
+      <h3 style="margin-top:0"><code>student_subject_contract_changes</code>（新設）</h3>
+      <ul class="kv">
+        <li><code>school_id / student_id / subject_id</code></li>
+        <li><code>from_ratio, from_duration_minutes</code>（初回登録は NULL）</li>
+        <li><code>to_ratio, to_duration_minutes</code></li>
+        <li><code>reason_code</code>（訂正／コース変更／学年切替／初回登録／その他）＋ <code>reason_note</code></li>
+        <li><code>changed_by, changed_at</code></li>
+      </ul>
+      <p class="note">
+        RLS は <code>check_school_access(school_id)</code>（既存のコーステーブルと同型）。
+        台帳なので <code>authenticated</code> には SELECT / INSERT だけ与え、UPDATE / DELETE は与えない。
+      </p>
+    </div>
+  </div>
+</div>
+
+<div class="panel tight">
+  <h3 style="margin-top:0">コース名の当てはめ（表示だけ・DBには持たない）</h3>
+  <table style="max-width:560px">
+    <tr><th>比率 × 時間</th><th>表示</th><th>出す条件</th></tr>
+    <tr><td>1対1 × 90分</td><td><b>PS1</b></td><td class="small">全学年</td></tr>
+    <tr><td>1対2 × 90分</td><td><b>PS2</b></td><td class="small">全学年</td></tr>
+    <tr><td>1対2 × 45分</td><td><b>キッズ</b></td><td class="small">小1〜小4（単価表の設定範囲に合わせる）</td></tr>
+    <tr><td>1対1 × 45分</td><td class="small">「1対1・45分」とそのまま表示</td><td class="small">名前が無いので通常は出さない。既存データがあれば表示だけする</td></tr>
+  </table>
+</div>
+
+<!-- ============================================================ -->
+<h2>8. 触らないところ</h2>
+<div class="panel tight">
+  <ul class="kv">
+    <li><b>保護者ポータルと座席表のバッジは実登録（<code>schedule_entries.ratio</code>）のまま。</b>
+      コース側に切り替えない。食い違っているときに画面が「1対1」と出て保護者を安心させると、
+      表示が誤りを覆い隠す装置になる。</li>
+    <li>席の占有モデル（<code>seatOccupancy.ts</code>）・登録時のブロックはそのまま。</li>
+    <li>講習の申込フォーム（<code>KoushuEnrollmentFormModal</code>）はコースを<b>既定値として読むだけ</b>で
+      書いていないので、そのまま。読む先が（比率, 時間）の組になるだけ。</li>
+    <li>既存のコース11行は残す。</li>
+  </ul>
+</div>
+
+<p class="small" style="margin-top:28px">モック v2 ／ 2026-09-09。実装前の確認用。</p>
+
+</body>
+</html>

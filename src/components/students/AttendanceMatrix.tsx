@@ -693,7 +693,12 @@ export function AttendanceMatrix({
                     : null;
                   const subjectName =
                     subjectObj?.name ?? (firstSubjectId ? subjectMap.get(firstSubjectId) : null);
-                  const is45 = subjectObj ? subjectObj.duration_minutes < 90 : false;
+                  // 45分・1対1の印は「この行に登録されている値」で出す。
+                  // ★科目マスタの duration_minutes では見ない。45分かどうかは生徒ごとのコースで決まり、
+                  //   科目マスタは（コース未設定の科目の）既定値でしかないため、
+                  //   科目だけ見ると別の生徒の事情で印が付いたり消えたりする。
+                  const is45 = pattern?.duration_minutes === 45;
+                  const isOneToOne = pattern?.ratio === 1;
                   const subjectIdx = firstSubjectId
                     ? subjects.findIndex((s) => s.id === firstSubjectId)
                     : 0;
@@ -735,8 +740,14 @@ export function AttendanceMatrix({
                               {formatUpcomingCellBadge(upcoming.effective_from)}
                             </span>
                           )}
-                          {is45 && !upcoming && (
-                            <span className="text-[8px] text-gray-400 leading-none">45分</span>
+                          {/* 実登録の印。1対1は取り違えがいちばん起きやすいので、
+                              45分より優先して出す（両方あれば「1:1・45分」）。 */}
+                          {(is45 || isOneToOne) && !upcoming && (
+                            <span className="text-[8px] text-gray-500 leading-none">
+                              {[isOneToOne ? '1:1' : null, is45 ? '45分' : null]
+                                .filter(Boolean)
+                                .join('・')}
+                            </span>
                           )}
                           {canEdit && (
                             <button

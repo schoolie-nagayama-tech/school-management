@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>指導契約を正のソースに戻す（モック v1）</title>
+<style>
+  :root{
+    --headline:#1f2937; --paragraph:#4b5563; --muted:#6b7280; --stroke:#e5e7eb;
+    --ink:#1e3a5f; --ink-subtle:#eef2f7; --surface:#f9fafb; --primary:#2563eb;
+    --info:#2563eb; --info-subtle:#eff6ff; --warning:#b45309; --warning-subtle:#fffbeb;
+    --success:#15803d; --success-subtle:#f0fdf4; --danger:#b91c1c; --danger-subtle:#fef2f2;
+  }
+  *{box-sizing:border-box}
+  body{font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;margin:0;background:#f3f4f6;color:var(--headline);padding:32px;line-height:1.6}
+  h1{font-size:20px;margin:0 0 4px}
+  .sub{color:var(--muted);font-size:13px;margin-bottom:8px}
+  h2{font-size:14px;color:var(--ink);margin:34px 0 12px;display:flex;align-items:center;gap:8px}
+  h2::before{content:"";width:4px;height:16px;background:var(--ink);border-radius:2px}
+  h3{font-size:12px;color:var(--muted);margin:16px 0 6px;font-weight:600;letter-spacing:.02em}
+  .panel{background:#fff;border:1px solid var(--stroke);border-radius:12px;padding:16px;margin-bottom:10px;box-shadow:0 1px 2px rgba(0,0,0,.03)}
+  .panel.tight{padding:14px}
+  .tag{display:inline-block;font-size:11px;padding:1px 8px;border-radius:999px;font-weight:600}
+  .tag.before{background:var(--danger-subtle);color:var(--danger)}
+  .tag.after{background:var(--success-subtle);color:var(--success)}
+  .tag.role{background:var(--ink-subtle);color:var(--ink)}
+  .note{font-size:12px;color:var(--muted);margin:6px 2px 0}
+  .cols{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  .cols3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+  @media(max-width:900px){.cols,.cols3{grid-template-columns:1fr}}
+  /* フォーム部品 */
+  .label{font-size:12px;font-weight:600;color:var(--paragraph);margin-bottom:5px;display:flex;align-items:center;gap:6px}
+  .seg{display:flex;gap:8px}
+  .seg .b{flex:1;text-align:center;font-size:13px;padding:7px 10px;border:1px solid var(--stroke);border-radius:6px;background:#fff;color:var(--paragraph)}
+  .seg .b.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .seg .b.need{border-color:var(--warning);border-style:dashed;color:var(--warning)}
+  .field{width:100%;font-size:13px;padding:8px 10px;border:1px solid var(--stroke);border-radius:6px;background:#fff;color:var(--headline)}
+  .locked{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--surface);
+          border:1px solid var(--stroke);border-radius:6px;padding:9px 12px}
+  .locked .v{font-size:14px;font-weight:600;color:var(--headline);display:flex;align-items:center;gap:8px}
+  .lock{font-size:11px;color:var(--muted);display:inline-flex;align-items:center;gap:4px}
+  .link{font-size:12px;color:var(--primary);text-decoration:underline;white-space:nowrap}
+  .link.off{color:var(--muted);text-decoration:none}
+  .callout{border-radius:8px;padding:10px 12px;font-size:12px;line-height:1.7;margin-top:10px}
+  .callout.warn{background:var(--warning-subtle);color:var(--warning);border:1px solid #fde68a}
+  .callout.info{background:var(--info-subtle);color:#1d4ed8;border:1px solid #bfdbfe}
+  .callout.bad{background:var(--danger-subtle);color:var(--danger);border:1px solid #fecaca}
+  .btnrow{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}
+  .btn{font-size:13px;padding:7px 14px;border:1px solid var(--stroke);border-radius:6px;background:#fff;color:var(--paragraph)}
+  .btn.pri{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .btn.dis{opacity:.45}
+  .chk{display:flex;gap:8px;align-items:flex-start;font-size:12px;color:var(--paragraph);margin-top:10px}
+  .chk .box{width:14px;height:14px;border:1.5px solid var(--ink);border-radius:3px;background:var(--ink);color:#fff;
+            font-size:10px;display:grid;place-items:center;flex:none;margin-top:3px}
+  /* モーダル枠 */
+  .modal{border:1px solid var(--stroke);border-radius:12px;background:#fff;box-shadow:0 10px 30px rgba(0,0,0,.10);overflow:hidden}
+  .modal .head{padding:12px 16px;border-bottom:1px solid var(--stroke);font-size:14px;font-weight:600;display:flex;justify-content:space-between;align-items:center}
+  .modal .head .who{font-size:12px;color:var(--muted);font-weight:400}
+  .modal .body{padding:16px}
+  .modal .foot{padding:12px 16px;border-top:1px solid var(--stroke);display:flex;justify-content:flex-end;gap:8px;background:var(--surface)}
+  /* テーブル */
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th{text-align:left;font-size:11px;color:var(--muted);font-weight:600;padding:6px 8px;border-bottom:1px solid var(--stroke)}
+  td{padding:8px;border-bottom:1px solid #f3f4f6;color:var(--paragraph);vertical-align:middle}
+  td b{color:var(--headline)}
+  .pill{display:inline-block;font-size:11px;font-weight:600;padding:1px 8px;border-radius:999px;background:var(--ink-subtle);color:var(--ink)}
+  .pill.none{background:var(--warning-subtle);color:var(--warning)}
+  .pill.course{background:var(--surface);color:var(--muted);font-weight:400;margin-left:6px}
+  /* アラートカード */
+  .alertcard .row{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-bottom:1px solid #f3f4f6}
+  .alertcard .row:last-child{border-bottom:0}
+  .alertcard .sev{width:6px;border-radius:3px;flex:none;align-self:stretch}
+  .sev.d{background:#dc2626} .sev.w{background:#f59e0b}
+  .alertcard .m{flex:1;font-size:13px}
+  .alertcard .m .sm{font-size:11px;color:var(--muted);margin-top:2px}
+  .mismatch{font-family:ui-monospace,monospace;font-size:12px;background:var(--surface);border-radius:4px;padding:1px 6px}
+  .ratiotag{font-size:9px;font-weight:700;color:#fff;background:var(--ink);border-radius:4px;padding:1px 5px}
+  ul.kv{margin:8px 0 0;padding-left:18px;font-size:13px;color:var(--paragraph)}
+  ul.kv li{margin:4px 0}
+  code{font-family:ui-monospace,monospace;font-size:12px;background:var(--surface);padding:1px 5px;border-radius:4px;color:var(--ink)}
+  .small{font-size:12px;color:var(--muted)}
+</style>
+</head>
+<body>
+
+<h1>指導契約（1対1／1対2・45分／90分）を「正のソース」に戻す — モック v1</h1>
+<p class="sub">
+  いまは授業を登録するとその比率が契約に書き戻されるため、取り違えても矛盾が残らない。<br>
+  契約を動かせるのは「契約を変更する」操作だけにし、授業登録フォームからは書かない。
+</p>
+
+<!-- ============================================================ -->
+<h2>1. 通塾日程フォーム — 比率の欄をどう変えるか</h2>
+
+<div class="cols">
+  <div>
+    <h3><span class="tag before">現状</span> 授業登録が契約を書き換える</h3>
+    <div class="panel">
+      <div class="label">指導比率</div>
+      <div class="seg">
+        <div class="b">1対1</div><div class="b on">1対2</div>
+      </div>
+      <p class="note">この科目の指導契約（1対1／1対2）にも同じ比率が保存されます。</p>
+      <div class="callout bad">
+        1対1契約の生徒でも、講師変更のたびにここで1対2を選び直せば契約ごと1対2になる。
+        矛盾が残らないので、誰も気づけない。
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <h3><span class="tag after">改</span> 契約がある科目 — 読み取り専用</h3>
+    <div class="panel">
+      <div class="label">指導形態</div>
+      <div class="locked">
+        <span class="v">1対1・90分 <span class="pill">PS1</span></span>
+        <span class="lock">契約で固定</span>
+      </div>
+      <p class="note">
+        この生徒のこの科目の契約です。授業の登録では変えられません。
+        <a class="link">契約を変更</a> <span class="tag role">教室長以上</span>
+      </p>
+      <div class="callout info">
+        講師には「契約を変更」リンクを出さない（文言だけ「変更は教室長に依頼してください」）。
+        <b>片手間に変えられなくするのが目的</b>なので、リンク先は必ず理由入力のあるダイアログ。
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="cols" style="margin-top:6px">
+  <div>
+    <h3><span class="tag after">改</span> 契約が無い科目 — 教室長以上</h3>
+    <div class="panel">
+      <div class="label">指導形態 <span class="pill none">契約 未登録</span></div>
+      <p class="note" style="margin:0 0 8px">この科目の契約がまだありません。登録する内容を選んでください。</p>
+      <div style="margin-bottom:10px">
+        <div class="label">比率</div>
+        <div class="seg"><div class="b need">1対1</div><div class="b need">1対2</div></div>
+      </div>
+      <div>
+        <div class="label">授業時間</div>
+        <div class="seg"><div class="b need">90分</div><div class="b need">45分</div></div>
+      </div>
+      <div class="chk"><span class="box">✓</span>
+        <span>この内容を <b>山田 太郎 / 英語</b> の指導契約として登録する</span></div>
+      <div class="btnrow"><span class="btn">キャンセル</span><span class="btn pri dis">登録</span></div>
+      <p class="note">未選択のあいだは保存できない（<b>既定 1対2 で黙って通さない</b>）。</p>
+    </div>
+  </div>
+
+  <div>
+    <h3><span class="tag after">改</span> 契約が無い科目 — 講師（座席表から）</h3>
+    <div class="panel">
+      <div class="label">指導形態 <span class="pill none">契約 未登録</span></div>
+      <p class="note" style="margin:0 0 8px">この科目の契約がまだありません。<b>この授業の</b>比率と時間を選んでください。</p>
+      <div style="margin-bottom:10px">
+        <div class="label">比率</div>
+        <div class="seg"><div class="b need">1対1</div><div class="b need">1対2</div></div>
+      </div>
+      <div>
+        <div class="label">授業時間</div>
+        <div class="seg"><div class="b need">90分</div><div class="b need">45分</div></div>
+      </div>
+      <div class="callout warn">
+        契約の登録は教室長が行います。この登録は「契約 未登録」として
+        教室長のダッシュボードに出ます。
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="panel tight" style="margin-top:10px">
+  <ul class="kv">
+    <li><b>授業登録フォームは契約を上書きしない。</b>3か所（生徒詳細の通塾日程／座席表の通塾日程フォーム／座席表の空席「＋」）から <code>upsertStudentContract</code> を外す。</li>
+    <li>契約が<b>ある</b>なら比率・時間は契約の値で確定。フォームは表示するだけ。</li>
+    <li>契約が<b>無い</b>ときだけ選ばせる。空欄→保存不可。教室長以上は同時に契約を作れる（上書きではなく初回登録）。講師は授業側だけ埋めて、契約はアラートに送る。</li>
+    <li>編集（既存パターンの編集）でも同じ。保存済みの比率が契約と違っていても<b>勝手に直さない</b>（矛盾を消さない）。画面には食い違いを出す（§4）。</li>
+  </ul>
+</div>
+
+<!-- ============================================================ -->
+<h2>2. 契約を変更するダイアログ（教室長以上・理由必須・履歴が残る）</h2>
+
+<div class="cols">
+  <div>
+    <div class="modal">
+      <div class="head">指導契約の変更 <span class="who">山田 太郎 ／ 英語</span></div>
+      <div class="body">
+        <div style="margin-bottom:12px">
+          <div class="label">現在の契約</div>
+          <div class="locked"><span class="v">1対2・90分 <span class="pill">PS2</span></span>
+            <span class="lock">2026-04-01 から</span></div>
+        </div>
+        <div style="margin-bottom:12px">
+          <div class="label">変更後</div>
+          <select class="field"><option>1対1・90分（PS1）</option><option>1対2・90分（PS2）</option><option>1対2・45分（キッズコース）</option></select>
+        </div>
+        <div style="margin-bottom:12px">
+          <div class="label">変更理由 <span style="color:var(--danger)">必須</span></div>
+          <select class="field">
+            <option>登録の誤りを訂正する（元から1対1だった）</option>
+            <option>保護者の申し出でコースを変更する</option>
+            <option>学年・コースの切り替え</option>
+            <option>その他（補足に書く）</option>
+          </select>
+        </div>
+        <div>
+          <div class="label">補足</div>
+          <input class="field" placeholder="例：入会時からPS1。1対2で登録されていたのを訂正">
+        </div>
+        <div class="callout warn">
+          すでに入っている授業の比率は変わりません。直すべき授業は
+          教室長ダッシュボードの「契約と登録の食い違い」に出ます。
+        </div>
+      </div>
+      <div class="foot"><span class="btn">キャンセル</span><span class="btn pri">変更する</span></div>
+    </div>
+  </div>
+
+  <div>
+    <h3>なぜ既存の授業を書き換えないか</h3>
+    <div class="panel">
+      <div class="callout bad" style="margin-top:0">
+        <b>保護者に見せているのは契約ではなく実登録（<code>schedule_entries.ratio</code>）です。</b>
+        契約を直したついでに過去の登録まで書き換えると、実際には1対2で受けた授業が
+        画面上だけ1対1に見える。表示が誤りを覆い隠す装置になるので、契約の変更は
+        <b>契約だけ</b>を動かす。
+      </div>
+      <ul class="kv">
+        <li>ポータル・座席表のバッジは<b>実登録のまま</b>（今回の変更対象外）。</li>
+        <li>過去分の食い違いは消さずに<b>見えるようにする</b>のが§4のアラート。</li>
+        <li>「これから作る授業」の既定が契約から引かれるので、放っておいても新しい登録は正しくなる。</li>
+      </ul>
+      <h3>履歴に残すもの</h3>
+      <p class="small" style="margin:0">
+        変更前後の（比率・時間）／理由／補足／変更した人／日時。
+        生徒詳細から誰でも読める（変更できるのは教室長以上）。
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<h2>3. 生徒詳細「指導契約」— 契約はここが入口</h2>
+
+<div class="panel">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+    <b style="font-size:13px">指導契約（科目ごと）</b>
+    <span class="small">変更できるのは教室長以上。講師は閲覧のみ</span>
+  </div>
+  <table>
+    <tr><th>科目</th><th>契約</th><th>コース</th><th>最終変更</th><th style="width:90px"></th></tr>
+    <tr><td><b>英語</b></td><td><span class="pill">1対1・90分</span></td><td class="small">PS1</td>
+        <td class="small">2026-09-05 佐藤（登録の誤りを訂正）</td><td><a class="link">変更</a></td></tr>
+    <tr><td><b>数学</b></td><td><span class="pill">1対2・90分</span></td><td class="small">PS2</td>
+        <td class="small">2026-04-01 移行時に一括投入 <span class="pill none">要確認</span></td><td><a class="link">変更</a></td></tr>
+    <tr><td><b>国語</b></td><td><span class="pill none">未登録</span></td><td class="small">—</td>
+        <td class="small">—</td><td><a class="link">登録</a></td></tr>
+  </table>
+  <p class="note">
+    <b>要確認</b> ＝ 移行時に既存の登録から機械的に入れた契約。教室長が一度目を通して確定するまで
+    ダッシュボードに出続ける（§5）。
+  </p>
+  <h3>変更履歴</h3>
+  <table>
+    <tr><th>日時</th><th>科目</th><th>変更</th><th>理由</th><th>実施者</th></tr>
+    <tr><td class="small">2026-09-05 14:02</td><td>英語</td>
+        <td><span class="mismatch">1対2・90分 → 1対1・90分</span></td>
+        <td class="small">登録の誤りを訂正（入会時からPS1）</td><td class="small">佐藤（教室長）</td></tr>
+  </table>
+</div>
+
+<!-- ============================================================ -->
+<h2>4. 教室長ダッシュボード「契約と登録の食い違い」</h2>
+
+<div class="cols">
+  <div>
+    <div class="panel alertcard">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+        <b style="font-size:13px">契約と登録の食い違い</b><span class="pill none">4件</span>
+      </div>
+      <div class="row"><div class="sev d"></div><div class="m">
+        <b>山田 太郎 ／ 英語</b>
+        <span class="mismatch">契約 1対1 ↔ 登録 1対2</span>
+        <div class="sm">9/10(火)3限 ほか4件（毎週火曜の通塾日程）</div>
+      </div><a class="link">座席表で見る</a></div>
+
+      <div class="row"><div class="sev d"></div><div class="m">
+        <b>佐藤 次郎 ／ 英語</b>
+        <span class="mismatch">1対1の隣に別の生徒</span>
+        <div class="sm">9/9(月)4限・鈴木先生（振替で1名入った）</div>
+      </div><a class="link">座席表で見る</a></div>
+
+      <div class="row"><div class="sev w"></div><div class="m">
+        <b>鈴木 花子 ／ 数学</b>
+        <span class="mismatch">契約 未登録 ↔ 登録 1対2</span>
+        <div class="sm">9/11(水)2限 ほか3件（講師が座席表から登録）</div>
+      </div><a class="link">契約を登録</a></div>
+
+      <div class="row"><div class="sev w"></div><div class="m">
+        <b>田中 一郎 ／ 算数</b>
+        <span class="mismatch">契約 45分 ↔ 登録 90分</span>
+        <div class="sm">9/12(木)1限 ほか3件</div>
+      </div><a class="link">座席表で見る</a></div>
+      <p class="note"><b>直すのは登録のほうです。</b>保護者に見えているのは実際の登録です。</p>
+    </div>
+  </div>
+  <div>
+    <h3>拾う条件</h3>
+    <div class="panel">
+      <ul class="kv">
+        <li><b>比率の食い違い</b> — <code>schedule_entries.ratio ≠ 契約.ratio</code></li>
+        <li><b>時間の食い違い</b> — <code>duration_minutes</code> が契約と違う（45分契約が90分で入っている等）</li>
+        <li><b>契約が無いのに授業がある</b> — 講師が座席表から入れた分・移行漏れ</li>
+        <li><b>1対1の隣に人がいる</b> — 同じ講師×日付×コマに <code>ratio=1</code> と他の生徒。
+            登録時は <code>canPlaceEntry</code> が弾くが、<b>振替・臨時・契約変更の後追いでは弾けない</b></li>
+      </ul>
+      <p class="note">
+        対象は<b>今日以降</b>の登録（過去は直せないので出さない）。
+        研修生徒 <code>is_test</code>・デモ教室 <code>is_demo</code> は除外。
+      </p>
+      <div class="callout info">
+        欠席で相方が消えるのは食い違いではない（登録は1対2のまま）。出さない。
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<h2>5. 移行 — 契約の一括確認（一度きりの棚卸し）</h2>
+
+<div class="callout bad" style="margin:0 0 12px">
+  <b>本番の実データ（2026-09-09 時点）:</b> 在籍292名・今日以降の個別授業1,386コマのうち、
+  <b>1対1で登録されているものは0件</b>。契約テーブルは11行しかない。
+  PS1契約の生徒は実在するので、いま一括投入すると<b>450件すべてが「1対2」で入る</b>。
+  これをそのまま正の契約にすると事故の構造が変わらないので、全件「未確認」で入れて棚卸しする。
+</div>
+
+<div class="panel">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+    <b style="font-size:13px">指導契約の確認 — 清瀬校</b>
+    <span class="small">131件（未確認 131 ／ 確認済 0）</span>
+  </div>
+  <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">
+    <span class="btn">未確認のみ ▾</span><span class="btn">学年 ▾</span><span class="btn">科目 ▾</span>
+    <span style="flex:1"></span><input class="field" style="width:180px" placeholder="生徒名で絞る">
+  </div>
+  <table>
+    <tr><th>生徒</th><th>学年</th><th>科目</th><th style="width:150px">契約</th><th>コース</th><th style="width:70px"></th></tr>
+    <tr><td><b>田中 太郎</b></td><td class="small">中2</td><td>数学</td>
+        <td><span class="seg" style="gap:4px"><span class="b" style="padding:3px 8px;font-size:12px">1対1</span><span class="b on" style="padding:3px 8px;font-size:12px">1対2</span></span></td>
+        <td class="small">PS2</td><td><span class="chk" style="margin:0"><span class="box" style="background:#fff;color:var(--ink)"></span>確認</span></td></tr>
+    <tr style="background:var(--warning-subtle)"><td><b>山田 花子</b></td><td class="small">中1</td><td>英語</td>
+        <td><span class="seg" style="gap:4px"><span class="b on" style="padding:3px 8px;font-size:12px">1対1</span><span class="b" style="padding:3px 8px;font-size:12px">1対2</span></span></td>
+        <td class="small">PS1</td><td><span class="chk" style="margin:0"><span class="box">✓</span>確認</span></td></tr>
+    <tr><td><b>佐藤 次郎</b></td><td class="small">小3</td><td>算数 <span class="pill course">45分</span></td>
+        <td><span class="seg" style="gap:4px"><span class="b" style="padding:3px 8px;font-size:12px">1対1</span><span class="b on" style="padding:3px 8px;font-size:12px">1対2</span></span></td>
+        <td class="small">キッズコース</td><td><span class="chk" style="margin:0"><span class="box" style="background:#fff;color:var(--ink)"></span>確認</span></td></tr>
+  </table>
+  <div class="btnrow"><span class="btn">表示中の131件をまとめて確認済みにする</span><span class="btn pri">保存</span></div>
+  <p class="note">
+    その場で比率を切り替えられる（この画面での変更は理由 <code>correction</code>＝訂正として履歴に残る）。
+    <b>未確認が0件になったらメニューからこの画面が消える。</b>棚卸し用で、日常的に使う画面ではない。
+  </p>
+</div>
+
+<div class="panel tight">
+  <h3 style="margin-top:0">45分専用の科目レコードを廃止する</h3>
+  <p class="small" style="margin:0 0 8px">
+    いま45分は2通りの持ち方が混在している。小学の「国語」「算数」「英語」は
+    <b>45分版と90分版が別の科目レコード</b>として登録されており、
+    一方で永山校では10/1から「普通の科目＋パターン側で45分指定」へ切り替える版が既に入っている。
+    契約が <code>duration_minutes</code> を持つなら45分専用の科目は要らなくなるので、廃止して一本化する。
+  </p>
+  <table style="max-width:560px">
+    <tr><th>45分科目の参照先</th><th>件数</th><th>付け替え</th></tr>
+    <tr><td>通塾日程パターン</td><td>16</td><td class="small">科目IDを90分版へ＋<code>duration_minutes=45</code></td></tr>
+    <tr><td>授業コマ</td><td>130</td><td class="small">同上</td></tr>
+    <tr><td>マッチング提案</td><td>7</td><td class="small">科目IDを差し替え</td></tr>
+    <tr><td>指導可能科目（講師）</td><td>22〜23名</td><td class="small">45分IDを外す（90分IDは既に入っている）</td></tr>
+    <tr><td>受講科目・契約・教材・講座・保留授業・テスト対策</td><td><b>0</b></td><td class="small">影響なし</td></tr>
+  </table>
+  <div class="callout warn">
+    <code>half_position</code> は触らない（NULL＝全コマ扱いのまま）。
+    いまも45分の授業はコマを丸ごと使っているので、ここを同時に変えると席の詰まり方が変わってしまう。
+    前後半の割り当ては教室長が後から座席表で設定する。
+  </div>
+  <p class="note">
+    このデータ移行は本丸とは<b>別のマイグレーションに分ける</b>（同じPRだが、単独で適用・巻き戻しできる形にする）。
+  </p>
+</div>
+
+<!-- ============================================================ -->
+<h2>6. データの持ち方</h2>
+
+<div class="cols">
+  <div>
+    <div class="panel">
+      <h3 style="margin-top:0"><code>student_subject_contracts</code>（列を足す）</h3>
+      <ul class="kv">
+        <li><code>duration_minutes smallint NULL</code>（45 / 90。NULL＝科目マスタに従う＝いまと同じ意味）
+            <div class="small">「この生徒のこの科目は45分」を契約で言えるようにする。
+            いまは教室共通の <code>subjects.duration_minutes</code> しか無い。</div></li>
+        <li><code>confirmed_at timestamptz NULL</code> ＋ <code>confirmed_by</code>
+            <div class="small">移行時に一括投入したものを「暫定」として区別する。NULL＝要確認。</div></li>
+        <li><code>updated_by uuid</code>（最終変更者）</li>
+      </ul>
+      <p class="note">既存行は <code>duration_minutes = NULL</code> ＝ 挙動不変。</p>
+    </div>
+  </div>
+  <div>
+    <div class="panel">
+      <h3 style="margin-top:0"><code>student_subject_contract_changes</code>（新設）</h3>
+      <ul class="kv">
+        <li><code>school_id / student_id / subject_id</code></li>
+        <li><code>from_ratio, from_duration_minutes</code>（初回登録は NULL）</li>
+        <li><code>to_ratio, to_duration_minutes</code></li>
+        <li><code>reason_code</code>（訂正／コース変更／学年切替／その他）＋ <code>reason_note</code></li>
+        <li><code>changed_by, changed_at</code></li>
+      </ul>
+      <p class="note">RLS は <code>check_school_access(school_id)</code>（既存の契約テーブルと同型）。
+        書き込みは教室長以上を API 側で確認。</p>
+    </div>
+  </div>
+</div>
+
+<div class="panel tight">
+  <h3 style="margin-top:0">コース名の当てはめ（表示だけ・DBには持たない）</h3>
+  <table style="max-width:520px">
+    <tr><th>比率 × 時間</th><th>表示</th></tr>
+    <tr><td>1対1 × 90分</td><td><b>PS1</b></td></tr>
+    <tr><td>1対2 × 90分</td><td><b>PS2</b></td></tr>
+    <tr><td>1対2 × 45分</td><td><b>キッズコース（45分）</b></td></tr>
+    <tr><td>1対1 × 45分</td><td class="small">名前なし（単価表には存在するので選べるようにはしておく）</td></tr>
+  </table>
+  <p class="note">
+    45分専用の科目レコードは廃止するので（§5）、45分の表現は<b>契約の
+    <code>duration_minutes</code> だけ</b>になる。科目マスタの <code>duration_minutes</code> は
+    契約が無い科目の既定値としてだけ残る。
+  </p>
+</div>
+
+<div class="panel tight">
+  <h3 style="margin-top:0">一括投入で入る件数（本番実データ）</h3>
+  <table style="max-width:420px">
+    <tr><th>教室</th><th>生徒</th><th>契約になる件数</th></tr>
+    <tr><td>清瀬校</td><td>87</td><td><b>131</b></td></tr>
+    <tr><td>永山校</td><td>75</td><td><b>112</b></td></tr>
+    <tr><td>京王堀之内校</td><td>65</td><td><b>106</b></td></tr>
+    <tr><td>緑園都市校</td><td>65</td><td><b>101</b></td></tr>
+    <tr><td class="small">合計</td><td class="small">292</td><td><b>450</b></td></tr>
+  </table>
+  <p class="note">
+    全件 <code>confirmed_at = NULL</code>（未確認）で入る。1教室あたり100〜130件なので、
+    生徒詳細を1人ずつ開くのではなく§5の一覧で棚卸しする。本番へは
+    Supabase MCP の <code>apply_migration</code> で当てる。
+  </p>
+</div>
+
+<!-- ============================================================ -->
+<h2>7. 触らないところ</h2>
+<div class="panel tight">
+  <ul class="kv">
+    <li><b>保護者ポータルと座席表のバッジは実登録（<code>schedule_entries.ratio</code>）のまま。</b>
+      契約側に切り替えない。食い違っているときに画面が「1対1」と出て保護者を安心させると、
+      表示が誤りを覆い隠す装置になる。</li>
+    <li>席の占有モデル（<code>seatOccupancy.ts</code>）・登録時のブロックはそのまま。</li>
+    <li>講習の申込フォーム（<code>KoushuEnrollmentFormModal</code>）は契約を<b>既定値として読むだけ</b>で
+      書いていないので、そのまま。ただし読む先が（比率, 時間）の組になる。</li>
+  </ul>
+</div>
+
+<p class="small" style="margin-top:28px">
+  モック v1 ／ 2026-09-09。実装前の確認用。
+</p>
+
+</body>
+</html>

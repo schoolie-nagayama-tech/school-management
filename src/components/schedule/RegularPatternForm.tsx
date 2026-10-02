@@ -11,6 +11,7 @@ import {
   SelectItem,
 } from '@/components/ui';
 import { Checkbox } from '@/components/ui';
+import { useAuth } from '@/contexts/AuthContext';
 import { formatGradeLabel } from '@/lib/utils/gradeLabel';
 import { SCHEDULE_PERIOD_LABELS, DAY_OF_WEEK_LABELS } from '@/types/schedule';
 import type {
@@ -21,10 +22,15 @@ import type {
 } from '@/types/schedule';
 import type { ScheduleTimeSlot } from '@/types/schedule';
 import type { Subject } from '@/types/database';
+import { getStudentCourseMap, setStudentCourse } from '@/lib/api/student-subject-contracts';
+import { CoursePicker, isCourseSelectionMissing } from '@/components/schedule/CoursePicker';
+import { CourseChangeDialog } from '@/components/students/CourseChangeDialog';
+import { isManagerOrAbove } from '@/lib/utils/roles';
 import {
-  getStudentContractRatioMap,
-  upsertStudentContract,
-} from '@/lib/api/student-subject-contracts';
+  resolveDuration,
+  type CourseDuration,
+  type StudentCourse,
+} from '@/lib/utils/studentCourse';
 // 出勤可否は teacher_availability_periods（正典）を経由して判定する。
 // user_profiles の生カラム(available_days_of_week 等)は教室非依存の単一値で
 // period の manual > regular_shift の優先順位も表現できないため、直読みしない。
@@ -118,6 +124,7 @@ export function RegularPatternForm({
   selectedSchoolId,
   initialStudentId,
 }: RegularPatternFormProps) {
+  const { profile } = useAuth();
   const [form, setForm] = useState<ScheduleRegularPatternFormData>({
     student_id: '',
     day_of_week: 1,
@@ -126,14 +133,22 @@ export function RegularPatternForm({
     subject_ids: [],
     seat_label: '',
     period_type: 'regular',
-    ratio: 2,
+    // ★比率の既定を置かない。コース（PS1／PS2／キッズ）が正で、
+    //   コース未設定の科目では選ばれるまで保存させない。
     duration_minutes: null,
     half_position: null,
   });
   const [studentSearch, setStudentSearch] = useState('');
   const [saving, setSaving] = useState(false);
-  // Phase R: 生徒×科目の契約比率マップ（科目選択時の ratio 初期値）。
-  const [contractRatioMap, setContractRatioMap] = useState<Map<string, 1 | 2>>(new Map());
+  // 生徒×科目のコース（PS1／PS2／キッズ）。ここが比率・時間の正のソース。
+  const [courseMap, setCourseMap] = useState<Map<string, StudentCourse>>(new Map());
+  const [courseLoading, setCourseLoading] = useState(false);
+  // ★読み込み失敗を「未設定」と同じ扱いにしない（既定へ落ちると1対1の生徒を1対2で登録する）。
+  const [courseLoadError, setCourseLoadError] = useState(false);
+  const [showCourseChange, setShowCourseChange] = useState(false);
+  // コース未設定の科目で選んだ形態。null = 未選択（既定を置かない）。
+  const [pickedRatio, setPickedRatio] = useState<1 | 2 | null>(null);
+  const [pickedDuration, setPickedDuration] = useState<CourseDuration>(null);
   // 出勤可否（正典）。教室・時点(asOfDate)で取り直す非同期データ。
   // null は「未取得（読み込み中 or ダイアログ未オープン）」を表し、取得完了後は
   // period が1件も無い教室でも空の Map（byDayOfWeek.size === 0）で確定させる。
@@ -145,7 +160,8 @@ export function RegularPatternForm({
   const singleSubject = singleSubjectId
     ? (subjects.find((s) => s.id === singleSubjectId) ?? null)
     : null;
-  const is45 = singleSubject?.duration_minutes === 45;
+  // 45分かどうかはコースの時間が正。科目マスタの duration_minutes は
+  // コース未設定の科目の既定としてだけ使う（判定は下の effectiveIs45）。
 
   const teachersForSchool = teachers.filter((t) =>
     t.user_schools?.some((us) => us.school_id === selectedSchoolId)
@@ -285,6 +301,15 @@ export function RegularPatternForm({
           duration_minutes: editingPattern.duration_minutes ?? null,
           half_position: editingPattern.half_position ?? null,
         });
+        // 編集時は行に保存されている値を選択の初期値にする（コースが無い既存行をそのまま保てるように）。
+        setPickedRatio(editingPattern.ratio === 1 ? 1 : 2);
+        setPickedDuration(
+          editingPattern.duration_minutes === 45
+            ? 45
+            : editingPattern.duration_minutes === 90
+              ? 90
+              : null
+        );
       } else {
         setForm({
           student_id: initialStudentId ?? '',
@@ -294,72 +319,114 @@ export function RegularPatternForm({
           subject_ids: [],
           seat_label: '',
           period_type: 'regular',
-          ratio: 2,
           duration_minutes: null,
           half_position: null,
         });
+        // ★新規は既定を置かない。コース未設定の科目では選ばれるまで保存させない。
+        setPickedRatio(null);
+        setPickedDuration(null);
       }
       setStudentSearch('');
     }
   }, [open, editingPattern, timeSlots, initialStudentId]);
 
-  // Phase R: 生徒選択時に契約比率マップを読み込む。
+  // 生徒選択時にコースを読み込む。
   useEffect(() => {
     if (!form.student_id) {
-      setContractRatioMap(new Map());
+      setCourseMap(new Map());
+      setCourseLoadError(false);
       return;
     }
     let cancelled = false;
-    getStudentContractRatioMap(form.student_id).then((m) => {
-      if (!cancelled) setContractRatioMap(m);
+    setCourseLoading(true);
+    setCourseLoadError(false);
+    getStudentCourseMap(form.student_id).then((res) => {
+      if (cancelled) return;
+      setCourseLoading(false);
+      if (res.ok) {
+        setCourseMap(res.map);
+      } else {
+        setCourseMap(new Map());
+        setCourseLoadError(true);
+      }
     });
     return () => {
       cancelled = true;
     };
   }, [form.student_id]);
 
-  // Phase R: 新規登録時のみ、単一科目に応じて ratio(契約)・duration/half(科目)を初期化する。
-  // 編集時は保存値を尊重するのでスキップ（送信時に duration/half は科目から決定的に再計算する）。
+  // 新規登録で科目を切り替えたら、選んだ形態をクリアする（別の科目へ持ち越さない）。
+  // ★ここで既定の 1対2 を入れないこと。未選択のまま保存できないようにするのが目的。
+  // ScheduleRegularPatternFormData.ratio は「未選択」を表せない（1|2）ので、
+  // 選択中の値はフォーム本体ではなくこのローカル state で持ち、送信時に確定させる。
   useEffect(() => {
     if (editingPattern) return;
-    if (!singleSubjectId) {
-      setForm((f) => ({ ...f, duration_minutes: null, half_position: null }));
-      return;
-    }
-    const dur = singleSubject?.duration_minutes ?? null;
-    setForm((f) => ({
-      ...f,
-      ratio: contractRatioMap.get(singleSubjectId) ?? 2,
-      duration_minutes: dur,
-      half_position: dur === 45 ? (f.half_position ?? 'first') : null,
-    }));
-    // singleSubject は id から都度引けるので依存は id と duration で十分。
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [singleSubjectId, contractRatioMap, editingPattern, singleSubject?.duration_minutes]);
+    setPickedRatio(null);
+    setPickedDuration(null);
+  }, [singleSubjectId, editingPattern]);
+
+  /** 選択中の科目のコース。単一科目のときだけ比率・時間の概念を持つ（複数科目は全コマ）。 */
+  const selectedSubjectCourse = singleSubjectId ? (courseMap.get(singleSubjectId) ?? null) : null;
+  /** 実際に保存する値。★コースがあればコースが正（フォームの選択値を優先しない）。 */
+  const effectiveRatio: 1 | 2 | null = selectedSubjectCourse
+    ? selectedSubjectCourse.ratio
+    : pickedRatio;
+  const effectiveDuration: CourseDuration = selectedSubjectCourse
+    ? selectedSubjectCourse.durationMinutes
+    : pickedDuration;
+  /** 実効の45分判定。コースの時間 → 無ければ科目マスタの既定、の順。 */
+  const effectiveIs45 = resolveDuration(effectiveDuration, singleSubject?.duration_minutes) === 45;
+  /**
+   * コース未設定の科目で形態が選ばれていない（または読み込み失敗）あいだは保存させない。
+   * ★以前は既定 1対2 で素通りしていたため、コース未登録の生徒が黙って1対2で通っていた。
+   */
+  const courseBlocked =
+    !!singleSubjectId &&
+    isCourseSelectionMissing(selectedSubjectCourse, courseLoadError, effectiveRatio);
 
   const handleSubmit = async () => {
     if (!form.student_id || !form.time_slot_id || !form.teacher_id) return;
+    if (courseBlocked) return;
     setSaving(true);
     try {
-      // Phase R: duration/half は科目から決定的に再計算（単一45分科目のみ半コマ）。
-      const effDuration = singleSubject?.duration_minutes ?? null;
-      const effHalf: HalfPosition = is45 ? (form.half_position ?? 'first') : null;
-      const ratio = form.ratio ?? 2;
+      // 比率・時間はコースが正。コースが無い科目だけフォームで選ばれた値を使う。
+      const ratio: 1 | 2 = effectiveRatio ?? 2;
+      const effDuration = resolveDuration(effectiveDuration, singleSubject?.duration_minutes);
+      const effHalf: HalfPosition = effectiveIs45 ? (form.half_position ?? 'first') : null;
       const finalForm: ScheduleRegularPatternFormData = {
         ...form,
         ratio,
         duration_minutes: effDuration,
         half_position: effHalf,
       };
-      // 契約=正の設計：単一科目のときはその科目の契約比率も更新（upsert）。
-      if (singleSubjectId) {
+
+      // ★授業の登録ではコースを書き換えない（ここの upsert が事故の原因だった）。
+      //   コースが「まだ無い」ときの初回登録だけ、教室長以上に限って確定させる。
+      if (
+        !editingPattern &&
+        singleSubjectId &&
+        !selectedSubjectCourse &&
+        effectiveRatio !== null &&
+        isManagerOrAbove(profile?.role)
+      ) {
         try {
-          await upsertStudentContract(selectedSchoolId, form.student_id, singleSubjectId, ratio);
+          await setStudentCourse({
+            schoolId: selectedSchoolId,
+            studentId: form.student_id,
+            subjectId: singleSubjectId,
+            ratio: effectiveRatio,
+            durationMinutes: effectiveDuration,
+            reasonCode: 'initial',
+            actorId: profile?.id,
+            actorRole: profile?.role,
+          });
         } catch (e) {
-          // 契約保存の失敗はパターン登録自体を止めない（比率は finalForm 側にも載る）。
-          console.warn('契約比率の保存に失敗しました:', e);
+          // コースが入らなくてもパターン登録は止めない。
+          // 未設定のまま残った分は教室長ダッシュボードの「コース未設定」で拾える。
+          console.warn('コースの初回登録に失敗しました:', e);
         }
       }
+
       await onSubmit(finalForm);
       onClose();
     } finally {
@@ -473,27 +540,40 @@ export function RegularPatternForm({
               ))}
             </div>
           </div>
-          {/* Phase R: 指導比率（契約から初期化）＋単一45分科目の前後半 */}
+          {/* コース（PS1／PS2／キッズ）＋45分のときの前後半 */}
           <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>指導比率</Label>
-              <Select
-                value={String(form.ratio ?? 2)}
-                onValueChange={(v) => setForm({ ...form, ratio: v === '1' ? 1 : 2 })}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="2">1対2</SelectItem>
-                  <SelectItem value="1">1対1（1名で満席）</SelectItem>
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-[var(--paragraph-light)]">
-                契約（生徒×科目）の比率。変更で契約も更新
-              </p>
-            </div>
-            {is45 && (
+            <CoursePicker
+              course={selectedSubjectCourse}
+              loading={courseLoading}
+              loadError={courseLoadError}
+              ratio={pickedRatio}
+              durationMinutes={pickedDuration}
+              onChange={(r, d) => {
+                setPickedRatio(r);
+                setPickedDuration(d);
+              }}
+              grade={selectedStudent?.grade ?? null}
+              canManageCourse={isManagerOrAbove(profile?.role)}
+              onRequestChange={() => setShowCourseChange(true)}
+              subjectSelected={!!singleSubjectId}
+              studentName={
+                selectedStudent
+                  ? `${selectedStudent.last_name} ${selectedStudent.first_name}`
+                  : null
+              }
+              subjectName={singleSubject?.name ?? null}
+              registeredRatio={editingPattern ? (editingPattern.ratio === 1 ? 1 : 2) : null}
+              registeredDuration={
+                editingPattern
+                  ? editingPattern.duration_minutes === 45
+                    ? 45
+                    : editingPattern.duration_minutes === 90
+                      ? 90
+                      : null
+                  : null
+              }
+            />
+            {effectiveIs45 && (
               <div className="space-y-2">
                 <Label>45分の前後半</Label>
                 <Select
@@ -580,10 +660,34 @@ export function RegularPatternForm({
         <Button variant="secondary" onClick={onClose}>
           キャンセル
         </Button>
-        <Button onClick={handleSubmit} disabled={saving}>
+        <Button onClick={handleSubmit} disabled={saving || courseBlocked || courseLoading}>
           {saving ? '保存中...' : '保存'}
         </Button>
       </DialogFooter>
+
+      {/* コースを変更する唯一の入口。 */}
+      {showCourseChange && singleSubjectId && form.student_id && (
+        <CourseChangeDialog
+          open
+          onClose={() => setShowCourseChange(false)}
+          onSaved={() => {
+            getStudentCourseMap(form.student_id).then((res) => {
+              if (res.ok) setCourseMap(res.map);
+            });
+          }}
+          schoolId={selectedSchoolId}
+          studentId={form.student_id}
+          studentName={
+            selectedStudent ? `${selectedStudent.last_name} ${selectedStudent.first_name}` : ''
+          }
+          subjectId={singleSubjectId}
+          subjectName={singleSubject?.name ?? ''}
+          current={selectedSubjectCourse}
+          grade={selectedStudent?.grade ?? null}
+          actorId={profile?.id}
+          actorRole={profile?.role}
+        />
+      )}
     </Dialog>
   );
 }

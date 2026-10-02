@@ -23,10 +23,15 @@ import {
 } from '@/lib/api/schedule';
 import { createFormationClassPatterns } from '@/lib/api/formation-patterns';
 import { getFormationCapacityDefaults } from '@/lib/api/schedule-formations';
+import { getStudentCourseMap, setStudentCourse } from '@/lib/api/student-subject-contracts';
+import { CoursePicker, isCourseSelectionMissing } from '@/components/schedule/CoursePicker';
+import { CourseChangeDialog } from '@/components/students/CourseChangeDialog';
+import { isManagerOrAbove } from '@/lib/utils/roles';
 import {
-  getStudentContractRatioMap,
-  upsertStudentContract,
-} from '@/lib/api/student-subject-contracts';
+  resolveDuration,
+  type CourseDuration,
+  type StudentCourse,
+} from '@/lib/utils/studentCourse';
 import {
   buildFormationClassParams,
   filterCoursesForGrade,
@@ -147,9 +152,15 @@ export function RegularScheduleFormModal({
   // v2: 「変更を適用する日」（新規は開始日）。既定=今日。
   // セグメント（今すぐ/指定日から）は使わず日付入力1つに統一する。
   const [applyDate, setApplyDate] = useState<string>(todayStr());
-  // v2: 指導比率（個別のみ）。生徒×科目の契約と食い違わせないため契約から初期化する。
-  const [ratio, setRatio] = useState<1 | 2>(2);
-  const [contractRatioMap, setContractRatioMap] = useState<Map<string, 1 | 2>>(new Map());
+  // v2: コース（PS1／PS2／キッズ）。★既定値を置かない。
+  // 未設定の科目を null のまま保存させないことで「黙って1対2」を作らない。
+  const [ratio, setRatio] = useState<1 | 2 | null>(null);
+  const [courseDuration, setCourseDuration] = useState<CourseDuration>(null);
+  const [courseMap, setCourseMap] = useState<Map<string, StudentCourse>>(new Map());
+  const [courseLoading, setCourseLoading] = useState(false);
+  // 読み込み失敗は「未設定」と区別する（失敗を空扱いにすると既定へ落ちて事故る）。
+  const [courseLoadError, setCourseLoadError] = useState(false);
+  const [showCourseChange, setShowCourseChange] = useState(false);
   const [saving, setSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -216,7 +227,12 @@ export function RegularScheduleFormModal({
       // 一覧の「10/1〜」と食い違う。始まっている行は「今日から切り替える」が既定でよい。
       const patternFrom = pattern.effective_from ?? '';
       setApplyDate(patternFrom && patternFrom > todayStr() ? patternFrom : todayStr());
+      // 編集時はこの行に保存されている値を初期値にする（コースが無い既存行をそのまま保てるように）。
+      // コースがある科目では下の effectiveRatio がコース側を採るので、この値は表示と比較用。
       setRatio(pattern.ratio ?? 2);
+      setCourseDuration(
+        pattern.duration_minutes === 45 ? 45 : pattern.duration_minutes === 90 ? 90 : null
+      );
     } else {
       // 講座専用モードでは個別指導を選ばせないので、先頭の講座を初期選択にする
       setCourseId(courseOnly ? (courseOptions[0]?.id ?? '') : '');
@@ -229,30 +245,55 @@ export function RegularScheduleFormModal({
       setEffectiveFrom(getNextMonthFirstDay());
       setEffectiveUntil('');
       setApplyDate(todayStr());
-      setRatio(2);
+      setRatio(null);
+      setCourseDuration(null);
     }
   }, [open, pattern, subjectsForGrade, courseOnly, courseOptions]);
 
-  // v2: 比率の初期値は生徒×科目の契約が正（座席表の空席「＋」と同じ扱い）。開いたときに読む。
+  // v2: 科目ごとのコース（PS1／PS2／キッズ）を開いたときに読む。
+  // ★失敗を空 Map で握りつぶさない。失敗したまま既定へ落ちると、
+  //   本当は1対1の生徒を1対2で登録してしまう（フォーム側で入力をブロックする）。
   useEffect(() => {
     if (!open || !lessonEntryV2 || !studentId) return;
     let cancelled = false;
-    getStudentContractRatioMap(studentId).then((m) => {
-      if (!cancelled) setContractRatioMap(m);
+    setCourseLoading(true);
+    setCourseLoadError(false);
+    getStudentCourseMap(studentId).then((res) => {
+      if (cancelled) return;
+      setCourseLoading(false);
+      if (res.ok) {
+        setCourseMap(res.map);
+      } else {
+        setCourseMap(new Map());
+        setCourseLoadError(true);
+      }
     });
     return () => {
       cancelled = true;
     };
   }, [open, lessonEntryV2, studentId]);
 
-  // v2: 新規の個別指導は、選んだ科目の契約比率を既定にする（契約と食い違う登録を作らない）。
-  // 編集時は保存済みの値が正なので触らない。
+  // 新規登録で科目を切り替えたら、選んだ形態は一度クリアする
+  // （前の科目で選んだ形態が別の科目に持ち越されると、選んだつもりのない値が入る）。
+  // 編集時は行に保存されている値が初期値なのでクリアしない。
   useEffect(() => {
     if (!open || !lessonEntryV2 || isEdit) return;
-    const singleSubjectId = subjectIds.length === 1 ? subjectIds[0] : null;
-    if (!singleSubjectId) return;
-    setRatio(contractRatioMap.get(singleSubjectId) ?? 2);
-  }, [open, lessonEntryV2, isEdit, subjectIds, contractRatioMap]);
+    setRatio(null);
+    setCourseDuration(null);
+  }, [open, lessonEntryV2, isEdit, subjectIds]);
+
+  /** 選択中の科目のコース（単一科目のときだけ。複数科目は従来どおり全コマ・比率の概念を持たない）。 */
+  const courseSubjectId = subjectIds.length === 1 ? subjectIds[0] : null;
+  const selectedSubjectCourse = courseSubjectId ? (courseMap.get(courseSubjectId) ?? null) : null;
+  /**
+   * 実際に保存する比率・時間。★コースがあればコースが正。
+   * 授業の登録画面から比率を動かせないようにするのがこの変更の本体なので、
+   * ここでフォームの選択値を優先してはいけない。
+   */
+  const effectiveRatio: 1 | 2 | null = selectedSubjectCourse ? selectedSubjectCourse.ratio : ratio;
+  const effectiveDuration: CourseDuration = selectedSubjectCourse
+    ? selectedSubjectCourse.durationMinutes
+    : courseDuration;
 
   // 授業（個別 / 講座）を切り替えたら、その形態のコマ・講座の曜日・科目に合わせ直す。
   // 形態ごとにコマ時間マスタが独立しているため、コマidの持ち越しは必ず外す。
@@ -305,7 +346,22 @@ export function RegularScheduleFormModal({
    * 講師は講座では任意（担当未決定で登録できる）。個別は従来どおり必須。
    * v2 では個別でも「担当未決定」のまま登録できる（マトリクスのD&Dと同じ扱い）。
    */
-  const canSubmit = !!schoolId && !!timeSlotId && (isCourseMode || lessonEntryV2 || !!teacherId);
+  /**
+   * コース未設定の科目で、形態が選ばれていない（または読み込みに失敗している）あいだは保存させない。
+   * ★以前はここが既定 1対2 で素通りしていたため、契約未登録の生徒が黙って1対2で通っていた。
+   */
+  const courseBlocked =
+    lessonEntryV2 &&
+    !isCourseMode &&
+    !!courseSubjectId &&
+    isCourseSelectionMissing(selectedSubjectCourse, courseLoadError, effectiveRatio);
+
+  const canSubmit =
+    !!schoolId &&
+    !!timeSlotId &&
+    (isCourseMode || lessonEntryV2 || !!teacherId) &&
+    !courseBlocked &&
+    !courseLoading;
 
   const handleSubmit = async () => {
     if (!canSubmit) return;
@@ -348,18 +404,48 @@ export function RegularScheduleFormModal({
         seat_label: '',
         period_type: periodType,
         effective_until: effectiveUntil || null,
-        // v2 の個別のみ比率を送る（従来の呼び出しのペイロードは1バイトも変えない）
-        ...(lessonEntryV2 && !isCourseMode ? { ratio } : {}),
+        // v2 の個別のみ比率・時間を送る（従来の呼び出しのペイロードは1バイトも変えない）。
+        // 値はコースが正（effectiveRatio / effectiveDuration）。
+        ...(lessonEntryV2 && !isCourseMode
+          ? {
+              ratio: (effectiveRatio ?? 2) as 1 | 2,
+              duration_minutes: resolveDuration(
+                effectiveDuration,
+                subjects.find((s) => s.id === courseSubjectId)?.duration_minutes
+              ),
+            }
+          : {}),
       };
 
-      // 契約=正の設計。v2 の個別で単一科目のときは契約比率も揃える
-      // （座席表の空席「＋」と同じ。片方だけ動かして食い違う状態を作らない）。
-      if (lessonEntryV2 && !isCourseMode && subjectIds.length === 1) {
+      // ★授業の登録ではコースを書き換えない。
+      //   ここで upsert していたせいで、曜日を足すたび・講師を変えるたびにコースが上書きされ、
+      //   1対1の生徒でもどこか1回1対2を選べばコースごと1対2になっていた（矛盾が残らず気づけない）。
+      //   コースが「まだ無い」ときの初回登録だけは、教室長以上に限って、ここで確定させる。
+      //   （初回登録は上書きではないうえ、別画面へ送ると同じ事実を2回入れることになる）
+      if (
+        lessonEntryV2 &&
+        !isCourseMode &&
+        !isEdit &&
+        courseSubjectId &&
+        !selectedSubjectCourse &&
+        effectiveRatio !== null &&
+        isManagerOrAbove(profile?.role)
+      ) {
         try {
-          await upsertStudentContract(schoolId, studentId, subjectIds[0], ratio);
+          await setStudentCourse({
+            schoolId,
+            studentId,
+            subjectId: courseSubjectId,
+            ratio: effectiveRatio,
+            durationMinutes: effectiveDuration,
+            reasonCode: 'initial',
+            actorId: profile?.id,
+            actorRole: profile?.role,
+          });
         } catch (e) {
-          // 契約保存の失敗で通塾日程の登録自体は止めない（比率はパターン側にも載る）
-          console.warn('契約比率の保存に失敗しました:', e);
+          // コースの保存に失敗しても通塾日程の登録自体は止めない。
+          // コースが無いままの登録は「コース未設定」として教室長ダッシュボードに出るので、拾える。
+          console.warn('コースの初回登録に失敗しました:', e);
         }
       }
 
@@ -382,9 +468,10 @@ export function RegularScheduleFormModal({
             {
               ...form,
               // 版を切る API は渡した値をそのまま書き込むので、形態・半コマ・比率は
-              // 現在の行から引き継ぐ（渡さないと個別・全コマ・1対2 に落ちて占有が壊れる）
+              // 現在の行から引き継ぐ（渡さないと個別・全コマ・1対2 に落ちて占有が壊れる）。
+              // ただし比率・時間はコース由来の値（form 側）が取れていればそちらが正。
               formation: pattern.formation,
-              duration_minutes: pattern.duration_minutes,
+              duration_minutes: form.duration_minutes ?? pattern.duration_minutes,
               half_position: pattern.half_position,
               ratio: form.ratio ?? pattern.ratio,
             },
@@ -615,32 +702,35 @@ export function RegularScheduleFormModal({
               </select>
             </div>
 
-            {/* 指導比率（個別指導のみ）。生徒×科目の契約と同じ値を持たせる。 */}
+            {/* コース（個別指導のみ）。設定済みなら読み取り専用、未設定のときだけ選ばせる。 */}
             {showRatio && (
-              <div>
-                <label className="block text-xs font-medium text-[var(--paragraph)] mb-1">
-                  指導比率
-                </label>
-                <div className="flex gap-2">
-                  {([1, 2] as const).map((r) => (
-                    <button
-                      key={r}
-                      type="button"
-                      onClick={() => setRatio(r)}
-                      className={`flex-1 px-3 py-1.5 rounded text-sm border ${
-                        ratio === r
-                          ? 'bg-[#1e3a5f] text-white border-[#1e3a5f]'
-                          : 'bg-white border-[var(--stroke)] text-[var(--paragraph)] hover:bg-[var(--surface)] transition-colors duration-150'
-                      }`}
-                    >
-                      {r === 1 ? '1対1' : '1対2'}
-                    </button>
-                  ))}
-                </div>
-                <p className="text-[11px] text-[var(--paragraph-light)] mt-1">
-                  この科目の指導契約（1対1／1対2）にも同じ比率が保存されます。
-                </p>
-              </div>
+              <CoursePicker
+                course={selectedSubjectCourse}
+                loading={courseLoading}
+                loadError={courseLoadError}
+                ratio={ratio}
+                durationMinutes={courseDuration}
+                onChange={(r, d) => {
+                  setRatio(r);
+                  setCourseDuration(d);
+                }}
+                grade={studentGrade ?? null}
+                canManageCourse={isManagerOrAbove(profile?.role)}
+                onRequestChange={() => setShowCourseChange(true)}
+                subjectSelected={!!courseSubjectId}
+                studentName={null}
+                subjectName={subjects.find((s) => s.id === courseSubjectId)?.name ?? null}
+                registeredRatio={isEdit ? (pattern?.ratio === 1 ? 1 : 2) : null}
+                registeredDuration={
+                  isEdit
+                    ? pattern?.duration_minutes === 45
+                      ? 45
+                      : pattern?.duration_minutes === 90
+                        ? 90
+                        : null
+                    : null
+                }
+              />
             )}
           </div>
 
@@ -778,6 +868,29 @@ export function RegularScheduleFormModal({
           {saving ? '保存中...' : '保存する'}
         </Button>
       </DialogFooter>
+
+      {/* コースを変更する唯一の入口。ここを通らないとコースは動かない。 */}
+      {showCourseChange && courseSubjectId && (
+        <CourseChangeDialog
+          open
+          onClose={() => setShowCourseChange(false)}
+          onSaved={() => {
+            // 変更後のコースを読み直す（この画面の表示と、保存に使う値を揃える）。
+            getStudentCourseMap(studentId).then((res) => {
+              if (res.ok) setCourseMap(res.map);
+            });
+          }}
+          schoolId={schoolId}
+          studentId={studentId}
+          studentName=""
+          subjectId={courseSubjectId}
+          subjectName={subjects.find((s) => s.id === courseSubjectId)?.name ?? ''}
+          current={selectedSubjectCourse}
+          grade={studentGrade ?? null}
+          actorId={profile?.id}
+          actorRole={profile?.role}
+        />
+      )}
     </Dialog>
   );
 }
