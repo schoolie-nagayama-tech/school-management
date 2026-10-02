@@ -272,7 +272,7 @@ export function ScheduleDialogs({
               {scheduleGenerateLoading
                 ? '確認中...'
                 : scheduleGenerateHasExisting
-                  ? 'この週には既にスケジュールが登録されています。強制的に上書きしますか？'
+                  ? 'この週には既にスケジュールがあります。通塾日程と違うところだけを直します（報告書・出欠記録のあるコマは変わりません）。反映しますか？'
                   : '通塾日程から、選択中の週のスケジュールを一括生成します。（通常は自動で反映されます）'}
             </AlertDialogDescription>
           </AlertDialogHeader>

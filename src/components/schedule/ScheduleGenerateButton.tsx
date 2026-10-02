@@ -74,7 +74,7 @@ export function ScheduleGenerateButton({
             <AlertDialogTitle>スケジュールを生成しますか？</AlertDialogTitle>
             <AlertDialogDescription>
               {hasExisting
-                ? 'この週には既にスケジュールが登録されています。上書きしますか？'
+                ? 'この週には既にスケジュールがあります。通塾日程と違うところだけを直します（報告書・出欠記録のあるコマは変わりません）。反映しますか？'
                 : '通塾日程から、選択中の週のスケジュールを一括生成します。'}
             </AlertDialogDescription>
           </AlertDialogHeader>

@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase';
-import { fetchAllPaged } from '@/lib/utils/supabasePaging';
+import { fetchAllPaged, fetchInChunks } from '@/lib/utils/supabasePaging';
 import { normalizePersonName } from '@/lib/utils/personName';
 import type {
   ScheduleTimeSlot,
@@ -33,6 +33,12 @@ import {
   plannedEntryKey,
   type SpecialCourseOverrideInput,
 } from '@/lib/schedule/specialCourseOverride';
+import {
+  planWeeklySync,
+  isReplaceableEntry,
+  isFrozenEntry,
+  type ExistingWeekEntry,
+} from '@/lib/schedule/weeklySync';
 
 // 座席表テーブルは Database 型に未定義のため、any でクエリ
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -1040,7 +1046,13 @@ export async function loadSpecialCourseOverrideInput(
   return { courses, periods, overrides, timeSlots };
 }
 
-/** 指定週のスケジュールを通塾日程から一括生成。既存は上書き。 */
+/**
+ * 指定週の座席表を通塾日程に合わせる（差分反映）。
+ *
+ * 全削除→再INSERTではなく、あるべきコマと既存行を突き合わせて
+ * 追加・更新・削除だけを行う。報告書付き・出欠済みのコマは触らない。
+ * 理由と突き合わせの規則は src/lib/schedule/weeklySync.ts の冒頭を参照。
+ */
 export async function generateWeeklySchedule(
   schoolId: string,
   weekStartDate: string,
@@ -1064,76 +1076,7 @@ export async function generateWeeklySchedule(
   // 通年講座の講習期上書き（講座リンク付きの枠が0件なら null＝追加クエリなし・挙動不変）
   const overrideInput = await loadSpecialCourseOverrideInput(schoolId, patterns, fromStr, toStr);
 
-  type EntryRow = {
-    school_id: string;
-    entry_date: string;
-    time_slot_id: string;
-    // 担当未決定パターンも生成対象になったため nullable
-    teacher_id: string | null;
-    student_id: string;
-    subject_ids: string[];
-    seat_label: string | null;
-    // 通塾日程の写しなら由来パターン、通年講座の講習期上書き由来なら NULL
-    regular_pattern_id: string | null;
-    status: string;
-    // 種別（regular/koushu）と形態。
-    // 通塾日程からの生成は regular、講習期上書き由来は koushu。formation はパターン側 p.formation を引き継ぐ。
-    // Phase A: 形態は動的マスタ化したため union ではなく string。
-    kind: 'regular' | 'koushu';
-    formation: string;
-    // Phase R: 指導比率・授業時間・半コマもパターンからスナップショット継承する。
-    ratio: 1 | 2;
-    duration_minutes: number | null;
-    half_position: HalfPosition;
-  };
-  // 【重要】再生成は対象週を全削除→再INSERT する破壊的処理。
-  // 「このコマだけ」割当 (schedule_entries.teacher_id を直接更新するが
-  // パターンの teacher_id は NULL のまま) が再生成で消える事故を防ぐため、
-  // 削除前に既存エントリの「手動割当された teacher_id」を退避し、
-  // パターンが NULL の場合はそれを引き継ぐ。
-  //   キー: entry_date-time_slot_id-student_id (teacher は含めない＝同一コマ同一生徒で一意)
-  const { data: existingForCarry } = await db
-    .from('schedule_entries')
-    .select('entry_date, time_slot_id, student_id, teacher_id')
-    .eq('school_id', schoolId)
-    .eq('kind', 'regular')
-    .gte('entry_date', fromStr)
-    .lte('entry_date', toStr)
-    .in('status', ['scheduled', 'completed']);
-  const manualTeacherCarry = new Map<string, string>();
-  for (const e of (existingForCarry ?? []) as Array<{
-    entry_date: string;
-    time_slot_id: string;
-    student_id: string;
-    teacher_id: string | null;
-  }>) {
-    if (e.teacher_id) {
-      manualTeacherCarry.set(`${e.entry_date}-${e.time_slot_id}-${e.student_id}`, e.teacher_id);
-    }
-  }
-
-  // 再生成スキップ対象の枠 (student-date-slot) を退避。
-  // DELETE は kind='regular' かつ status IN ('scheduled','completed') のみ消すので、それ以外は行が残る:
-  //  - 通常授業の transferred_out / transferred_in / cancelled（N-4 振替戻し重複対策）
-  //  - regular 以外の kind（koushu / test_prep / additional / trial）全ステータス
-  //    （DELETE 対象外。残った行と同 (school,date,slot,teacher,student) を INSERT すると
-  //     UNIQUE 違反で再生成が丸ごと失敗するため＝講習・追加授業の巻き込み対策）
-  // 残る行と同じ枠を生成すると UNIQUE 違反になるので、これらは生成スキップする。
-  const { data: skipRows } = await db
-    .from('schedule_entries')
-    .select('entry_date, time_slot_id, student_id')
-    .eq('school_id', schoolId)
-    .gte('entry_date', fromStr)
-    .lte('entry_date', toStr)
-    .or('kind.neq.regular,status.in.(transferred_out,transferred_in,cancelled)');
-  const transferredKeys = new Set(
-    (
-      (skipRows ?? []) as Array<{ entry_date: string; time_slot_id: string; student_id: string }>
-    ).map((e) => `${e.entry_date}-${e.time_slot_id}-${e.student_id}`)
-  );
-
   // 「その週に作られるべきコマ」の列挙は純関数に一本化してある（同期チェックと共通）。
-  // ここでは DB の現況に依存する除外（振替済みの枠を避ける・手動割当講師の引き継ぎ）だけを行う。
   const planned = planWeeklyEntries({
     weekStartDate,
     patterns,
@@ -1141,64 +1084,63 @@ export async function generateWeeklySchedule(
     override: overrideInput,
   });
 
-  const entries: EntryRow[] = [];
-  for (const pe of planned) {
-    // 振替済み・単発コマ等で既に埋まっている枠は再生成しない（重複防止 N-4）
-    const carryKey = plannedEntryKey(pe);
-    if (transferredKeys.has(carryKey)) continue;
-    // パターンの teacher_id が NULL でも、既存エントリで手動割当されていればそれを維持する。
-    // 引き継ぎ元は kind='regular' の既存行なので、上書き由来（kind='koushu'）には適用しない。
-    const teacherId =
-      pe.teacherId ?? (pe.source === 'regular' ? (manualTeacherCarry.get(carryKey) ?? null) : null);
-    entries.push({
-      school_id: schoolId,
-      entry_date: pe.date,
-      time_slot_id: pe.timeSlotId,
-      teacher_id: teacherId,
-      student_id: pe.studentId,
-      subject_ids: pe.subjectIds,
-      seat_label: pe.seatLabel,
-      // 上書き由来のコマは通塾日程の写しではないので regular_pattern_id を持たせない
-      // （ズレ検知の「余分な行」判定は regular_pattern_id 付きだけを見るため、巻き込まれない）。
-      regular_pattern_id: pe.source === 'regular' ? pe.regularPatternId : null,
-      status: 'scheduled',
-      // 通塾日程から生成される=通常授業。上書き由来は講習コマ (kind='koushu')。
-      // formation はパターン（上書きは講座）の値を引き継ぐ。
-      kind: pe.kind,
-      formation: pe.formation ?? INDIVIDUAL_FORMATION,
-      // Phase R: ratio/duration/half をパターンから継承。既存パターンは ratio=2・全コマなので挙動不変。
-      ratio: pe.ratio,
-      duration_minutes: pe.durationMinutes,
-      half_position: pe.halfPosition,
-    });
-  }
-
-  // kind='regular' のみ削除する。講習コマ (kind='koushu') は通塾日程の再生成対象外なので残す
-  // （講習配置が通塾日程の再生成で消える事故を防ぐ）。
-  const { error: delError } = await db
-    .from('schedule_entries')
-    .delete()
-    .eq('school_id', schoolId)
-    .eq('kind', 'regular')
-    .gte('entry_date', fromStr)
-    .lte('entry_date', toStr)
-    .in('status', ['scheduled', 'completed']);
-
-  if (delError) {
-    console.error('Error clearing existing entries:', delError);
-    throw new Error('既存スケジュールの削除に失敗しました');
-  }
-
-  // 担当未決定エントリは teacher_id=NULL のためスキップ。設定済み講師だけ teacher ロール検証する
-  const uniqueTeacherIds = Array.from(
-    new Set(entries.map((e) => e.teacher_id).filter((id): id is string => !!id))
+  // 対象週の既存行すべて（kind・status を問わない）。大きい教室では1週で1000行を
+  // 超え得るので、PostgREST の1000行切り捨てを避けてページングする。
+  const existing = await fetchAllPaged<ExistingWeekEntry>((from, to) =>
+    db
+      .from('schedule_entries')
+      .select(
+        'id, entry_date, time_slot_id, student_id, teacher_id, kind, status, subject_ids, seat_label, regular_pattern_id, formation, ratio, duration_minutes, half_position'
+      )
+      .eq('school_id', schoolId)
+      .gte('entry_date', fromStr)
+      .lte('entry_date', toStr)
+      .order('id')
+      .range(from, to)
   );
-  await Promise.all(uniqueTeacherIds.map((tid) => ensureUserIsTeacher(tid)));
 
-  if (entries.length > 0) {
+  const reportedEntryIds = await loadReportedEntryIds(
+    existing.filter(isReplaceableEntry).map((e) => e.id)
+  );
+
+  const plan = planWeeklySync({ schoolId, planned, existing, reportedEntryIds });
+
+  // 担当未決定エントリは teacher_id=NULL のためスキップ。新たに書き込む講師だけ teacher ロール検証する
+  const teacherIdsToWrite = new Set<string>();
+  for (const row of plan.inserts) if (row.teacher_id) teacherIdsToWrite.add(row.teacher_id);
+  for (const u of plan.updates) if (u.patch.teacher_id) teacherIdsToWrite.add(u.patch.teacher_id);
+  await Promise.all(Array.from(teacherIdsToWrite).map((tid) => ensureUserIsTeacher(tid)));
+
+  // 削除→更新→追加の順。先に要らない行を消して UNIQUE(school,date,slot,teacher,student) の
+  // 枠を空けてから、講師の付け替えと新規行を書く。
+  // ★ class_reports の外部キーは NO ACTION（20261001120000）。ここで報告書付きの行を
+  //   消そうとすると DB がエラーで止める（凍結判定は RLS で報告書が見えない呼び出し元だと
+  //   漏れ得るので、その場合の最後の砦）。黙って報告書が消えるよりエラーで止まる方を選んだ。
+  for (let i = 0; i < plan.deleteIds.length; i += 300) {
+    const chunk = plan.deleteIds.slice(i, i + 300);
+    const { error: delError } = await db.from('schedule_entries').delete().in('id', chunk);
+    if (delError) {
+      console.error('Error deleting stale entries:', delError);
+      throw new Error(
+        delError.code === '23503'
+          ? '報告書が付いている授業を削除しようとしたため、座席表の反映を中止しました'
+          : '古いスケジュールの削除に失敗しました'
+      );
+    }
+  }
+
+  for (const u of plan.updates) {
+    const { error: updError } = await db.from('schedule_entries').update(u.patch).eq('id', u.id);
+    if (updError) {
+      console.error('Error updating schedule entry:', updError);
+      throw new Error(`スケジュールの更新に失敗しました: ${updError.message ?? ''}`);
+    }
+  }
+
+  if (plan.inserts.length > 0) {
     // teacher_id が NULL の行は ON CONFLICT が機能しないため、純粋な INSERT で扱う。
-    // 重複は事前に entriesMap で除去済み、かつ上の DELETE で対象週は空になっているので衝突しない。
-    const { error: insError } = await db.from('schedule_entries').insert(entries);
+    // 既存行と対応がついた枠は inserts に入らないので、残っている行とは衝突しない。
+    const { error: insError } = await db.from('schedule_entries').insert(plan.inserts);
     if (insError) {
       console.error('Error inserting schedule entries:', insError);
       const msg =
@@ -1211,15 +1153,40 @@ export async function generateWeeklySchedule(
     }
   }
 
+  // entries_created は「通塾日程から見てその週にあるコマ数」（新規＋既存で対応がついたもの）。
+  // 全削除方式のときの「INSERT した件数」と同じ集合を指すので、画面の件数表示の意味は変わらない。
+  const entriesCreated = plan.inserts.length + plan.matchedCount;
+
   const { error: logError } = await db.from('schedule_generation_logs').insert({
     school_id: schoolId,
     week_start_date: weekStartDate,
-    entries_created: entries.length,
+    entries_created: entriesCreated,
     created_by: userId || null,
   });
   if (logError) console.warn('Generation log insert failed:', logError);
 
-  return { entries_created: entries.length, week_start_date: weekStartDate };
+  return {
+    entries_created: entriesCreated,
+    week_start_date: weekStartDate,
+    inserted: plan.inserts.length,
+    updated: plan.updates.length,
+    deleted: plan.deleteIds.length,
+    kept_frozen: plan.keptFrozenCount,
+  };
+}
+
+/**
+ * 報告書が付いている schedule_entries.id を返す（凍結判定用）。
+ *
+ * 呼び出し元のクライアントの RLS で見える範囲しか取れない。見えなかった報告書の行は
+ * 凍結判定から漏れるが、その場合は class_reports の外部キー（NO ACTION）が削除を止める。
+ */
+async function loadReportedEntryIds(entryIds: string[]): Promise<Set<string>> {
+  if (entryIds.length === 0) return new Set();
+  const rows = await fetchInChunks<{ schedule_entry_id: string }>(entryIds, (chunk) =>
+    db.from('class_reports').select('schedule_entry_id').in('schedule_entry_id', chunk)
+  );
+  return new Set(rows.map((r) => r.schedule_entry_id));
 }
 
 /** 通塾日程から指定週に生成されるエントリのキー一覧を取得（同期チェック用）。generateWeeklySchedule と同一ロジック。 */
@@ -2409,6 +2376,30 @@ export async function revertTransferEntry(transferredInEntryId: string): Promise
     throw new Error('振替元が紐づいていません');
   }
 
+  // 振替先で授業をして報告書を書いた後に取り消すと、振替先の行と一緒に報告書が消える。
+  // 取り消しは止めて、先に報告書の扱いを決めてもらう。
+  // （外部キーは NO ACTION なので、ここをすり抜けても削除は DB で止まる）
+  if ((await loadReportedEntryIds([transferredInEntryId])).size > 0) {
+    throw new Error('振替先の授業に報告書があるため、振替を取り消せません');
+  }
+
+  // 振替先の削除を先に行う。削除が失敗したときに振替元だけ「通常」に戻って
+  // 同じ授業が2つある状態にならないようにするため（振替元の transfer_to_id は
+  // 外部キーの ON DELETE SET NULL で同時に外れる）。
+  const { error: deleteErr } = await db
+    .from('schedule_entries')
+    .delete()
+    .eq('id', transferredInEntryId);
+
+  if (deleteErr) {
+    console.error('Error deleting transfer target:', deleteErr);
+    throw new Error(
+      deleteErr.code === '23503'
+        ? '振替先の授業に報告書があるため、振替を取り消せません'
+        : '振替先の削除に失敗しました'
+    );
+  }
+
   const { error: updateErr } = await db
     .from('schedule_entries')
     .update({
@@ -2422,16 +2413,6 @@ export async function revertTransferEntry(transferredInEntryId: string): Promise
   if (updateErr) {
     console.error('Error reverting transfer source:', updateErr);
     throw new Error('振替元の復元に失敗しました');
-  }
-
-  const { error: deleteErr } = await db
-    .from('schedule_entries')
-    .delete()
-    .eq('id', transferredInEntryId);
-
-  if (deleteErr) {
-    console.error('Error deleting transfer target:', deleteErr);
-    throw new Error('振替先の削除に失敗しました');
   }
 }
 
@@ -2774,26 +2755,41 @@ export async function detectScheduleDrift(
     //    直前の手動移動がパターンの講師へ巻き戻される実バグの原因だった (2026-07-13)。
     //  - actualSet: 「余分な行」検知用。パターン由来（regular_pattern_id 付き）の
     //    現役エントリのみを対象にする（従来どおり）。
-    const { data: entries } = await db
-      .from('schedule_entries')
-      .select('entry_date, time_slot_id, student_id, regular_pattern_id, status')
-      .eq('school_id', schoolId)
-      .gte('entry_date', weekStart)
-      .lte('entry_date', weekEndStr);
-
-    const covered = new Set<string>();
-    // extra 側は entries 由来なので、キーから内訳を引けるようここで持っておく。
-    const actualDetails = new Map<string, { studentId: string; date: string }>();
-    for (const e of (entries || []) as {
+    //    ただし凍結（報告書付き・出欠済み）の行は除く。再生成はこれらを消さないので、
+    //    数えると消せないズレが残り続け、開くたびに自動再生成が空回りする（weeklySync.ts）。
+    const entries = await fetchAllPaged<{
+      id: string;
       entry_date: string;
       time_slot_id: string;
       student_id: string | null;
       regular_pattern_id: string | null;
-      status: string | null;
-    }[]) {
+      kind: string;
+      status: string;
+    }>((from, to) =>
+      db
+        .from('schedule_entries')
+        .select('id, entry_date, time_slot_id, student_id, regular_pattern_id, kind, status')
+        .eq('school_id', schoolId)
+        .gte('entry_date', weekStart)
+        .lte('entry_date', weekEndStr)
+        .order('id')
+        .range(from, to)
+    );
+    const reportedEntryIds = await loadReportedEntryIds(
+      entries.filter((e) => e.regular_pattern_id && isReplaceableEntry(e)).map((e) => e.id)
+    );
+
+    const covered = new Set<string>();
+    // extra 側は entries 由来なので、キーから内訳を引けるようここで持っておく。
+    const actualDetails = new Map<string, { studentId: string; date: string }>();
+    for (const e of entries) {
       const key = `${e.entry_date}-${e.time_slot_id}-${e.student_id}`;
       covered.add(key);
-      if (e.regular_pattern_id && (e.status === 'scheduled' || e.status === 'completed')) {
+      if (
+        e.regular_pattern_id &&
+        (e.status === 'scheduled' || e.status === 'completed') &&
+        !isFrozenEntry(e, reportedEntryIds)
+      ) {
         if (e.student_id) {
           actualDetails.set(key, { studentId: e.student_id, date: e.entry_date });
         }

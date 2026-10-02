@@ -525,6 +525,11 @@ node scripts/verify-phase0-migrations.mjs
 - DELETE は `status IN ('scheduled','completed')` のみ消す → 残った **cancelled / transferred系** の行と同キーを INSERT して衝突
 - 修正：生成スキップ対象 (`transferredKeys`) に `transferred_out / transferred_in / cancelled` の (date-slot-student) を全部含める（`src/lib/api/schedule.ts`）
 - **教訓**：generateWeeklySchedule は週全削除→再INSERT。DELETE 対象外ステータスの枠は必ず生成スキップすること
+- **2026-10-01 追記**：全削除→再INSERT は廃止し、差分反映（`src/lib/schedule/weeklySync.ts` の `planWeeklySync`）に置き換えた。
+  行の id が毎回変わり、`class_reports`（ON DELETE CASCADE）が再生成のたびに連鎖で消えていたため。
+  報告書付き・出欠済み（completed）の行は「凍結」として生成でもズレ検知でも触らない。
+  「差し替えない行（振替系・cancelled・regular 以外）の枠は生成スキップ」は差分方式でも同じ意味論で残している。
+  DB 側も `class_reports.schedule_entry_id` を NO ACTION にした（`20261001120000`）
 
 ## 残課題（次のラウンドで詰める）
 
