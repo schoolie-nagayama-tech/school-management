@@ -44,9 +44,17 @@ describe('parentMessageSystemPrompt', () => {
     expect(p).toContain('繰り返さない');
   });
 
-  it('文字数と文体の決まりを伝える', () => {
-    expect(p).toContain('150〜250字');
+  it('★長さは箇条書きの量に合わせ、決まり文句で埋めさせない（上限だけ残す）', () => {
+    expect(p).toContain('箇条書きの量に見合う');
+    expect(p).toContain('埋めない');
+    expect(p).toContain('250字まで');
+    expect(p).not.toContain('150〜250字');
     expect(p).toContain('です・ます調');
+  });
+
+  it('★作り直しは【いまの文】に効かせ、教室長の手直しを残させる', () => {
+    expect(p).toContain('【いまの文】');
+    expect(p).toContain('手で直している');
   });
 });
 
@@ -126,6 +134,29 @@ describe('parentMessageUserText', () => {
       points: 'ダミー',
     });
     expect(without).not.toContain('【直し方】');
+  });
+
+  it('★作り直しのときは、いまの文を【直し方】の前に渡す', () => {
+    const t = parentMessageUserText({
+      messages: [entry()],
+      gradeLabel: '',
+      points: '・振替は火曜',
+      instruction: 'もう少し短く',
+      currentDraft: '手で直した文です。火曜17時でお待ちしております。',
+    });
+    expect(t).toContain('【いまの文（これを直す）】');
+    expect(t).toContain('手で直した文です。');
+    expect(t.indexOf('【いまの文（これを直す）】')).toBeLessThan(t.indexOf('【直し方】'));
+  });
+
+  it('直し方が無いときは、いまの文を渡さない（初回は箇条書きから作る）', () => {
+    const t = parentMessageUserText({
+      messages: [entry()],
+      gradeLabel: '',
+      points: '・振替は火曜',
+      currentDraft: '返信欄に何か入っている',
+    });
+    expect(t).not.toContain('【いまの文');
   });
 });
 

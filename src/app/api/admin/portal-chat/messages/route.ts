@@ -4,6 +4,7 @@ import { getPortalServiceClient } from '@/lib/mypage/serviceClient';
 import { insertMessage, listMessages, markRead } from '@/lib/mypage/chatService';
 import { dispatchNotification } from '@/lib/mypage/notify';
 import { captureApiError } from '@/lib/api-error';
+import { lookupPortalSenderRelation } from '@/lib/mypage/chatCounterpart';
 
 export const dynamic = 'force-dynamic';
 
@@ -46,7 +47,24 @@ export async function GET(request: NextRequest) {
 
   const messages = await listMessages(threadId, svc);
   await markRead({ threadId, readerKind: 'staff', readerId: auth.userId }, svc);
-  return NextResponse.json({ thread_id: threadId, student_id: thread.student_id, messages });
+
+  // ★相手が生徒本人か保護者か。「保護者との連絡」AIの欄を、押す前から出さないために返す
+  //   （押してから「使えません」と出すと、打った箇条書きが無駄になる）。
+  //   最後に保護者側から届いたメッセージの送信アカウントで引く（compose ルートと同じ判定）。
+  const lastPortal = [...messages].reverse().find((m) => m.sender_kind === 'portal');
+  const counterpartRelation = lastPortal
+    ? await lookupPortalSenderRelation(svc, {
+        accountId: lastPortal.sender_id,
+        studentId: thread.student_id,
+      })
+    : null;
+
+  return NextResponse.json({
+    thread_id: threadId,
+    student_id: thread.student_id,
+    messages,
+    counterpart_relation: counterpartRelation,
+  });
 }
 
 export async function POST(request: NextRequest) {

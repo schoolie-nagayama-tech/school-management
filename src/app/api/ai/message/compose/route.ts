@@ -12,6 +12,7 @@ import {
 } from '@/lib/ai/parentMessage';
 import { PARENT_MESSAGE_FEATURE_KEY } from '@/lib/ai/features';
 import { formatGradeLabelOrEmpty } from '@/lib/utils/gradeLabel';
+import { lookupPortalSenderRelation } from '@/lib/mypage/chatCounterpart';
 import type { ChatTemplateKind } from '@/types/chat';
 
 export const dynamic = 'force-dynamic';
@@ -62,7 +63,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: '権限がありません' }, { status: 403 });
   }
 
-  let body: { schoolId?: unknown; threadId?: unknown; points?: unknown; instruction?: unknown };
+  let body: {
+    schoolId?: unknown;
+    threadId?: unknown;
+    points?: unknown;
+    instruction?: unknown;
+    currentDraft?: unknown;
+  };
   try {
     body = await request.json();
   } catch {
@@ -93,6 +100,14 @@ export async function POST(request: NextRequest) {
   const instruction =
     typeof body.instruction === 'string' && body.instruction.trim()
       ? body.instruction.trim().slice(0, 1000)
+      : undefined;
+
+  // ★いまの返信欄の文。作り直し（instruction あり）のときだけ使う。
+  //   作り直しを箇条書きからではなくこの文に効かせ、教室長の手直しを捨てないため（§5.3）。
+  //   人が書いた文なので、長すぎる分は切るだけでよい（プロンプトが際限なく伸びるのを防ぐ）
+  const currentDraft =
+    instruction && typeof body.currentDraft === 'string' && body.currentDraft.trim()
+      ? body.currentDraft.trim().slice(0, 1000)
       : undefined;
 
   const empty: ComposeResponse = { body: '', quote: null, degraded: false, disabled: false };
@@ -161,17 +176,14 @@ export async function POST(request: NextRequest) {
   }
 
   // ★生徒本人が相手のスレッドには出さない（口語で書くため）。
-  //   portal_account_students.relation で本人(self)/保護者(guardian・other)を引く。
-  if (lastPortal?.sender_id) {
-    const { data: link } = await supabase
-      .from('portal_account_students')
-      .select('relation')
-      .eq('account_id', lastPortal.sender_id)
-      .eq('student_id', studentId)
-      .maybeSingle();
-    if ((link as { relation?: string } | null)?.relation === 'self') {
-      return NextResponse.json({ ...empty, skipped: 'student' } satisfies ComposeResponse);
-    }
+  //   画面側も同じ判定で欄を最初から出さない（lookupPortalSenderRelation を共有）。
+  //   ここは画面を通らない呼び出しに対する最後の栓。
+  const relation = await lookupPortalSenderRelation(supabase, {
+    accountId: lastPortal?.sender_id ?? null,
+    studentId,
+  });
+  if (relation === 'self') {
+    return NextResponse.json({ ...empty, skipped: 'student' } satisfies ComposeResponse);
   }
 
   const { data: student } = await supabase
@@ -202,6 +214,7 @@ export async function POST(request: NextRequest) {
         gradeLabel,
         points,
         instruction,
+        currentDraft,
       }),
       maxTokens: 800,
     });

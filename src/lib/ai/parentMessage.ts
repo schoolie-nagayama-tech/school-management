@@ -28,8 +28,12 @@ export interface ParentMessageResult {
   quoteMessageId: string | null;
 }
 
-/** body の文字数の範囲。外れたら読めなかった扱いにして空にする（切り詰めない） */
-export const MIN_BODY_LENGTH = 30;
+/**
+ * body の文字数の範囲。外れたら読めなかった扱いにして空にする（切り詰めない）。
+ * ★下限は低めにしてある。長さを箇条書きの量に合わせるようにしたので（§5.2）、
+ *   1行の箇条書きなら「承知しました。9月15日の授業で対策します。」（23字）で正しい。
+ */
+export const MIN_BODY_LENGTH = 15;
 export const MAX_BODY_LENGTH = 600;
 
 /** 材料にするメッセージの上限。スレッドの中央値は1通・最長6通なので、40件あれば十分すぎる */
@@ -57,8 +61,18 @@ export function parentMessageSystemPrompt(): string {
     '- ★宛名（〇〇 様）は書かない。チャットなので、宛名を置かずに挨拶から始める。',
     '- 書き出しと結びの言い回しは、そのスレッドで教室（staff）が使っている形に合わせる。',
     '  やりとりが無いときは「いつもお世話になっております。」のような一般的な書き出しでよい。',
-    '- 3〜6文、150〜250字。です・ます調。相手の状況をひとこと受け止めてから本題に入る。',
+    // ★長さを固定しない。固定すると箇条書きが1行でも決まり文句で水増しすることになり、
+    //   「気持ちがこもっていない」と受け取られる（Gmail の AI 作文で最も多い不満）。
+    //   教室側の実際の返信は中央値84字。
+    '- 長さは箇条書きの量に見合うだけにする（1項目なら2〜3文で足りる）。',
+    '  足りない分を挨拶や決まり文句で埋めない。長くても250字まで。です・ます調。',
+    '- 返信のときは、相手の状況をひとこと受け止めてから本題に入る（受け止めは1文まで）。',
     '- 前置きや見出しは書かず、返信の本文だけを返す。',
+    '',
+    '■ 【いまの文】があるとき（作り直し）',
+    '- 箇条書きから作り直さず、【いまの文】を【直し方】に従って直す。',
+    '- ★【いまの文】は教室長が手で直していることがある。直し方に関係しない言い回し・',
+    '  日付・時刻・数字は変えずにそのまま残す（足しもしない）。',
     '',
     '■ quoteMessageId（何に返信しているか）',
     '- 直前の保護者（portal）のメッセージに答えているときは、そのメッセージのIDを入れる。',
@@ -93,8 +107,14 @@ export function parentMessageUserText(params: {
   points: string;
   /** 作り直しの指示（「もう少し短く」等）。無ければ省く */
   instruction?: string;
+  /**
+   * いま返信欄にある文（作り直しのときだけ）。
+   * ★作り直しは、箇条書きからではなくこの文に効かせる。教室長が手で直した部分を
+   *   捨てずに済むように（箇条書きから作り直すと、直した部分が毎回消える）。
+   */
+  currentDraft?: string;
 }): string {
-  const { messages, gradeLabel, points, instruction } = params;
+  const { messages, gradeLabel, points, instruction, currentDraft } = params;
 
   const out: string[] = [];
   if (gradeLabel) out.push(`【生徒の学年】${gradeLabel}`);
@@ -112,6 +132,13 @@ export function parentMessageUserText(params: {
   out.push('');
   out.push('【答えること（箇条書き）】');
   out.push(points.trim());
+
+  // ★直し方が無いときは渡さない（初回の「文章にする」は箇条書きから作る）
+  if (instruction && instruction.trim() && currentDraft && currentDraft.trim()) {
+    out.push('');
+    out.push('【いまの文（これを直す）】');
+    out.push(currentDraft.trim());
+  }
 
   if (instruction && instruction.trim()) {
     out.push('');
