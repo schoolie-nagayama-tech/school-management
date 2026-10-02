@@ -1,5 +1,6 @@
 -- 過去問教材を増やす（2026-10-02）
---  1. 古い年度も使うので、749〜753 を 2026〜2017 の10年分にそろえる
+-- ★志望校過去問（高校受験）749 は指示により従来のまま（5年・①②③なし）。
+--  1. 古い年度も使うので、750〜753 を 2026〜2017 の10年分にそろえる
 --  2. 別の学校の過去問も扱うので、志望校過去問（高校・中学・大学受験）に ②③ を足す
 --  3. 753（大学受験）は年度のみの5件だったので、英数国理社 × 10年に作り直す
 --
@@ -8,11 +9,11 @@
 -- ★753 の旧単元（31344〜31348）は提案書・進行表のどこからも参照されていないことを
 --   適用前に確認済み。念のため参照があれば消さない条件も付けてある。
 
--- 1) 749〜752：科目ごとに足りない年度（2017〜2026）を補う
+-- 1) 750〜752：科目ごとに足りない年度（2017〜2026）を補う
 insert into curriculum_items (textbook_id, sort_order, title, item_type, subject)
 select s.textbook_id, 0, s.subject || ' ' || y || '年度', 'lesson', s.subject
 from (select distinct textbook_id, subject from curriculum_items
-      where textbook_id in (749, 750, 751, 752) and subject is not null) s
+      where textbook_id in (750, 751, 752) and subject is not null) s
 cross join generate_series(2017, 2026) as y
 where not exists (
   select 1 from curriculum_items c
@@ -35,7 +36,6 @@ cross join generate_series(2017, 2026) as y
 where not exists (select 1 from curriculum_items c where c.textbook_id = 753);
 
 -- 3) 教材名を ① 付きにそろえる（②③ と並べたときに区別できるように）
-update textbooks set name = '志望校過去問①（高校受験）' where id = 749;
 update textbooks set name = '志望校過去問①（中学受験）' where id = 752;
 update textbooks set name = '志望校過去問①（大学受験）' where id = 753;
 
@@ -45,14 +45,14 @@ select replace(t.name, '①', n.mark), t.publisher, t.school_type, t.grade, t.su
        t.grade_category, true, false
 from textbooks t
 cross join (values ('②'), ('③')) as n(mark)
-where t.id in (749, 752, 753)
+where t.id in (752, 753)
   and not exists (select 1 from textbooks x where x.name = replace(t.name, '①', n.mark));
 
 insert into curriculum_items (textbook_id, sort_order, title, item_type, subject)
 select nt.id, 0, c.title, c.item_type, c.subject
 from textbooks nt
 join textbooks src on src.name = replace(nt.name, right(left(nt.name, 7), 1), '①')
-  and src.id in (749, 752, 753)
+  and src.id in (752, 753)
 join curriculum_items c on c.textbook_id = src.id
 where (nt.name like '志望校過去問②%' or nt.name like '志望校過去問③%')
   and not exists (select 1 from curriculum_items x where x.textbook_id = nt.id);
