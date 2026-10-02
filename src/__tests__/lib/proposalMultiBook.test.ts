@@ -2,10 +2,97 @@ import { describe, it, expect } from 'vitest';
 import {
   buildProposalSaveBlockers,
   calcBookKomaSummary,
+  checkBookLimit,
   formatBookTitles,
+  mergeTemplateBooks,
+  mergedBookTheme,
   reorderBooks,
   summarizeBookSaves,
 } from '@/components/proposals/proposalMultiBook';
+
+describe('checkBookLimit（新規作成の冊数上限: 1科目3冊・合計15冊）', () => {
+  const s = (subject: string) => ({ subject });
+
+  it('1科目3冊までは足せる', () => {
+    expect(checkBookLimit([s('英語'), s('英語')], [s('英語')])).toBeNull();
+  });
+
+  it('同じ科目の4冊目は止め、科目名を出す', () => {
+    expect(checkBookLimit([s('英語'), s('英語'), s('英語')], [s('英語')])).toBe(
+      '「英語」のテキストは1科目3冊までです'
+    );
+  });
+
+  it('科目が違えば3冊を超えて並べられる（中3の5教科をまとめて作る）', () => {
+    const five = ['英語', '数学', '国語', '理科', '社会'].flatMap((x) => [s(x), s(x)]);
+    expect(checkBookLimit([], five)).toBeNull();
+  });
+
+  it('科目が空の教材（過去問など）はまとめて1つの科目として数える', () => {
+    expect(checkBookLimit([s(''), s(''), s('')], [s(' ')])).toBe(
+      '「科目なし（過去問など）」のテキストは1科目3冊までです'
+    );
+  });
+
+  it('合計15冊を超えると止める', () => {
+    const fifteen = Array.from({ length: 15 }, (_, i) => s(`科目${i % 6}`));
+    expect(checkBookLimit(fifteen, [])).toBeNull();
+    expect(checkBookLimit(fifteen, [s('科目9')])).toBe('テキストは合計15冊までです');
+  });
+});
+
+describe('mergeTemplateBooks（テンプレの複数選択）', () => {
+  const english = {
+    name: '英語入試対策',
+    textbooks: [
+      { textbook_id: 10, textbook: { name: '入試完成 英語', subject: '英語', grade: '中3' } },
+      { textbook_id: 99, textbook: { name: '都立入試過去問', subject: null, grade: '中3' } },
+    ],
+    curriculum: [
+      { textbook_id: 10, curriculum_item_id: 101, proposal_count: 2, group_number: 1 },
+      { textbook_id: 99, curriculum_item_id: 901, proposal_count: 1, group_number: null },
+    ],
+  };
+  const math = {
+    name: '数学入試対策',
+    textbooks: [
+      { textbook_id: 20, textbook: { name: '入試完成 数学', subject: '数学', grade: '中3' } },
+      { textbook_id: 99, textbook: { name: '都立入試過去問', subject: null, grade: '中3' } },
+    ],
+    curriculum: [
+      { textbook_id: 20, curriculum_item_id: 201, proposal_count: 3, group_number: null },
+      { textbook_id: 99, curriculum_item_id: 911, proposal_count: 1, group_number: 1 },
+    ],
+  };
+
+  it('並びは選んだ順→テンプレに登録した順。同じテキストは最初に出た位置に1冊だけ置く', () => {
+    const merged = mergeTemplateBooks([english, math]);
+    expect(merged.map((b) => b.textbookId)).toEqual([10, 99, 20]);
+  });
+
+  it('同じテキストはテンプレごとの単元設定を分けたまま持つ（結合番号を混ぜない）', () => {
+    const kakomon = mergeTemplateBooks([english, math]).find((b) => b.textbookId === 99)!;
+    expect(kakomon.templateNames).toEqual(['英語入試対策', '数学入試対策']);
+    expect(kakomon.settingsByTemplate).toEqual([
+      [{ curriculum_item_id: 901, proposal_count: 1, group_number: null }],
+      [{ curriculum_item_id: 911, proposal_count: 1, group_number: 1 }],
+    ]);
+  });
+
+  it('科目が空の教材は空文字で返す（上限の判定で「科目なし」に数える）', () => {
+    const kakomon = mergeTemplateBooks([english]).find((b) => b.textbookId === 99)!;
+    expect(kakomon.subject).toBe('');
+  });
+
+  it('講習テーマの初期値はテンプレ名。2つにまたがる冊は「A / B」', () => {
+    const merged = mergeTemplateBooks([english, math]);
+    expect(merged.map(mergedBookTheme)).toEqual([
+      '英語入試対策',
+      '英語入試対策 / 数学入試対策',
+      '数学入試対策',
+    ]);
+  });
+});
 
 describe('calcBookKomaSummary', () => {
   it('冊ごとのコマ数と全冊の合計を返す', () => {
@@ -77,6 +164,21 @@ describe('buildProposalSaveBlockers', () => {
       ],
     });
     expect(blockers).toEqual(['「B」にコマ数が入っていません']);
+  });
+
+  it('冊ごとにテーマを渡したときは、テーマが空の冊を書名入りで止める', () => {
+    const blockers = buildProposalSaveBlockers({
+      books: [
+        { name: 'A', koma: 3, theme: '英語入試対策' },
+        { name: 'B', koma: 2, theme: ' ' },
+      ],
+    });
+    expect(blockers).toEqual(['「B」の講習テーマを入力してください']);
+  });
+
+  it('冊ごとのテーマで1冊だけのときは、従来どおりの文言で止める', () => {
+    const blockers = buildProposalSaveBlockers({ books: [{ name: 'A', koma: 3, theme: '' }] });
+    expect(blockers).toEqual(['テーマを入力してください']);
   });
 });
 

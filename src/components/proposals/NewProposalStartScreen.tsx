@@ -13,9 +13,19 @@
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, BookOpen, FileSearch, LayoutTemplate, Loader2, Search } from 'lucide-react';
+import {
+  ArrowLeft,
+  ArrowRight,
+  BookOpen,
+  Check,
+  FileSearch,
+  LayoutTemplate,
+  Loader2,
+  Search,
+} from 'lucide-react';
 import { GRADE_LABELS, SEASON_LABELS, type SeasonType } from '@/types/database';
 import type { SeasonalCourseListItem } from '@/types/database';
+import { checkBookLimit } from './proposalMultiBook';
 
 /** どうやって作るかの2択 */
 export function CreateMethodScreen({
@@ -74,7 +84,7 @@ export function CreateMethodScreen({
             テンプレートから作る
           </p>
           <p className="mt-1.5 text-xs leading-relaxed text-text-muted">
-            講習のひな形を選ぶと、テキストと単元・結合が入った状態から始まります
+            講習のひな形を選ぶと、テキストと単元・結合が入った状態から始まります。英語と数学のように、いくつでもまとめて選べます
           </p>
         </button>
 
@@ -256,12 +266,43 @@ function FilterRow({
 }
 
 /**
+ * 選んだテンプレの冊数（同じテキストは1冊に数える）と、上限を超えるときの理由。
+ * ★取り込む側（ProposalEditor の mergeTemplateBooks）と同じく、同じテキストは1冊にまとまる。
+ *   英語コースと数学コースの両方にある過去問を2冊と数えると、上限の判定が厳しくなりすぎる。
+ */
+export function summarizeTemplateSelection(selected: SeasonalCourseListItem[]): {
+  bookCount: number;
+  hasSharedBook: boolean;
+  limitMessage: string | null;
+} {
+  const books = new Map<number, string>();
+  let hasSharedBook = false;
+  for (const c of selected) {
+    for (const ct of c.textbooks) {
+      if (books.has(ct.textbook_id)) hasSharedBook = true;
+      else books.set(ct.textbook_id, ct.textbook?.subject ?? '');
+    }
+  }
+  return {
+    bookCount: books.size,
+    hasSharedBook,
+    limitMessage: checkBookLimit(
+      [],
+      Array.from(books.values()).map((subject) => ({ subject }))
+    ),
+  };
+}
+
+/**
  * テンプレートを選ぶ画面。
  *
  * ★既定は「準備中の季節 ＋ その生徒の学年」で絞る。教室のテンプレは1,265件あり、
  *   全部出すと選べない。季節・学年・科目・キーワードはいつでも切り替えられる
  *   （以前は0件になったときだけ「外す」が出て、件数があると絞りを変えられなかった）。
  * ★単元がゼロのテンプレ（空殻が33%ある）は呼び出し側で除いてある。選んでも何も入らない。
+ * ★複数選べる。英語のテンプレを作って保存→もう一度新規作成→数学のテンプレ、と
+ *   科目の数だけ往復していたのを、1回で選んで科目ごとのタブで直せるようにした。
+ *   選んだものは絞り込みを変えても残す（科目で絞って英語を選び、数学に切り替えて選ぶ使い方のため）。
  */
 export function TemplatePickerScreen({
   studentName,
@@ -270,7 +311,7 @@ export function TemplatePickerScreen({
   season,
   grade,
   applying,
-  onSelect,
+  onConfirm,
   onBack,
 }: {
   studentName: string;
@@ -283,7 +324,8 @@ export function TemplatePickerScreen({
   grade: number | null;
   /** 選んだテンプレを取り込み中 */
   applying: boolean;
-  onSelect: (courseId: string) => void;
+  /** 選んだテンプレのID（選んだ順）。この順がそのままタブの並びになる */
+  onConfirm: (courseIds: string[]) => void;
   onBack: () => void;
 }) {
   const [filter, setFilter] = useState<TemplateFilter>(() => ({
@@ -293,6 +335,23 @@ export function TemplatePickerScreen({
     keyword: '',
   }));
   const [sortKey, setSortKey] = useState<TemplateSortKey>(readStoredSort);
+  // 選んだ順を残すために配列で持つ（Set だと順番の意味が伝わりにくい）
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+
+  const toggleSelect = (id: string) =>
+    setSelectedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+
+  const selectedTemplates = useMemo(
+    () =>
+      selectedIds
+        .map((id) => templates.find((t) => t.id === id))
+        .filter((t): t is SeasonalCourseListItem => !!t),
+    [selectedIds, templates]
+  );
+  const selection = useMemo(
+    () => summarizeTemplateSelection(selectedTemplates),
+    [selectedTemplates]
+  );
 
   const subjects = useMemo(() => subjectOptions(templates), [templates]);
   const visible = useMemo(
@@ -450,30 +509,95 @@ export function TemplatePickerScreen({
             const grades = (c.target_grades ?? [])
               .map((g) => GRADE_LABELS[g] ?? `学年${g}`)
               .join('・');
+            const checked = selectedIds.includes(c.id);
             return (
               <button
                 key={c.id}
                 type="button"
+                role="checkbox"
+                aria-checked={checked}
                 disabled={applying}
-                onClick={() => onSelect(c.id)}
-                className="rounded-lg border border-border bg-surface-raised p-3 text-left transition-[background-color,border-color,transform] duration-150 ease-out hover:border-border-strong hover:bg-surface-hover active:scale-[0.99] disabled:opacity-50"
+                onClick={() => toggleSelect(c.id)}
+                className={`flex items-start gap-3 rounded-lg border p-3 text-left transition-[background-color,border-color,transform] duration-150 ease-out active:scale-[0.99] disabled:opacity-50 ${
+                  checked
+                    ? 'border-ink bg-surface-hover'
+                    : 'border-border bg-surface-raised hover:border-border-strong hover:bg-surface-hover'
+                }`}
               >
-                <p className="text-sm font-bold text-text-heading">{c.name}</p>
-                <p className="mt-1 text-[11px] text-text-muted">
-                  {[
-                    SEASON_LABELS[c.season as SeasonType],
-                    grades,
-                    `テキスト${c.textbooks.length}冊${bookNames ? `（${bookNames}）` : ''}`,
-                    `${c.curriculum_count}単元`,
-                    // 「使われている順」の根拠が見えないと並びを信用できないので数も出す
-                    c.application_count > 0 ? `${c.application_count}人に適用` : '',
-                  ]
-                    .filter(Boolean)
-                    .join(' ・ ')}
-                </p>
+                <span
+                  aria-hidden="true"
+                  className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded border ${
+                    checked ? 'border-ink bg-ink text-text-on-primary' : 'border-border-strong'
+                  }`}
+                >
+                  {checked && <Check className="h-3 w-3" />}
+                </span>
+                <span className="min-w-0">
+                  <span className="block text-sm font-bold text-text-heading">{c.name}</span>
+                  <span className="mt-1 block text-[11px] text-text-muted">
+                    {[
+                      SEASON_LABELS[c.season as SeasonType],
+                      grades,
+                      `テキスト${c.textbooks.length}冊${bookNames ? `（${bookNames}）` : ''}`,
+                      `${c.curriculum_count}単元`,
+                      // 「使われている順」の根拠が見えないと並びを信用できないので数も出す
+                      c.application_count > 0 ? `${c.application_count}人に適用` : '',
+                    ]
+                      .filter(Boolean)
+                      .join(' ・ ')}
+                  </span>
+                </span>
               </button>
             );
           })}
+        </div>
+      )}
+
+      {/* 選んだテンプレと「作る」ボタン。一覧が長いので画面の下に張り付けておく */}
+      {selectedTemplates.length > 0 && (
+        <div className="sticky bottom-3 mt-4 rounded-xl border border-border-strong bg-surface-raised p-3 shadow-lg">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="min-w-0 text-xs text-text-body">
+              <p className="font-bold">
+                {selectedTemplates.length}件を選択中 ・ テキスト{selection.bookCount}冊
+              </p>
+              <p className="mt-0.5 truncate text-[11px] text-text-muted">
+                {selectedTemplates.map((t) => t.name).join('、')}
+              </p>
+              {selection.hasSharedBook && !selection.limitMessage && (
+                <p className="mt-0.5 text-[11px] text-text-muted">
+                  同じテキストが入っているテンプレは、そのテキストを1冊にまとめます
+                </p>
+              )}
+              {selection.limitMessage && (
+                <p className="mt-0.5 text-[11px] font-medium text-red-600" role="alert">
+                  {selection.limitMessage}。選ぶテンプレを減らしてください
+                </p>
+              )}
+            </div>
+            <div className="flex shrink-0 items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setSelectedIds([])}
+                disabled={applying}
+                className="rounded-lg px-2.5 py-1.5 text-xs text-text-muted transition-colors duration-150 hover:text-text-heading disabled:opacity-50"
+              >
+                選択を外す
+              </button>
+              <button
+                type="button"
+                onClick={() => onConfirm(selectedIds)}
+                disabled={applying || !!selection.limitMessage}
+                className="inline-flex items-center gap-1 rounded-lg bg-ink px-3 py-1.5 text-xs font-bold text-text-on-primary transition-[filter,transform] duration-150 ease-out hover:brightness-[0.85] active:scale-[0.97] disabled:opacity-50"
+              >
+                {applying ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
+                ) : null}
+                選んだテンプレートで作る
+                {!applying && <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

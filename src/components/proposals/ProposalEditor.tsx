@@ -88,17 +88,21 @@ import {
   groupProposalsForPrint,
   type PrintProposalSource,
 } from '@/lib/proposals/printSheetGrouping';
-// 複数冊（最大3冊）を1画面で作るための純粋ロジック。テストで固定してある
+// 複数冊（1科目3冊・合計15冊）を1画面で作るための純粋ロジック。テストで固定してある
 import {
+  MAX_BOOKS_PER_SUBJECT,
+  MAX_BOOKS_TOTAL,
   buildProposalSaveBlockers,
   calcBookKomaSummary,
+  checkBookLimit,
   formatBookTitles,
+  mergeTemplateBooks,
+  mergedBookTheme,
   summarizeBookSaves,
   type BookSaveOutcome,
 } from './proposalMultiBook';
 
 import {
-  MAX_TEXTBOOKS,
   STATUS_COLORS,
   STATUS_FLOW,
   STATUS_INACTIVE,
@@ -140,6 +144,12 @@ interface ProposalBook {
   name: string;
   subject: string;
   grade: string;
+  /**
+   * この冊の講習テーマ。★アクティブな冊は state の theme が正で、ここは離れたときに書き戻す
+   *   （単元の入力を bookStash に退避するのと同じ持ち方）。
+   * ★冊ごとに持つのは、テンプレをまとめて選ぶと科目ごとにテンプレ名（＝テーマ）が違うため。
+   */
+  theme: string;
 }
 
 /** タブを離れている冊の作業状態。切り替えで丸ごと入れ替える */
@@ -213,7 +223,7 @@ export default function ProposalEditor() {
 
   const [selectedTextbookId, setSelectedTextbookId] = useState<number>(qTextbookId);
   /**
-   * 新規作成で選んだテキスト（最大3冊）。タブの並び順＝上から進める順。
+   * 新規作成で選んだテキスト（1科目3冊・合計15冊まで）。タブの並び順＝上から進める順。
    * 保存すると1冊につき提案書1件になる（DBは 生徒×テキスト×期 で1件のまま）。
    * 既存の提案書を編集しているときは使わない（1件＝1冊で固定）。
    */
@@ -505,7 +515,8 @@ export default function ProposalEditor() {
       // URL でテキストが指定された新規作成は、その1冊を最初のタブとして登録する
       if (isNew) {
         initialTextbookIdRef.current = tbId;
-        setBooks([{ textbookId: tbId, ...tbMeta }]);
+        // テーマはまだ空。アクティブな冊のテーマは入力欄（theme）が正なので、ここは離れるときに埋まる
+        setBooks([{ textbookId: tbId, ...tbMeta, theme: '' }]);
       }
 
       // このテキストを含む講習コースを取得
@@ -562,6 +573,7 @@ export default function ProposalEditor() {
   /** 退避してあった冊をアクティブに戻す */
   const restoreBook = (book: ProposalBook, entry: StashedBook | undefined) => {
     setSelectedTextbookId(book.textbookId);
+    setTheme(book.theme);
     setTextbookName(book.name);
     setTextbookSubject(book.subject);
     setTextbookGrade(book.grade);
@@ -577,6 +589,10 @@ export default function ProposalEditor() {
     void loadAvailableCourses(book.textbookId, studentSchoolId);
   };
 
+  /** 今のテーマ欄の入力を、アクティブな冊に書き戻した並び（テーマは離れるときに退避する） */
+  const withActiveTheme = (list: ProposalBook[]): ProposalBook[] =>
+    list.map((b) => (b.textbookId === selectedTextbookId ? { ...b, theme } : b));
+
   /**
    * タブの切り替え。今の入力を退避してから、切替先の入力を復元する。
    * ★DBには触らない。保存するまでは全冊ぶんの入力がブラウザ内にだけある。
@@ -586,6 +602,7 @@ export default function ProposalEditor() {
     const target = books.find((b) => b.textbookId === textbookId);
     if (!target) return;
     const entry = bookStash.get(textbookId);
+    setBooks((prev) => withActiveTheme(prev));
     setBookStash((prev) => {
       const next = new Map(prev);
       next.set(selectedTextbookId, snapshotActiveBook());
@@ -600,7 +617,7 @@ export default function ProposalEditor() {
    * 保存が途中で失敗したときの「保存できた冊だけ外す」にも使う。
    */
   const dropBooks = (removeIds: number[]) => {
-    const remaining = books.filter((b) => !removeIds.includes(b.textbookId));
+    const remaining = withActiveTheme(books).filter((b) => !removeIds.includes(b.textbookId));
     const nextStash = new Map(bookStash);
     for (const id of removeIds) nextStash.delete(id);
 
@@ -613,6 +630,7 @@ export default function ProposalEditor() {
       } else {
         // 1冊も残らなければテキスト選択画面に戻る
         setSelectedTextbookId(0);
+        setTheme('');
         setTextbookName('');
         setTextbookSubject('');
         setTextbookGrade('');
@@ -653,8 +671,9 @@ export default function ProposalEditor() {
       addToast('このテキストはすでに追加されています', 'error');
       return;
     }
-    if (books.length >= MAX_TEXTBOOKS) {
-      addToast(`テキストは最大${MAX_TEXTBOOKS}冊までです`, 'error');
+    const limitMessage = checkBookLimit(books, [{ subject: tb.subject ?? '' }]);
+    if (limitMessage) {
+      addToast(limitMessage, 'error');
       return;
     }
 
@@ -675,8 +694,11 @@ export default function ProposalEditor() {
       name: tb.name,
       subject: tb.subject ?? '',
       grade: tb.grade ?? '',
+      // テキストを足したときは、いま開いている冊のテーマを写しておく。
+      // 以前はテーマが全冊共通だったので、1つ書いてから冊を足す使い方の手間を増やさない。
+      theme,
     };
-    setBooks((prev) => [...prev, book]);
+    setBooks((prev) => [...withActiveTheme(prev), book]);
     restoreBook(book, {
       items,
       drafts,
@@ -708,64 +730,79 @@ export default function ProposalEditor() {
   };
 
   /**
-   * テンプレートを1つ選んで、その内容で新規作成を始める。
+   * 選んだテンプレート（1つ以上）の内容で新規作成を始める。
    *
-   * ★テンプレが複数テキストを持つときは、そのまま複数冊のタブとして開く（冬期の実態）。
-   *   1冊目をアクティブにし、残りは bookStash に入れる＝タブ切替と同じ形にしておく。
+   * ★テンプレのテキストを全部タブとして開く。1冊目をアクティブにし、残りは bookStash に入れる
+   *   ＝タブ切替と同じ形にしておく。並びは「選んだ順 → テンプレに登録した順」。
+   * ★同じテキストが複数のテンプレにあるときは1冊（タブ1つ）にまとめる（mergeTemplateBooks）。
+   *   結合番号はテンプレの中でしか意味を持たないので、テンプレごとに続きの番号へ振り直す。
+   *   同じ単元が両方にあるときは、あとに選んだテンプレのコマ数になる（既存の提案書へ足すときと同じ）。
    * ★単元の取り込み規約（0コマの結合メンバーを残す・グループ番号の振り直し）は
    *   courseSettingsToDrafts に集約してある。ここで独自に判定しない。
    */
-  const handleSelectTemplate = async (courseId: string) => {
-    if (applyingTemplate) return;
+  const handleSelectTemplates = async (courseIds: string[]) => {
+    if (applyingTemplate || courseIds.length === 0) return;
     setApplyingTemplate(true);
     try {
-      const course = await getSeasonalCourse(courseId);
-      if (!course || course.textbooks.length === 0) {
-        addToast('このテンプレートにはテキストがありません', 'error');
+      const courses = (await Promise.all(courseIds.map((id) => getSeasonalCourse(id)))).filter(
+        (c): c is NonNullable<typeof c> => !!c && c.textbooks.length > 0
+      );
+      if (courses.length === 0) {
+        addToast('選んだテンプレートにはテキストがありません', 'error');
         return;
       }
 
-      const targets = course.textbooks.slice(0, MAX_TEXTBOOKS);
-      const prepared: { book: ProposalBook; stash: StashedBook }[] = [];
-      for (const ct of targets) {
-        const { items } = await getTextbookUnitsWithProgress(null, ct.textbook_id);
-        const settings = course.curriculum
-          .filter((c) => c.textbook_id === ct.textbook_id)
-          .map((c) => ({
-            curriculum_item_id: c.curriculum_item_id,
-            proposal_count: c.proposal_count,
-            group_number: c.group_number,
-          }));
-        const { drafts, nextGroupId } = courseSettingsToDrafts(emptyDraftsFor(items), settings, 1);
-        prepared.push({
+      const merged = mergeTemplateBooks(courses);
+      // 一覧の時点でも止めているが、テンプレの中身が変わっていることもあるので取り込む直前にも見る
+      const limitMessage = checkBookLimit([], merged);
+      if (limitMessage) {
+        addToast(`${limitMessage}。選ぶテンプレートを減らしてください`, 'error');
+        return;
+      }
+
+      // 単元は冊ごとに読む。並列にしても順番は merged の並びのまま（結果を index で受ける）
+      const loaded = await Promise.all(
+        merged.map((m) => getTextbookUnitsWithProgress(null, m.textbookId))
+      );
+      const prepared: { book: ProposalBook; stash: StashedBook }[] = merged.map((m, i) => {
+        const { items } = loaded[i];
+        let drafts = emptyDraftsFor(items);
+        let nextGroupId = 1;
+        for (const settings of m.settingsByTemplate) {
+          const r = courseSettingsToDrafts(drafts, settings, nextGroupId);
+          drafts = r.drafts;
+          nextGroupId = r.nextGroupId;
+        }
+        return {
           book: {
-            textbookId: ct.textbook_id,
-            name: ct.textbook?.name ?? '',
-            subject: ct.textbook?.subject ?? '',
-            grade: ct.textbook?.grade ?? '',
+            textbookId: m.textbookId,
+            name: m.name,
+            subject: m.subject,
+            grade: m.grade,
+            // テーマはテンプレ名を初期値に入れる（「生徒に登録」で配ったときと同じ）。
+            // 2つのテンプレにまたがる冊（過去問など）は「A / B」
+            theme: mergedBookTheme(m),
           },
           stash: { items, drafts, progressMap: new Map(), nextGroupId, nextAppliedGroupId: 1 },
-        });
-      }
+        };
+      });
 
       setBooks(prepared.map((p) => p.book));
       setBookStash(new Map(prepared.slice(1).map((p) => [p.book.textbookId, p.stash])));
       initialTextbookIdRef.current = prepared[0].book.textbookId;
       restoreBook(prepared[0].book, prepared[0].stash);
-      // テーマはテンプレ名を初期値に入れる（「生徒に登録」で配ったときと同じ）
-      setTheme(course.name);
       setNewStartMode('textbook');
       // テキストを選んだとき（handleSelectTextbook）と同じく、ピッカーは閉じた状態にする
       setShowTextbookPicker(false);
 
-      if (course.textbooks.length > MAX_TEXTBOOKS) {
-        addToast(
-          `テキストは最大${MAX_TEXTBOOKS}冊までのため、先頭${MAX_TEXTBOOKS}冊だけ取り込みました`,
-          'error'
-        );
-      } else {
-        addToast(`「${course.name}」から作ります`, 'success');
-      }
+      const skipped = courseIds.length - courses.length;
+      addToast(
+        courses.length === 1
+          ? `「${courses[0].name}」から作ります`
+          : `${courses.length}件のテンプレートから作ります（テキスト${prepared.length}冊）` +
+              (skipped > 0 ? `。テキストの無いテンプレート${skipped}件は除きました` : ''),
+        'success'
+      );
     } catch (_e) {
       addToast('テンプレートの取り込みに失敗しました', 'error');
     } finally {
@@ -962,6 +999,8 @@ export default function ProposalEditor() {
     return books.map((b) => ({
       book: b,
       label: bookLabel(b),
+      // アクティブな冊のテーマは入力欄（theme）が正。離れている冊は退避したテーマ
+      theme: b.textbookId === selectedTextbookId ? theme : b.theme,
       units:
         b.textbookId === selectedTextbookId
           ? activeUnits
@@ -969,7 +1008,7 @@ export default function ProposalEditor() {
               (d) => d.koma_count > 0 || d.applied_koma > 0
             ),
     }));
-  }, [books, bookStash, selectedTextbookId, activeUnits]);
+  }, [books, bookStash, selectedTextbookId, activeUnits, theme]);
 
   // 冊ごとのコマ数と合計（保存ボタン脇に出す内訳）
   const bookSummary = useMemo(
@@ -1168,7 +1207,7 @@ export default function ProposalEditor() {
             schoolId: studentSchoolId,
             season,
             year,
-            theme,
+            theme: entry.theme,
             notes: notes || null,
             units: toUnitInputs(entry.units, appliedFallback),
           });
@@ -1209,9 +1248,13 @@ export default function ProposalEditor() {
   // 新規作成は冊ごとに判定し、原因の冊は書名を添える。
   const saveBlockers: string[] = isNew
     ? [
+        // テーマは冊ごと（テンプレをまとめて選ぶと科目ごとにテンプレ名が違うため）
         ...buildProposalSaveBlockers({
-          theme,
-          books: bookSummary.perBook.map((b) => ({ name: b.name, koma: b.koma })),
+          books: bookSummary.perBook.map((b) => ({
+            name: b.name,
+            koma: b.koma,
+            theme: booksWithUnits.find((e) => e.book.textbookId === b.textbookId)?.theme ?? '',
+          })),
         }),
         // 公開済みの提案書には、ここから単元を足さない（進行表と同期済みでずれるため）
         ...existingBooks.blocked.map((e) => {
@@ -1243,7 +1286,7 @@ export default function ProposalEditor() {
         // 新規作成は保存前でDBに無いため、タブの今の状態をそのまま1枚に並べる
         const printBooks: PrintBook[] = booksWithUnits.map((e) => ({
           textbookName: e.label,
-          theme,
+          theme: e.theme,
           allItems:
             e.book.textbookId === selectedTextbookId
               ? allItems
@@ -1604,7 +1647,7 @@ export default function ProposalEditor() {
             season={season}
             grade={studentGrade}
             applying={applyingTemplate}
-            onSelect={(courseId) => void handleSelectTemplate(courseId)}
+            onConfirm={(courseIds) => void handleSelectTemplates(courseIds)}
             onBack={() => setNewStartMode('choose')}
           />
         )}
@@ -1648,7 +1691,7 @@ export default function ProposalEditor() {
           backLabel="提案書一覧に戻る"
           subtitle={
             books.length > 0
-              ? `${studentName} の講習提案書（${books.length + 1}冊目 / 最大${MAX_TEXTBOOKS}冊）`
+              ? `${studentName} の講習提案書（${books.length + 1}冊目 / 1科目${MAX_BOOKS_PER_SUBJECT}冊・合計${MAX_BOOKS_TOTAL}冊まで）`
               : `${studentName} の講習提案書${textbookSubject ? ` (${textbookSubject})` : ''}`
           }
         />
@@ -1781,15 +1824,13 @@ export default function ProposalEditor() {
           </section>
         )}
 
-        {/* テキストのタブ（新規作成のみ・最大3冊）。
+        {/* テキストのタブ（新規作成のみ・1科目3冊・合計15冊まで）。
             切り替えても未保存の入力は保持される（離れているタブは bookStash に退避）。
             保存すると1冊につき提案書1件になる（まとめて1件にはしない）。 */}
         {isNew && (
           <section className="p-4 bg-surface-raised rounded-xl border border-border">
             <div className="flex items-center justify-between mb-2 gap-2 flex-wrap">
-              <div className="text-xs font-bold text-text-muted">
-                テキスト（{books.length}/{MAX_TEXTBOOKS}）
-              </div>
+              <div className="text-xs font-bold text-text-muted">テキスト（{books.length}冊）</div>
               <div className="flex items-center gap-2">
                 {/* 並び＝保存する順＝進める順。1冊のときは順番が無いので出さない */}
                 {books.length > 1 && (
@@ -1797,7 +1838,7 @@ export default function ProposalEditor() {
                     左から順に進めます（ドラッグで入れ替え）
                   </span>
                 )}
-                {books.length < MAX_TEXTBOOKS && (
+                {books.length < MAX_BOOKS_TOTAL && (
                   <button
                     type="button"
                     onClick={openAddBookPicker}
@@ -1864,10 +1905,11 @@ export default function ProposalEditor() {
             placeholder="例: 英検3級対策 / 1年生の総復習 / 2学期の先取り"
           />
 
-          {/* 複数冊のときはテーマが全冊に入る。あとで冊ごとに直せることを先に言っておく */}
+          {/* 複数冊のときはテーマが冊（タブ）ごと。どの冊のテーマを書いているかを出す */}
           {isNew && books.length > 1 && (
             <p className="mt-1.5 text-[11px] text-text-faint">
-              テーマは全冊に共通で入ります。保存後は提案書ごとに直せます
+              いま開いている「{textbookName}
+              」のテーマです。テーマはテキスト（タブ）ごとに入ります。テキストを追加すると、いま開いている冊のテーマが写されます
             </p>
           )}
 
