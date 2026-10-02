@@ -5,7 +5,10 @@ import {
   checkBookLimit,
   formatBookTitles,
   mergeTemplateBooks,
-  mergedBookTheme,
+  orderedBookIds,
+  themeOfBook,
+  buildTemplateCourses,
+  isUnitInCourse,
   reorderBooks,
   summarizeBookSaves,
 } from '@/components/proposals/proposalMultiBook';
@@ -84,13 +87,54 @@ describe('mergeTemplateBooks（テンプレの複数選択）', () => {
     expect(kakomon.subject).toBe('');
   });
 
-  it('講習テーマの初期値はテンプレ名。2つにまたがる冊は「A / B」', () => {
-    const merged = mergeTemplateBooks([english, math]);
-    expect(merged.map(mergedBookTheme)).toEqual([
-      '英語入試対策',
-      '英語入試対策 / 数学入試対策',
-      '数学入試対策',
+  describe('buildTemplateCourses（テンプレ1つ＝科目のコース1つ）', () => {
+    const courses = buildTemplateCourses([
+      { id: 'en', ...english },
+      { id: 'ma', ...math },
     ]);
+
+    it('テンプレごとにコースを作り、テーマの初期値はテンプレ名', () => {
+      expect(courses.map((c) => [c.key, c.name, c.theme])).toEqual([
+        ['en', '英語入試対策', '英語入試対策'],
+        ['ma', '数学入試対策', '数学入試対策'],
+      ]);
+    });
+
+    it('共有するテキスト（過去問）はどちらのコースにも入る。冊の番号はコースごと', () => {
+      expect(courses.map((c) => c.bookIds)).toEqual([
+        [10, 99],
+        [20, 99],
+      ]);
+    });
+
+    it('コースの科目は、科目のある教材から取る（過去問の空の科目は数えない）', () => {
+      expect(courses.map((c) => c.subjects)).toEqual([['英語'], ['数学']]);
+    });
+
+    it('保存する順は、コースの順→コースの中の順。共有する冊は最初に出た位置で1回だけ', () => {
+      expect(orderedBookIds(courses)).toEqual([10, 99, 20]);
+    });
+
+    it('共有する冊のテーマは最初のコースのテーマ', () => {
+      expect(themeOfBook(courses, 99)).toBe('英語入試対策');
+      expect(themeOfBook(courses, 20)).toBe('数学入試対策');
+    });
+  });
+});
+
+describe('isUnitInCourse（コースで見せる単元）', () => {
+  it('科目のある教材は、コースの科目に関係なく全単元を見せる', () => {
+    expect(isUnitInCourse(null, '英語', ['数学'])).toBe(true);
+  });
+
+  it('過去問（教材の科目が空）は、コースの科目の単元だけを見せる', () => {
+    expect(isUnitInCourse('英語', '', ['英語'])).toBe(true);
+    expect(isUnitInCourse('数学', '', ['英語'])).toBe(false);
+  });
+
+  it('単元に科目が無い・コースに科目が無い（過去問だけのテンプレ）ときは見せる', () => {
+    expect(isUnitInCourse(null, '', ['英語'])).toBe(true);
+    expect(isUnitInCourse('数学', '', [])).toBe(true);
   });
 });
 
@@ -166,18 +210,25 @@ describe('buildProposalSaveBlockers', () => {
     expect(blockers).toEqual(['「B」にコマ数が入っていません']);
   });
 
-  it('冊ごとにテーマを渡したときは、テーマが空の冊を書名入りで止める', () => {
+  it('コースが複数あるときは、テーマが空のコースをコース名入りで止める', () => {
     const blockers = buildProposalSaveBlockers({
+      courses: [
+        { name: '英語入試対策', theme: '英語入試対策' },
+        { name: '数学入試対策', theme: ' ' },
+      ],
       books: [
-        { name: 'A', koma: 3, theme: '英語入試対策' },
-        { name: 'B', koma: 2, theme: ' ' },
+        { name: 'A', koma: 3 },
+        { name: 'B', koma: 2 },
       ],
     });
-    expect(blockers).toEqual(['「B」の講習テーマを入力してください']);
+    expect(blockers).toEqual(['「数学入試対策」の講習テーマを入力してください']);
   });
 
-  it('冊ごとのテーマで1冊だけのときは、従来どおりの文言で止める', () => {
-    const blockers = buildProposalSaveBlockers({ books: [{ name: 'A', koma: 3, theme: '' }] });
+  it('コースが1つのときは、従来どおりの文言で止める', () => {
+    const blockers = buildProposalSaveBlockers({
+      courses: [{ name: '', theme: '' }],
+      books: [{ name: 'A', koma: 3 }],
+    });
     expect(blockers).toEqual(['テーマを入力してください']);
   });
 });
