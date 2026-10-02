@@ -2,7 +2,7 @@
 
 import { Suspense } from 'react';
 import { AdminLayout } from '@/components/layouts';
-import { Loading } from '@/components/ui';
+import { Loading, ScrollToTopButton } from '@/components/ui';
 import ProposalList from '@/components/proposals/ProposalList';
 
 export default function ProposalsPage() {
@@ -11,6 +11,8 @@ export default function ProposalsPage() {
       <Suspense fallback={<Loading />}>
         <ProposalList />
       </Suspense>
+      {/* 期ごとの提案書が積み重なって縦に伸びるので、先頭へ戻れるようにする */}
+      <ScrollToTopButton />
     </AdminLayout>
   );
 }

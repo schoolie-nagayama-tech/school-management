@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import { ContextHelp } from '@/components/help/ContextHelp';
 import { AdminLayout } from '@/components/layouts';
-import { InlineLoading, Loading, ToastContainer } from '@/components/ui';
+import { InlineLoading, Loading, ScrollToTopButton, ToastContainer } from '@/components/ui';
 import { useToast } from '@/hooks/useToast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRequirePermission } from '@/hooks/usePermissions';
@@ -1228,6 +1228,9 @@ export default function CourseProposalsPage() {
           onSuccess={success}
         />
       )}
+
+      {/* 教室の全生徒分の提案書が並ぶ長い一覧なので、先頭（絞り込み）へ戻れるようにする */}
+      <ScrollToTopButton />
 
       <ToastContainer toasts={toasts} onRemove={removeToast} />
     </AdminLayout>

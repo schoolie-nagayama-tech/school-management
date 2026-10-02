@@ -6,6 +6,11 @@ import { ChevronUp } from 'lucide-react';
 interface ScrollToTopButtonProps {
   /** このスクロール量(px)を超えたときだけ表示対象になる。既定600 */
   threshold?: number;
+  /**
+   * 画面下に固定の操作バーがあるページで、その高さ(px)だけボタンを持ち上げる。既定0。
+   * （提案書エディタの EditorBottomBar など。重なるとバーのボタンが押せなくなるため）
+   */
+  bottomOffset?: number;
   /** ページ固有の位置調整などを足したいとき用 */
   className?: string;
 }
@@ -19,7 +24,11 @@ const IDLE_DELAY_MS = 250;
  * 縦に長いページ（生徒管理など）で下まで行くと先頭に戻る手段が無くなるため用意した。
  * 汎用コンポーネントなので、他ページでもそのまま置くだけで使える。
  */
-export function ScrollToTopButton({ threshold = 600, className = '' }: ScrollToTopButtonProps) {
+export function ScrollToTopButton({
+  threshold = 600,
+  bottomOffset = 0,
+  className = '',
+}: ScrollToTopButtonProps) {
   const [visible, setVisible] = useState(false);
   const rafRef = useRef<number | null>(null);
   const idleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -73,11 +82,13 @@ export function ScrollToTopButton({ threshold = 600, className = '' }: ScrollToT
       onClick={handleClick}
       aria-label="ページの先頭へ戻る"
       title="ページの先頭へ戻る"
+      // bottomOffset は任意の数値なので Tailwind のクラスにできない。CSS変数で bottom の計算に足す
+      style={{ ['--stt-offset' as string]: `${bottomOffset}px` }}
       className={[
         // モバイルは下部ナビ(MobileBottomNav: fixed bottom-0 / 中身 h-14 + safe-area)があるため、
         // その分だけ上にずらして重ならないようにする。lg 以上ではナビが無いので素直に 20px。
         'fixed left-1/2 -translate-x-1/2 z-20 print:hidden',
-        'bottom-[calc(3.5rem+env(safe-area-inset-bottom,0px)+0.75rem)] lg:bottom-5',
+        'bottom-[calc(3.5rem+env(safe-area-inset-bottom,0px)+0.75rem+var(--stt-offset))] lg:bottom-[calc(1.25rem+var(--stt-offset))]',
         'flex h-10 w-10 items-center justify-center rounded-full',
         'border border-border bg-surface/80 backdrop-blur-sm shadow-sm',
         'transition-[opacity,transform] duration-200 ease-out motion-reduce:transition-none',

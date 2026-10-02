@@ -15,7 +15,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { AdminLayout } from '@/components/layouts';
-import { Button, Loading } from '@/components/ui';
+import { Button, Loading, ScrollToTopButton } from '@/components/ui';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMasterData } from '@/contexts/MasterDataContext';
 import { isManagerOrAbove } from '@/lib/utils/roles';
@@ -331,6 +331,9 @@ export default function StudentHubPage() {
           <LogsSection studentId={student.id} />
         </div>
       </HubDataProvider>
+
+      {/* 全項目を縦に並べる長いページなので、下まで読んだあと先頭（目次）へ戻れるようにする */}
+      <ScrollToTopButton />
     </AdminLayout>
   );
 }

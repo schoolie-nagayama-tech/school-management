@@ -786,7 +786,7 @@ export default function ShippingPage() {
                             handleFormChange(schoolId, 'mail_reply_to', e.target.value)
                           }
                           placeholder="例: school@example.com"
-                          helpText="自動メールの Reply-To に使用"
+                          helpText="追客メールとフォームの受付メールの返信先。保護者の返信がここに届く"
                         />
                         <Input
                           label="Slackメンションコード"
