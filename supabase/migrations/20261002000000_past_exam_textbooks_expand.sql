@@ -33,7 +33,11 @@ insert into curriculum_items (textbook_id, sort_order, title, item_type, subject
 select 753, 0, s || ' ' || y || '年度', 'lesson', s
 from unnest(array['英語', '数学', '国語', '理科', '社会']) as s
 cross join generate_series(2017, 2026) as y
-where not exists (select 1 from curriculum_items c where c.textbook_id = 753);
+where not exists (select 1 from curriculum_items c where c.textbook_id = 753)
+  -- ★教材 753 が無いDB（ローカル・CI の新規DB。seed はマイグレーションの後に入る）では
+  --   単元が0件なので上の条件が真になり、外部キー違反で落ちる。教材がある時だけ作る。
+  --   本番は 753 があるので結果は変わらない（本番には適用済みで、再適用もしない）。
+  and exists (select 1 from textbooks t where t.id = 753);
 
 -- 3) 教材名を ① 付きにそろえる（②③ と並べたときに区別できるように）
 update textbooks set name = '志望校過去問①（中学受験）' where id = 752;
