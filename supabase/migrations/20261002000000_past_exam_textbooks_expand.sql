@@ -9,6 +9,10 @@
 -- ★753 の旧単元（31344〜31348）は提案書・進行表のどこからも参照されていないことを
 --   適用前に確認済み。念のため参照があれば消さない条件も付けてある。
 
+-- 0) 本番には 20260921 に手で足した列がある（リポジトリに作成SQLが無かった）。
+--    空のDB（CI・ローカル）でも通るよう、ここで冪等に作っておく。
+alter table curriculum_items add column if not exists subject text;
+
 -- 1) 752：科目ごとに足りない年度（2017〜2026）を補う
 insert into curriculum_items (textbook_id, sort_order, title, item_type, subject)
 select s.textbook_id, 0, s.subject || ' ' || y || '年度', 'lesson', s.subject
