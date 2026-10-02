@@ -4,6 +4,7 @@ import {
   type PrintProposalSource,
 } from '@/lib/proposals/printSheetGrouping';
 import { buildPrintBook, printTextbookName } from '@/lib/proposals/buildPrintSheets';
+import { resolveSheetThemes } from '@/components/proposals/ProposalPrintView';
 import type { CurriculumItem, SeasonalProposalWithDetails } from '@/types/database';
 
 /** テストに要るところだけ埋めた単元マスタ */
@@ -259,5 +260,43 @@ describe('printTextbookName', () => {
     const { proposal } = p({ id: 'a', subject: null, name: '都立入試過去問' });
     expect(printTextbookName(proposal, '英語')).toBe('英語 都立入試過去問');
     expect(printTextbookName(proposal, '')).toBe('都立入試過去問');
+  });
+});
+
+describe('resolveSheetThemes（紙に出す講習テーマ）', () => {
+  const book = (textbookName: string, theme: string, isAllSubject = false) => ({
+    textbookName,
+    theme,
+    isAllSubject,
+  });
+
+  it('全冊が同じテーマなら1回だけ出す', () => {
+    expect(resolveSheetThemes([book('A', '英語対策'), book('B', '英語対策')])).toEqual({
+      shared: '英語対策',
+      perBook: [],
+    });
+  });
+
+  it('テーマが違えば冊ごとに出す', () => {
+    expect(resolveSheetThemes([book('A', '英語対策'), book('B', '英検')]).perBook).toEqual([
+      { textbookName: 'A', theme: '英語対策' },
+      { textbookName: 'B', theme: '英検' },
+    ]);
+  });
+
+  it('過去問（全科目の教材）は、ふつうのテキストと同じ紙ではテーマを数えない', () => {
+    // 数学の紙に、英語コースで作った過去問のテーマ（英語）が出ないようにする
+    expect(
+      resolveSheetThemes([
+        book('入試完成 数学', '数学対策'),
+        book('都立入試過去問', '英語対策', true),
+      ])
+    ).toEqual({ shared: '数学対策', perBook: [] });
+  });
+
+  it('過去問だけの紙では、過去問のテーマを出す', () => {
+    expect(resolveSheetThemes([book('都立入試過去問', '過去問演習', true)]).shared).toBe(
+      '過去問演習'
+    );
   });
 });

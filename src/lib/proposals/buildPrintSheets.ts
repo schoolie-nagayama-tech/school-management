@@ -51,6 +51,8 @@ export function buildPrintBook(
     progressMap,
     // 合計コマもその科目の単元だけで数える（紙に出ているコマ数と一致させる）
     totalKoma: calcTotalKoma(activeUnits),
+    // 過去問など全科目の教材。同じ紙のテーマはその科目のテキストで代表させる（resolveSheetThemes）
+    isAllSubject: !(block.proposal.textbook?.subject ?? '').trim(),
   };
 }
 

@@ -62,22 +62,23 @@ export function calcBookKomaSummary(books: BookKomaInput[]): BookKomaSummary {
  * ★2冊以上のときだけ「コマ数が0の冊」を止める。
  *   1冊のときの挙動は変えない（テーマだけ入れて単元は後から、という使い方が従来できた）。
  *   複数冊では、空のまま保存すると中身の無い提案書がその冊のぶんだけ増えてしまうので止める。
- * ★テーマは2通り。冊ごとに theme を渡したとき（提案書の新規作成。科目ごとにテンプレが違うので
- *   タブごとに持つ）は冊ごとに見る。渡さないとき（成績表から作る）は全冊共通の params.theme を見る。
+ * ★テーマは2通り。courses を渡したとき（提案書の新規作成。テンプレをまとめて選ぶと科目ごとの
+ *   コースになり、テーマはコースごとに持つ）はコースごとに見る。渡さないとき（成績表から作る）は
+ *   全冊共通の params.theme を見る。
  */
 export function buildProposalSaveBlockers(params: {
   theme?: string;
-  books: { name: string; koma: number; theme?: string }[];
+  courses?: { name: string; theme: string }[];
+  books: { name: string; koma: number }[];
 }): string[] {
   const blockers: string[] = [];
-  const perBookTheme = params.books.some((b) => b.theme !== undefined);
-  if (!perBookTheme) {
+  if (!params.courses) {
     if (!(params.theme ?? '').trim()) blockers.push('テーマを入力してください');
-  } else if (params.books.length === 1) {
-    if (!(params.books[0].theme ?? '').trim()) blockers.push('テーマを入力してください');
+  } else if (params.courses.length <= 1) {
+    if (!(params.courses[0]?.theme ?? '').trim()) blockers.push('テーマを入力してください');
   } else {
-    for (const b of params.books) {
-      if (!(b.theme ?? '').trim()) blockers.push(`「${b.name}」の講習テーマを入力してください`);
+    for (const c of params.courses) {
+      if (!c.theme.trim()) blockers.push(`「${c.name}」の講習テーマを入力してください`);
     }
   }
   if (params.books.length === 0) {
@@ -210,9 +211,86 @@ export function mergeTemplateBooks(templates: TemplateForMerge[]): MergedTemplat
   return order.map((id) => byId.get(id) as MergedTemplateBook);
 }
 
-/** 合体した冊の講習テーマの初期値。複数のテンプレから来た冊は「A / B」 */
-export function mergedBookTheme(book: { templateNames: string[] }): string {
-  return book.templateNames.join(' / ');
+// ─────────────────────────────────────────────
+// コース（科目ごとのまとまり）
+// ─────────────────────────────────────────────
+
+/**
+ * 新規作成の画面で、テキストを科目ごとに束ねるまとまり。テンプレを1つ選ぶとコースが1つできる。
+ *
+ * ★テンプレを複数選んだときに全テキストを1本の並び（1冊目〜11冊目）にすると、5教科が1つの
+ *   コースに入っているように見えた（ユーザー指摘 2026-10-02）。テンプレ＝科目のコースとして束ね、
+ *   冊の番号とテーマはコースごとに持つ。
+ * ★保存の単位は今までどおりテキスト1冊＝提案書1件。コースはDBに持たない（画面だけの束ね方）。
+ * ★同じテキスト（過去問）は複数のコースに入る。そのコースでは subjects の科目の単元だけを見せる。
+ */
+export interface ProposalCourse {
+  /** テンプレのID。テキストから作ったときは固定の値 */
+  key: string;
+  /** コースの呼び名（テンプレ名）。テキストから作ったときは空 */
+  name: string;
+  theme: string;
+  /** このコースのテキスト（並び＝このコースで進める順） */
+  bookIds: number[];
+  /** このコースの科目（テンプレに入っている教材の科目。科目の空の教材は数えない） */
+  subjects: string[];
+}
+
+/** テキストから作るとき（テンプレを使わない）の、ただ1つのコースのキー */
+export const SINGLE_COURSE_KEY = 'single';
+
+/** 選んだテンプレからコースを作る。並びは選んだ順、テーマの初期値はテンプレ名 */
+export function buildTemplateCourses(
+  templates: (TemplateForMerge & { id: string })[]
+): ProposalCourse[] {
+  return templates.map((t) => {
+    const bookIds: number[] = [];
+    const subjects: string[] = [];
+    for (const ct of t.textbooks) {
+      if (!bookIds.includes(ct.textbook_id)) bookIds.push(ct.textbook_id);
+      const s = (ct.textbook?.subject ?? '').trim();
+      if (s && !subjects.includes(s)) subjects.push(s);
+    }
+    return { key: t.id, name: t.name, theme: t.name, bookIds, subjects };
+  });
+}
+
+/**
+ * その単元をこのコースで見せるか。
+ * - 科目のある教材（ふつうのテキスト）は全単元を見せる
+ * - 科目の空の教材（過去問）は、コースの科目の単元だけを見せる（英語コースでは英語の年度だけ）
+ *   単元に科目が無い・コースに科目が無い（過去問だけのテンプレ）ときは見せる
+ */
+export function isUnitInCourse(
+  unitSubject: string | null | undefined,
+  bookSubject: string | null | undefined,
+  courseSubjects: string[]
+): boolean {
+  if ((bookSubject ?? '').trim()) return true;
+  if (courseSubjects.length === 0) return true;
+  const s = (unitSubject ?? '').trim();
+  if (!s) return true;
+  return courseSubjects.includes(s);
+}
+
+/**
+ * 保存する順に並べたテキスト。コースの順→コースの中の順で、2つ目以降のコースに出てくる
+ * 同じテキストは飛ばす（提案書は1件なので1回だけ保存する）。
+ * ★この順が提案書の作成順（created_at）＝印刷で同じ科目の紙に並ぶ順になる。
+ */
+export function orderedBookIds(courses: { bookIds: number[] }[]): number[] {
+  const out: number[] = [];
+  for (const c of courses) for (const id of c.bookIds) if (!out.includes(id)) out.push(id);
+  return out;
+}
+
+/**
+ * テキストの講習テーマ＝そのテキストが最初に出てくるコースのテーマ。
+ * ★過去問のように2つのコースで共有する提案書は、最初のコースのテーマにする（ユーザー指定）。
+ *   紙では科目ごとに分かれて載るので、どちらのテーマでも見え方は変わらない。
+ */
+export function themeOfBook(courses: ProposalCourse[], textbookId: number): string {
+  return courses.find((c) => c.bookIds.includes(textbookId))?.theme ?? '';
 }
 
 export interface BookSaveOutcome {

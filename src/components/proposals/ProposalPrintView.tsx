@@ -18,6 +18,34 @@ export interface PrintBook {
   activeUnits: PrintUnitDraft[];
   progressMap: Map<number, StudentProgress>;
   totalKoma: number;
+  /** 過去問のように1冊で全科目を扱う教材か（教材の科目が空）。テーマの出し方に使う */
+  isAllSubject?: boolean;
+}
+
+/**
+ * 紙に出す講習テーマ。全冊が同じなら1回だけ（shared）、違うなら冊ごと（perBook）。
+ *
+ * ★過去問のように全科目の教材は、ふつうのテキストと同じ紙に載るときはテーマを数えない。
+ *   過去問の提案書は英語・数学のコースで1件を共有し、テーマは先に作ったコース（英語）のもの。
+ *   数えると数学の紙に「都立入試過去問: 英語入試対策コース」と出てしまう（2026-10-02に発覚）。
+ *   紙のテーマは、その科目のテキストのテーマで代表させる。過去問だけの紙では過去問のテーマを出す。
+ */
+export function resolveSheetThemes(
+  books: Pick<PrintBook, 'textbookName' | 'theme' | 'isAllSubject'>[]
+): {
+  shared: string | null;
+  perBook: { textbookName: string; theme: string }[];
+} {
+  const hasNormalWithTheme = books.some((b) => !b.isAllSubject && b.theme.trim() !== '');
+  const counted = books
+    .filter((b) => !(hasNormalWithTheme && b.isAllSubject))
+    .map((b) => ({ textbookName: b.textbookName, theme: b.theme.trim() }))
+    .filter((b) => b.theme !== '');
+  const shared =
+    counted.length > 0 && counted.every((b) => b.theme === counted[0].theme)
+      ? counted[0].theme
+      : null;
+  return { shared, perBook: shared ? [] : counted };
 }
 
 /**
@@ -302,11 +330,9 @@ export function ProposalPrintView({
   // ヘッダーの2行目。1冊なら従来どおり書名、複数冊なら科目（どの冊も同じ科目なので科目で代表させる）
   const headerLabel = isMulti ? subject : (books[0]?.textbookName ?? '');
 
-  // テーマ: 全冊が同じ（空でない）なら1回だけ。違うなら冊ごとに「書名: テーマ」で並べる。
-  const themes = books.map((b) => b.theme.trim());
-  const sharedTheme =
-    themes.length > 0 && themes.every((t) => t !== '' && t === themes[0]) ? themes[0] : null;
-  const hasAnyTheme = themes.some((t) => t !== '');
+  // テーマ: 全冊が同じなら1回だけ。違うなら冊ごとに「書名: テーマ」で並べる（resolveSheetThemes）。
+  const { shared: sharedTheme, perBook: themedBooks } = resolveSheetThemes(books);
+  const hasAnyTheme = sharedTheme !== null || themedBooks.length > 0;
 
   return (
     <div className="proposal-print-page space-y-5 print:space-y-1">
@@ -330,13 +356,11 @@ export function ProposalPrintView({
             <p className="text-sm print:text-[10px] text-text-body">{sharedTheme}</p>
           ) : (
             <div className="space-y-0.5">
-              {books.map((b, i) =>
-                b.theme.trim() ? (
-                  <p key={i} className="text-sm print:text-[10px] text-text-body">
-                    <span className="font-bold">{b.textbookName}:</span> {b.theme}
-                  </p>
-                ) : null
-              )}
+              {themedBooks.map((b, i) => (
+                <p key={i} className="text-sm print:text-[10px] text-text-body">
+                  <span className="font-bold">{b.textbookName}:</span> {b.theme}
+                </p>
+              ))}
             </div>
           )}
         </section>
